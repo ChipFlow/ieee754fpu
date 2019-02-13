@@ -69,6 +69,17 @@ class FPADD:
                 with m.Else():
                     m.d.sync += self.in_b_ack.eq(1)
 
+            with m.State("unpack"):
+                    m.next = "special_cases"
+                    m.d.sync += [
+                        a_m.Cat(self.a[22:0], 0),
+                        b_m.Cat(self.b[22:0], 0),
+                        a_e.Cat(self.a[30:23] - 127),
+                        b_e.Cat(self.b[30:23] - 127),
+                        a_s.Cat(self.a[31]),
+                        b_s.Cat(self.b[31])
+                    ]
+
         return m
 
 """
