@@ -57,6 +57,10 @@ class FPADD:
         tot = Signal(28)
 
         with m.FSM() as fsm:
+
+            # ******
+            # gets operand a
+
             with m.State("get_a"):
                 with m.If((self.in_a_ack) & (self.in_a_stb)):
                     m.next = "get_b"
@@ -66,6 +70,9 @@ class FPADD:
                     ]
                 with m.Else():
                     m.d.sync += self.in_a_ack.eq(1)
+
+            # ******
+            # gets operand b
 
             with m.State("get_b"):
                 with m.If((self.in_b_ack) & (self.in_b_stb)):
@@ -77,18 +84,28 @@ class FPADD:
                 with m.Else():
                     m.d.sync += self.in_b_ack.eq(1)
 
+            # ******
+            # unpacks operands into sign, mantissa and exponent
+
             with m.State("unpack"):
                 m.next = "special_cases"
                 m.d.sync += [
+                    # mantissa
                     a_m.eq(Cat(0, 0, 0, a[0:23])),
                     b_m.eq(Cat(0, 0, 0, b[0:23])),
+                    # exponent (take off exponent bias, here)
                     a_e.eq(Cat(a[23:31]) - 127),
                     b_e.eq(Cat(b[23:31]) - 127),
+                    # sign
                     a_s.eq(Cat(a[31])),
                     b_s.eq(Cat(b[31]))
                 ]
 
+            # ******
+            # special cases: NaNs, infs, zeros, denormalised
+
             with m.State("special_cases"):
+
                 # if a is NaN or b is NaN return NaN
                 with m.If(((a_e == 128) & (a_m != 0)) | \
                           ((b_e == 128) & (b_m != 0))):
@@ -99,7 +116,8 @@ class FPADD:
                           z[22].eq(1),      # mantissa top bit: 1
                           z[0:22].eq(0)     # mantissa rest: 0b0000...
                     ]
-                # if a is inf return inf
+
+                # if a is inf return inf (or NaN)
                 with m.Elif(a_e == 128):
                     m.next = "put_z"
                     m.d.sync += [
