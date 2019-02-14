@@ -88,6 +88,17 @@ class FPADD:
                         b_s.eq(Cat(b[31]))
                     ]
 
+            with m.State("special_cases"):
+                # if a is NaN or b is NaN return NaN
+                with m.If(((a_e == 128) & (a_m != 0)) | \
+                          ((b_e == 128) & (b_m != 0))):
+                    m.next = "put_z"
+                    m.d.sync += [
+                          z[31].eq(1),      # sign: 1
+                          z[23:31].eq(255), # exp: 0b11111...
+                          z[22].eq(1),      # mantissa top bit: 1
+                          z[0:22].eq(0)     # mantissa rest: 0b0000...
+                    ]
         return m
 
 """
