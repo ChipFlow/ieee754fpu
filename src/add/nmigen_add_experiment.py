@@ -142,7 +142,7 @@ class FPADD:
                         z[0:23].eq(0)     # mantissa rest: 0b0000...
                     ]
 
-                # if a is zero return b
+                # if a is zero and b zero return signed-a/b
                 with m.Elif(((a_e == -127) & (a_m == 0)) & \
                             ((b_e == -127) & (b_m == 0))):
                     m.next = "put_z"
@@ -151,6 +151,38 @@ class FPADD:
                         z[23:31].eq(b_e[0:8] + 127), # exp: b_e (plus bias)
                         z[0:23].eq(b_m[3:26])        # mantissa: b_m top bits
                     ]
+
+                # if a is zero return b
+                with m.Elif((a_e == -127) & (a_m == 0)):
+                    m.next = "put_z"
+                    m.d.sync += [
+                        z[31].eq(b_s),               # sign: a/b_s
+                        z[23:31].eq(b_e[0:8] + 127), # exp: b_e (plus bias)
+                        z[0:23].eq(b_m[3:26])        # mantissa: b_m top bits
+                    ]
+
+                # if b is zero return a
+                with m.Elif((b_e == -127) & (b_m == 0)):
+                    m.next = "put_z"
+                    m.d.sync += [
+                        z[31].eq(a_s),               # sign: a/b_s
+                        z[23:31].eq(a_e[0:8] + 127), # exp: a_e (plus bias)
+                        z[0:23].eq(a_m[3:26])        # mantissa: a_m top bits
+                    ]
+
+                # Denormalised Number checks
+                with m.Else():
+                    m.next = "align"
+                    # denormalise a check
+                    with m.If(a_e == -127):
+                        m.d.sync += a_e.eq(-126) # limit a exponent
+                    with m.Else():
+                        m.d.sync += a_m[26].eq(1) # set highest mantissa bit
+                    # denormalise b check
+                    with m.If(b_e == -127):
+                        m.d.sync += b_e.eq(-126) # limit b exponent
+                    with m.Else():
+                        m.d.sync += b_m[26].eq(1) # set highest mantissa bit
         return m
 
 """
