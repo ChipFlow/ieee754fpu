@@ -3,7 +3,7 @@
 # 2013-12-12
 
 from nmigen import Module, Signal, Cat
-from nmigen.cli import main
+from nmigen.cli import main, verilog
 
 
 class FPNum:
@@ -362,9 +362,9 @@ if __name__ == "__main__":
         ])
 
 
-"""
-# doesnt work for some reason
-print(verilog.convert(alu, ports=[in_a, in_a_stb, in_a_ack,
-                    in_b, in_b_stb, in_b_ack,
-                    out_z, out_z_stb, out_z_ack]))
-"""
+    # works... but don't use, just do "python fname.py convert -t v"
+    #print (verilog.convert(alu, ports=[
+    #                alu.in_a, alu.in_a_stb, alu.in_a_ack,
+    #                alu.in_b, alu.in_b_stb, alu.in_b_ack,
+    #                alu.out_z, alu.out_z_stb, alu.out_z_ack,
+    #    ]))
