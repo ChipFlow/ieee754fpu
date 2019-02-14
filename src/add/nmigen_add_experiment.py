@@ -80,6 +80,9 @@ class FPNum:
     def is_overflowed(self):
         return (self.e < 127)
 
+    def is_denormalised(self):
+        return (self.e == -126) & (self.m[23] == 0)
+
 
 class FPADD:
     def __init__(self, width):
@@ -306,26 +309,34 @@ class FPADD:
             # rounding stage
 
             with m.State("round"):
-                m.next = "pack"
+                m.next = "correction"
                 with m.If(guard & (round_bit | sticky | z.m[0])):
                     m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
                     with m.If(z.m == 0xffffff): # all 1s
                         m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
             # ******
+            # correction stage
+
+            with m.State("corrections"):
+                m.next = "pack"
+                # denormalised, correct exponent to zero
+                with m.If(z.is_denormalised()):
+                    m.d.sync += z.m.eq(-127)
+                # FIX SIGN BUG: -a + a = +0.
+                with m.If((z.e == -126) & (z.m[0:23] == 0)):
+                    m.d.sync += z.s.eq(0)
+
+            # ******
             # pack stage
 
             with m.State("pack"):
                 m.next = "put_z"
-                m.d.sync += [
-                    z.v[0:22].eq(z.m[0:22]),
-                    z.v[22:31].eq(z.e[0:7]),
-                    z.v[31].eq(z.s)
-                ]
-                with m.If((z.e == -126) & (z.m[23] == 0)):
-                    m.d.sync += z.v[23:31].eq(0)
+                # if overflow occurs, return inf
                 with m.If(z.is_overflowed()):
                     m.d.sync += z.inf(0)
+                with m.Else():
+                    m.d.sync += z.create(z.s, z.e, z.m)
 
             # ******
             # put_z stage
@@ -588,7 +599,8 @@ if __name__ == "__main__":
 
 
 """
-print(verilog.convert(alu, ports=[in_a, in_a_stb, in_a_ack, #doesnt work for some reason
+# doesnt work for some reason
+print(verilog.convert(alu, ports=[in_a, in_a_stb, in_a_ack,
                     in_b, in_b_stb, in_b_ack,
                     out_z, out_z_stb, out_z_ack]))
 """
