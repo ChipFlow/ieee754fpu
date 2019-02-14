@@ -9,6 +9,7 @@ from nmigen.cli import main
 class FPNum:
     def __init__(self, width, m_width=None):
         self.width = width
+        self.mw = 23 # TODO
         if m_width is None:
             m_width = width + 3 # extra accuracy bits
         self.v = Signal(width)      # Latched copy of value
@@ -29,6 +30,11 @@ class FPNum:
           self.v[23:31].eq(e + 127), # exp
           self.v[0:23].eq(m)         # mantissa
         ]
+
+    def shift_down(self):
+        return self.create(self.s,
+                           self.e + 1,
+                           Cat(self.m[0] | self.m[1], self.m[1:self.mw-1], 0))
 
     def nan(self, s):
         return self.create(s, 0xff, 1<<22)
@@ -146,12 +152,12 @@ class FPADD:
                     m.d.sync += z.create(a.s & b.s, b.e[0:8], b.m[3:26])
 
                 # if a is zero return b
-                with m.Elif((a.is_zero()):
+                with m.Elif(a.is_zero()):
                     m.next = "put_z"
                     m.d.sync += z.create(b.s, b.e[0:8], b.m[3:26])
 
                 # if b is zero return a
-                with m.Elif((b.is_zero()):
+                with m.Elif(b.is_zero()):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s, a.e[0:8], a.m[3:26])
 
@@ -176,18 +182,10 @@ class FPADD:
             with m.State("align"):
                 # exponent of a greater than b: increment b exp, shift b mant
                 with m.If(a.e > b.e):
-                    m.d.sync += [
-                      b.e.eq(b.e + 1),
-                      b.m.eq(b.m >> 1),
-                      b.m[0].eq(b.m[0] | b.m[1]) # moo??
-                    ]
+                    m.d.sync += b.shift_down()
                 # exponent of b greater than a: increment a exp, shift a mant
                 with m.Elif(a.e < b.e):
-                    m.d.sync += [
-                      a.e.eq(a.e + 1),
-                      a.m.eq(a.m >> 1),
-                      a.m[0].eq(a.m[0] | a.m[1]) # moo??
-                    ]
+                    m.d.sync += a.shift_down()
                 # exponents equal: move to next stage.
                 with m.Else():
                     m.next = "add_0"
