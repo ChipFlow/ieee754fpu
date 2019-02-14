@@ -183,6 +183,22 @@ class FPADD:
                         m.d.sync += b_e.eq(-126) # limit b exponent
                     with m.Else():
                         m.d.sync += b_m[26].eq(1) # set highest mantissa bit
+
+            with m.State("add_0"):
+              m.next = "add_1"
+              m.d.sync += z_e.eq(a_e)
+              with m.If(a_s == b_s):
+                m.d.sync += [
+                tot.eq(a_m + b_m),
+                z_s.eq(a_s)]
+              with m.Else(a_m >= b_m):
+                m.d.sync += [
+                tot.eq(a_m - b_m),
+                z_s.eq(a_s)]
+              with m.Else():
+                m.sync += [
+                tot.eq(b_m - a_m),
+                z_s.eq(b_s)]
         return m
 
 """
