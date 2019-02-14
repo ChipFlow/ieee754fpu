@@ -40,10 +40,10 @@ class FPADD:
         b_m = Signal(27) # ??? seems to be 1 bit extra??
         z_m = Signal(24)
 
-        # Exponent
-        a_e = Signal(10)
-        b_e = Signal(10)
-        z_e = Signal(10)
+        # Exponent: 10 bits, signed (the exponent bias is subtracted)
+        a_e = Signal((10, True))
+        b_e = Signal((10, True))
+        z_e = Signal((10, True))
 
         # Sign
         a_s = Signal()
@@ -183,6 +183,29 @@ class FPADD:
                         m.d.sync += b_e.eq(-126) # limit b exponent
                     with m.Else():
                         m.d.sync += b_m[26].eq(1) # set highest mantissa bit
+
+            # ******
+            # align.  NOTE: this does *not* do single-cycle multi-shifting,
+            #         it *STAYS* in the align state until the exponents match
+
+            with m.State("align"):
+                # exponent of a greater than b: increment b exp, shift b mant
+                with m.If(a_e > b_e):
+                    m.d.sync += [
+                      b_e.eq(b_e + 1),
+                      b_m.eq(b_m >> 1),
+                      b_m[0].eq(b_m[0] | b_m[1]) # moo??
+                    ]
+                # exponent of b greater than a: increment a exp, shift a mant
+                with m.Elif(a_e < b_e):
+                    m.d.sync += [
+                      a_e.eq(a_e + 1),
+                      a_m.eq(a_m >> 1),
+                      a_m[0].eq(a_m[0] | a_m[1]) # moo??
+                    ]
+                # exponents equal: move to next stage.
+                with m.Else():
+                    m.next = "add_0"
 
             # ******
             # First stage of add
