@@ -62,11 +62,6 @@ class FPADD:
         self.out_z_stb = Signal()
         self.out_z_ack = Signal()
 
-        s_out_z_stb  = Signal()
-        s_out_z      = Signal(width)
-        s_in_a_ack   = Signal()
-        s_in_b_ack   = Signal()
-
     def get_fragment(self, platform):
         m = Module()
 
