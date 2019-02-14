@@ -330,17 +330,16 @@ class FPADD:
             # ******
             # put_z stage
 
-            """
-              put_z:
-              begin
-                s_out_z_stb <= 1;
-                s_out_z <= z;
-                if (s_out_z_stb && out_z_ack) begin
-                  s_out_z_stb <= 0;
-                  state <= get_a;
-                end
-              end
-            """
+            with m.State("put_z"):
+              m.next = "get_a"
+              m.d.sync += [
+                  s_out_z_stb.eq(1),
+                  s_out_z.eq(z)
+              ]
+              with m.If(s_out_z_stb & out_z_ack):
+                  m.d.sync += [
+                  s_out_z_stb.eq(0)
+                  ]
 
         return m
 
