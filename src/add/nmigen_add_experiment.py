@@ -344,13 +344,11 @@ class FPADD:
             with m.State("put_z"):
               m.next = "get_a"
               m.d.sync += [
-                  s_out_z_stb.eq(1),
-                  s_out_z.eq(z)
+                  self.out_z_stb.eq(1),
+                  self.out_z.eq(z.v)
               ]
-              with m.If(s_out_z_stb & out_z_ack):
-                  m.d.sync += [
-                  s_out_z_stb.eq(0)
-                  ]
+              with m.If(self.out_z_stb & self.out_z_ack):
+                  m.d.sync += self.out_z_stb.eq(0)
 
         return m
 
