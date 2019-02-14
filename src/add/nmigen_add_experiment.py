@@ -220,14 +220,14 @@ class FPADD:
                         z_s.eq(a_s)
                     ]
                 # a mantissa greater than b, use a
-                with m.Else(a_m >= b_m):
+                with m.Elif(a_m >= b_m):
                     m.d.sync += [
                         tot.eq(a_m - b_m),
                         z_s.eq(a_s)
                     ]
                 # b mantissa greater than a, use b
                 with m.Else():
-                    m.sync += [
+                    m.d.sync += [
                         tot.eq(b_m - a_m),
                         z_s.eq(b_s)
                 ]
