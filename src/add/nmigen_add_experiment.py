@@ -36,9 +36,9 @@ class FPADD:
         z = Signal(self.width)
 
         # Mantissa
-        a_m = Signal(27)
-        b_m = Signal(27)
-        z_m = Signal(23)
+        a_m = Signal(27) # ??? seems to be 1 bit extra??
+        b_m = Signal(27) # ??? seems to be 1 bit extra??
+        z_m = Signal(24)
 
         # Exponent
         a_e = Signal(10)
@@ -142,6 +142,15 @@ class FPADD:
                         z[0:23].eq(0)     # mantissa rest: 0b0000...
                     ]
 
+                # if a is zero return b
+                with m.Elif(((a_e == -127) & (a_m == 0)) & \
+                            ((b_e == -127) & (b_m == 0))):
+                    m.next = "put_z"
+                    m.d.sync += [
+                        z[31].eq(a_s & b_s),         # sign: a/b_s
+                        z[23:31].eq(b_e[0:8] + 127), # exp: b_e (plus bias)
+                        z[0:23].eq(b_m[3:26])        # mantissa: b_m top bits
+                    ]
         return m
 
 """
