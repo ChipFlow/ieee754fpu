@@ -42,10 +42,10 @@ class FPNum:
                            Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
 
     def nan(self, s):
-        return self.create(s, 0xff, 1<<22)
+        return self.create(s, 0x80, 1<<22)
 
     def inf(self, s):
-        return self.create(s, 0xff, 0)
+        return self.create(s, 0x80, 0)
 
     def is_nan(self):
         return (self.e == 128) & (self.m != 0)
