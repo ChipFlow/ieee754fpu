@@ -8,10 +8,15 @@ from nmigen.cli import main
 
 class FPNum:
     """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+
         Contains signals for an incoming copy of the value, decoded into
         sign / exponent / mantissa.
         Also contains encoding functions, creation and recognition of
         zero, NaN and inf (all signed)
+
+        Four extra bits are included in the mantissa: the top bit
+        (m[-1]) is effectively a carry-overflow.  The other three are
+        guard (m[2]), round (m[1]), and sticky (m[0])
     """
     def __init__(self, width, m_width=None):
         self.width = width
@@ -23,6 +28,10 @@ class FPNum:
         self.s = Signal()           # Sign bit
 
     def decode(self):
+        """ decodes a latched value into sign / exponent / mantissa
+
+            bias is subtracted here, from the exponent.
+        """
         v = self.v
         return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
                 self.e.eq(Cat(v[23:31]) - 127),   # exponent (take off bias)
@@ -30,13 +39,22 @@ class FPNum:
                 ]
 
     def create(self, s, e, m):
+        """ creates a value from sign / exponent / mantissa
+
+            bias is added here, to the exponent
+        """
         return [
           self.v[31].eq(s),          # sign
-          self.v[23:31].eq(e + 127), # exp
+          self.v[23:31].eq(e + 127), # exp (add on bias)
           self.v[0:23].eq(m)         # mantissa
         ]
 
     def shift_down(self):
+        """ shifts a mantissa down by one. exponent is increased to compensate
+
+            accuracy is lost as a result in the mantissa however there are 3
+            guard bits (the latter of which is the "sticky" bit)
+        """
         return self.create(self.s,
                            self.e + 1,
                            Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
