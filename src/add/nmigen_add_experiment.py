@@ -282,6 +282,17 @@ class FPADD:
                     with m.If(z.m == 0xffffff): # all 1s
                         m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
+            # ******
+            # pack stage
+
+            """ TODO: see if z.create can be used *later*.  convert
+                verilog first (and commit), *second* phase, convert nmigen
+                code to use FPNum.create() (as a separate commit)
+            """
+
+            # ******
+            # put_z stage
+
         return m
 
 """
