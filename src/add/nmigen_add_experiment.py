@@ -237,7 +237,7 @@ class FPADD:
 
                 with m.If(tot[27]):
                     m.d.sync += [
-                        z_m.eq(tot[4:27]),
+                        z_m.eq(tot[4:28]),
                         guard.eq(tot[3]),
                         round_bit.eq(tot[2]),
                         sticky.eq(tot[1] | tot[0]),
@@ -246,7 +246,7 @@ class FPADD:
 
                 with m.Else():
                     m.d.sync += [
-                        z_m.eq(tot[3:26]),
+                        z_m.eq(tot[3:27]),
                         guard.eq(tot[2]),
                         round_bit.eq(tot[1]),
                         sticky.eq(tot[0])
