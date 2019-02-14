@@ -35,6 +35,15 @@ class FPNum:
     def inf(self, s):
         return self.create(s, 0xff, 0)
 
+    def is_nan(self):
+        return (self.e == 128) & (self.m != 0)
+
+    def is_inf(self):
+        return (self.e == 128) & (self.m == 0)
+
+    def is_zero(self):
+        return (self.e == -127) & (self.m == 0)
+
 
 class FPADD:
     def __init__(self, width):
@@ -118,13 +127,12 @@ class FPADD:
             with m.State("special_cases"):
 
                 # if a is NaN or b is NaN return NaN
-                with m.If(((a.e == 128) & (a.m != 0)) | \
-                          ((b.e == 128) & (b.m != 0))):
+                with m.If(a.is_nan() | b.is_nan()):
                     m.next = "put_z"
                     m.d.sync += z.nan(1)
 
                 # if a is inf return inf (or NaN)
-                with m.Elif(a.e == 128):
+                with m.Elif(a.is_inf()):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s)
                     # if a is inf and signs don't match return NaN
@@ -132,23 +140,22 @@ class FPADD:
                         m.d.sync += z.nan(b.s)
 
                 # if b is inf return inf
-                with m.Elif(b.e == 128):
+                with m.Elif(b.is_inf()):
                     m.next = "put_z"
                     m.d.sync += z.inf(b.s)
 
                 # if a is zero and b zero return signed-a/b
-                with m.Elif(((a.e == -127) & (a.m == 0)) & \
-                            ((b.e == -127) & (b.m == 0))):
+                with m.Elif(a.is_zero() & b.is_zero()):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s & b.s, b.e[0:8] + 127, b.m[3:26])
 
                 # if a is zero return b
-                with m.Elif((a.e == -127) & (a.m == 0)):
+                with m.Elif((a.is_zero()):
                     m.next = "put_z"
                     m.d.sync += z.create(b.s, b.e[0:8] + 127, b.m[3:26])
 
                 # if b is zero return a
-                with m.Elif((b.e == -127) & (b.m == 0)):
+                with m.Elif((b.is_zero()):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s, a.e[0:8] + 127, a.m[3:26])
 
