@@ -311,7 +311,23 @@ class FPADD:
 
             # ******
             # pack stage
-
+            with m.State("pack"):
+                m.next = "put_z"
+                m.d.sync += [
+                    z[0:22].eq(z_m[0:22]),
+                    z[22:31].eq(z_e[0:7]),
+                    z[31].eq(z_s)
+            ]
+                with m.If(z_e == -126 & z_m[23] == 0):
+                    m.d.sync += z[23:31].eq(0)
+                with m.If(z_e == -126 & z_m[0:23] == x): #how to convert 24'h0 into format understandable by nmigen?
+                    m.d.sync += z[23:31].eq(0)
+                with m.If(z_e > 127):
+                    m.d.sync += [
+                        z[0:22].eq(0),
+                        z[23:31].eq(255),
+                        z[31].eq(z_s),
+                ]
             """ TODO: see if z.create can be used *later*.  convert
                 verilog first (and commit), *second* phase, convert nmigen
                 code to use FPNum.create() (as a separate commit)
@@ -596,3 +612,10 @@ if __name__ == "__main__":
                     alu.in_b, alu.in_b_stb, alu.in_b_ack,
                     alu.out_z, alu.out_z_stb, alu.out_z_ack,
         ])
+
+
+"""
+print(verilog.convert(alu, ports=[in_a, in_a_stb, in_a_ack, #doesnt work for some reason
+                    in_b, in_b_stb, in_b_ack,
+                    out_z, out_z_stb, out_z_ack]))
+"""
