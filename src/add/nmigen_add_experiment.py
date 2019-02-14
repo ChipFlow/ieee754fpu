@@ -78,15 +78,15 @@ class FPADD:
                     m.d.sync += self.in_b_ack.eq(1)
 
             with m.State("unpack"):
-                    m.next = "special_cases"
-                    m.d.sync += [
-                        a_m.eq(Cat(0, 0, 0, a[0:23])),
-                        b_m.eq(Cat(0, 0, 0, b[0:23])),
-                        a_e.eq(Cat(a[23:31]) - 127),
-                        b_e.eq(Cat(b[23:31]) - 127),
-                        a_s.eq(Cat(a[31])),
-                        b_s.eq(Cat(b[31]))
-                    ]
+                m.next = "special_cases"
+                m.d.sync += [
+                    a_m.eq(Cat(0, 0, 0, a[0:23])),
+                    b_m.eq(Cat(0, 0, 0, b[0:23])),
+                    a_e.eq(Cat(a[23:31]) - 127),
+                    b_e.eq(Cat(b[23:31]) - 127),
+                    a_s.eq(Cat(a[31])),
+                    b_s.eq(Cat(b[31]))
+                ]
 
             with m.State("special_cases"):
                 # if a is NaN or b is NaN return NaN
@@ -140,7 +140,7 @@ class FPADD:
 
       special_cases:
       begin
-        //if a is NaN or b is NaN return NaN 
+        //if a is NaN or b is NaN return NaN
         if ((a_e == 128 && a_m != 0) || (b_e == 128 && b_m != 0)) begin
           z[31] <= 1;
           z[30:23] <= 255;
@@ -339,7 +339,7 @@ endmodule
 if __name__ == "__main__":
     alu = FPADD(width=32)
     main(alu, ports=[
-                    alu.in_a, alu.in_a_stb, alu.in_a_ack, 
+                    alu.in_a, alu.in_a_stb, alu.in_a_ack,
                     alu.in_b, alu.in_b_stb, alu.in_b_ack,
                     alu.out_z, alu.out_z_stb, alu.out_z_ack,
         ])
