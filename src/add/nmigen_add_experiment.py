@@ -80,8 +80,8 @@ class FPADD:
             with m.State("unpack"):
                     m.next = "special_cases"
                     m.d.sync += [
-                        a_m.eq(Cat(a[0:23], 0)),
-                        b_m.eq(Cat(b[0:23], 0)),
+                        a_m.eq(Cat(0, 0, 0, a[0:23])),
+                        b_m.eq(Cat(0, 0, 0, b[0:23])),
                         a_e.eq(Cat(a[23:31]) - 127),
                         b_e.eq(Cat(b[23:31]) - 127),
                         a_s.eq(Cat(a[31])),
