@@ -77,6 +77,9 @@ class FPNum:
     def is_zero(self):
         return (self.e == -127) & (self.m == 0)
 
+    def is_overflowed(self):
+        return (self.e < 127)
+
 
 class FPADD:
     def __init__(self, width):
@@ -321,14 +324,8 @@ class FPADD:
                 ]
                 with m.If((z.e == -126) & (z.m[23] == 0)):
                     m.d.sync += z.v[23:31].eq(0)
-                with m.If((z.e == -126) & (z.m[0:23] == 0)):
-                    m.d.sync += z.v[23:31].eq(0)
-                with m.If(z.e > 127):
-                    m.d.sync += [
-                        z.v[0:22].eq(0),
-                        z.v[23:31].eq(255),
-                        z.v[31].eq(z.s),
-                    ]
+                with m.If(z.is_overflowed()):
+                    m.d.sync += z.inf(0)
 
             # ******
             # put_z stage
