@@ -15,6 +15,13 @@ class FPNum:
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
         self.s = Signal()           # Sign bit
 
+    def decode(self):
+        v = self.v
+        return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
+                self.e.eq(Cat(v[23:31]) - 127),   # exponent (take off bias)
+                self.s.eq(Cat(v[31])),            # sign
+                ]
+
     def create(self, s, e, m):
         return [
           self.v[31].eq(s),    # sign
@@ -102,17 +109,8 @@ class FPADD:
 
             with m.State("unpack"):
                 m.next = "special_cases"
-                m.d.sync += [
-                    # mantissa
-                    a.m.eq(Cat(0, 0, 0, a.v[0:23])),
-                    b.m.eq(Cat(0, 0, 0, b.v[0:23])),
-                    # exponent (take off exponent bias, here)
-                    a.e.eq(Cat(a.v[23:31]) - 127),
-                    b.e.eq(Cat(b.v[23:31]) - 127),
-                    # sign
-                    a.s.eq(Cat(a.v[31])),
-                    b.s.eq(Cat(b.v[31]))
-                ]
+                m.d.sync += a.decode()
+                m.d.sync += b.decode()
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
