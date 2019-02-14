@@ -45,7 +45,7 @@ class FPADD:
         b_e = Signal(10)
         z_e = Signal(10)
 
-        # Signal
+        # Sign
         a_s = Signal()
         b_s = Signal()
         z_s = Signal()
