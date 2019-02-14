@@ -288,10 +288,42 @@ class FPADD:
             """ TODO: see if z.create can be used *later*.  convert
                 verilog first (and commit), *second* phase, convert nmigen
                 code to use FPNum.create() (as a separate commit)
+
+              pack:
+              begin
+                z[22 : 0] <= z_m[22:0];
+                z[30 : 23] <= z_e[7:0] + 127;
+                z[31] <= z_s;
+                if ($signed(z_e) == -126 && z_m[23] == 0) begin
+                  z[30 : 23] <= 0;
+                end
+                if ($signed(z_e) == -126 && z_m[23:0] == 24'h0) begin
+                  z[31] <= 1'b0; // FIX SIGN BUG: -a + a = +0.
+                end
+                //if overflow occurs, return inf
+                if ($signed(z_e) > 127) begin
+                  z[22 : 0] <= 0;
+                  z[30 : 23] <= 255;
+                  z[31] <= z_s;
+                end
+                state <= put_z;
+              end
             """
 
             # ******
             # put_z stage
+
+            """
+              put_z:
+              begin
+                s_out_z_stb <= 1;
+                s_out_z <= z;
+                if (s_out_z_stb && out_z_ack) begin
+                  s_out_z_stb <= 0;
+                  state <= get_a;
+                end
+              end
+            """
 
         return m
 
