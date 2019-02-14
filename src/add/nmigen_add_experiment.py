@@ -7,6 +7,12 @@ from nmigen.cli import main
 
 
 class FPNum:
+    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+        Contains signals for an incoming copy of the value, decoded into
+        sign / exponent / mantissa.
+        Also contains encoding functions, creation and recognition of
+        zero, NaN and inf (all signed)
+    """
     def __init__(self, width, m_width=None):
         self.width = width
         if m_width is None:
