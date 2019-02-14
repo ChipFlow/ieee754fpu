@@ -30,17 +30,25 @@ class FPADD:
     def get_fragment(self, platform):
         m = Module()
 
+        # Latches
         a = Signal(self.width)
         b = Signal(self.width)
         z = Signal(self.width)
 
+        # Mantissa
         a_m = Signal(27)
         b_m = Signal(27)
         z_m = Signal(23)
 
+        # Exponent
         a_e = Signal(10)
         b_e = Signal(10)
         z_e = Signal(10)
+
+        # Signal
+        a_s = Signal()
+        b_s = Signal()
+        z_s = Signal()
 
         guard = Signal()
         round_bit = Signal()
@@ -72,12 +80,12 @@ class FPADD:
             with m.State("unpack"):
                     m.next = "special_cases"
                     m.d.sync += [
-                        a_m.Cat(self.a[22:0], 0),
-                        b_m.Cat(self.b[22:0], 0),
-                        a_e.Cat(self.a[30:23] - 127),
-                        b_e.Cat(self.b[30:23] - 127),
-                        a_s.Cat(self.a[31]),
-                        b_s.Cat(self.b[31])
+                        a_m.eq(Cat(a[0:23], 0)),
+                        b_m.eq(Cat(b[0:23], 0)),
+                        a_e.eq(Cat(a[23:31]) - 127),
+                        b_e.eq(Cat(b[23:31]) - 127),
+                        a_s.eq(Cat(a[31])),
+                        b_s.eq(Cat(b[31]))
                     ]
 
         return m
