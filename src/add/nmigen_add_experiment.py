@@ -226,6 +226,7 @@ class FPADD:
 
             # ******
             # Second stage of add: preparation for normalisation.
+            # detects when tot sum is too big (tot[27] is kinda a carry bit)
 
             with m.State("add_1"):
                 m.next = "normalise_1"
@@ -283,6 +284,16 @@ class FPADD:
                     ]
                 with m.Else():
                     m.next = "round"
+
+            # ******
+            # rounding stage
+
+            with m.State("round"):
+                m.next = "pack"
+                with m.If(guard & (round_bit | sticky | z_m[0])):
+                    m.d.sync += z_m.eq(z_m + 1) # mantissa rounds up
+                    with m.If(z_m == 0xffffff): # all 1s
+                        m.d.sync += z_e.eq(z_e + 1) # exponent rounds up
 
         return m
 
