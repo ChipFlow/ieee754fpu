@@ -9,9 +9,8 @@ from nmigen.cli import main
 class FPNum:
     def __init__(self, width, m_width=None):
         self.width = width
-        self.mw = 23 # TODO
         if m_width is None:
-            m_width = width + 3 # extra accuracy bits
+            m_width = width - 5 # mantissa extra bits (top,guard,round)
         self.v = Signal(width)      # Latched copy of value
         self.m = Signal(m_width)    # Mantissa
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
@@ -34,7 +33,7 @@ class FPNum:
     def shift_down(self):
         return self.create(self.s,
                            self.e + 1,
-                           Cat(self.m[0] | self.m[1], self.m[1:self.mw-1], 0))
+                           Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
 
     def nan(self, s):
         return self.create(s, 0xff, 1<<22)
