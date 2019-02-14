@@ -195,12 +195,12 @@ class FPADD:
                     with m.If(a.e == -127):
                         m.d.sync += a.e.eq(-126) # limit a exponent
                     with m.Else():
-                        m.d.sync += a.m[26].eq(1) # set highest mantissa bit
+                        m.d.sync += a.m[26].eq(1) # set top mantissa bit
                     # denormalise b check
                     with m.If(b.e == -127):
                         m.d.sync += b.e.eq(-126) # limit b exponent
                     with m.Else():
-                        m.d.sync += b.m[26].eq(1) # set highest mantissa bit
+                        m.d.sync += b.m[26].eq(1) # set top mantissa bit
 
             # ******
             # align.  NOTE: this does *not* do single-cycle multi-shifting,
@@ -309,7 +309,7 @@ class FPADD:
             # rounding stage
 
             with m.State("round"):
-                m.next = "correction"
+                m.next = "corrections"
                 with m.If(guard & (round_bit | sticky | z.m[0])):
                     m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
                     with m.If(z.m == 0xffffff): # all 1s
