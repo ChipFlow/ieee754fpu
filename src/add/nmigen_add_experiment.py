@@ -76,11 +76,6 @@ class FPADD:
         b = FPNum(self.width)
         z = FPNum(self.width, 24)
 
-        # Sign
-        a_s = Signal()
-        b_s = Signal()
-        z_s = Signal()
-
         guard = Signal()
         round_bit = Signal()
         sticky = Signal()
@@ -202,19 +197,19 @@ class FPADD:
                 with m.If(a.s == b.s):
                     m.d.sync += [
                         tot.eq(a.m + b.m),
-                        z_s.eq(a.s)
+                        z.s.eq(a.s)
                     ]
                 # a mantissa greater than b, use a
                 with m.Elif(a.m >= b.m):
                     m.d.sync += [
                         tot.eq(a.m - b.m),
-                        z_s.eq(a.s)
+                        z.s.eq(a.s)
                     ]
                 # b mantissa greater than a, use b
                 with m.Else():
                     m.d.sync += [
                         tot.eq(b.m - a.m),
-                        z_s.eq(b.s)
+                        z.s.eq(b.s)
                 ]
 
             # ******
