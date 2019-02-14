@@ -208,6 +208,26 @@ class FPADD:
                         tot.eq(b_m - a_m),
                         z_s.eq(b_s)
                 ]
+
+            with m.State("add_1"):
+                m.next = "normalise_1"
+
+                with m.If(tot[27]):
+                    m.d.sync += [
+                        z_m.eq(tot[4:27]),
+                        guard.eq(tot[3]),
+                        round_bit.eq(tot[2]),
+                        sticky.eq(tot[1] | tot[0]),
+                        z_e.eq(z_e + 1)
+                ]
+
+                with m.Else():
+                    m.d.sync += [
+                        z_m.eq(tot[3:26]),
+                        guard.eq(tot[2]),
+                        round_bit.eq(tot[1]),
+                        sticky.eq(tot[0])
+                ]
         return m
 
 """
