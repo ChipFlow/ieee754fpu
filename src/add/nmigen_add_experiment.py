@@ -198,7 +198,9 @@ class FPADD:
                     m.next = "add_0"
 
             # ******
-            # First stage of add
+            # First stage of add.  covers same-sign (add) and subtract
+            # special-casing when mantissas are greater or equal, to
+            # give greatest accuracy.
 
             with m.State("add_0"):
                 m.next = "add_1"
