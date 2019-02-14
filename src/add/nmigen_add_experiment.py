@@ -311,47 +311,24 @@ class FPADD:
 
             # ******
             # pack stage
+
             with m.State("pack"):
                 m.next = "put_z"
                 m.d.sync += [
-                    z[0:22].eq(z_m[0:22]),
-                    z[22:31].eq(z_e[0:7]),
-                    z[31].eq(z_s)
-            ]
-                with m.If(z_e == -126 & z_m[23] == 0):
-                    m.d.sync += z[23:31].eq(0)
-                with m.If(z_e == -126 & z_m[0:23] == x): #how to convert 24'h0 into format understandable by nmigen?
-                    m.d.sync += z[23:31].eq(0)
-                with m.If(z_e > 127):
-                    m.d.sync += [
-                        z[0:22].eq(0),
-                        z[23:31].eq(255),
-                        z[31].eq(z_s),
+                    z.v[0:22].eq(z.m[0:22]),
+                    z.v[22:31].eq(z.e[0:7]),
+                    z.v[31].eq(z.s)
                 ]
-            """ TODO: see if z.create can be used *later*.  convert
-                verilog first (and commit), *second* phase, convert nmigen
-                code to use FPNum.create() (as a separate commit)
-
-              pack:
-              begin
-                z[22 : 0] <= z_m[22:0];
-                z[30 : 23] <= z_e[7:0] + 127;
-                z[31] <= z_s;
-                if ($signed(z_e) == -126 && z_m[23] == 0) begin
-                  z[30 : 23] <= 0;
-                end
-                if ($signed(z_e) == -126 && z_m[23:0] == 24'h0) begin
-                  z[31] <= 1'b0; // FIX SIGN BUG: -a + a = +0.
-                end
-                //if overflow occurs, return inf
-                if ($signed(z_e) > 127) begin
-                  z[22 : 0] <= 0;
-                  z[30 : 23] <= 255;
-                  z[31] <= z_s;
-                end
-                state <= put_z;
-              end
-            """
+                with m.If((z.e == -126) & (z.m[23] == 0)):
+                    m.d.sync += z.v[23:31].eq(0)
+                with m.If((z.e == -126) & (z.m[0:23] == 0)):
+                    m.d.sync += z.v[23:31].eq(0)
+                with m.If(z.e > 127):
+                    m.d.sync += [
+                        z.v[0:22].eq(0),
+                        z.v[23:31].eq(255),
+                        z.v[31].eq(z.s),
+                    ]
 
             # ******
             # put_z stage
