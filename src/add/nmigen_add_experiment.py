@@ -102,11 +102,11 @@ class FPADD:
         b = FPNum(self.width)
         z = FPNum(self.width, 24)
 
-        guard = Signal()
-        round_bit = Signal()
-        sticky = Signal()
+        tot = Signal(28)     # sticky/round/guard bits, 23 result, 1 overflow
 
-        tot = Signal(28)
+        guard = Signal()     # tot[2]
+        round_bit = Signal() # tot[1]
+        sticky = Signal()    # tot[0]
 
         with m.FSM() as fsm:
 
