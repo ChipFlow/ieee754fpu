@@ -5,13 +5,14 @@
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main
 
+
 class FPNum:
     def __init__(self, width, m_width=None):
         self.width = width
         if m_width is None:
-            m_width = width + 3
+            m_width = width + 3 # extra accuracy bits
         self.v = Signal(width)      # Latched copy of value
-        self.m = Signal(m_width)    # Mantissa: ??? seems to be 1 bit extra??
+        self.m = Signal(m_width)    # Mantissa
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
         self.s = Signal()           # Sign bit
 
