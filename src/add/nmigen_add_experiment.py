@@ -27,6 +27,13 @@ class FPADD:
         s_in_a_ack   = Signal()
         s_in_b_ack   = Signal()
 
+    def create_z(self, z, s, e, m):
+        return [
+          z[31].eq(s),    # sign
+          z[23:31].eq(e), # exp
+          z[0:23].eq(m)   # mantissa
+        ]
+
     def get_fragment(self, platform):
         m = Module()
 
@@ -110,65 +117,42 @@ class FPADD:
                 with m.If(((a_e == 128) & (a_m != 0)) | \
                           ((b_e == 128) & (b_m != 0))):
                     m.next = "put_z"
-                    m.d.sync += [
-                          z[31].eq(1),      # sign: 1
-                          z[23:31].eq(255), # exp: 0b11111...
-                          z[22].eq(1),      # mantissa top bit: 1
-                          z[0:22].eq(0)     # mantissa rest: 0b0000...
-                    ]
+                    m.d.sync += self.create_z(z, 1, 255, 1<<22)
 
                 # if a is inf return inf (or NaN)
                 with m.Elif(a_e == 128):
                     m.next = "put_z"
-                    m.d.sync += [
-                        z[31].eq(a_s),    # sign: a_s
-                        z[23:31].eq(255), # exp: 0b11111...
-                        z[0:23].eq(0)     # mantissa rest: 0b0000...
-                    ]
+                    m.d.sync += self.create_z(z, a_s, 255, 0)
                     # if a is inf and signs don't match return NaN
                     with m.If((b_e == 128) & (a_s != b_s)):
-                        m.d.sync += [
-                          z[31].eq(b_s),    # sign: b_s
-                          z[23:31].eq(255), # exp: 0b11111...
-                          z[22].eq(1),      # mantissa top bit: 1
-                          z[0:22].eq(0)     # mantissa rest: 0b0000...
-                        ]
+                        m.d.sync += self.create_z(z, b_s, 255, 1<<22)
+
                 # if b is inf return inf
                 with m.Elif(b_e == 128):
                     m.next = "put_z"
-                    m.d.sync += [
-                        z[31].eq(b_s),    # sign: b_s
-                        z[23:31].eq(255), # exp: 0b11111...
-                        z[0:23].eq(0)     # mantissa rest: 0b0000...
-                    ]
+                    m.d.sync += self.create_z(z, b_s, 255, 0)
 
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(((a_e == -127) & (a_m == 0)) & \
                             ((b_e == -127) & (b_m == 0))):
                     m.next = "put_z"
-                    m.d.sync += [
-                        z[31].eq(a_s & b_s),         # sign: a/b_s
-                        z[23:31].eq(b_e[0:8] + 127), # exp: b_e (plus bias)
-                        z[0:23].eq(b_m[3:26])        # mantissa: b_m top bits
-                    ]
+                    m.d.sync += self.create_z(z, a_s & b_s,
+                                                 b_e[0:8] + 127,
+                                                 b_m[3:26])
 
                 # if a is zero return b
                 with m.Elif((a_e == -127) & (a_m == 0)):
                     m.next = "put_z"
-                    m.d.sync += [
-                        z[31].eq(b_s),               # sign: a/b_s
-                        z[23:31].eq(b_e[0:8] + 127), # exp: b_e (plus bias)
-                        z[0:23].eq(b_m[3:26])        # mantissa: b_m top bits
-                    ]
+                    m.d.sync += self.create_z(z, b_s,
+                                                 b_e[0:8] + 127,
+                                                 b_m[3:26])
 
                 # if b is zero return a
                 with m.Elif((b_e == -127) & (b_m == 0)):
                     m.next = "put_z"
-                    m.d.sync += [
-                        z[31].eq(a_s),               # sign: a/b_s
-                        z[23:31].eq(a_e[0:8] + 127), # exp: a_e (plus bias)
-                        z[0:23].eq(a_m[3:26])        # mantissa: a_m top bits
-                    ]
+                    m.d.sync += self.create_z(z, a_s,
+                                                 a_e[0:8] + 127,
+                                                 a_m[3:26])
 
                 # Denormalised Number checks
                 with m.Else():
