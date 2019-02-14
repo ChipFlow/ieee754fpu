@@ -34,6 +34,12 @@ class FPADD:
           z[0:23].eq(m)   # mantissa
         ]
 
+    def nan(self, z, s):
+        return self.create_z(z, s, 0xff, 1<<22)
+
+    def inf(self, z, s):
+        return self.create_z(z, s, 0xff, 0)
+
     def get_fragment(self, platform):
         m = Module()
 
@@ -117,20 +123,20 @@ class FPADD:
                 with m.If(((a_e == 128) & (a_m != 0)) | \
                           ((b_e == 128) & (b_m != 0))):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, 1, 255, 1<<22)
+                    m.d.sync += self.nan(z, 1)
 
                 # if a is inf return inf (or NaN)
                 with m.Elif(a_e == 128):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, a_s, 255, 0)
+                    m.d.sync += self.inf(z, a_s)
                     # if a is inf and signs don't match return NaN
                     with m.If((b_e == 128) & (a_s != b_s)):
-                        m.d.sync += self.create_z(z, b_s, 255, 1<<22)
+                        m.d.sync += self.nan(z, b_s)
 
                 # if b is inf return inf
                 with m.Elif(b_e == 128):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, b_s, 255, 0)
+                    m.d.sync += self.inf(z, b_s)
 
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(((a_e == -127) & (a_m == 0)) & \
