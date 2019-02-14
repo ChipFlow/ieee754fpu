@@ -133,6 +133,15 @@ class FPADD:
                           z[22].eq(1),      # mantissa top bit: 1
                           z[0:22].eq(0)     # mantissa rest: 0b0000...
                         ]
+                # if b is inf return inf
+                with m.Elif(b_e == 128):
+                    m.next = "put_z"
+                    m.d.sync += [
+                        z[31].eq(b_s),    # sign: b_s
+                        z[23:31].eq(255), # exp: 0b11111...
+                        z[0:23].eq(0)     # mantissa rest: 0b0000...
+                    ]
+
         return m
 
 """
