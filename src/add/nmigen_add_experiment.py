@@ -223,7 +223,7 @@ class FPADD:
                 ]
 
             # ******
-            # Second stage of add: preparation for normalisation
+            # Second stage of add: preparation for normalisation.
 
             with m.State("add_1"):
                 m.next = "normalise_1"
@@ -245,16 +245,40 @@ class FPADD:
                         sticky.eq(tot[0])
                 ]
 
+            # ******
+            # First stage of normalisation.
+            # NOTE: just like "align", this one keeps going round every clock
+            #       until the result's exponent is within acceptable "range"
+            # NOTE: the weirdness of reassigning guard and round is due to
+            #       the extra mantissa bits coming from tot[0..2]
+
+            with m.State("normalise_1"):
+                with m.If((z_m[23] == 0) & (z_e > -126)):
+                    m.d.sync +=[
+                        z_e.eq(z_e - 1),  # DECREASE exponent
+                        z_m.eq(z_m << 1), # shift mantissa UP
+                        z_m[0].eq(guard), # steal guard bit (was tot[2])
+                        guard.eq(round_bit), # steal round_bit (was tot[1])
+                    ]
+                with m.Else():
+                    m.next = "normalize_2"
+
+            # ******
+            # Second stage of normalisation.
+            # NOTE: just like "align", this one keeps going round every clock
+            #       until the result's exponent is within acceptable "range"
+            # NOTE: the weirdness of reassigning guard and round is due to
+            #       the extra mantissa bits coming from tot[0..2]
+
             with m.State("normalise_2"):
                 with m.If(z_e < -126):
                     m.d.sync +=[
-                        z_e.eq(z_e + 1),
-                        z_m.eq(z_m >> 1),
+                        z_e.eq(z_e + 1),  # INCREASE exponent
+                        z_m.eq(z_m >> 1), # shift mantissa DOWN
                         guard.eq(z_m[0]),
                         round_bit.eq(guard),
                         sticky.eq(sticky | round_bit)
-                ]
-
+                    ]
                 with m.Else():
                     m.next = "round"
 
