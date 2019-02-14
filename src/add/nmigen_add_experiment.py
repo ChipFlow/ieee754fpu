@@ -251,6 +251,20 @@ class FPADD:
                         round_bit.eq(tot[1]),
                         sticky.eq(tot[0])
                 ]
+
+            with m.State("normalise_2"):
+                with m.If(z_e < -126):
+                    m.d.sync +=[
+                        z_e.eq(z_e + 1),
+                        z_m.eq(z_m >> 1),
+                        guard.eq(z_m[0]),
+                        round_bit.eq(guard),
+                        sticky.eq(sticky | round_bit)
+                ]
+
+                with m.Else():
+                    m.next = "round"
+
         return m
 
 """
