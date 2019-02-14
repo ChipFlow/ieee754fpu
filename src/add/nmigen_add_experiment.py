@@ -47,6 +47,9 @@ class FPNum:
     def inf(self, s):
         return self.create(s, 0x80, 0)
 
+    def zero(self, s):
+        return self.create(s, -127, 0)
+
     def is_nan(self):
         return (self.e == 128) & (self.m != 0)
 
