@@ -25,9 +25,9 @@ class FPNum:
 
     def create(self, s, e, m):
         return [
-          self.v[31].eq(s),    # sign
-          self.v[23:31].eq(e), # exp
-          self.v[0:23].eq(m)   # mantissa
+          self.v[31].eq(s),          # sign
+          self.v[23:31].eq(e + 127), # exp
+          self.v[0:23].eq(m)         # mantissa
         ]
 
     def nan(self, s):
@@ -143,17 +143,17 @@ class FPADD:
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(a.is_zero() & b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s & b.s, b.e[0:8] + 127, b.m[3:26])
+                    m.d.sync += z.create(a.s & b.s, b.e[0:8], b.m[3:26])
 
                 # if a is zero return b
                 with m.Elif((a.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(b.s, b.e[0:8] + 127, b.m[3:26])
+                    m.d.sync += z.create(b.s, b.e[0:8], b.m[3:26])
 
                 # if b is zero return a
                 with m.Elif((b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s, a.e[0:8] + 127, a.m[3:26])
+                    m.d.sync += z.create(a.s, a.e[0:8], a.m[3:26])
 
                 # Denormalised Number checks
                 with m.Else():
