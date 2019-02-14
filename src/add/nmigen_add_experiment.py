@@ -15,6 +15,19 @@ class FPNum:
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
         self.s = Signal()           # Sign bit
 
+    def create(self, s, e, m):
+        return [
+          self.v[31].eq(s),    # sign
+          self.v[23:31].eq(e), # exp
+          self.v[0:23].eq(m)   # mantissa
+        ]
+
+    def nan(self, s):
+        return self.create(s, 0xff, 1<<22)
+
+    def inf(self, s):
+        return self.create(s, 0xff, 0)
+
 
 class FPADD:
     def __init__(self, width):
@@ -36,19 +49,6 @@ class FPADD:
         s_out_z      = Signal(width)
         s_in_a_ack   = Signal()
         s_in_b_ack   = Signal()
-
-    def create_z(self, z, s, e, m):
-        return [
-          z.v[31].eq(s),    # sign
-          z.v[23:31].eq(e), # exp
-          z.v[0:23].eq(m)   # mantissa
-        ]
-
-    def nan(self, z, s):
-        return self.create_z(z, s, 0xff, 1<<22)
-
-    def inf(self, z, s):
-        return self.create_z(z, s, 0xff, 0)
 
     def get_fragment(self, platform):
         m = Module()
@@ -123,42 +123,36 @@ class FPADD:
                 with m.If(((a.e == 128) & (a.m != 0)) | \
                           ((b.e == 128) & (b.m != 0))):
                     m.next = "put_z"
-                    m.d.sync += self.nan(z, 1)
+                    m.d.sync += z.nan(1)
 
                 # if a is inf return inf (or NaN)
                 with m.Elif(a.e == 128):
                     m.next = "put_z"
-                    m.d.sync += self.inf(z, a.s)
+                    m.d.sync += z.inf(a.s)
                     # if a is inf and signs don't match return NaN
                     with m.If((b.e == 128) & (a.s != b.s)):
-                        m.d.sync += self.nan(z, b.s)
+                        m.d.sync += z.nan(b.s)
 
                 # if b is inf return inf
                 with m.Elif(b.e == 128):
                     m.next = "put_z"
-                    m.d.sync += self.inf(z, b.s)
+                    m.d.sync += z.inf(b.s)
 
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(((a.e == -127) & (a.m == 0)) & \
                             ((b.e == -127) & (b.m == 0))):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, a.s & b.s,
-                                                 b.e[0:8] + 127,
-                                                 b.m[3:26])
+                    m.d.sync += z.create(a.s & b.s, b.e[0:8] + 127, b.m[3:26])
 
                 # if a is zero return b
                 with m.Elif((a.e == -127) & (a.m == 0)):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, b.s,
-                                                 b.e[0:8] + 127,
-                                                 b.m[3:26])
+                    m.d.sync += z.create(b.s, b.e[0:8] + 127, b.m[3:26])
 
                 # if b is zero return a
                 with m.Elif((b.e == -127) & (b.m == 0)):
                     m.next = "put_z"
-                    m.d.sync += self.create_z(z, a.s,
-                                                 a.e[0:8] + 127,
-                                                 a.m[3:26])
+                    m.d.sync += z.create(a.s, a.e[0:8] + 127, a.m[3:26])
 
                 # Denormalised Number checks
                 with m.Else():
