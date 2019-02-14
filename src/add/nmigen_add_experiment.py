@@ -232,9 +232,12 @@ class FPADD:
                         z_s.eq(b_s)
                 ]
 
+            # ******
+            # Second stage of add: preparation for normalisation
+
             with m.State("add_1"):
                 m.next = "normalise_1"
-
+                # tot[27] gets set when the sum overflows. shift result down
                 with m.If(tot[27]):
                     m.d.sync += [
                         z_m.eq(tot[4:28]),
@@ -243,7 +246,7 @@ class FPADD:
                         sticky.eq(tot[1] | tot[0]),
                         z_e.eq(z_e + 1)
                 ]
-
+                # tot[27] zero case
                 with m.Else():
                     m.d.sync += [
                         z_m.eq(tot[3:27]),
