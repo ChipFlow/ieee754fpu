@@ -65,6 +65,13 @@ def testbench(dut):
     yield from check_case(dut, 0xFF800000, 0xFF800000, 0xFF800000)
     yield from check_case(dut, 0x7F800000, 0xFF800000, 0xFFC00000)
     yield from check_case(dut, 0xFF800000, 0x7F800000, 0x7FC00000)
+    yield from check_case(dut, 0x00018643, 0x00FA72A4, 0x00FBF8E7)
+    yield from check_case(dut, 0x001A2239, 0x00FA72A4, 0x010A4A6E)
+    yield from check_case(dut, 0x3F7FFFFE, 0x3F7FFFFE, 0x3FFFFFFE)
+    yield from check_case(dut, 0x7EFFFFEE, 0x7EFFFFEE, 0x7F7FFFEE)
+    yield from check_case(dut, 0x7F7FFFEE, 0xFEFFFFEE, 0x7EFFFFEE)
+    yield from check_case(dut, 0x7F7FFFEE, 0x756CA884, 0x7F7FFFFD)
+    yield from check_case(dut, 0x7F7FFFEE, 0x758A0CF8, 0x7F7FFFFF)
     #yield from check_case(dut, 1, 0, 1)
     #yield from check_case(dut, 1, 1, 1)
 
