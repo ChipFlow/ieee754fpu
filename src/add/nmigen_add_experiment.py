@@ -63,7 +63,7 @@ class FPNum:
             guard bits (the latter of which is the "sticky" bit)
         """
         return [self.e.eq(self.e + 1),
-                self.m.eq(Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
+                self.m.eq(Cat(self.m[0] | self.m[1], self.m[2:], 0))
                ]
 
     def nan(self, s):
@@ -73,7 +73,7 @@ class FPNum:
         return self.create(s, 0x80, 0)
 
     def zero(self, s):
-        return self.create(s, -127, 0)
+        return self.create(s, self.N127, 0)
 
     def is_nan(self):
         return (self.e == 128) & (self.m != 0)
@@ -85,7 +85,7 @@ class FPNum:
         return (self.e == self.N127) & (self.m == self.mzero)
 
     def is_overflowed(self):
-        return (self.e < 127)
+        return (self.e > self.P127)
 
     def is_denormalised(self):
         return (self.e == self.N126) & (self.m[23] == 0)
@@ -331,7 +331,7 @@ class FPADD:
                 with m.If(z.is_denormalised()):
                     m.d.sync += z.m.eq(-127)
                 # FIX SIGN BUG: -a + a = +0.
-                with m.If((z.e == -126) & (z.m[0:23] == 0)):
+                with m.If((z.e == z.N126) & (z.m[0:23] == 0)):
                     m.d.sync += z.s.eq(0)
 
             # ******
