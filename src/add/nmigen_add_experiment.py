@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 
 
@@ -27,6 +27,11 @@ class FPNum:
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
         self.s = Signal()           # Sign bit
 
+        self.mzero = Const(0, (m_width, False))
+        self.P127 = Const(127, (10, True))
+        self.N127 = Const(-127, (10, True))
+        self.N126 = Const(-126, (10, True))
+
     def decode(self):
         """ decodes a latched value into sign / exponent / mantissa
 
@@ -35,9 +40,9 @@ class FPNum:
             a 10-bit number
         """
         v = self.v
-        return [self.m.eq(Cat(0, 0, 0, v[0:23])),      # mantissa
-                self.e.eq(Cat(0,0,0, v[23:31]) - 127), # exponent (minus bias)
-                self.s.eq(v[31]),                      # sign
+        return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
+                self.e.eq(v[23:31] - self.P127), # exp (minus bias)
+                self.s.eq(v[31]),                 # sign
                 ]
 
     def create(self, s, e, m):
@@ -47,7 +52,7 @@ class FPNum:
         """
         return [
           self.v[31].eq(s),          # sign
-          self.v[23:31].eq(e + 127), # exp (add on bias)
+          self.v[23:31].eq(e + self.P127), # exp (add on bias)
           self.v[0:23].eq(m)         # mantissa
         ]
 
@@ -57,9 +62,9 @@ class FPNum:
             accuracy is lost as a result in the mantissa however there are 3
             guard bits (the latter of which is the "sticky" bit)
         """
-        return self.create(self.s,
-                           self.e + 1,
-                           Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
+        return [self.e.eq(self.e + 1),
+                self.m.eq(Cat(self.m[0] | self.m[1], self.m[1:-5], 0))
+               ]
 
     def nan(self, s):
         return self.create(s, 0x80, 1<<22)
@@ -77,13 +82,13 @@ class FPNum:
         return (self.e == 128) & (self.m == 0)
 
     def is_zero(self):
-        return (self.e == -127) & (self.m == 0)
+        return (self.e == self.N127) & (self.m == self.mzero)
 
     def is_overflowed(self):
         return (self.e < 127)
 
     def is_denormalised(self):
-        return (self.e == -126) & (self.m[23] == 0)
+        return (self.e == self.N126) & (self.m[23] == 0)
 
 
 class FPADD:
@@ -194,12 +199,12 @@ class FPADD:
                 with m.Else():
                     m.next = "align"
                     # denormalise a check
-                    with m.If(a.e == -127):
+                    with m.If(a.e == a.N127):
                         m.d.sync += a.e.eq(-126) # limit a exponent
                     with m.Else():
                         m.d.sync += a.m[26].eq(1) # set top mantissa bit
                     # denormalise b check
-                    with m.If(b.e == -127):
+                    with m.If(b.e == a.N127):
                         m.d.sync += b.e.eq(-126) # limit b exponent
                     with m.Else():
                         m.d.sync += b.m[26].eq(1) # set top mantissa bit
@@ -278,7 +283,7 @@ class FPADD:
             #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_1"):
-                with m.If((z.m[23] == 0) & (z.e > -126)):
+                with m.If((z.m[23] == 0) & (z.e > z.N126)):
                     m.d.sync +=[
                         z.e.eq(z.e - 1),  # DECREASE exponent
                         z.m.eq(z.m << 1), # shift mantissa UP
@@ -286,7 +291,7 @@ class FPADD:
                         guard.eq(round_bit), # steal round_bit (was tot[1])
                     ]
                 with m.Else():
-                    m.next = "normalize_2"
+                    m.next = "normalise_2"
 
             # ******
             # Second stage of normalisation.
@@ -296,7 +301,7 @@ class FPADD:
             #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_2"):
-                with m.If(z.e < -126):
+                with m.If(z.e < z.N126):
                     m.d.sync +=[
                         z.e.eq(z.e + 1),  # INCREASE exponent
                         z.m.eq(z.m >> 1), # shift mantissa DOWN
