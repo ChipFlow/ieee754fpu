@@ -30,12 +30,14 @@ class FPNum:
     def decode(self):
         """ decodes a latched value into sign / exponent / mantissa
 
-            bias is subtracted here, from the exponent.
+            bias is subtracted here, from the exponent.  exponent
+            is extended to 10 bits so that subtract 127 is done on
+            a 10-bit number
         """
         v = self.v
-        return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
-                self.e.eq(Cat(v[23:31]) - 127),   # exponent (take off bias)
-                self.s.eq(Cat(v[31])),            # sign
+        return [self.m.eq(Cat(0, 0, 0, v[0:23])),      # mantissa
+                self.e.eq(Cat(0,0,0, v[23:31]) - 127), # exponent (minus bias)
+                self.s.eq(v[31]),                      # sign
                 ]
 
     def create(self, s, e, m):
@@ -100,7 +102,7 @@ class FPADD:
         self.out_z_stb = Signal()
         self.out_z_ack = Signal()
 
-    def get_fragment(self, platform):
+    def get_fragment(self, platform=None):
         m = Module()
 
         # Latches
@@ -134,7 +136,7 @@ class FPADD:
 
             with m.State("get_b"):
                 with m.If((self.in_b_ack) & (self.in_b_stb)):
-                    m.next = "get_a"
+                    m.next = "unpack"
                     m.d.sync += [
                         b.v.eq(self.in_b),
                         self.in_b_ack.eq(0)
@@ -342,13 +344,13 @@ class FPADD:
             # put_z stage
 
             with m.State("put_z"):
-              m.next = "get_a"
               m.d.sync += [
                   self.out_z_stb.eq(1),
                   self.out_z.eq(z.v)
               ]
               with m.If(self.out_z_stb & self.out_z_ack):
                   m.d.sync += self.out_z_stb.eq(0)
+                  m.next = "get_a"
 
         return m
 
