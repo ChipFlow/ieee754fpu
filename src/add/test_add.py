@@ -16,7 +16,7 @@ class ORGate:
 
         return m
 
-def check_case(dut, a, b, x):
+def check_case(dut, a, b, z):
     yield dut.in_a.eq(a)
     yield dut.in_a_stb.eq(1)
     yield
@@ -41,6 +41,9 @@ def check_case(dut, a, b, x):
         yield
         yield
         break
+
+    out_z = yield dut.out_z
+    assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
 
 def testbench(dut):
     yield from check_case(dut, 0, 0, 0)
