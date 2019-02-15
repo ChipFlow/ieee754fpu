@@ -48,9 +48,14 @@ def check_case(dut, a, b, z):
 def testbench(dut):
     yield from check_case(dut, 0, 0, 0)
     yield from check_case(dut, 0x3F800000, 0x40000000, 0x40400000)
+    yield from check_case(dut, 0x40000000, 0x3F800000, 0x40400000)
     yield from check_case(dut, 0x447A0000, 0x4488B000, 0x4502D800)
     yield from check_case(dut, 0x463B800A, 0x42BA8A3D, 0x463CF51E)
     yield from check_case(dut, 0x42BA8A3D, 0x463B800A, 0x463CF51E)
+    yield from check_case(dut, 0x463B800A, 0xC2BA8A3D, 0x463A0AF6)
+    yield from check_case(dut, 0xC2BA8A3D, 0x463B800A, 0x463A0AF6)
+    yield from check_case(dut, 0xC63B800A, 0x42BA8A3D, 0xC63A0AF6)
+    yield from check_case(dut, 0x42BA8A3D, 0xC63B800A, 0xC63A0AF6)
     #yield from check_case(dut, 1, 0, 1)
     #yield from check_case(dut, 1, 1, 1)
 
