@@ -28,6 +28,7 @@ class FPNum:
         self.s = Signal()           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
+        self.P128 = Const(128, (10, True))
         self.P127 = Const(127, (10, True))
         self.N127 = Const(-127, (10, True))
         self.N126 = Const(-126, (10, True))
@@ -67,19 +68,19 @@ class FPNum:
                ]
 
     def nan(self, s):
-        return self.create(s, 0x80, 1<<22)
+        return self.create(s, self.P128, 1<<22)
 
     def inf(self, s):
-        return self.create(s, 0x80, 0)
+        return self.create(s, self.P128, 0)
 
     def zero(self, s):
         return self.create(s, self.N127, 0)
 
     def is_nan(self):
-        return (self.e == 128) & (self.m != 0)
+        return (self.e == self.P128) & (self.m != 0)
 
     def is_inf(self):
-        return (self.e == 128) & (self.m == 0)
+        return (self.e == self.P128) & (self.m == 0)
 
     def is_zero(self):
         return (self.e == self.N127) & (self.m == self.mzero)
@@ -172,7 +173,7 @@ class FPADD:
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s)
                     # if a is inf and signs don't match return NaN
-                    with m.If((b.e == 128) & (a.s != b.s)):
+                    with m.If((b.e == b.P128) & (a.s != b.s)):
                         m.d.sync += z.nan(b.s)
 
                 # if b is inf return inf
