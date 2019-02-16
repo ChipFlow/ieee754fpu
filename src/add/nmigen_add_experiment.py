@@ -133,6 +133,14 @@ class FPADD:
         with m.Else():
             m.d.sync += op.ack.eq(1)
 
+    def denormalise(self, m, a):
+        """ denormalises a number
+        """
+        with m.If(a.e == a.N127):
+            m.d.sync += a.e.eq(-126) # limit a exponent
+        with m.Else():
+            m.d.sync += a.m[-1].eq(1) # set top mantissa bit
+
     def normalise_1(self, m, z, of, next_state):
         """ first stage normalisation
 
@@ -285,16 +293,8 @@ class FPADD:
                 # Denormalised Number checks
                 with m.Else():
                     m.next = "align"
-                    # denormalise a check
-                    with m.If(a.e == a.N127):
-                        m.d.sync += a.e.eq(-126) # limit a exponent
-                    with m.Else():
-                        m.d.sync += a.m[-1].eq(1) # set top mantissa bit
-                    # denormalise b check
-                    with m.If(b.e == a.N127):
-                        m.d.sync += b.e.eq(-126) # limit b exponent
-                    with m.Else():
-                        m.d.sync += b.m[-1].eq(1) # set top mantissa bit
+                    self.denormalise(m, a)
+                    self.denormalise(m, b)
 
             # ******
             # align.  NOTE: this does *not* do single-cycle multi-shifting,
