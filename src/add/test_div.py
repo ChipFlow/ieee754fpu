@@ -50,6 +50,7 @@ def testbench(dut):
     yield from check_case(dut, 0x3F800000, 0x40000000, 0x3F000000)
     yield from check_case(dut, 0x3F800000, 0x40400000, 0x3EAAAAAB)
     yield from check_case(dut, 0x40400000, 0x41F80000, 0x3DC6318C)
+    yield from check_case(dut, 0x41F9EB4D, 0x429A4C70, 0x3ECF52B2)
 
 if __name__ == '__main__':
     dut = FPDIV(width=32)
