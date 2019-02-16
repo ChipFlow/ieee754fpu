@@ -301,15 +301,7 @@ class FPADD:
             #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_1"):
-                with m.If((z.m[-1] == 0) & (z.e > z.N126)):
-                    m.d.sync +=[
-                        z.e.eq(z.e - 1),  # DECREASE exponent
-                        z.m.eq(z.m << 1), # shift mantissa UP
-                        z.m[0].eq(of.guard), # steal guard bit (was tot[2])
-                        of.guard.eq(of.round_bit), # steal round_bit was tot[1])
-                    ]
-                with m.Else():
-                    m.next = "normalise_2"
+                self.normalise_1(m, z, of, "normalise_2")
 
             # ******
             # Second stage of normalisation.
