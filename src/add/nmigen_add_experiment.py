@@ -112,6 +112,16 @@ class FPADD:
         self.in_b     = FPOp(width)
         self.out_z     = FPOp(width)
 
+    def get_op(self, m, op, v, next_state):
+        with m.If((op.ack) & (op.stb)):
+            m.next = next_state
+            m.d.sync += [
+                v.eq(op.v),
+                op.ack.eq(0)
+            ]
+        with m.Else():
+            m.d.sync += op.ack.eq(1)
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -132,14 +142,7 @@ class FPADD:
             # gets operand a
 
             with m.State("get_a"):
-                with m.If((self.in_a.ack) & (self.in_a.stb)):
-                    m.next = "get_b"
-                    m.d.sync += [
-                        a.v.eq(self.in_a.v),
-                        self.in_a.ack.eq(0)
-                    ]
-                with m.Else():
-                    m.d.sync += self.in_a.ack.eq(1)
+                self.get_op(m, self.in_a, a.v, "get_b")
 
             # ******
             # gets operand b
