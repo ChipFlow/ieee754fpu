@@ -111,13 +111,13 @@ class Overflow:
         self.sticky = Signal()    # tot[0]
 
 
-class FPADD:
-    def __init__(self, width):
-        self.width = width
+class FPBase:
+    """ IEEE754 Floating Point Base Class
 
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
-        self.out_z = FPOp(width)
+        contains common functions for FP manipulation, such as
+        extracting and packing operands, normalisation, denormalisation,
+        rounding etc.
+    """
 
     def get_op(self, m, op, v, next_state):
         """ this function moves to the next state and copies the operand
@@ -221,6 +221,17 @@ class FPADD:
         with m.If(out_z.stb & out_z.ack):
             m.d.sync += out_z.stb.eq(0)
             m.next = next_state
+
+
+class FPADD(FPBase):
+
+    def __init__(self, width):
+        FPBase.__init__(self)
+        self.width = width
+
+        self.in_a  = FPOp(width)
+        self.in_b  = FPOp(width)
+        self.out_z = FPOp(width)
 
     def get_fragment(self, platform=None):
         """ creates the HDL code-fragment for FPAdd
