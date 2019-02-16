@@ -142,7 +142,7 @@ class FPBase:
         with m.Else():
             m.d.sync += a.m[-1].eq(1) # set top mantissa bit
 
-    def op_normalise(self, m, op, of, next_state):
+    def op_normalise(self, m, op, next_state):
         """ operand normalisation
             NOTE: just like "align", this one keeps going round every clock
                   until the result's exponent is within acceptable "range"
