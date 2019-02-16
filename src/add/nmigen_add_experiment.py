@@ -153,7 +153,7 @@ class FPADD:
         with m.Else():
             m.next = next_state
 
-    def round(self, m, z, of, next_state):
+    def roundz(self, m, z, of, next_state):
         m.next = next_state
         with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
@@ -362,7 +362,7 @@ class FPADD:
             # rounding stage
 
             with m.State("round"):
-                self.round(m, z, of, "corrections")
+                self.roundz(m, z, of, "corrections")
 
             # ******
             # correction stage
