@@ -153,6 +153,8 @@ class FPDIV(FPBase):
 
             # ******
             # Third stage of divide.
+            # This stage ends by jumping out to divide_3
+            # However it defaults to jumping to divide_1 (which comes back here)
 
             with m.State("divide_2"):
                 with m.If(div.rem >= div.dor):
