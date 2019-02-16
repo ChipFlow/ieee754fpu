@@ -22,6 +22,7 @@ class FPNum:
         self.width = width
         if m_width is None:
             m_width = width - 5 # mantissa extra bits (top,guard,round)
+        self.m_width = m_width
         self.v = Signal(width)      # Latched copy of value
         self.m = Signal(m_width)    # Mantissa
         self.e = Signal((10, True)) # Exponent: 10 bits, signed
@@ -41,7 +42,8 @@ class FPNum:
             is extended to 10 bits so that subtract 127 is done on
             a 10-bit number
         """
-        return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
+        args = [0] * (self.m_width-24) + [v[0:23]] # pad with extra zeros
+        return [self.m.eq(Cat(*args)), # mantissa
                 self.e.eq(v[23:31] - self.P127), # exp (minus bias)
                 self.s.eq(v[31]),                 # sign
                 ]
