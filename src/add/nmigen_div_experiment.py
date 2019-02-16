@@ -1,4 +1,4 @@
-# IEEE Floating Point Adder (Single Precision)
+# IEEE Floating Point Divider (Single Precision)
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
@@ -37,7 +37,7 @@ class FPDIV(FPBase):
         self.out_z = FPOp(width)
 
     def get_fragment(self, platform=None):
-        """ creates the HDL code-fragment for FPAdd
+        """ creates the HDL code-fragment for FPDiv
         """
         m = Module()
 
@@ -66,7 +66,7 @@ class FPDIV(FPBase):
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
-            # NOTE: some of these are unique to add.  see "Special Operations"
+            # NOTE: some of these are unique to div.  see "Special Operations"
             # https://steve.hollasch.net/cgindex/coding/ieeefloat.html
 
             with m.State("special_cases"):
