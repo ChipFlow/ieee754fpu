@@ -177,6 +177,15 @@ class FPADD:
         with m.Else():
             m.d.sync += z.create(z.s, z.e, z.m)
 
+    def put_z(self, m, z, out_z, next_state):
+        m.d.sync += [
+          out_z.stb.eq(1),
+          out_z.v.eq(z.v)
+        ]
+        with m.If(out_z.stb & out_z.ack):
+            m.d.sync += out_z.stb.eq(0)
+            m.next = next_state
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -371,13 +380,7 @@ class FPADD:
             # put_z stage
 
             with m.State("put_z"):
-              m.d.sync += [
-                  self.out_z.stb.eq(1),
-                  self.out_z.v.eq(z.v)
-              ]
-              with m.If(self.out_z.stb & self.out_z.ack):
-                  m.d.sync += self.out_z.stb.eq(0)
-                  m.next = "get_a"
+                self.put_z(m, z, self.out_z, "get_a")
 
         return m
 
