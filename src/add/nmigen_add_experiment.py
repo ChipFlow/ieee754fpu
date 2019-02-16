@@ -122,6 +122,18 @@ class FPADD:
         with m.Else():
             m.d.sync += op.ack.eq(1)
 
+    def normalise_1(self, m, z, of, next_state):
+        with m.If((z.m[-1] == 0) & (z.e > z.N126)):
+            m.d.sync +=[
+                z.e.eq(z.e - 1),  # DECREASE exponent
+                z.m.eq(z.m << 1), # shift mantissa UP
+                z.m[0].eq(of.guard),       # steal guard bit (was tot[2])
+                of.guard.eq(of.round_bit), # steal round_bit (was tot[1])
+                of.round_bit.eq(0),        # reset round bit
+            ]
+        with m.Else():
+            m.next = next_state
+
     def get_fragment(self, platform=None):
         m = Module()
 
