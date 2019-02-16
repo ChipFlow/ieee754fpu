@@ -41,14 +41,14 @@ class SimplePipeline(object):
         if name.startswith('_'):
             # do not do anything tricky with variables starting with '_'
             object.__setattr__(self, name, value)
-        else:
-            next_stage = self._current_stage_num + 1
-            pipereg_id = str(self._current_stage_num) + 'to' + str(next_stage)
-            rname = 'pipereg_' + pipereg_id + '_' + name
-            new_pipereg = Signal(value_bits_sign(value), name=rname,
-                                 reset_less=True)
-            if next_stage not in self._pipeline_register_map:
-                self._pipeline_register_map[next_stage] = {}
-            self._pipeline_register_map[next_stage][name] = new_pipereg
-            self._pipe.sync += new_pipereg.eq(value)
+            return
+        next_stage = self._current_stage_num + 1
+        pipereg_id = str(self._current_stage_num) + 'to' + str(next_stage)
+        rname = 'pipereg_' + pipereg_id + '_' + name
+        new_pipereg = Signal(value_bits_sign(value), name=rname,
+                             reset_less=True)
+        if next_stage not in self._pipeline_register_map:
+            self._pipeline_register_map[next_stage] = {}
+        self._pipeline_register_map[next_stage][name] = new_pipereg
+        self._pipe.sync += new_pipereg.eq(value)
 
