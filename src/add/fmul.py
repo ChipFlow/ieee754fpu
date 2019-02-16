@@ -45,7 +45,7 @@ class FPMUL(FPBase):
         		with m.If(s.in_b.ack & in_b.stb):
         			m.d.sync += [
         			b.eq(in_b),
-        			s.in_a.ack(0)
+        			s.in_b.ack(0)
         		]
 
 """
