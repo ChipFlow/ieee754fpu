@@ -160,6 +160,15 @@ class FPADD:
             with m.If(z.m == z.m1s): # all 1s
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
+    def corrections(self, m, z, next_state):
+        m.next = next_state
+        # denormalised, correct exponent to zero
+        with m.If(z.is_denormalised()):
+            m.d.sync += z.m.eq(-127)
+        # FIX SIGN BUG: -a + a = +0.
+        with m.If((z.e == z.N126) & (z.m[0:] == 0)):
+            m.d.sync += z.s.eq(0)
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -342,13 +351,7 @@ class FPADD:
             # correction stage
 
             with m.State("corrections"):
-                m.next = "pack"
-                # denormalised, correct exponent to zero
-                with m.If(z.is_denormalised()):
-                    m.d.sync += z.m.eq(-127)
-                # FIX SIGN BUG: -a + a = +0.
-                with m.If((z.e == z.N126) & (z.m[0:] == 0)):
-                    m.d.sync += z.s.eq(0)
+                self.corrections(m, z, "pack")
 
             # ******
             # pack stage
