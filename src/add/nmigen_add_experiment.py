@@ -148,14 +148,7 @@ class FPADD:
             # gets operand b
 
             with m.State("get_b"):
-                with m.If((self.in_b.ack) & (self.in_b.stb)):
-                    m.next = "unpack"
-                    m.d.sync += [
-                        b.v.eq(self.in_b.v),
-                        self.in_b.ack.eq(0)
-                    ]
-                with m.Else():
-                    m.d.sync += self.in_b.ack.eq(1)
+                self.get_op(m, self.in_b, b.v, "unpack")
 
             # ******
             # unpacks operands into sign, mantissa and exponent
