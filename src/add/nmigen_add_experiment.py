@@ -92,22 +92,25 @@ class FPNum:
     def is_denormalised(self):
         return (self.e == self.N126) & (self.m[23] == 0)
 
+class FPOp:
+    def __init__(self, width):
+        self.width = width
+
+        self.v     = Signal(width)
+        self.stb = Signal()
+        self.ack = Signal()
+
+    def ports(self):
+        return [self.v, self.stb, self.ack]
+
 
 class FPADD:
     def __init__(self, width):
         self.width = width
 
-        self.in_a     = Signal(width)
-        self.in_a_stb = Signal()
-        self.in_a_ack = Signal()
-
-        self.in_b     = Signal(width)
-        self.in_b_stb = Signal()
-        self.in_b_ack = Signal()
-
-        self.out_z     = Signal(width)
-        self.out_z_stb = Signal()
-        self.out_z_ack = Signal()
+        self.in_a     = FPOp(width)
+        self.in_b     = FPOp(width)
+        self.out_z     = FPOp(width)
 
     def get_fragment(self, platform=None):
         m = Module()
@@ -129,27 +132,27 @@ class FPADD:
             # gets operand a
 
             with m.State("get_a"):
-                with m.If((self.in_a_ack) & (self.in_a_stb)):
+                with m.If((self.in_a.ack) & (self.in_a.stb)):
                     m.next = "get_b"
                     m.d.sync += [
-                        a.v.eq(self.in_a),
-                        self.in_a_ack.eq(0)
+                        a.v.eq(self.in_a.v),
+                        self.in_a.ack.eq(0)
                     ]
                 with m.Else():
-                    m.d.sync += self.in_a_ack.eq(1)
+                    m.d.sync += self.in_a.ack.eq(1)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
-                with m.If((self.in_b_ack) & (self.in_b_stb)):
+                with m.If((self.in_b.ack) & (self.in_b.stb)):
                     m.next = "unpack"
                     m.d.sync += [
-                        b.v.eq(self.in_b),
-                        self.in_b_ack.eq(0)
+                        b.v.eq(self.in_b.v),
+                        self.in_b.ack.eq(0)
                     ]
                 with m.Else():
-                    m.d.sync += self.in_b_ack.eq(1)
+                    m.d.sync += self.in_b.ack.eq(1)
 
             # ******
             # unpacks operands into sign, mantissa and exponent
@@ -352,11 +355,11 @@ class FPADD:
 
             with m.State("put_z"):
               m.d.sync += [
-                  self.out_z_stb.eq(1),
-                  self.out_z.eq(z.v)
+                  self.out_z.stb.eq(1),
+                  self.out_z.v.eq(z.v)
               ]
-              with m.If(self.out_z_stb & self.out_z_ack):
-                  m.d.sync += self.out_z_stb.eq(0)
+              with m.If(self.out_z.stb & self.out_z.ack):
+                  m.d.sync += self.out_z.stb.eq(0)
                   m.next = "get_a"
 
         return m
@@ -364,16 +367,11 @@ class FPADD:
 
 if __name__ == "__main__":
     alu = FPADD(width=32)
-    main(alu, ports=[
-                    alu.in_a, alu.in_a_stb, alu.in_a_ack,
-                    alu.in_b, alu.in_b_stb, alu.in_b_ack,
-                    alu.out_z, alu.out_z_stb, alu.out_z_ack,
-        ])
+    main(alu, ports=alu.in_a.ports() + alu.in_b.ports() + alu.out_z.ports())
 
 
     # works... but don't use, just do "python fname.py convert -t v"
     #print (verilog.convert(alu, ports=[
-    #                alu.in_a, alu.in_a_stb, alu.in_a_ack,
-    #                alu.in_b, alu.in_b_stb, alu.in_b_ack,
-    #                alu.out_z, alu.out_z_stb, alu.out_z_ack,
-    #    ]))
+    #                        ports=alu.in_a.ports() + \
+    #                              alu.in_b.ports() + \
+    #                              alu.out_z.ports())
