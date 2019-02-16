@@ -244,6 +244,8 @@ class FPADD:
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
+            # NOTE: some of these are unique to add.  see "Special Operations"
+            # https://steve.hollasch.net/cgindex/coding/ieeefloat.html
 
             with m.State("special_cases"):
 
