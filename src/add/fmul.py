@@ -30,8 +30,17 @@ class FPMUL(FPBase):
 
         with m.FSM() as fsm:
 
- """
-   always @(posedge clk)
+        	with m.State("get_a"):
+        		m.next += "get_b"
+        		m.d.sync += s.in_a.ack.eq(1)
+        		with m.If(s.in_a.ack & in_a.stb):
+        			m.d.sync += [
+        			a.eq(in_a),
+        			s.in_a.ack(0)
+        		]
+
+"""
+always @(posedge clk)
   begin
 
     case(state)
