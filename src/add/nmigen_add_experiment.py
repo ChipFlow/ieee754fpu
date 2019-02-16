@@ -104,6 +104,13 @@ class FPOp:
         return [self.v, self.stb, self.ack]
 
 
+class Overflow:
+    def __init__(self):
+        self.guard = Signal()     # tot[2]
+        self.round_bit = Signal() # tot[1]
+        self.sticky = Signal()    # tot[0]
+
+
 class FPADD:
     def __init__(self, width):
         self.width = width
@@ -144,9 +151,7 @@ class FPADD:
 
         tot = Signal(28)     # sticky/round/guard bits, 23 result, 1 overflow
 
-        guard = Signal()     # tot[2]
-        round_bit = Signal() # tot[1]
-        sticky = Signal()    # tot[0]
+        of = Overflow()
 
         with m.FSM() as fsm:
 
@@ -274,18 +279,18 @@ class FPADD:
                 with m.If(tot[27]):
                     m.d.sync += [
                         z.m.eq(tot[4:28]),
-                        guard.eq(tot[3]),
-                        round_bit.eq(tot[2]),
-                        sticky.eq(tot[1] | tot[0]),
+                        of.guard.eq(tot[3]),
+                        of.round_bit.eq(tot[2]),
+                        of.sticky.eq(tot[1] | tot[0]),
                         z.e.eq(z.e + 1)
                 ]
                 # tot[27] zero case
                 with m.Else():
                     m.d.sync += [
                         z.m.eq(tot[3:27]),
-                        guard.eq(tot[2]),
-                        round_bit.eq(tot[1]),
-                        sticky.eq(tot[0])
+                        of.guard.eq(tot[2]),
+                        of.round_bit.eq(tot[1]),
+                        of.sticky.eq(tot[0])
                 ]
 
             # ******
@@ -300,8 +305,8 @@ class FPADD:
                     m.d.sync +=[
                         z.e.eq(z.e - 1),  # DECREASE exponent
                         z.m.eq(z.m << 1), # shift mantissa UP
-                        z.m[0].eq(guard), # steal guard bit (was tot[2])
-                        guard.eq(round_bit), # steal round_bit (was tot[1])
+                        z.m[0].eq(of.guard), # steal guard bit (was tot[2])
+                        of.guard.eq(of.round_bit), # steal round_bit was tot[1])
                     ]
                 with m.Else():
                     m.next = "normalise_2"
@@ -318,9 +323,9 @@ class FPADD:
                     m.d.sync +=[
                         z.e.eq(z.e + 1),  # INCREASE exponent
                         z.m.eq(z.m >> 1), # shift mantissa DOWN
-                        guard.eq(z.m[0]),
-                        round_bit.eq(guard),
-                        sticky.eq(sticky | round_bit)
+                        of.guard.eq(z.m[0]),
+                        of.round_bit.eq(of.guard),
+                        of.sticky.eq(of.sticky | of.round_bit)
                     ]
                 with m.Else():
                     m.next = "round"
@@ -330,7 +335,7 @@ class FPADD:
 
             with m.State("round"):
                 m.next = "corrections"
-                with m.If(guard & (round_bit | sticky | z.m[0])):
+                with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
                     m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
                     with m.If(z.m == z.m1s): # all 1s
                         m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
