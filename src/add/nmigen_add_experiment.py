@@ -141,6 +141,18 @@ class FPADD:
         with m.Else():
             m.next = next_state
 
+    def normalise_2(self, m, z, of, next_state):
+        with m.If(z.e < z.N126):
+            m.d.sync +=[
+                z.e.eq(z.e + 1),  # INCREASE exponent
+                z.m.eq(z.m >> 1), # shift mantissa DOWN
+                of.guard.eq(z.m[0]),
+                of.round_bit.eq(of.guard),
+                of.sticky.eq(of.sticky | of.round_bit)
+            ]
+        with m.Else():
+            m.next = next_state
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -311,16 +323,7 @@ class FPADD:
             #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_2"):
-                with m.If(z.e < z.N126):
-                    m.d.sync +=[
-                        z.e.eq(z.e + 1),  # INCREASE exponent
-                        z.m.eq(z.m >> 1), # shift mantissa DOWN
-                        of.guard.eq(z.m[0]),
-                        of.round_bit.eq(of.guard),
-                        of.sticky.eq(of.sticky | of.round_bit)
-                    ]
-                with m.Else():
-                    m.next = "round"
+                self.normalise_2(m, z, of, "round")
 
             # ******
             # rounding stage
