@@ -39,6 +39,15 @@ class FPMUL(FPBase):
         			s.in_a.ack(0)
         		]
 
+        	with m.State("get_b"):
+        		m.next += "unpack"
+        		m.d.sync += s.in_b.ack.eq(1)
+        		with m.If(s.in_b.ack & in_b.stb):
+        			m.d.sync += [
+        			b.eq(in_b),
+        			s.in_a.ack(0)
+        		]
+
 """
 always @(posedge clk)
   begin
