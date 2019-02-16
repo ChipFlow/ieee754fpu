@@ -169,6 +169,14 @@ class FPADD:
         with m.If((z.e == z.N126) & (z.m[0:] == 0)):
             m.d.sync += z.s.eq(0)
 
+    def pack(self, m, z, next_state):
+        m.next = next_state
+        # if overflow occurs, return inf
+        with m.If(z.is_overflowed()):
+            m.d.sync += z.inf(0)
+        with m.Else():
+            m.d.sync += z.create(z.s, z.e, z.m)
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -357,12 +365,7 @@ class FPADD:
             # pack stage
 
             with m.State("pack"):
-                m.next = "put_z"
-                # if overflow occurs, return inf
-                with m.If(z.is_overflowed()):
-                    m.d.sync += z.inf(0)
-                with m.Else():
-                    m.d.sync += z.create(z.s, z.e, z.m)
+                self.pack(m, z, "put_z")
 
             # ******
             # put_z stage
