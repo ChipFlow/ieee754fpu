@@ -120,6 +120,11 @@ class FPADD:
         self.out_z     = FPOp(width)
 
     def get_op(self, m, op, v, next_state):
+        """ this function moves to the next state and copies the operand
+            when both stb and ack are 1.
+            acknowledgement is sent by setting ack to ZERO.
+        """
+
         with m.If((op.ack) & (op.stb)):
             m.next = next_state
             m.d.sync += [
@@ -130,6 +135,13 @@ class FPADD:
             m.d.sync += op.ack.eq(1)
 
     def normalise_1(self, m, z, of, next_state):
+        """ first stage normalisation
+
+            NOTE: just like "align", this one keeps going round every clock
+                  until the result's exponent is within acceptable "range"
+            NOTE: the weirdness of reassigning guard and round is due to
+                  the extra mantissa bits coming from tot[0..2]
+        """
         with m.If((z.m[-1] == 0) & (z.e > z.N126)):
             m.d.sync +=[
                 z.e.eq(z.e - 1),  # DECREASE exponent
@@ -142,6 +154,13 @@ class FPADD:
             m.next = next_state
 
     def normalise_2(self, m, z, of, next_state):
+        """ second stage normalisation
+
+            NOTE: just like "align", this one keeps going round every clock
+                  until the result's exponent is within acceptable "range"
+            NOTE: the weirdness of reassigning guard and round is due to
+                  the extra mantissa bits coming from tot[0..2]
+        """
         with m.If(z.e < z.N126):
             m.d.sync +=[
                 z.e.eq(z.e + 1),  # INCREASE exponent
@@ -178,6 +197,10 @@ class FPADD:
             m.d.sync += z.create(z.s, z.e, z.m)
 
     def put_z(self, m, z, out_z, next_state):
+        """ put_z: stores the result in the output.  raises stb and waits
+            for ack to be set to 1 before moving to the next state.
+            resets stb back to zero when that occurs, as acknowledgement.
+        """
         m.d.sync += [
           out_z.stb.eq(1),
           out_z.v.eq(z.v)
@@ -340,20 +363,12 @@ class FPADD:
 
             # ******
             # First stage of normalisation.
-            # NOTE: just like "align", this one keeps going round every clock
-            #       until the result's exponent is within acceptable "range"
-            # NOTE: the weirdness of reassigning guard and round is due to
-            #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_1"):
                 self.normalise_1(m, z, of, "normalise_2")
 
             # ******
             # Second stage of normalisation.
-            # NOTE: just like "align", this one keeps going round every clock
-            #       until the result's exponent is within acceptable "range"
-            # NOTE: the weirdness of reassigning guard and round is due to
-            #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_2"):
                 self.normalise_2(m, z, of, "round")
