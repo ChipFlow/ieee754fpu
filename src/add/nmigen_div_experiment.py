@@ -10,18 +10,18 @@ from fpbase import FPNum, FPOp, Overflow, FPBase
 class Div:
     def __init__(self, width):
         self.width = width
-        self.quotient = Signal(width)
-        self.divisor = Signal(width)
-        self.dividend = Signal(width)
-        self.remainder = Signal(width)
-        self.count = Signal(6)
+        self.quot = Signal(width)  # quotient
+        self.dor = Signal(width)   # divisor
+        self.dend = Signal(width)  # dividend
+        self.rem = Signal(width)   # remainder
+        self.count = Signal(6)     # loop count
 
         self.czero = Const(0, width)
 
     def reset(self, m):
         m.d.sync += [
-            self.quotient.eq(self.czero),
-            self.remainder.eq(self.czero),
+            self.quot.eq(self.czero),
+            self.rem.eq(self.czero),
             self.count.eq(Const(0, 6))
         ]
 
@@ -135,8 +135,8 @@ class FPDIV(FPBase):
                 m.d.sync += [
                     z.s.eq(a.s ^ b.s), # sign
                     z.e.eq(a.e - b.e), # exponent
-                    div.dividend.eq(a.m<<27),
-                    div.divisor.eq(b.m),
+                    div.dend.eq(a.m<<27),
+                    div.dor.eq(b.m),
                 ]
                 div.reset(m)
 
@@ -146,19 +146,19 @@ class FPDIV(FPBase):
             with m.State("divide_1"):
                 m.next = "divide_2"
                 m.d.sync += [
-                    div.quotient.eq(div.quotient << 1),
-                    div.remainder.eq(Cat(div.dividend[50], div.remainder[0:])),
-                    div.dividend.eq(div.dividend << 1),
+                    div.quot.eq(div.quot << 1),
+                    div.rem.eq(Cat(div.dend[50], div.rem[0:])),
+                    div.dend.eq(div.dend << 1),
                 ]
 
             # ******
             # Third stage of divide.
 
             with m.State("divide_2"):
-                with m.If(div.remainder >= div.divisor):
+                with m.If(div.rem >= div.dor):
                     m.d.sync += [
-                        div.quotient[0].eq(1),
-                        div.remainder.eq(div.remainder - div.divisor),
+                        div.quot[0].eq(1),
+                        div.rem.eq(div.rem - div.dor),
                     ]
                 with m.If(div.count == div.width-2):
                     m.next = "divide_3"
@@ -174,10 +174,10 @@ class FPDIV(FPBase):
             with m.State("divide_3"):
                 m.next = "normalise_1"
                 m.d.sync += [
-                    z.m.eq(div.quotient[3:27]),
-                    of.guard.eq(div.quotient[2]),
-                    of.round_bit.eq(div.quotient[1]),
-                    of.sticky.eq(div.quotient[0] | (div.remainder != 0))
+                    z.m.eq(div.quot[3:27]),
+                    of.guard.eq(div.quot[2]),
+                    of.round_bit.eq(div.quot[1]),
+                    of.sticky.eq(div.quot[0] | (div.rem != 0))
                 ]
 
             # ******
