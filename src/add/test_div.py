@@ -47,8 +47,10 @@ def check_case(dut, a, b, z):
 
 def testbench(dut):
     yield from check_case(dut, 0x40000000, 0x3F800000, 0x40000000)
+    yield from check_case(dut, 0x3F800000, 0x40000000, 0x3F000000)
+    yield from check_case(dut, 0x3F800000, 0x40400000, 0x3EAAAAAB)
 
 if __name__ == '__main__':
     dut = FPDIV(width=32)
-    run_simulation(dut, testbench(dut), vcd_name="test_add.vcd")
+    run_simulation(dut, testbench(dut), vcd_name="test_div.vcd")
 

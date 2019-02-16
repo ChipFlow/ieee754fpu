@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Const
+from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNum, FPOp, Overflow, FPBase
@@ -46,7 +46,7 @@ class FPDIV(FPBase):
         b = FPNum(self.width, 24)
         z = FPNum(self.width, 24)
 
-        div = Div(50)
+        div = Div(51)
 
         of = Overflow()
 
@@ -147,7 +147,7 @@ class FPDIV(FPBase):
                 m.next = "divide_2"
                 m.d.sync += [
                     div.quotient.eq(div.quotient << 1),
-                    div.remainder.eq(Cat(dividend[0], div.remainder[2:])),
+                    div.remainder.eq(Cat(div.dividend[50], div.remainder[0:])),
                     div.dividend.eq(div.dividend << 1),
                 ]
 
@@ -160,7 +160,7 @@ class FPDIV(FPBase):
                         div.quotient[0].eq(1),
                         div.remainder.eq(div.remainder - div.divisor),
                     ]
-                with m.If(count == div.width-1):
+                with m.If(div.count == div.width-2):
                     m.next = "divide_3"
                 with m.Else():
                     m.next = "divide_1"
@@ -177,7 +177,7 @@ class FPDIV(FPBase):
                     z.m.eq(div.quotient[3:27]),
                     of.guard.eq(div.quotient[2]),
                     of.round_bit.eq(div.quotient[1]),
-                    of.sticky.eq(div.quotient[0] | div.remainder != 0)
+                    of.sticky.eq(div.quotient[0] | (div.remainder != 0))
                 ]
 
             # ******
