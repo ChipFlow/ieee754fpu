@@ -1,6 +1,5 @@
 """ Example 5: Making use of PyRTL and Introspection. """
 
-from copy import deepcopy
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
