@@ -34,14 +34,13 @@ class FPNum:
         self.N127 = Const(-127, (10, True))
         self.N126 = Const(-126, (10, True))
 
-    def decode(self):
+    def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
 
             bias is subtracted here, from the exponent.  exponent
             is extended to 10 bits so that subtract 127 is done on
             a 10-bit number
         """
-        v = self.v
         return [self.m.eq(Cat(0, 0, 0, v[0:23])), # mantissa
                 self.e.eq(v[23:31] - self.P127), # exp (minus bias)
                 self.s.eq(v[31]),                 # sign
@@ -128,7 +127,7 @@ class FPADD:
         with m.If((op.ack) & (op.stb)):
             m.next = next_state
             m.d.sync += [
-                v.eq(op.v),
+                v.decode(op.v),
                 op.ack.eq(0)
             ]
         with m.Else():
@@ -227,21 +226,13 @@ class FPADD:
             # gets operand a
 
             with m.State("get_a"):
-                self.get_op(m, self.in_a, a.v, "get_b")
+                self.get_op(m, self.in_a, a, "get_b")
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
-                self.get_op(m, self.in_b, b.v, "unpack")
-
-            # ******
-            # unpacks operands into sign, mantissa and exponent
-
-            with m.State("unpack"):
-                m.next = "special_cases"
-                m.d.sync += a.decode()
-                m.d.sync += b.decode()
+                self.get_op(m, self.in_b, b, "special_cases")
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
