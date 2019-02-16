@@ -91,11 +91,12 @@ class FPNum:
     def is_denormalised(self):
         return (self.e == self.N126) & (self.m[23] == 0)
 
+
 class FPOp:
     def __init__(self, width):
         self.width = width
 
-        self.v     = Signal(width)
+        self.v   = Signal(width)
         self.stb = Signal()
         self.ack = Signal()
 
@@ -114,16 +115,15 @@ class FPADD:
     def __init__(self, width):
         self.width = width
 
-        self.in_a     = FPOp(width)
-        self.in_b     = FPOp(width)
-        self.out_z     = FPOp(width)
+        self.in_a  = FPOp(width)
+        self.in_b  = FPOp(width)
+        self.out_z = FPOp(width)
 
     def get_op(self, m, op, v, next_state):
         """ this function moves to the next state and copies the operand
             when both stb and ack are 1.
             acknowledgement is sent by setting ack to ZERO.
         """
-
         with m.If((op.ack) & (op.stb)):
             m.next = next_state
             m.d.sync += [
@@ -172,6 +172,8 @@ class FPADD:
             m.next = next_state
 
     def roundz(self, m, z, of, next_state):
+        """ performs rounding on the output.  TODO: different kinds of rounding
+        """
         m.next = next_state
         with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
@@ -179,6 +181,8 @@ class FPADD:
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
     def corrections(self, m, z, next_state):
+        """ denormalisation and sign-bug corrections
+        """
         m.next = next_state
         # denormalised, correct exponent to zero
         with m.If(z.is_denormalised()):
@@ -188,6 +192,8 @@ class FPADD:
             m.d.sync += z.s.eq(0)
 
     def pack(self, m, z, next_state):
+        """ packs the result into the output (detects overflow->Inf)
+        """
         m.next = next_state
         # if overflow occurs, return inf
         with m.If(z.is_overflowed()):
@@ -209,6 +215,8 @@ class FPADD:
             m.next = next_state
 
     def get_fragment(self, platform=None):
+        """ creates the HDL code-fragment for FPAdd
+        """
         m = Module()
 
         # Latches
