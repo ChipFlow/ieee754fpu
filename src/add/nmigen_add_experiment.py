@@ -153,6 +153,13 @@ class FPADD:
         with m.Else():
             m.next = next_state
 
+    def round(self, m, z, of, next_state):
+        m.next = next_state
+        with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
+            m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
+            with m.If(z.m == z.m1s): # all 1s
+                m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
+
     def get_fragment(self, platform=None):
         m = Module()
 
@@ -329,11 +336,7 @@ class FPADD:
             # rounding stage
 
             with m.State("round"):
-                m.next = "corrections"
-                with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
-                    m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
-                    with m.If(z.m == z.m1s): # all 1s
-                        m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
+                self.round(m, z, of, "corrections")
 
             # ******
             # correction stage
