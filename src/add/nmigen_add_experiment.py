@@ -28,6 +28,7 @@ class FPNum:
         self.s = Signal()           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
+        self.m1s = Const(-1, (m_width, False))
         self.P128 = Const(128, (10, True))
         self.P127 = Const(127, (10, True))
         self.N127 = Const(-127, (10, True))
@@ -184,17 +185,17 @@ class FPADD:
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(a.is_zero() & b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s & b.s, b.e[0:8], b.m[3:26])
+                    m.d.sync += z.create(a.s & b.s, b.e[0:8], b.m[3:-1])
 
                 # if a is zero return b
                 with m.Elif(a.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(b.s, b.e[0:8], b.m[3:26])
+                    m.d.sync += z.create(b.s, b.e[0:8], b.m[3:-1])
 
                 # if b is zero return a
                 with m.Elif(b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s, a.e[0:8], a.m[3:26])
+                    m.d.sync += z.create(a.s, a.e[0:8], a.m[3:-1])
 
                 # Denormalised Number checks
                 with m.Else():
@@ -203,12 +204,12 @@ class FPADD:
                     with m.If(a.e == a.N127):
                         m.d.sync += a.e.eq(-126) # limit a exponent
                     with m.Else():
-                        m.d.sync += a.m[26].eq(1) # set top mantissa bit
+                        m.d.sync += a.m[-1].eq(1) # set top mantissa bit
                     # denormalise b check
                     with m.If(b.e == a.N127):
                         m.d.sync += b.e.eq(-126) # limit b exponent
                     with m.Else():
-                        m.d.sync += b.m[26].eq(1) # set top mantissa bit
+                        m.d.sync += b.m[-1].eq(1) # set top mantissa bit
 
             # ******
             # align.  NOTE: this does *not* do single-cycle multi-shifting,
@@ -284,7 +285,7 @@ class FPADD:
             #       the extra mantissa bits coming from tot[0..2]
 
             with m.State("normalise_1"):
-                with m.If((z.m[23] == 0) & (z.e > z.N126)):
+                with m.If((z.m[-1] == 0) & (z.e > z.N126)):
                     m.d.sync +=[
                         z.e.eq(z.e - 1),  # DECREASE exponent
                         z.m.eq(z.m << 1), # shift mantissa UP
@@ -320,7 +321,7 @@ class FPADD:
                 m.next = "corrections"
                 with m.If(guard & (round_bit | sticky | z.m[0])):
                     m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
-                    with m.If(z.m == 0xffffff): # all 1s
+                    with m.If(z.m == z.m1s): # all 1s
                         m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
             # ******
@@ -332,7 +333,7 @@ class FPADD:
                 with m.If(z.is_denormalised()):
                     m.d.sync += z.m.eq(-127)
                 # FIX SIGN BUG: -a + a = +0.
-                with m.If((z.e == z.N126) & (z.m[0:23] == 0)):
+                with m.If((z.e == z.N126) & (z.m[0:] == 0)):
                     m.d.sync += z.s.eq(0)
 
             # ******
