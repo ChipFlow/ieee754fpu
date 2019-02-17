@@ -64,9 +64,23 @@ class FPMUL(FPBase):
         		#if a or b is NaN return NaN
         		with m.If(a.is_nan() | b.is_nan()):
         			m.next += "put_z"
-        			m.d.sync += z.nan()
+        			m.d.sync += z.nan(1)
+        		#if a is inf return inf
+        		with m.Elif(a.is_inf()):
+        			m.next += "put_z"
+        			m.d.sync += z.inf(0)
+        		#if b is zero return NaN
+        		with m.If(b.is_zero()):
+        			m.d.sync += z.nan(1)
+        		#if b is inf return inf
+        		with m.Elif(b.is_inf()):
+        			m.next += "put_z"
+        			m.d.sync += z.inf(0)
+
+
+
 """
-      special_cases:
+special_cases:
       begin
         //if a is NaN or b is NaN return NaN 
         if ((a_e == 128 && a_m != 0) || (b_e == 128 && b_m != 0)) begin
@@ -229,6 +243,6 @@ class FPMUL(FPBase):
           s_output_z_stb <= 0;
           state <= get_a;
         end
-      end
+end
 
- """
+"""
