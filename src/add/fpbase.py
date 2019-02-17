@@ -149,7 +149,14 @@ class FPBase:
             m.d.sync += op.ack.eq(1)
 
     def denormalise(self, m, a):
-        """ denormalises a number
+        """ denormalises a number.  this is probably the wrong name for
+            this function.  for normalised numbers (exponent != minimum)
+            one *extra* bit (the implicit 1) is added *back in*.
+            for denormalised numbers, the mantissa is left alone
+            and the exponent increased by 1.
+
+            both cases *effectively multiply the number stored by 2*,
+            which has to be taken into account when extracting the result.
         """
         with m.If(a.e == a.N127):
             m.d.sync += a.e.eq(a.N126) # limit a exponent
