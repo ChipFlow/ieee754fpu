@@ -48,6 +48,18 @@ class FPMUL(FPBase):
         			s.in_b.ack(0)
         		]
 
+        	with m.State("unpack"):
+        		m.next += "special_cases"
+        		m.d.sync += [
+        		a.m.eq(a[0:22]),
+        		b.m.eq(b[0:22]),
+        		a.e.eq(a[23:31] - 127),
+        		b.e.eq(b[23:31] - 127),
+        		a.s.eq(a[31]),
+        		b.s.eq(b[31])
+
+        		]
+        		
 """
 always @(posedge clk)
   begin
