@@ -61,26 +61,20 @@ class FPMUL(FPBase):
         	
         	with m.State("special_cases"):
         		m.next = "normalise_a"
+        		#if a or b is NaN return NaN
         		with m.If(a.is_nan() | b.is_nan()):
         			m.next += "put_z"
-        			m.d.sync += [
-        			z[31].eq(1),
-        			z[23:31].eq(255),
-        			z[22].eq(1),
-        			z[0:22].eq(0)
-        		]
-        		with m.Elif(a.e.is_inf()):
-        			m.next += "put_z"
-        			m.d.sync += [
-        			z[31].eq(a.s ^ b.s),
-        			z[23:31].eq(255),
-        			z[0:22].eq(0)
-				]
+        			m.d.sync += z.nan()
 """
-
       special_cases:
       begin
-
+        //if a is NaN or b is NaN return NaN 
+        if ((a_e == 128 && a_m != 0) || (b_e == 128 && b_m != 0)) begin
+          z[31] <= 1;
+          z[30:23] <= 255;
+          z[22] <= 1;
+          z[21:0] <= 0;
+          state <= put_z;
         //if a is inf return inf
         end else if (a_e == 128) begin
           z[31] <= a_s ^ b_s;
@@ -237,13 +231,4 @@ class FPMUL(FPBase):
         end
       end
 
-    endcase
-
-    if (rst == 1) begin
-      state <= get_a;
-      s_input_a_ack <= 0;
-      s_input_b_ack <= 0;
-      s_output_z_stb <= 0;
-    end
- end
  """
