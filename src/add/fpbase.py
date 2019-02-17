@@ -22,12 +22,19 @@ class FPNum:
         m_width = {32: 24, 64: 53}[width]
         e_width = {32: 10, 64: 13}[width]
         e_max = 1<<(e_width-3)
+        self.rmw = m_width # real mantissa width (not including extras)
         if m_extra:
             # mantissa extra bits (top,guard,round)
-            m_width += 3
-        print (m_width, e_width, e_max)
+            self.m_extra = 3
+            m_width += self.m_extra
+        else:
+            self.m_extra = 0
+        print (m_width, e_width, e_max, self.rmw, self.m_extra)
         self.m_width = m_width
         self.e_width = e_width
+        self.e_start = self.rmw - 1
+        self.e_end = self.rmw + self.e_width - 3 # for decoding
+
         self.v = Signal(width)      # Latched copy of value
         self.m = Signal(m_width)    # Mantissa
         self.e = Signal((e_width, True)) # Exponent: 10 bits, signed
@@ -47,10 +54,11 @@ class FPNum:
             is extended to 10 bits so that subtract 127 is done on
             a 10-bit number
         """
-        args = [0] * (self.m_width-24) + [v[0:23]] # pad with extra zeros
+        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        print (self.e_end)
         return [self.m.eq(Cat(*args)), # mantissa
-                self.e.eq(v[23:31] - self.P127), # exp (minus bias)
-                self.s.eq(v[31]),                 # sign
+                self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
+                self.s.eq(v[-1]),                 # sign
                 ]
 
     def create(self, s, e, m):
@@ -59,9 +67,9 @@ class FPNum:
             bias is added here, to the exponent
         """
         return [
-          self.v[31].eq(s),          # sign
-          self.v[23:31].eq(e + self.P127), # exp (add on bias)
-          self.v[0:23].eq(m)         # mantissa
+          self.v[-1].eq(s),          # sign
+          self.v[self.e_start:self.e_end].eq(e + self.P127), # exp (add on bias)
+          self.v[0:self.e_start].eq(m)         # mantissa
         ]
 
     def shift_down(self):
@@ -75,7 +83,7 @@ class FPNum:
                ]
 
     def nan(self, s):
-        return self.create(s, self.P128, 1<<22)
+        return self.create(s, self.P128, 1<<(self.e_start-1))
 
     def inf(self, s):
         return self.create(s, self.P128, 0)
@@ -96,7 +104,7 @@ class FPNum:
         return (self.e > self.P127)
 
     def is_denormalised(self):
-        return (self.e == self.N126) & (self.m[23] == 0)
+        return (self.e == self.N126) & (self.m[self.e_start] == 0)
 
 
 class FPOp:
@@ -144,7 +152,7 @@ class FPBase:
         """ denormalises a number
         """
         with m.If(a.e == a.N127):
-            m.d.sync += a.e.eq(-126) # limit a exponent
+            m.d.sync += a.e.eq(a.N126) # limit a exponent
         with m.Else():
             m.d.sync += a.m[-1].eq(1) # set top mantissa bit
 
@@ -214,7 +222,7 @@ class FPBase:
         m.next = next_state
         # denormalised, correct exponent to zero
         with m.If(z.is_denormalised()):
-            m.d.sync += z.m.eq(-127)
+            m.d.sync += z.m.eq(z.N127)
         # FIX SIGN BUG: -a + a = +0.
         with m.If((z.e == z.N126) & (z.m[0:] == 0)):
             m.d.sync += z.s.eq(0)

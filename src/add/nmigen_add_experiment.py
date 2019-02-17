@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNum, FPOp, Overflow, FPBase
@@ -28,7 +28,8 @@ class FPADD(FPBase):
         b = FPNum(self.width)
         z = FPNum(self.width, False)
 
-        tot = Signal(28)     # sticky/round/guard bits, 23 result, 1 overflow
+        w = {32: 28, 64:57}[self.width]
+        tot = Signal(w) # sticky/round/guard, {mantissa} result, 1 overflow
 
         of = Overflow()
 
@@ -74,17 +75,17 @@ class FPADD(FPBase):
                 # if a is zero and b zero return signed-a/b
                 with m.Elif(a.is_zero() & b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s & b.s, b.e[0:8], b.m[3:-1])
+                    m.d.sync += z.create(a.s & b.s, b.e, b.m[3:-1])
 
                 # if a is zero return b
                 with m.Elif(a.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(b.s, b.e[0:8], b.m[3:-1])
+                    m.d.sync += z.create(b.s, b.e, b.m[3:-1])
 
                 # if b is zero return a
                 with m.Elif(b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.create(a.s, a.e[0:8], a.m[3:-1])
+                    m.d.sync += z.create(a.s, a.e, a.m[3:-1])
 
                 # Denormalised Number checks
                 with m.Else():
@@ -118,19 +119,19 @@ class FPADD(FPBase):
                 # same-sign (both negative or both positive) add mantissas
                 with m.If(a.s == b.s):
                     m.d.sync += [
-                        tot.eq(a.m + b.m),
+                        tot.eq(Cat(a.m, 0) + Cat(b.m, 0)),
                         z.s.eq(a.s)
                     ]
                 # a mantissa greater than b, use a
                 with m.Elif(a.m >= b.m):
                     m.d.sync += [
-                        tot.eq(a.m - b.m),
+                        tot.eq(Cat(a.m, 0) - Cat(b.m, 0)),
                         z.s.eq(a.s)
                     ]
                 # b mantissa greater than a, use b
                 with m.Else():
                     m.d.sync += [
-                        tot.eq(b.m - a.m),
+                        tot.eq(Cat(b.m, 0) - Cat(a.m, 0)),
                         z.s.eq(b.s)
                 ]
 
@@ -141,9 +142,9 @@ class FPADD(FPBase):
             with m.State("add_1"):
                 m.next = "normalise_1"
                 # tot[27] gets set when the sum overflows. shift result down
-                with m.If(tot[27]):
+                with m.If(tot[-1]):
                     m.d.sync += [
-                        z.m.eq(tot[4:28]),
+                        z.m.eq(tot[4:]),
                         of.guard.eq(tot[3]),
                         of.round_bit.eq(tot[2]),
                         of.sticky.eq(tot[1] | tot[0]),
@@ -152,7 +153,7 @@ class FPADD(FPBase):
                 # tot[27] zero case
                 with m.Else():
                     m.d.sync += [
-                        z.m.eq(tot[3:27]),
+                        z.m.eq(tot[3:]),
                         of.guard.eq(tot[2]),
                         of.round_bit.eq(tot[1]),
                         of.sticky.eq(tot[0])
