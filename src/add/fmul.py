@@ -90,9 +90,9 @@ class FPMUL(FPBase):
         			m.d.sync += z.zero(0)
                 # Denormalised Number checks
 				with m.Else():
-                   	m.next = "normalise_a"
-                    self.denormalise(m, a)
-                    self.denormalise(m, b)
+					m.next += "normalise_a"
+					self.denormalise(m, a)
+					self.denormalise(m, b)
 
             # ******
             # normalise_a
@@ -106,7 +106,54 @@ class FPMUL(FPBase):
             with m.State("normalise_b"):
                 self.op_normalise(m, b, "multiply_0")
 
+            #multiply_0
+            with m.State("multiply_0"):
+            	m.next += "multiply_1"
+	           	m.d.sync += [
+	           	z.s.eq(a.s ^ b.s),
+	           	z.e.eq(a.e + b.e + 1),
+	           	product.eq(a.m * b.m * 4)
+	        ]
 
+			#multiply_1
+	        with m.State("multiply_1"):
+	        	m.next += "normalise_1"
+	        	m.d.sync += [
+	        	z.m.eq(product[26:50]),
+	        	guard.eq(product[25]),
+	        	round_bit.eq(product[24]),
+	        	sticky.eq(product[0:23] != 0)
+	        ]
+
+	        # ******
+            # First stage of normalisation.
+            with m.State("normalise_1"):
+                self.normalise_1(m, z, of, "normalise_2")
+
+            # ******
+            # Second stage of normalisation.
+
+            with m.State("normalise_2"):
+                self.normalise_2(m, z, of, "round")
+
+            # ******
+            # rounding stage
+
+            with m.State("round"):
+                self.roundz(m, z, of, "corrections")
+
+			# ******
+            # pack stage
+            with m.State("pack"):
+                self.pack(m, z, "put_z")
+
+            # ******
+            # put_z stage
+
+            with m.State("put_z"):
+                self.put_z(m, z, self.out_z, "get_a")
+
+        return m
 
 """
 special_cases:
@@ -256,7 +303,8 @@ special_cases:
         if ($signed(z_e) == -126 && z_m[23] == 0) begin
           z[30 : 23] <= 0;
         end
-        //if overflow occurs, return inf
+        //if overflow occur
+        s, return inf
         if ($signed(z_e) > 127) begin
           z[22 : 0] <= 0;
           z[30 : 23] <= 255;
@@ -276,3 +324,7 @@ special_cases:
 end
 
 """
+
+if __name__ == "__main__":
+    alu = FPMUL(width=32)
+    main(alu, ports=alu.in_a.ports() + alu.in_b.ports() + alu.out_z.ports())
