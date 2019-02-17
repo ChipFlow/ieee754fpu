@@ -84,6 +84,27 @@ class FPMUL(FPBase):
         		with m.Elif(a.is_zero()):
         			m.next += "put_z"
         			m.d.sync += z.zero(0)
+        		#if b is zero return zero
+        		with m.Elif(b.is_zero()):
+        			m.next += "put_z"
+        			m.d.sync += z.zero(0)
+                # Denormalised Number checks
+				with m.Else():
+                   	m.next = "normalise_a"
+                    self.denormalise(m, a)
+                    self.denormalise(m, b)
+
+            # ******
+            # normalise_a
+
+            with m.State("normalise_a"):
+                self.op_normalise(m, a, "normalise_b")
+
+            # ******
+            # normalise_b
+
+            with m.State("normalise_b"):
+                self.op_normalise(m, b, "multiply_0")
 
 
 
@@ -135,6 +156,7 @@ special_cases:
           z[30:23] <= 0;
           z[22:0] <= 0;
           state <= put_z;
+          //^ done up to here
         end else begin
           //Denormalised Number
           if ($signed(a_e) == -127) begin
