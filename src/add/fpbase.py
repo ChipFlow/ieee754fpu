@@ -2,7 +2,37 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Signal, Cat, Const
+from nmigen import Signal, Cat, Const, Mux
+from math import log
+
+class MultiShift:
+    """ Generates variable-length single-cycle shifter from a series
+        of conditional tests on each bit of the left/right shift operand.
+        Each bit tested produces output shifted by that number of bits,
+        in a binary fashion: bit 1 if set shifts by 1 bit, bit 2 if set
+        shifts by 2 bits, each partial result cascading to the next Mux.
+
+        Could be adapted to do arithmetic shift by taking copies of the
+        MSB instead of zeros.
+    """
+
+    def __init__(self, width):
+        self.width = width
+        self.smax = int(log(width) / log(2))
+
+    def lshift(self, op, s):
+        res = op
+        for i in range(self.smax):
+            zeros = [0] * (1<<i)
+            res = Mux(s & (1<<i), Cat(zeros, res[0:-(1<<i)]), res)
+        return res
+
+    def rshift(self, op, s):
+        res = op
+        for i in range(self.smax):
+            zeros = [0] * (1<<i)
+            res = Mux(s & (1<<i), Cat(res[(1<<i):], zeros), res)
+        return res
 
 
 class FPNum:
