@@ -115,6 +115,9 @@ class FPADD(FPBase):
                     # This one however (single-cycle) will do the shift
                     # in one go.
 
+                    # XXX TODO: the shifter used here is quite expensive
+                    # having only one would be better
+
                     ediff = Signal((len(a.e), True))
                     ediffr = Signal((len(a.e), True))
                     m.d.comb += ediff.eq(a.e - b.e)
