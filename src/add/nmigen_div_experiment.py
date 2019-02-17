@@ -14,7 +14,7 @@ class Div:
         self.dor = Signal(width)   # divisor
         self.dend = Signal(width)  # dividend
         self.rem = Signal(width)   # remainder
-        self.count = Signal(6)     # loop count
+        self.count = Signal(7)     # loop count
 
         self.czero = Const(0, width)
 
@@ -22,7 +22,7 @@ class Div:
         m.d.sync += [
             self.quot.eq(self.czero),
             self.rem.eq(self.czero),
-            self.count.eq(Const(0, 6))
+            self.count.eq(Const(0, 7))
         ]
 
 
@@ -46,7 +46,7 @@ class FPDIV(FPBase):
         b = FPNum(self.width, False)
         z = FPNum(self.width, False)
 
-        div = Div(51)
+        div = Div(a.m_width*2 + 3) # double the mantissa width plus g/r/sticky
 
         of = Overflow()
 
@@ -135,7 +135,7 @@ class FPDIV(FPBase):
                 m.d.sync += [
                     z.s.eq(a.s ^ b.s), # sign
                     z.e.eq(a.e - b.e), # exponent
-                    div.dend.eq(a.m<<27),
+                    div.dend.eq(a.m<<(a.m_width+3)), # 3 bits for g/r/sticky
                     div.dor.eq(b.m),
                 ]
                 div.reset(m)
@@ -147,7 +147,7 @@ class FPDIV(FPBase):
                 m.next = "divide_2"
                 m.d.sync += [
                     div.quot.eq(div.quot << 1),
-                    div.rem.eq(Cat(div.dend[50], div.rem[0:])),
+                    div.rem.eq(Cat(div.dend[-1], div.rem[0:])),
                     div.dend.eq(div.dend << 1),
                 ]
 
@@ -176,7 +176,7 @@ class FPDIV(FPBase):
             with m.State("divide_3"):
                 m.next = "normalise_1"
                 m.d.sync += [
-                    z.m.eq(div.quot[3:27]),
+                    z.m.eq(div.quot[3:]),
                     of.guard.eq(div.quot[2]),
                     of.round_bit.eq(div.quot[1]),
                     of.sticky.eq(div.quot[0] | (div.rem != 0))
