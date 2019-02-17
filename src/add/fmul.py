@@ -80,6 +80,7 @@ class FPMUL(FPBase):
         		with m.If(a.is_zero()):
         			m.next += "put_z"
         			m.d.sync += z.nan(1)
+        		#if a is zero return zero
         		with m.Elif(a.is_zero()):
         			m.next += "put_z"
         			m.d.sync += z.zero(0)
