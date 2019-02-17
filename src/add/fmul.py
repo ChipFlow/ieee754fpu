@@ -22,7 +22,7 @@ class FPMUL(FPBase):
         # Latches
         a = FPNum(self.width)
         b = FPNum(self.width)
-        z = FPNum(self.width, 24)
+        z = FPNum(self.width, False)
 
         tot = Signal(28)     # sticky/round/guard bits, 23 result, 1 overflow
 

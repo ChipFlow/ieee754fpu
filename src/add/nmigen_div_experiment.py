@@ -42,9 +42,9 @@ class FPDIV(FPBase):
         m = Module()
 
         # Latches
-        a = FPNum(self.width, 24)
-        b = FPNum(self.width, 24)
-        z = FPNum(self.width, 24)
+        a = FPNum(self.width, False)
+        b = FPNum(self.width, False)
+        z = FPNum(self.width, False)
 
         div = Div(51)
 

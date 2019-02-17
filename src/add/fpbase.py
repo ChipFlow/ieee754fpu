@@ -17,22 +17,28 @@ class FPNum:
         (m[-1]) is effectively a carry-overflow.  The other three are
         guard (m[2]), round (m[1]), and sticky (m[0])
     """
-    def __init__(self, width, m_width=None):
+    def __init__(self, width, m_extra=True):
         self.width = width
-        if m_width is None:
-            m_width = width - 5 # mantissa extra bits (top,guard,round)
+        m_width = {32: 24, 64: 53}[width]
+        e_width = {32: 10, 64: 13}[width]
+        e_max = 1<<(e_width-3)
+        if m_extra:
+            # mantissa extra bits (top,guard,round)
+            m_width += 3
+        print (m_width, e_width, e_max)
         self.m_width = m_width
+        self.e_width = e_width
         self.v = Signal(width)      # Latched copy of value
         self.m = Signal(m_width)    # Mantissa
-        self.e = Signal((10, True)) # Exponent: 10 bits, signed
+        self.e = Signal((e_width, True)) # Exponent: 10 bits, signed
         self.s = Signal()           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
         self.m1s = Const(-1, (m_width, False))
-        self.P128 = Const(128, (10, True))
-        self.P127 = Const(127, (10, True))
-        self.N127 = Const(-127, (10, True))
-        self.N126 = Const(-126, (10, True))
+        self.P128 = Const(e_max, (e_width, True))
+        self.P127 = Const(e_max-1, (e_width, True))
+        self.N127 = Const(-(e_max-1), (e_width, True))
+        self.N126 = Const(-(e_max-2), (e_width, True))
 
     def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
