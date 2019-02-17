@@ -62,7 +62,7 @@ class FPNum:
             m_width += self.m_extra
         else:
             self.m_extra = 0
-        print (m_width, e_width, e_max, self.rmw, self.m_extra)
+        #print (m_width, e_width, e_max, self.rmw, self.m_extra)
         self.m_width = m_width
         self.e_width = e_width
         self.e_start = self.rmw - 1
@@ -88,7 +88,7 @@ class FPNum:
             a 10-bit number
         """
         args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
-        print ("decode", self.e_end)
+        #print ("decode", self.e_end)
         return [self.m.eq(Cat(*args)), # mantissa
                 self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
                 self.s.eq(v[-1]),                 # sign

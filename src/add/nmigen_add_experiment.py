@@ -10,9 +10,10 @@ from fpbase import FPNum, FPOp, Overflow, FPBase
 
 class FPADD(FPBase):
 
-    def __init__(self, width):
+    def __init__(self, width, single_cycle=False):
         FPBase.__init__(self)
         self.width = width
+        self.single_cycle = single_cycle
 
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
@@ -94,18 +95,36 @@ class FPADD(FPBase):
                     self.denormalise(m, b)
 
             # ******
-            # align.  NOTE: this does *not* do single-cycle multi-shifting,
-            #         it *STAYS* in the align state until the exponents match
+            # align.
 
             with m.State("align"):
-                # exponent of a greater than b: increment b exp, shift b mant
-                with m.If(a.e > b.e):
-                    m.d.sync += b.shift_down()
-                # exponent of b greater than a: increment a exp, shift a mant
-                with m.Elif(a.e < b.e):
-                    m.d.sync += a.shift_down()
-                # exponents equal: move to next stage.
-                with m.Else():
+                if not self.single_cycle:
+                    # NOTE: this does *not* do single-cycle multi-shifting,
+                    #       it *STAYS* in the align state until exponents match
+
+                    # exponent of a greater than b: shift b down
+                    with m.If(a.e > b.e):
+                        m.d.sync += b.shift_down()
+                    # exponent of b greater than a: shift a down
+                    with m.Elif(a.e < b.e):
+                        m.d.sync += a.shift_down()
+                    # exponents equal: move to next stage.
+                    with m.Else():
+                        m.next = "add_0"
+                else:
+                    # This one however (single-cycle) will do the shift
+                    # in one go.
+
+                    ediff = Signal((len(a.e), True))
+                    ediffr = Signal((len(a.e), True))
+                    m.d.comb += ediff.eq(a.e - b.e)
+                    m.d.comb += ediffr.eq(b.e - a.e)
+                    with m.If(ediff > 0):
+                        m.d.sync += b.shift_down_multi(ediff)
+                    # exponent of b greater than a: shift a down
+                    with m.Elif(ediff < 0):
+                        m.d.sync += a.shift_down_multi(ediffr)
+
                     m.next = "add_0"
 
             # ******
