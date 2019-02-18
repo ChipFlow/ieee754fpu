@@ -1,7 +1,6 @@
-import sys
-import subprocess
 from random import randint
 from random import seed
+from operator import add
 
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
@@ -54,7 +53,7 @@ def testbench(dut):
     #regression tests
     stimulus_a = [0x22cb525a, 0x40000000, 0x83e73d5c, 0xbf9b1e94, 0x34082401, 0x5e8ef81, 0x5c75da81, 0x2b017]
     stimulus_b = [0xadd79efa, 0xC0000000, 0x1c800000, 0xc038ed3a, 0xb328cd45, 0x114f3db, 0x2f642a39, 0xff3807ab]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
@@ -62,80 +61,80 @@ def testbench(dut):
     from itertools import permutations
     stimulus_a = [i[0] for i in permutations([0x80000000, 0x00000000, 0x7f800000, 0xff800000, 0x7fc00000, 0xffc00000], 2)]
     stimulus_b = [i[1] for i in permutations([0x80000000, 0x00000000, 0x7f800000, 0xff800000, 0x7fc00000, 0xffc00000], 2)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     #edge cases
     stimulus_a = [0x80000000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x00000000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x80000000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x00000000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x7F800000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0xFF800000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x7F800000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0xFF800000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x7FC00000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0xFFC00000 for i in range(1000)]
     stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x7FC00000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0xFFC00000 for i in range(1000)]
     stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b)
+    yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
@@ -143,7 +142,7 @@ def testbench(dut):
     for i in range(100000):
         stimulus_a = [randint(0, 1<<32) for i in range(1000)]
         stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-        yield from run_test(dut, stimulus_a, stimulus_b)
+        yield from run_test(dut, stimulus_a, stimulus_b, add)
         count += 1000
         print (count, "random vectors passed")
 

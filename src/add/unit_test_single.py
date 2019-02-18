@@ -64,14 +64,14 @@ def check_case(dut, a, b, z):
     assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
 
 
-def run_test(dut, stimulus_a, stimulus_b):
+def run_test(dut, stimulus_a, stimulus_b, op):
 
     expected_responses = []
     actual_responses = []
     for a, b in zip(stimulus_a, stimulus_b):
         af = Float32.from_bits(a)
         bf = Float32.from_bits(b)
-        z = af + bf
+        z = op(af, bf)
         expected_responses.append(z.get_bits())
         #print (af, bf, z)
         actual = yield from get_case(dut, a, b)

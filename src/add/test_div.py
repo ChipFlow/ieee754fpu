@@ -13,6 +13,7 @@ from unit_test_single import (get_mantissa, get_exponent, get_sign, is_nan,
 
 
 def testbench(dut):
+    yield from check_case(dut, 0xbf9b1e94, 0xc038ed3a, 0xc0833e42)
     yield from check_case(dut, 0x40000000, 0x3F800000, 0x40000000)
     yield from check_case(dut, 0x3F800000, 0x40000000, 0x3F000000)
     yield from check_case(dut, 0x3F800000, 0x40400000, 0x3EAAAAAB)
