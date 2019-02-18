@@ -130,6 +130,12 @@ class FPMUL(FPBase):
                 self.roundz(m, z, of, "corrections")
 
             # ******
+            # correction stage
+
+            with m.State("corrections"):
+                self.corrections(m, z, "pack")
+
+            # ******
             # pack stage
             with m.State("pack"):
                 self.pack(m, z, "put_z")
