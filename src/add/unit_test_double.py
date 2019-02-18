@@ -1,4 +1,7 @@
 import sys
+from random import randint
+from random import seed
+
 from sfpy import Float64
 
 def get_mantissa(x):
@@ -114,4 +117,87 @@ def run_test(dut, stimulus_a, stimulus_b, op):
             print ("actual sign:",         ((act & 0x8000000000000000) >> 63))
 
             sys.exit(0)
+
+
+def run_edge_cases(dut, count, op):
+    #edge cases
+    stimulus_a = [0x8000000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x0000000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x8000000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x0000000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7FF8000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFFF8000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7FF8000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFFF8000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7FF0000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFFF0000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7FF0000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFFF0000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    #seed(0)
+    for i in range(100000):
+        stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+        stimulus_b = [randint(0, 1<<64) for i in range(1000)]
+        yield from run_test(dut, stimulus_a, stimulus_b, op)
+        count += 1000
+        print (count, "random vectors passed")
 

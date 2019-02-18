@@ -1,3 +1,6 @@
+from random import randint
+from random import seed
+
 import sys
 from sfpy import Float32
 
@@ -110,4 +113,90 @@ def run_test(dut, stimulus_a, stimulus_b, op):
             print ("actual sign:", ((actual & 0x80000000) >> 31))
 
             sys.exit(0)
+
+def run_edge_cases(dut, count, op):
+    #edge cases
+    stimulus_a = [0x80000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x00000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x80000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x00000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7F800000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFF800000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7F800000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFF800000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7FC00000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFFC00000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7FC00000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFFC00000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    #seed(0)
+    for i in range(100000):
+        stimulus_a = [randint(0, 1<<32) for i in range(1000)]
+        stimulus_b = [randint(0, 1<<32) for i in range(1000)]
+        yield from run_test(dut, stimulus_a, stimulus_b, op)
+        count += 1000
+        print (count, "random vectors passed")
+
+if __name__ == '__main__':
+    dut = FPADD(width=32, single_cycle=True)
+    run_simulation(dut, testbench(dut), vcd_name="test_add.vcd")
 
