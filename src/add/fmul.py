@@ -54,14 +54,14 @@ class FPMUL(FPBase):
                 #if a is inf return inf
                 with m.Elif(a.is_inf()):
                     m.next = "put_z"
-                    m.d.sync += z.inf(0)
+                    m.d.sync += z.inf(a.s ^ b.s)
                     #if b is zero return NaN
                     with m.If(b.is_zero()):
                         m.d.sync += z.nan(1)
                 #if b is inf return inf
                 with m.Elif(b.is_inf()):
                     m.next = "put_z"
-                    m.d.sync += z.inf(0)
+                    m.d.sync += z.inf(a.s ^ b.s)
                     #if a is zero return NaN
                     with m.If(a.is_zero()):
                         m.next = "put_z"
@@ -69,11 +69,11 @@ class FPMUL(FPBase):
                 #if a is zero return zero
                 with m.Elif(a.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.zero(0)
+                    m.d.sync += z.zero(a.s ^ b.s)
                 #if b is zero return zero
                 with m.Elif(b.is_zero()):
                     m.next = "put_z"
-                    m.d.sync += z.zero(0)
+                    m.d.sync += z.zero(a.s ^ b.s)
                 # Denormalised Number checks
                 with m.Else():
                     m.next = "normalise_a"
