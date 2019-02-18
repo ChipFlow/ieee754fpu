@@ -88,6 +88,10 @@ class FPADD(FPBase):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s, a.e, a.m[3:-1])
 
+                with m.Elif((a.s != b.s) & (a.m == b.m) & (a.e == b.e)):
+                    m.next = "put_z"
+                    m.d.sync += z.zero(0)
+
                 # Denormalised Number checks
                 with m.Else():
                     m.next = "align"
