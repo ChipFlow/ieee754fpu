@@ -120,6 +120,7 @@ def run_test(dut, stimulus_a, stimulus_b):
             sys.exit(0)
 
 def testbench(dut):
+    yield from check_case(dut, 0x82471f51, 0x243985f, 0x801c3790)
     yield from check_case(dut, 0, 0, 0)
     yield from check_case(dut, 0x40000000, 0xc0000000, 0x00000000)
     yield from check_case(dut, 0x3F800000, 0x40000000, 0x40400000)

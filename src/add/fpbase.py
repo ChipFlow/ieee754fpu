@@ -308,7 +308,7 @@ class FPBase:
         m.next = next_state
         # denormalised, correct exponent to zero
         with m.If(z.is_denormalised()):
-            m.d.sync += z.m.eq(z.N127)
+            m.d.sync += z.e.eq(z.N127)
         # FIX SIGN BUG: -a + a = +0.
         with m.If((z.e == z.N126) & (z.m[0:] == 0)):
             m.d.sync += z.s.eq(0)
