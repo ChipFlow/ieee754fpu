@@ -47,37 +47,36 @@ class FPMUL(FPBase):
             # special cases
 
             with m.State("special_cases"):
-                m.next = "normalise_a"
                 #if a or b is NaN return NaN
                 with m.If(a.is_nan() | b.is_nan()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.nan(1)
                 #if a is inf return inf
                 with m.Elif(a.is_inf()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.inf(0)
                 #if b is zero return NaN
                 with m.If(b.is_zero()):
                     m.d.sync += z.nan(1)
                 #if b is inf return inf
                 with m.Elif(b.is_inf()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.inf(0)
                 #if a is zero return NaN
                 with m.If(a.is_zero()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.nan(1)
                 #if a is zero return zero
                 with m.Elif(a.is_zero()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.zero(0)
                 #if b is zero return zero
                 with m.Elif(b.is_zero()):
-                    m.next += "put_z"
+                    m.next = "put_z"
                     m.d.sync += z.zero(0)
                 # Denormalised Number checks
                 with m.Else():
-                    m.next += "normalise_a"
+                    m.next = "normalise_a"
                     self.denormalise(m, a)
                     self.denormalise(m, b)
 
@@ -95,7 +94,7 @@ class FPMUL(FPBase):
 
             #multiply_0
             with m.State("multiply_0"):
-                m.next += "multiply_1"
+                m.next = "multiply_1"
                 m.d.sync += [
                    z.s.eq(a.s ^ b.s),
                    z.e.eq(a.e + b.e + 1),
@@ -104,7 +103,7 @@ class FPMUL(FPBase):
 
             #multiply_1
             with m.State("multiply_1"):
-                m.next += "normalise_1"
+                m.next = "normalise_1"
                 m.d.sync += [
                 z.m.eq(product[26:50]),
                 guard.eq(product[25]),
