@@ -30,69 +30,69 @@ class FPMUL(FPBase):
 
         with m.FSM() as fsm:
 
-        	with m.State("get_a"):
-        		m.next += "get_b"
-        		m.d.sync += s.in_a.ack.eq(1)
-        		with m.If(s.in_a.ack & in_a.stb):
-        			m.d.sync += [
-        			a.eq(in_a),
-        			s.in_a.ack(0)
-        		]
+            with m.State("get_a"):
+                m.next += "get_b"
+                m.d.sync += s.in_a.ack.eq(1)
+                with m.If(s.in_a.ack & in_a.stb):
+                    m.d.sync += [
+                    a.eq(in_a),
+                    s.in_a.ack(0)
+                ]
 
-        	with m.State("get_b"):
-        		m.next += "unpack"
-        		m.d.sync += s.in_b.ack.eq(1)
-        		with m.If(s.in_b.ack & in_b.stb):
-        			m.d.sync += [
-        			b.eq(in_b),
-        			s.in_b.ack(0)
-        		]
+            with m.State("get_b"):
+                m.next += "unpack"
+                m.d.sync += s.in_b.ack.eq(1)
+                with m.If(s.in_b.ack & in_b.stb):
+                    m.d.sync += [
+                    b.eq(in_b),
+                    s.in_b.ack(0)
+                ]
 
-        	with m.State("unpack"):
-        		m.next += "special_cases"
-        		m.d.sync += [
-        		a.m.eq(a[0:22]),
-        		b.m.eq(b[0:22]),
-        		a.e.eq(a[23:31] - 127),
-        		b.e.eq(b[23:31] - 127),
-        		a.s.eq(a[31]),
-        		b.s.eq(b[31])
-			]
-        	
-        	with m.State("special_cases"):
-        		m.next = "normalise_a"
-        		#if a or b is NaN return NaN
-        		with m.If(a.is_nan() | b.is_nan()):
-        			m.next += "put_z"
-        			m.d.sync += z.nan(1)
-        		#if a is inf return inf
-        		with m.Elif(a.is_inf()):
-        			m.next += "put_z"
-        			m.d.sync += z.inf(0)
-        		#if b is zero return NaN
-        		with m.If(b.is_zero()):
-        			m.d.sync += z.nan(1)
-        		#if b is inf return inf
-        		with m.Elif(b.is_inf()):
-        			m.next += "put_z"
-        			m.d.sync += z.inf(0)
-        		#if a is zero return NaN
-        		with m.If(a.is_zero()):
-        			m.next += "put_z"
-        			m.d.sync += z.nan(1)
-        		#if a is zero return zero
-        		with m.Elif(a.is_zero()):
-        			m.next += "put_z"
-        			m.d.sync += z.zero(0)
-        		#if b is zero return zero
-        		with m.Elif(b.is_zero()):
-        			m.next += "put_z"
-        			m.d.sync += z.zero(0)
+            with m.State("unpack"):
+                m.next += "special_cases"
+                m.d.sync += [
+                a.m.eq(a[0:22]),
+                b.m.eq(b[0:22]),
+                a.e.eq(a[23:31] - 127),
+                b.e.eq(b[23:31] - 127),
+                a.s.eq(a[31]),
+                b.s.eq(b[31])
+            ]
+
+            with m.State("special_cases"):
+                m.next = "normalise_a"
+                #if a or b is NaN return NaN
+                with m.If(a.is_nan() | b.is_nan()):
+                    m.next += "put_z"
+                    m.d.sync += z.nan(1)
+                #if a is inf return inf
+                with m.Elif(a.is_inf()):
+                    m.next += "put_z"
+                    m.d.sync += z.inf(0)
+                #if b is zero return NaN
+                with m.If(b.is_zero()):
+                    m.d.sync += z.nan(1)
+                #if b is inf return inf
+                with m.Elif(b.is_inf()):
+                    m.next += "put_z"
+                    m.d.sync += z.inf(0)
+                #if a is zero return NaN
+                with m.If(a.is_zero()):
+                    m.next += "put_z"
+                    m.d.sync += z.nan(1)
+                #if a is zero return zero
+                with m.Elif(a.is_zero()):
+                    m.next += "put_z"
+                    m.d.sync += z.zero(0)
+                #if b is zero return zero
+                with m.Elif(b.is_zero()):
+                    m.next += "put_z"
+                    m.d.sync += z.zero(0)
                 # Denormalised Number checks
-				with m.Else():
-					m.next += "normalise_a"
-					self.denormalise(m, a)
-					self.denormalise(m, b)
+                with m.Else():
+                    m.next += "normalise_a"
+                    self.denormalise(m, a)
+                    self.denormalise(m, b)
 
             # ******
             # normalise_a
@@ -108,24 +108,24 @@ class FPMUL(FPBase):
 
             #multiply_0
             with m.State("multiply_0"):
-            	m.next += "multiply_1"
-	           	m.d.sync += [
-	           	z.s.eq(a.s ^ b.s),
-	           	z.e.eq(a.e + b.e + 1),
-	           	product.eq(a.m * b.m * 4)
-	        ]
+                m.next += "multiply_1"
+                m.d.sync += [
+                   z.s.eq(a.s ^ b.s),
+                   z.e.eq(a.e + b.e + 1),
+                   product.eq(a.m * b.m * 4)
+                ]
 
-			#multiply_1
-	        with m.State("multiply_1"):
-	        	m.next += "normalise_1"
-	        	m.d.sync += [
-	        	z.m.eq(product[26:50]),
-	        	guard.eq(product[25]),
-	        	round_bit.eq(product[24]),
-	        	sticky.eq(product[0:23] != 0)
-	        ]
+            #multiply_1
+            with m.State("multiply_1"):
+                m.next += "normalise_1"
+                m.d.sync += [
+                z.m.eq(product[26:50]),
+                guard.eq(product[25]),
+                round_bit.eq(product[24]),
+                sticky.eq(product[0:23] != 0)
+            ]
 
-	        # ******
+            # ******
             # First stage of normalisation.
             with m.State("normalise_1"):
                 self.normalise_1(m, z, of, "normalise_2")
@@ -142,7 +142,7 @@ class FPMUL(FPBase):
             with m.State("round"):
                 self.roundz(m, z, of, "corrections")
 
-			# ******
+            # ******
             # pack stage
             with m.State("pack"):
                 self.pack(m, z, "put_z")
@@ -158,7 +158,7 @@ class FPMUL(FPBase):
 """
 special_cases:
       begin
-        //if a is NaN or b is NaN return NaN 
+        //if a is NaN or b is NaN return NaN
         if ((a_e == 128 && a_m != 0) || (b_e == 128 && b_m != 0)) begin
           z[31] <= 1;
           z[30:23] <= 255;
