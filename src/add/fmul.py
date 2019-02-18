@@ -31,34 +31,20 @@ class FPMUL(FPBase):
 
         with m.FSM() as fsm:
 
+            # ******
+            # gets operand a
+
             with m.State("get_a"):
-                m.next += "get_b"
-                m.d.sync += s.in_a.ack.eq(1)
-                with m.If(s.in_a.ack & in_a.stb):
-                    m.d.sync += [
-                    a.eq(in_a),
-                    s.in_a.ack(0)
-                ]
+                self.get_op(m, self.in_a, a, "get_b")
+
+            # ******
+            # gets operand b
 
             with m.State("get_b"):
-                m.next += "unpack"
-                m.d.sync += s.in_b.ack.eq(1)
-                with m.If(s.in_b.ack & in_b.stb):
-                    m.d.sync += [
-                    b.eq(in_b),
-                    s.in_b.ack(0)
-                ]
+                self.get_op(m, self.in_b, b, "special_cases")
 
-            with m.State("unpack"):
-                m.next += "special_cases"
-                m.d.sync += [
-                a.m.eq(a[0:22]),
-                b.m.eq(b[0:22]),
-                a.e.eq(a[23:31] - 127),
-                b.e.eq(b[23:31] - 127),
-                a.s.eq(a[31]),
-                b.s.eq(b[31])
-            ]
+            # ******
+            # special cases
 
             with m.State("special_cases"):
                 m.next = "normalise_a"
