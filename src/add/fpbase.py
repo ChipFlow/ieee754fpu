@@ -319,7 +319,7 @@ class FPBase:
         m.next = next_state
         # if overflow occurs, return inf
         with m.If(z.is_overflowed()):
-            m.d.sync += z.inf(0)
+            m.d.sync += z.inf(z.s)
         with m.Else():
             m.d.sync += z.create(z.s, z.e, z.m)
 
