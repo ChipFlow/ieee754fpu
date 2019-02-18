@@ -24,7 +24,7 @@ class FPMUL(FPBase):
         b = FPNum(self.width, False)
         z = FPNum(self.width, False)
 
-        mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
+        mw = (z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         product = Signal(mw)
 
         of = Overflow()
@@ -103,7 +103,7 @@ class FPMUL(FPBase):
 
             #multiply_1
             with m.State("multiply_1"):
-                mw = z.m.m_width
+                mw = z.m_width
                 m.next = "normalise_1"
                 m.d.sync += [
                 z.m.eq(product[mw+3:]),
