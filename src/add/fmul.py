@@ -106,9 +106,9 @@ class FPMUL(FPBase):
                 m.next = "normalise_1"
                 m.d.sync += [
                 z.m.eq(product[26:50]),
-                guard.eq(product[25]),
-                round_bit.eq(product[24]),
-                sticky.eq(product[0:23] != 0)
+                of.guard.eq(product[25]),
+                of.round_bit.eq(product[24]),
+                of.sticky.eq(product[0:23] != 0)
             ]
 
             # ******
