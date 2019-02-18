@@ -55,17 +55,17 @@ class FPMUL(FPBase):
                 with m.Elif(a.is_inf()):
                     m.next = "put_z"
                     m.d.sync += z.inf(0)
-                #if b is zero return NaN
-                with m.If(b.is_zero()):
-                    m.d.sync += z.nan(1)
+                    #if b is zero return NaN
+                    with m.If(b.is_zero()):
+                        m.d.sync += z.nan(1)
                 #if b is inf return inf
                 with m.Elif(b.is_inf()):
                     m.next = "put_z"
                     m.d.sync += z.inf(0)
-                #if a is zero return NaN
-                with m.If(a.is_zero()):
-                    m.next = "put_z"
-                    m.d.sync += z.nan(1)
+                    #if a is zero return NaN
+                    with m.If(a.is_zero()):
+                        m.next = "put_z"
+                        m.d.sync += z.nan(1)
                 #if a is zero return zero
                 with m.Elif(a.is_zero()):
                     m.next = "put_z"
