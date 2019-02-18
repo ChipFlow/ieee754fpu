@@ -252,7 +252,7 @@ def testbench(dut):
         stimulus_b = [randint(0, 1<<32) for i in range(1000)]
         yield from run_test(dut, stimulus_a, stimulus_b)
         count += 1000
-        print (count, "vectors passed")
+        print (count, "random vectors passed")
 
 if __name__ == '__main__':
     dut = FPADD(width=32, single_cycle=True)
