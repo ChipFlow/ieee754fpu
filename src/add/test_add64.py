@@ -1,22 +1,44 @@
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
+from sfpy import Float64
 
 from nmigen_add_experiment import FPADD
 
-class ORGate:
-    def __init__(self):
-        self.a = Signal()
-        self.b = Signal()
-        self.x = Signal()
+import sys
+import atexit
+from random import randint
+from random import seed
 
-    def get_fragment(self, platform=None):
+def get_mantissa(x):
+    return x & 0x000fffffffffffff
 
-        m = Module()
-        m.d.comb += self.x.eq(self.a | self.b)
+def get_exponent(x):
+    return ((x & 0x7ff0000000000000) >> 52) - 1023
 
-        return m
+def get_sign(x):
+    return ((x & 0x8000000000000000) >> 63)
 
-def check_case(dut, a, b, z):
+def is_nan(x):
+    return get_exponent(x) == 1024 and get_mantissa(x) != 0
+
+def is_inf(x):
+    return get_exponent(x) == 1024 and get_mantissa(x) == 0
+
+def is_pos_inf(x):
+    return is_inf(x) and not get_sign(x)
+
+def is_neg_inf(x):
+    return is_inf(x) and get_sign(x)
+
+def match(x, y):
+    return (
+        (is_pos_inf(x) and is_pos_inf(y)) or
+        (is_neg_inf(x) and is_neg_inf(y)) or
+        (is_nan(x) and is_nan(y)) or
+        (x == y)
+        )
+
+def get_case(dut, a, b):
     yield dut.in_a.v.eq(a)
     yield dut.in_a.stb.eq(1)
     yield
@@ -43,7 +65,63 @@ def check_case(dut, a, b, z):
         break
 
     out_z = yield dut.out_z.v
+    return out_z
+
+def check_case(dut, a, b, z):
+    out_z = yield from get_case(dut, a, b)
     assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
+
+
+def run_test(dut, stimulus_a, stimulus_b):
+
+    expected_responses = []
+    actual_responses = []
+    for a, b in zip(stimulus_a, stimulus_b):
+        af = Float64.from_bits(a)
+        bf = Float64.from_bits(b)
+        z = af + bf
+        expected_responses.append(z.get_bits())
+        #print (af, bf, z)
+        actual = yield from get_case(dut, a, b)
+        actual_responses.append(actual)
+
+    if len(actual_responses) < len(expected_responses):
+        print ("Fail ... not enough results")
+        exit(0)
+
+    for exp, act, a, b in zip(expected_responses, actual_responses,
+                                      stimulus_a, stimulus_b):
+        passed = match(exp, act)
+
+        if not passed:
+
+            print ("Fail ... expected:", hex(exp), "actual:", hex(act))
+
+            print (hex(a))
+            print ("a mantissa:",              a & 0x000fffffffffffff)
+            print ("a exponent:",            ((a & 0x7ff0000000000000) >> 52)\
+                                                - 1023)
+            print ("a sign:",                ((a & 0x8000000000000000) >> 63))
+
+            print (hex(b))
+            print ("b mantissa:",              b & 0x000fffffffffffff)
+            print ("b exponent:",            ((b & 0x7ff0000000000000) >> 52)\
+                                                 - 1023)
+            print ("b sign:",                ((b & 0x8000000000000000) >> 63))
+
+            print (hex(exp))
+            print ("expected mantissa:",   exp & 0x000fffffffffffff)
+            print ("expected exponent:", ((exp & 0x7ff0000000000000) >> 52)\
+                                                 - 1023)
+            print ("expected sign:",     ((exp & 0x8000000000000000) >> 63))
+
+            print (hex(act))
+            print ("actual mantissa:",       act & 0x000fffffffffffff)
+            print ("actual exponent:",     ((act & 0x7ff0000000000000) >> 52)\
+                                                 - 1023)
+            print ("actual sign:",         ((act & 0x8000000000000000) >> 63))
+
+            sys.exit(0)
 
 def testbench(dut):
     yield from check_case(dut, 0, 0, 0)
@@ -56,33 +134,118 @@ def testbench(dut):
     yield from check_case(dut, 0x4056C00000000000, 0x4042EA3D70A3D70A,
                                0x40601A8F5C28F5C2)
 
-    if False:
-        yield from check_case(dut, 0x40000000, 0x3F800000, 0x40400000)
-        yield from check_case(dut, 0x447A0000, 0x4488B000, 0x4502D800)
-        yield from check_case(dut, 0x463B800A, 0x42BA8A3D, 0x463CF51E)
-        yield from check_case(dut, 0x42BA8A3D, 0x463B800A, 0x463CF51E)
-        yield from check_case(dut, 0x463B800A, 0xC2BA8A3D, 0x463A0AF6)
-        yield from check_case(dut, 0xC2BA8A3D, 0x463B800A, 0x463A0AF6)
-        yield from check_case(dut, 0xC63B800A, 0x42BA8A3D, 0xC63A0AF6)
-        yield from check_case(dut, 0x42BA8A3D, 0xC63B800A, 0xC63A0AF6)
-        yield from check_case(dut, 0xFFFFFFFF, 0xC63B800A, 0xFFC00000)
-        yield from check_case(dut, 0x7F800000, 0x00000000, 0x7F800000)
-        yield from check_case(dut, 0x00000000, 0x7F800000, 0x7F800000)
-        yield from check_case(dut, 0xFF800000, 0x00000000, 0xFF800000)
-        yield from check_case(dut, 0x00000000, 0xFF800000, 0xFF800000)
-        yield from check_case(dut, 0x7F800000, 0x7F800000, 0x7F800000)
-        yield from check_case(dut, 0xFF800000, 0xFF800000, 0xFF800000)
-        yield from check_case(dut, 0x7F800000, 0xFF800000, 0xFFC00000)
-        yield from check_case(dut, 0xFF800000, 0x7F800000, 0x7FC00000)
-        yield from check_case(dut, 0x00018643, 0x00FA72A4, 0x00FBF8E7)
-        yield from check_case(dut, 0x001A2239, 0x00FA72A4, 0x010A4A6E)
-        yield from check_case(dut, 0x3F7FFFFE, 0x3F7FFFFE, 0x3FFFFFFE)
-        yield from check_case(dut, 0x7EFFFFEE, 0x7EFFFFEE, 0x7F7FFFEE)
-        yield from check_case(dut, 0x7F7FFFEE, 0xFEFFFFEE, 0x7EFFFFEE)
-        yield from check_case(dut, 0x7F7FFFEE, 0x756CA884, 0x7F7FFFFD)
-        yield from check_case(dut, 0x7F7FFFEE, 0x758A0CF8, 0x7F7FFFFF)
-        #yield from check_case(dut, 1, 0, 1)
-        #yield from check_case(dut, 1, 1, 1)
+    count = 0
+
+    #regression tests
+    stimulus_a = [0x3ff00000000000c5, 0xff80000000000000]
+    stimulus_b = [0xbd28a404211fb72b, 0x7f80000000000000]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    #corner cases
+    from itertools import permutations
+    stimulus_a = [i[0] for i in permutations([
+        0x8000000000000000,
+        0x0000000000000000,
+        0x7ff8000000000000,
+        0xfff8000000000000,
+        0x7ff0000000000000,
+        0xfff0000000000000
+    ], 2)]
+    stimulus_b = [i[1] for i in permutations([
+        0x8000000000000000,
+        0x0000000000000000,
+        0x7ff8000000000000,
+        0xfff8000000000000,
+        0x7ff0000000000000,
+        0xfff0000000000000
+    ], 2)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    #edge cases
+    stimulus_a = [0x8000000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x0000000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x8000000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x0000000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7FF8000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFFF8000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7FF8000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFFF8000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0x7FF0000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_a = [0xFFF0000000000000 for i in range(1000)]
+    stimulus_b = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0x7FF0000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    stimulus_b = [0xFFF0000000000000 for i in range(1000)]
+    stimulus_a = [randint(0, 1<<64)  for i in range(1000)]
+    yield from run_test(dut, stimulus_a, stimulus_b)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+    #seed(0)
+    for i in range(100000):
+        stimulus_a = [randint(0, 1<<64) for i in range(1000)]
+        stimulus_b = [randint(0, 1<<64) for i in range(1000)]
+        yield from run_test(dut, stimulus_a, stimulus_b)
+        count += 1000
+        print (count, "random vectors passed")
+
 
 if __name__ == '__main__':
     dut = FPADD(width=64, single_cycle=True)
