@@ -1,3 +1,5 @@
+from sfpy import Float32
+
 def get_mantissa(x):
     return 0x7fffff & x
 
