@@ -1,4 +1,4 @@
 *.vcd
-*.py*
+*.py?
 .*.sw?
 __pycache__
