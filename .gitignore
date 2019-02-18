@@ -1,0 +1,4 @@
+*.vcd
+*.py*
+.*.sw?
+__pycache__
