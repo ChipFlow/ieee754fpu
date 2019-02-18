@@ -119,6 +119,30 @@ def run_test(dut, stimulus_a, stimulus_b, op):
             sys.exit(0)
 
 
+def run_corner_cases(dut, count, op):
+    #corner cases
+    from itertools import permutations
+    stimulus_a = [i[0] for i in permutations([
+        0x8000000000000000,
+        0x0000000000000000,
+        0x7ff8000000000000,
+        0xfff8000000000000,
+        0x7ff0000000000000,
+        0xfff0000000000000
+    ], 2)]
+    stimulus_b = [i[1] for i in permutations([
+        0x8000000000000000,
+        0x0000000000000000,
+        0x7ff8000000000000,
+        0xfff8000000000000,
+        0x7ff0000000000000,
+        0xfff0000000000000
+    ], 2)]
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed")
+
+
 def run_edge_cases(dut, count, op):
     #edge cases
     stimulus_a = [0x8000000000000000 for i in range(1000)]
