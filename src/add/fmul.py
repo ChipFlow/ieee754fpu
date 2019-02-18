@@ -24,7 +24,8 @@ class FPMUL(FPBase):
         b = FPNum(self.width, False)
         z = FPNum(self.width, False)
 
-        tot = Signal(28)     # sticky/round/guard bits, 23 result, 1 overflow
+        mw = (self.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
+        product = Signal(mw)
 
         of = Overflow()
 
