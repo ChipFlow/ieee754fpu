@@ -2,10 +2,25 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Signal, Cat, Const, Mux
+from nmigen import Signal, Cat, Const, Mux, Module
 from math import log
 from operator import or_
 from functools import reduce
+
+class MultiShiftR:
+
+    def __init__(self, width):
+        self.width = width
+        self.smax = int(log(width) / log(2))
+        self.i = Signal(width)
+        self.s = Signal(self.smax)
+        self.o = Signal(width)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.o.eq(self.i >> self.s)
+        return m
+
 
 class MultiShift:
     """ Generates variable-length single-cycle shifter from a series
@@ -23,6 +38,8 @@ class MultiShift:
         self.smax = int(log(width) / log(2))
 
     def lshift(self, op, s):
+        res = op << s
+        return res[:len(op)]
         res = op
         for i in range(self.smax):
             zeros = [0] * (1<<i)
@@ -30,6 +47,8 @@ class MultiShift:
         return res
 
     def rshift(self, op, s):
+        res = op >> s
+        return res[:len(op)]
         res = op
         for i in range(self.smax):
             zeros = [0] * (1<<i)
