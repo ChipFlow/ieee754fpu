@@ -29,7 +29,7 @@ class FPADD(FPBase):
         b = FPNum(self.width)
         z = FPNum(self.width, False)
 
-        w = {32: 28, 64:57}[self.width]
+        w = z.m_width + 4
         tot = Signal(w) # sticky/round/guard, {mantissa} result, 1 overflow
 
         of = Overflow()
