@@ -55,10 +55,25 @@ class FPADD(FPBase):
 
             with m.State("special_cases"):
 
-                # if a is NaN or b is NaN return NaN
-                with m.If(a.is_nan() | b.is_nan()):
+                # if a is zero and b is NaN return -b
+                with m.If(a.is_zero() & (a.s==0) & b.is_nan()):
                     m.next = "put_z"
-                    m.d.sync += z.nan(1)
+                    m.d.sync += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
+
+                # if b is zero and a is NaN return -a
+                with m.Elif(b.is_zero() & (b.s==0) & a.is_nan()):
+                    m.next = "put_z"
+                    m.d.sync += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
+
+                # if a is -zero and b is NaN return -b
+                with m.Elif(a.is_zero() & (a.s==1) & b.is_nan()):
+                    m.next = "put_z"
+                    m.d.sync += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
+
+                # if b is -zero and a is NaN return -a
+                with m.Elif(b.is_zero() & (b.s==1) & a.is_nan()):
+                    m.next = "put_z"
+                    m.d.sync += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
                 # if a is inf return inf (or NaN)
                 with m.Elif(a.is_inf()):

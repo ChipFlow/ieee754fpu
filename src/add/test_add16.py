@@ -13,6 +13,15 @@ from unit_test_half import (get_mantissa, get_exponent, get_sign, is_nan,
                                 run_edge_cases, run_corner_cases)
 
 def testbench(dut):
+    yield from check_case(dut, 0x7800, 0xff6f, 0xff6f)
+    yield from check_case(dut, 0x0000, 0x7c32, 0x7e32)
+    yield from check_case(dut, 0x0000, 0x7da9, 0x7fa9)
+    yield from check_case(dut, 0x0000, 0x7ea0, 0x7ea0)
+    yield from check_case(dut, 0x7c9a, 0x8000, 0x7e9a)
+    yield from check_case(dut, 0x7d5e, 0x0000, 0x7f5e)
+    yield from check_case(dut, 0x8000, 0x7c8c, 0x7e8c)
+    yield from check_case(dut, 0x8000, 0xfc55, 0xfe55)
+    yield from check_case(dut, 0x8000, 0x7e1a, 0x7e1a)
     yield from check_case(dut, 0xfc00, 0x7c00, 0xfe00)
     yield from check_case(dut, 0x8000, 0, 0)
     yield from check_case(dut, 0, 0, 0)
