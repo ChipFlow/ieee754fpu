@@ -161,6 +161,17 @@ class FPNum:
                 self.m.eq(Cat(stickybits, rs))
                ]
 
+    def shift_up_multi(self, diff):
+        """ shifts a mantissa up. exponent is decreased to compensate
+        """
+        sm = MultiShift(self.width)
+        mw = Const(self.m_width, len(diff))
+        maxslen = Mux(diff > mw, mw, diff)
+
+        return [self.e.eq(self.e - diff),
+                self.m.eq(sm.lshift(self.m, maxslen))
+               ]
+
     def nan(self, s):
         return self.create(s, self.P128, 1<<(self.e_start-1))
 
@@ -264,7 +275,7 @@ class FPBase:
                   the extra mantissa bits coming from tot[0..2]
         """
         with m.If((z.m[-1] == 0) & (z.e > z.N126)):
-            m.d.sync +=[
+            m.d.sync += [
                 z.e.eq(z.e - 1),  # DECREASE exponent
                 z.m.eq(z.m << 1), # shift mantissa UP
                 z.m[0].eq(of.guard),       # steal guard bit (was tot[2])
