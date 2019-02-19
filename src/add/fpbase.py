@@ -70,7 +70,7 @@ class FPNum:
     """
     def __init__(self, width, m_extra=True):
         self.width = width
-        m_width = {16: 12, 32: 24, 64: 53}[width] # 1 extra bit (overflow)
+        m_width = {16: 11, 32: 24, 64: 53}[width] # 1 extra bit (overflow)
         e_width = {16: 7,  32: 10, 64: 13}[width] # 2 extra bits (overflow)
         e_max = 1<<(e_width-3)
         self.rmw = m_width # real mantissa width (not including extras)
