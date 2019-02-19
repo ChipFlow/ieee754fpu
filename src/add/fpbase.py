@@ -12,9 +12,9 @@ class MultiShiftR:
     def __init__(self, width):
         self.width = width
         self.smax = int(log(width) / log(2))
-        self.i = Signal(width)
-        self.s = Signal(self.smax)
-        self.o = Signal(width)
+        self.i = Signal(width, reset_less=True)
+        self.s = Signal(self.smax, reset_less=True)
+        self.o = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
@@ -88,9 +88,9 @@ class FPNum:
         self.e_end = self.rmw + self.e_width - 3 # for decoding
 
         self.v = Signal(width)      # Latched copy of value
-        self.m = Signal(m_width)    # Mantissa
-        self.e = Signal((e_width, True)) # Exponent: IEEE754exp+2 bits, signed
-        self.s = Signal()           # Sign bit
+        self.m = Signal(m_width, reset_less=True)    # Mantissa
+        self.e = Signal((e_width, True), reset_less=True) # Exponent: IEEE754exp+2 bits, signed
+        self.s = Signal(reset_less=True)           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
         self.m1s = Const(-1, (m_width, False))
@@ -201,9 +201,9 @@ class FPOp:
     def __init__(self, width):
         self.width = width
 
-        self.v   = Signal(width)
-        self.stb = Signal()
-        self.ack = Signal()
+        self.v   = Signal(width, reset_less=True)
+        self.stb = Signal(reset_less=True)
+        self.ack = Signal(reset_less=True)
 
     def ports(self):
         return [self.v, self.stb, self.ack]
@@ -211,9 +211,9 @@ class FPOp:
 
 class Overflow:
     def __init__(self):
-        self.guard = Signal()     # tot[2]
-        self.round_bit = Signal() # tot[1]
-        self.sticky = Signal()    # tot[0]
+        self.guard = Signal(reset_less=True)     # tot[2]
+        self.round_bit = Signal(reset_less=True) # tot[1]
+        self.sticky = Signal(reset_less=True)    # tot[0]
 
 
 class FPBase:

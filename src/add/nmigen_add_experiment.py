@@ -30,7 +30,7 @@ class FPADD(FPBase):
         z = FPNum(self.width, False)
 
         w = z.m_width + 4
-        tot = Signal(w) # sticky/round/guard, {mantissa} result, 1 overflow
+        tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
 
         of = Overflow()
 
@@ -146,8 +146,8 @@ class FPADD(FPBase):
                     # XXX TODO: the shifter used here is quite expensive
                     # having only one would be better
 
-                    ediff = Signal((len(a.e), True))
-                    ediffr = Signal((len(a.e), True))
+                    ediff = Signal((len(a.e), True), reset_less=True)
+                    ediffr = Signal((len(a.e), True), reset_less=True)
                     m.d.comb += ediff.eq(a.e - b.e)
                     m.d.comb += ediffr.eq(b.e - a.e)
                     with m.If(ediff > 0):
