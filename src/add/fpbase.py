@@ -337,11 +337,12 @@ class FPBase:
             resets stb back to zero when that occurs, as acknowledgement.
         """
         m.d.sync += [
-          out_z.stb.eq(1),
           out_z.v.eq(z.v)
         ]
         with m.If(out_z.stb & out_z.ack):
             m.d.sync += out_z.stb.eq(0)
             m.next = next_state
+        with m.Else():
+            m.d.sync += out_z.stb.eq(1)
 
 
