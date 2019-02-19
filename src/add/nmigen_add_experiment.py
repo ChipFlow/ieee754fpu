@@ -66,7 +66,7 @@ class FPADD(FPBase):
                     m.d.sync += z.inf(a.s)
                     # if a is inf and signs don't match return NaN
                     with m.If((b.e == b.P128) & (a.s != b.s)):
-                        m.d.sync += z.nan(b.s)
+                        m.d.sync += z.nan(1)
 
                 # if b is inf return inf
                 with m.Elif(b.is_inf()):

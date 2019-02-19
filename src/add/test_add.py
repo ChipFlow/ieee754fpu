@@ -13,6 +13,9 @@ from unit_test_single import (get_mantissa, get_exponent, get_sign, is_nan,
                                 run_edge_cases, run_corner_cases)
 
 def testbench(dut):
+    yield from check_case(dut, 0xFF800000, 0x7F800000, 0xFFC00000)
+    #yield from check_case(dut, 0xFF800000, 0x7F800000, 0x7FC00000)
+    yield from check_case(dut, 0x7F800000, 0xFF800000, 0xFFC00000)
     yield from check_case(dut, 0x42540000, 0xC2540000, 0x00000000)
     yield from check_case(dut, 0xC2540000, 0x42540000, 0x00000000)
     yield from check_case(dut, 0xfe34f995, 0xff5d59ad, 0xff800000)
@@ -35,8 +38,6 @@ def testbench(dut):
     yield from check_case(dut, 0x00000000, 0xFF800000, 0xFF800000)
     yield from check_case(dut, 0x7F800000, 0x7F800000, 0x7F800000)
     yield from check_case(dut, 0xFF800000, 0xFF800000, 0xFF800000)
-    yield from check_case(dut, 0x7F800000, 0xFF800000, 0xFFC00000)
-    yield from check_case(dut, 0xFF800000, 0x7F800000, 0x7FC00000)
     yield from check_case(dut, 0x00018643, 0x00FA72A4, 0x00FBF8E7)
     yield from check_case(dut, 0x001A2239, 0x00FA72A4, 0x010A4A6E)
     yield from check_case(dut, 0x3F7FFFFE, 0x3F7FFFFE, 0x3FFFFFFE)
