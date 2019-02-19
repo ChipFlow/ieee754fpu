@@ -88,6 +88,7 @@ class FPADD(FPBase):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s, a.e, a.m[3:-1])
 
+                # if a equal to -b return zero (+ve zero)
                 with m.Elif((a.s != b.s) & (a.m == b.m) & (a.e == b.e)):
                     m.next = "put_z"
                     m.d.sync += z.zero(0)
