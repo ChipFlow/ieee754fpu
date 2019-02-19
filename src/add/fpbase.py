@@ -70,8 +70,8 @@ class FPNum:
     """
     def __init__(self, width, m_extra=True):
         self.width = width
-        m_width = {32: 24, 64: 53}[width]
-        e_width = {32: 10, 64: 13}[width]
+        m_width = {16: 12, 32: 24, 64: 53}[width] # 1 extra bit (overflow)
+        e_width = {16: 7,  32: 10, 64: 13}[width] # 2 extra bits (overflow)
         e_max = 1<<(e_width-3)
         self.rmw = m_width # real mantissa width (not including extras)
         self.e_max = e_max
@@ -89,7 +89,7 @@ class FPNum:
 
         self.v = Signal(width)      # Latched copy of value
         self.m = Signal(m_width)    # Mantissa
-        self.e = Signal((e_width, True)) # Exponent: 10 bits, signed
+        self.e = Signal((e_width, True)) # Exponent: IEEE754exp+2 bits, signed
         self.s = Signal()           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
