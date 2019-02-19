@@ -10,6 +10,9 @@ def get_mantissa(x):
 def get_exponent(x):
     return ((x & 0x7f800000) >> 23) - 127
 
+def set_exponent(x, e):
+    return (x & ~0x7f800000) | ((e+127) << 23)
+
 def get_sign(x):
     return ((x & 0x80000000) >> 31)
 
@@ -114,99 +117,72 @@ def run_test(dut, stimulus_a, stimulus_b, op):
 
             sys.exit(0)
 
+corner_cases = [0x80000000, 0x00000000, 0x7f800000, 0xff800000,
+                0x7fc00000, 0xffc00000]
+
 def run_corner_cases(dut, count, op):
     #corner cases
     from itertools import permutations
-    stimulus_a = [i[0] for i in permutations([0x80000000, 0x00000000, 0x7f800000, 0xff800000, 0x7fc00000, 0xffc00000], 2)]
-    stimulus_b = [i[1] for i in permutations([0x80000000, 0x00000000, 0x7f800000, 0xff800000, 0x7fc00000, 0xffc00000], 2)]
+    stimulus_a = [i[0] for i in permutations(corner_cases, 2)]
+    stimulus_b = [i[1] for i in permutations(corner_cases, 2)]
     yield from run_test(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
+def run_test_2(dut, stimulus_a, stimulus_b, op):
+    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_test(dut, stimulus_b, stimulus_a, op)
+
+def run_cases(dut, count, op, fixed_num, num_entries):
+    if isinstance(fixed_num, int):
+        stimulus_a = [fixed_num for i in range(num_entries)]
+        report = hex(fixed_num)
+    else:
+        stimulus_a = fixed_num
+        report = "random"
+
+    stimulus_b = [randint(0, 1<<32) for i in range(num_entries)]
+    yield from run_test_2(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed 2^32", report)
+
+    # non-canonical NaNs.
+    stimulus_b = [set_exponent(randint(0, 1<<32), 128) \
+                        for i in range(num_entries)]
+    yield from run_test_2(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed Non-Canonical NaN", report)
+
+    # -127
+    stimulus_b = [set_exponent(randint(0, 1<<32), -127) \
+                        for i in range(num_entries)]
+    yield from run_test_2(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed exp=-127", report)
+
+    # nearly zero
+    stimulus_b = [set_exponent(randint(0, 1<<32), -126) \
+                        for i in range(num_entries)]
+    yield from run_test_2(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed exp=-126", report)
+
+    # nearly inf
+    stimulus_b = [set_exponent(randint(0, 1<<32), 127) \
+                        for i in range(num_entries)]
+    yield from run_test_2(dut, stimulus_a, stimulus_b, op)
+    count += len(stimulus_a)
+    print (count, "vectors passed exp=127", report)
+
+    return count
 
 def run_edge_cases(dut, count, op):
     #edge cases
-    stimulus_a = [0x80000000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
+    for testme in corner_cases:
+        count = yield from run_cases(dut, count, op, testme, 1000)
 
-    stimulus_a = [0x00000000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0x80000000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0x00000000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_a = [0x7F800000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_a = [0xFF800000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0x7F800000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0xFF800000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_a = [0x7FC00000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_a = [0xFFC00000 for i in range(1000)]
-    stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0x7FC00000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    stimulus_b = [0xFFC00000 for i in range(1000)]
-    stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
-    count += len(stimulus_a)
-    print (count, "vectors passed")
-
-    #seed(0)
     for i in range(100000):
         stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-        stimulus_b = [randint(0, 1<<32) for i in range(1000)]
-        yield from run_test(dut, stimulus_a, stimulus_b, op)
-        count += 1000
-        print (count, "random vectors passed")
-
-if __name__ == '__main__':
-    dut = FPADD(width=32, single_cycle=True)
-    run_simulation(dut, testbench(dut), vcd_name="test_add.vcd")
+        count = yield from run_cases(dut, count, op, stimulus_a, 1000)
+    return count
 
