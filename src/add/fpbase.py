@@ -308,7 +308,9 @@ class FPBase:
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
         m.next = next_state
-        with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
+        roundz = Signal(reset_less=True)
+        m.d.comb += roundz.eq(of.guard & (of.round_bit | of.sticky | z.m[0]))
+        with m.If(roundz):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
