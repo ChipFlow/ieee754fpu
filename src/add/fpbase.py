@@ -87,7 +87,7 @@ class FPNum:
         self.e_start = self.rmw - 1
         self.e_end = self.rmw + self.e_width - 3 # for decoding
 
-        self.v = Signal(width)      # Latched copy of value
+        self.v = Signal(width, reset_less=True)      # Latched copy of value
         self.m = Signal(m_width, reset_less=True)    # Mantissa
         self.e = Signal((e_width, True), reset_less=True) # Exponent: IEEE754exp+2 bits, signed
         self.s = Signal(reset_less=True)           # Sign bit
@@ -201,9 +201,9 @@ class FPOp:
     def __init__(self, width):
         self.width = width
 
-        self.v   = Signal(width, reset_less=True)
-        self.stb = Signal(reset_less=True)
-        self.ack = Signal(reset_less=True)
+        self.v   = Signal(width)
+        self.stb = Signal()
+        self.ack = Signal()
 
     def ports(self):
         return [self.v, self.stb, self.ack]
