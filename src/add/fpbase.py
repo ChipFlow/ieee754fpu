@@ -177,11 +177,17 @@ class FPNumIn(FPNumBase):
         (m[-1]) is effectively a carry-overflow.  The other three are
         guard (m[2]), round (m[1]), and sticky (m[0])
     """
-    def __init__(self, width, m_extra=True):
+    def __init__(self, op, width, m_extra=True):
         FPNumBase.__init__(self, width, m_extra)
+        self.latch_in = Signal()
+        self.op = op
 
     def elaborate(self, platform):
         m = FPNumBase.elaborate(self, platform)
+
+        m.d.comb += self.latch_in.eq(self.op.ack & self.op.stb)
+        with m.If(self.latch_in):
+            m.d.sync += self.decode(self.v)
 
         return m
 
@@ -291,7 +297,7 @@ class FPBase:
         with m.If((op.ack) & (op.stb)):
             m.next = next_state
             m.d.sync += [
-                v.decode(op.v),
+                # op is latched in from FPNumIn class on same ack/stb
                 op.ack.eq(0)
             ]
         with m.Else():

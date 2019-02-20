@@ -25,13 +25,16 @@ class FPADD(FPBase):
         m = Module()
 
         # Latches
-        a = FPNumIn(self.width)
-        b = FPNumIn(self.width)
+        a = FPNumIn(self.in_a, self.width)
+        b = FPNumIn(self.in_b, self.width)
         z = FPNumOut(self.width, False)
 
         m.submodules.fpnum_a = a
         m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
+
+        m.d.comb += a.v.eq(self.in_a.v)
+        m.d.comb += b.v.eq(self.in_b.v)
 
         w = z.m_width + 4
         tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
