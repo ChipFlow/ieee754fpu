@@ -232,6 +232,15 @@ class Overflow:
         self.guard = Signal(reset_less=True)     # tot[2]
         self.round_bit = Signal(reset_less=True) # tot[1]
         self.sticky = Signal(reset_less=True)    # tot[0]
+        self.m0 = Signal(reset_less=True)        # mantissa zero bit
+
+        self.roundz = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.roundz.eq(self.guard & \
+                                   (self.round_bit | self.sticky | self.m0))
+        return m
 
 
 class FPBase:
@@ -299,6 +308,7 @@ class FPBase:
                 z.m[0].eq(of.guard),       # steal guard bit (was tot[2])
                 of.guard.eq(of.round_bit), # steal round_bit (was tot[1])
                 of.round_bit.eq(0),        # reset round bit
+                of.m0.eq(of.guard),
             ]
         with m.Else():
             m.next = next_state
@@ -316,6 +326,7 @@ class FPBase:
                 z.e.eq(z.e + 1),  # INCREASE exponent
                 z.m.eq(z.m >> 1), # shift mantissa DOWN
                 of.guard.eq(z.m[0]),
+                of.m0.eq(z.m[1]),
                 of.round_bit.eq(of.guard),
                 of.sticky.eq(of.sticky | of.round_bit)
             ]
@@ -326,9 +337,7 @@ class FPBase:
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
         m.next = next_state
-        roundz = Signal(reset_less=True)
-        m.d.comb += roundz.eq(of.guard & (of.round_bit | of.sticky | z.m[0]))
-        with m.If(roundz):
+        with m.If(of.roundz):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up

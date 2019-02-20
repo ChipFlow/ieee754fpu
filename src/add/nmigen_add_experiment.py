@@ -38,6 +38,8 @@ class FPADD(FPBase):
 
         of = Overflow()
 
+        m.submodules.overflow = of
+
         with m.FSM() as fsm:
 
             # ******
@@ -205,6 +207,7 @@ class FPADD(FPBase):
                 with m.If(tot[-1]):
                     m.d.sync += [
                         z.m.eq(tot[4:]),
+                        of.m0.eq(tot[4]),
                         of.guard.eq(tot[3]),
                         of.round_bit.eq(tot[2]),
                         of.sticky.eq(tot[1] | tot[0]),
@@ -214,6 +217,7 @@ class FPADD(FPBase):
                 with m.Else():
                     m.d.sync += [
                         z.m.eq(tot[3:]),
+                        of.m0.eq(tot[3]),
                         of.guard.eq(tot[2]),
                         of.round_bit.eq(tot[1]),
                         of.sticky.eq(tot[0])
