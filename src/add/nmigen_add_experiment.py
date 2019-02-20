@@ -133,9 +133,16 @@ class FPADD(FPBase):
 
                 # Denormalised Number checks
                 with m.Else():
-                    m.next = "align"
-                    self.denormalise(m, a)
-                    self.denormalise(m, b)
+                    m.next = "denormalise"
+
+            # ******
+            # denormalise.
+
+            with m.State("denormalise"):
+                # Denormalised Number checks
+                m.next = "align"
+                self.denormalise(m, a)
+                self.denormalise(m, b)
 
             # ******
             # align.

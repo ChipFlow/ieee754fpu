@@ -125,7 +125,7 @@ class FPNumBase:
 
 
 class FPNumOut(FPNumBase):
-    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+    """ Floating-point Number Class
 
         Contains signals for an incoming copy of the value, decoded into
         sign / exponent / mantissa.
@@ -165,8 +165,79 @@ class FPNumOut(FPNumBase):
         return self.create(s, self.N127, 0)
 
 
+class FPNumShift(FPNumBase):
+    """ Floating-point Number Class for shifting
+    """
+    def __init__(self, mainm, op, inv, width, m_extra=True):
+        FPNumBase.__init__(self, width, m_extra)
+        self.latch_in = Signal()
+        self.mainm = mainm
+        self.inv = inv
+        self.op = op
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+
+        m.d.comb += self.s.eq(op.s)
+        m.d.comb += self.e.eq(op.e)
+        m.d.comb += self.m.eq(op.m)
+
+        with self.mainm.State("align"):
+            with m.If(self.e < self.inv.e):
+                m.d.sync += self.shift_down()
+
+        return m
+
+    def shift_down(self):
+        """ shifts a mantissa down by one. exponent is increased to compensate
+
+            accuracy is lost as a result in the mantissa however there are 3
+            guard bits (the latter of which is the "sticky" bit)
+        """
+        return [self.e.eq(self.e + 1),
+                self.m.eq(Cat(self.m[0] | self.m[1], self.m[2:], 0))
+               ]
+
+    def shift_down_multi(self, diff):
+        """ shifts a mantissa down. exponent is increased to compensate
+
+            accuracy is lost as a result in the mantissa however there are 3
+            guard bits (the latter of which is the "sticky" bit)
+
+            this code works by variable-shifting the mantissa by up to
+            its maximum bit-length: no point doing more (it'll still be
+            zero).
+
+            the sticky bit is computed by shifting a batch of 1s by
+            the same amount, which will introduce zeros.  it's then
+            inverted and used as a mask to get the LSBs of the mantissa.
+            those are then |'d into the sticky bit.
+        """
+        sm = MultiShift(self.width)
+        mw = Const(self.m_width-1, len(diff))
+        maxslen = Mux(diff > mw, mw, diff)
+        rs = sm.rshift(self.m[1:], maxslen)
+        maxsleni = mw - maxslen
+        m_mask = sm.rshift(self.m1s[1:], maxsleni) # shift and invert
+
+        stickybits = reduce(or_, self.m[1:] & m_mask) | self.m[0]
+        return [self.e.eq(self.e + diff),
+                self.m.eq(Cat(stickybits, rs))
+               ]
+
+    def shift_up_multi(self, diff):
+        """ shifts a mantissa up. exponent is decreased to compensate
+        """
+        sm = MultiShift(self.width)
+        mw = Const(self.m_width, len(diff))
+        maxslen = Mux(diff > mw, mw, diff)
+
+        return [self.e.eq(self.e - diff),
+                self.m.eq(sm.lshift(self.m, maxslen))
+               ]
+
 class FPNumIn(FPNumBase):
-    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+    """ Floating-point Number Class
 
         Contains signals for an incoming copy of the value, decoded into
         sign / exponent / mantissa.
