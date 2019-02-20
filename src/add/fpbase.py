@@ -56,17 +56,8 @@ class MultiShift:
         return res
 
 
-class FPNum:
-    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
-
-        Contains signals for an incoming copy of the value, decoded into
-        sign / exponent / mantissa.
-        Also contains encoding functions, creation and recognition of
-        zero, NaN and inf (all signed)
-
-        Four extra bits are included in the mantissa: the top bit
-        (m[-1]) is effectively a carry-overflow.  The other three are
-        guard (m[2]), round (m[1]), and sticky (m[0])
+class FPNumBase:
+    """ Floating-point Base Number Class
     """
     def __init__(self, width, m_extra=True):
         self.width = width
@@ -117,6 +108,83 @@ class FPNum:
 
         return m
 
+    def _is_nan(self):
+        return (self.e == self.P128) & (self.m != 0)
+
+    def _is_inf(self):
+        return (self.e == self.P128) & (self.m == 0)
+
+    def _is_zero(self):
+        return (self.e == self.N127) & (self.m == self.mzero)
+
+    def _is_overflowed(self):
+        return (self.e > self.P127)
+
+    def _is_denormalised(self):
+        return (self.e == self.N126) & (self.m[self.e_start] == 0)
+
+
+class FPNumOut(FPNumBase):
+    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+
+        Contains signals for an incoming copy of the value, decoded into
+        sign / exponent / mantissa.
+        Also contains encoding functions, creation and recognition of
+        zero, NaN and inf (all signed)
+
+        Four extra bits are included in the mantissa: the top bit
+        (m[-1]) is effectively a carry-overflow.  The other three are
+        guard (m[2]), round (m[1]), and sticky (m[0])
+    """
+    def __init__(self, width, m_extra=True):
+        FPNumBase.__init__(self, width, m_extra)
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+
+        return m
+
+    def create(self, s, e, m):
+        """ creates a value from sign / exponent / mantissa
+
+            bias is added here, to the exponent
+        """
+        return [
+          self.v[-1].eq(s),          # sign
+          self.v[self.e_start:self.e_end].eq(e + self.P127), # exp (add on bias)
+          self.v[0:self.e_start].eq(m)         # mantissa
+        ]
+
+    def nan(self, s):
+        return self.create(s, self.P128, 1<<(self.e_start-1))
+
+    def inf(self, s):
+        return self.create(s, self.P128, 0)
+
+    def zero(self, s):
+        return self.create(s, self.N127, 0)
+
+
+class FPNumIn(FPNumBase):
+    """ Floating-point Number Class, variable-width TODO (currently 32-bit)
+
+        Contains signals for an incoming copy of the value, decoded into
+        sign / exponent / mantissa.
+        Also contains encoding functions, creation and recognition of
+        zero, NaN and inf (all signed)
+
+        Four extra bits are included in the mantissa: the top bit
+        (m[-1]) is effectively a carry-overflow.  The other three are
+        guard (m[2]), round (m[1]), and sticky (m[0])
+    """
+    def __init__(self, width, m_extra=True):
+        FPNumBase.__init__(self, width, m_extra)
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+
+        return m
+
     def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
 
@@ -130,17 +198,6 @@ class FPNum:
                 self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
                 self.s.eq(v[-1]),                 # sign
                 ]
-
-    def create(self, s, e, m):
-        """ creates a value from sign / exponent / mantissa
-
-            bias is added here, to the exponent
-        """
-        return [
-          self.v[-1].eq(s),          # sign
-          self.v[self.e_start:self.e_end].eq(e + self.P127), # exp (add on bias)
-          self.v[0:self.e_start].eq(m)         # mantissa
-        ]
 
     def shift_down(self):
         """ shifts a mantissa down by one. exponent is increased to compensate
@@ -189,31 +246,6 @@ class FPNum:
         return [self.e.eq(self.e - diff),
                 self.m.eq(sm.lshift(self.m, maxslen))
                ]
-
-    def nan(self, s):
-        return self.create(s, self.P128, 1<<(self.e_start-1))
-
-    def inf(self, s):
-        return self.create(s, self.P128, 0)
-
-    def zero(self, s):
-        return self.create(s, self.N127, 0)
-
-    def _is_nan(self):
-        return (self.e == self.P128) & (self.m != 0)
-
-    def _is_inf(self):
-        return (self.e == self.P128) & (self.m == 0)
-
-    def _is_zero(self):
-        return (self.e == self.N127) & (self.m == self.mzero)
-
-    def _is_overflowed(self):
-        return (self.e > self.P127)
-
-    def _is_denormalised(self):
-        return (self.e == self.N126) & (self.m[self.e_start] == 0)
-
 
 class FPOp:
     def __init__(self, width):

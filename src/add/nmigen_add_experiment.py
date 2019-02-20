@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from fpbase import FPNum, FPOp, Overflow, FPBase
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
 
 class FPADD(FPBase):
@@ -25,9 +25,9 @@ class FPADD(FPBase):
         m = Module()
 
         # Latches
-        a = FPNum(self.width)
-        b = FPNum(self.width)
-        z = FPNum(self.width, False)
+        a = FPNumIn(self.width)
+        b = FPNumIn(self.width)
+        z = FPNumOut(self.width, False)
 
         m.submodules.fpnum_a = a
         m.submodules.fpnum_b = b
