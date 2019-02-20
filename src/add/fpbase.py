@@ -99,6 +99,24 @@ class FPNum:
         self.N127 = Const(-(e_max-1), (e_width, True))
         self.N126 = Const(-(e_max-2), (e_width, True))
 
+        self.is_nan = Signal(reset_less=True)
+        self.is_zero = Signal(reset_less=True)
+        self.is_inf = Signal(reset_less=True)
+        self.is_overflowed = Signal(reset_less=True)
+        self.is_denormalised = Signal(reset_less=True)
+        self.exp_128 = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.is_nan.eq(self._is_nan())
+        m.d.comb += self.is_zero.eq(self._is_zero())
+        m.d.comb += self.is_inf.eq(self._is_inf())
+        m.d.comb += self.is_overflowed.eq(self._is_overflowed())
+        m.d.comb += self.is_denormalised.eq(self._is_denormalised())
+        m.d.comb += self.exp_128.eq(self.e == self.P128)
+
+        return m
+
     def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
 
@@ -181,19 +199,19 @@ class FPNum:
     def zero(self, s):
         return self.create(s, self.N127, 0)
 
-    def is_nan(self):
+    def _is_nan(self):
         return (self.e == self.P128) & (self.m != 0)
 
-    def is_inf(self):
+    def _is_inf(self):
         return (self.e == self.P128) & (self.m == 0)
 
-    def is_zero(self):
+    def _is_zero(self):
         return (self.e == self.N127) & (self.m == self.mzero)
 
-    def is_overflowed(self):
+    def _is_overflowed(self):
         return (self.e > self.P127)
 
-    def is_denormalised(self):
+    def _is_denormalised(self):
         return (self.e == self.N126) & (self.m[self.e_start] == 0)
 
 
@@ -320,7 +338,7 @@ class FPBase:
         """
         m.next = next_state
         # denormalised, correct exponent to zero
-        with m.If(z.is_denormalised()):
+        with m.If(z.is_denormalised):
             m.d.sync += z.e.eq(z.N127)
 
     def pack(self, m, z, next_state):
@@ -328,7 +346,7 @@ class FPBase:
         """
         m.next = next_state
         # if overflow occurs, return inf
-        with m.If(z.is_overflowed()):
+        with m.If(z.is_overflowed):
             m.d.sync += z.inf(z.s)
         with m.Else():
             m.d.sync += z.create(z.s, z.e, z.m)

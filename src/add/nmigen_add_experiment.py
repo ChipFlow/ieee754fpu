@@ -29,6 +29,10 @@ class FPADD(FPBase):
         b = FPNum(self.width)
         z = FPNum(self.width, False)
 
+        m.submodules.fpnum_a = a
+        m.submodules.fpnum_b = b
+        m.submodules.fpnum_z = z
+
         w = z.m_width + 4
         tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
 
@@ -55,25 +59,6 @@ class FPADD(FPBase):
 
             with m.State("special_cases"):
 
-                a_nan = Signal()
-                a_zero = Signal()
-                a_inf = Signal()
-
-                b_nan = Signal()
-                b_zero = Signal()
-                b_inf = Signal()
-
-                m.d.comb += a_nan.eq(a.is_nan())
-                m.d.comb += a_zero.eq(a.is_zero())
-                m.d.comb += a_inf.eq(a.is_inf())
-
-                m.d.comb += b_nan.eq(b.is_nan())
-                m.d.comb += b_zero.eq(b.is_zero())
-                m.d.comb += b_inf.eq(b.is_inf())
-
-                b_eq_p128 = Signal()
-                m.d.comb += b_eq_p128.eq(b.e == b.P128)
-
                 s_nomatch = Signal()
                 m.d.comb += s_nomatch.eq(a.s != b.s)
 
@@ -81,7 +66,7 @@ class FPADD(FPBase):
                 m.d.comb += m_match.eq(a.m == b.m)
 
                 # if a is NaN or b is NaN return NaN
-                with m.If(a_nan | b_nan):
+                with m.If(a.is_nan | b.is_nan):
                     m.next = "put_z"
                     m.d.sync += z.nan(1)
 
@@ -89,50 +74,50 @@ class FPADD(FPBase):
                 # under review
 
                 ## if a is zero and b is NaN return -b
-                #with m.If(a_zero & (a.s==0) & b_nan):
+                #with m.If(a.is_zero & (a.s==0) & b.is_nan):
                 #    m.next = "put_z"
                 #    m.d.sync += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
 
                 ## if b is zero and a is NaN return -a
-                #with m.Elif(b_zero & (b.s==0) & a_nan):
+                #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
                 #    m.next = "put_z"
                 #    m.d.sync += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
 
                 ## if a is -zero and b is NaN return -b
-                #with m.Elif(a_zero & (a.s==1) & b_nan):
+                #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
                 #    m.next = "put_z"
                 #    m.d.sync += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
 
                 ## if b is -zero and a is NaN return -a
-                #with m.Elif(b_zero & (b.s==1) & a_nan):
+                #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
                 #    m.next = "put_z"
                 #    m.d.sync += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
                 # if a is inf return inf (or NaN)
-                with m.Elif(a_inf):
+                with m.Elif(a.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s)
                     # if a is inf and signs don't match return NaN
-                    with m.If(b_eq_p128 & s_nomatch):
+                    with m.If(b.exp_128 & s_nomatch):
                         m.d.sync += z.nan(1)
 
                 # if b is inf return inf
-                with m.Elif(b_inf):
+                with m.Elif(b.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.inf(b.s)
 
                 # if a is zero and b zero return signed-a/b
-                with m.Elif(a_zero & b_zero):
+                with m.Elif(a.is_zero & b.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s & b.s, b.e, b.m[3:-1])
 
                 # if a is zero return b
-                with m.Elif(a_zero):
+                with m.Elif(a.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.create(b.s, b.e, b.m[3:-1])
 
                 # if b is zero return a
-                with m.Elif(b_zero):
+                with m.Elif(b.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.create(a.s, a.e, a.m[3:-1])
 
