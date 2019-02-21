@@ -38,6 +38,10 @@ class FPGetOpB(FPState):
 class FPAddSpecialCases(FPState):
 
     def action(self, m):
+        """ special cases: NaNs, infs, zeros, denormalised
+            NOTE: some of these are unique to add.  see "Special Operations"
+            https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+        """
         s_nomatch = Signal()
         m.d.comb += s_nomatch.eq(self.a.s != self.b.s)
 
