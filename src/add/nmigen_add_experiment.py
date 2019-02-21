@@ -251,6 +251,12 @@ class FPPack(FPState):
         self.pack(m, self.z, "put_z")
 
 
+class FPPutZ(FPState):
+
+    def action(self, m):
+        self.put_z(m, self.z, self.out_z, "get_a")
+
+
 class FPADD(FPBase):
 
     def __init__(self, width, single_cycle=False):
@@ -334,6 +340,10 @@ class FPADD(FPBase):
         pa = FPPack("pack")
         pa.set_inputs({"z": z})  # XXX Z as output
         pa.set_outputs({"z": z})  # XXX Z as output
+
+        pz = FPPutZ("put_z")
+        pz.set_inputs({"z": z})
+        pz.set_outputs({"out_z": self.out_z})
 
         with m.FSM() as fsm:
 
@@ -419,7 +429,7 @@ class FPADD(FPBase):
             # put_z stage
 
             with m.State("put_z"):
-                self.put_z(m, z, self.out_z, "get_a")
+                pz.action(m)
 
         return m
 
