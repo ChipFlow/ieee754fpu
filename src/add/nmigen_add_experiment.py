@@ -27,6 +27,11 @@ class FPGetOpA(FPState):
     """ gets operand a
     """
 
+    def __init__(self, in_a, width):
+        FPState.__init__(self, "get_a")
+        self.in_a = in_a
+        self.a = FPNumIn(in_a, width)
+
     def action(self, m):
         self.get_op(m, self.in_a, self.a, "get_b")
 
@@ -282,11 +287,9 @@ class FPADD:
         m = Module()
 
         # Latches
-        a = FPNumIn(self.in_a, self.width)
         b = FPNumIn(self.in_b, self.width)
         z = FPNumOut(self.width, False)
 
-        m.submodules.fpnum_a = a
         m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
 
@@ -296,10 +299,12 @@ class FPADD:
         of = Overflow()
         m.submodules.overflow = of
 
-        geta = self.add_state(FPGetOpA("get_a"))
-        geta.set_inputs({"in_a": self.in_a})
-        geta.set_outputs({"a": a})
+        geta = self.add_state(FPGetOpA(self.in_a, self.width))
+        #geta.set_inputs({"in_a": self.in_a})
+        #geta.set_outputs({"a": a})
+        a = geta.a
         m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
+        m.submodules.fpnum_a = a
 
         getb = self.add_state(FPGetOpB("get_b"))
         getb.set_inputs({"in_b": self.in_b})
