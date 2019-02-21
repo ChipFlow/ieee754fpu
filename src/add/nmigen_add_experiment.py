@@ -233,6 +233,12 @@ class FPNorm2(FPState):
         self.normalise_2(m, self.z, self.of, "round")
 
 
+class FPRound(FPState):
+
+    def action(self, m):
+        self.roundz(m, self.z, self.of, "corrections")
+
+
 class FPADD(FPBase):
 
     def __init__(self, width, single_cycle=False):
@@ -305,6 +311,10 @@ class FPADD(FPBase):
         n2.set_inputs({"z": z, "of": of})  # XXX Z as output
         n2.set_outputs({"z": z})  # XXX Z as output
 
+        rn = FPRound("corrections")
+        rn.set_inputs({"z": z, "of": of})  # XXX Z as output
+        rn.set_outputs({"z": z})  # XXX Z as output
+
         with m.FSM() as fsm:
 
             # ******
@@ -371,7 +381,7 @@ class FPADD(FPBase):
             # rounding stage
 
             with m.State("round"):
-                self.roundz(m, z, of, "corrections")
+                rn.action(m)
 
             # ******
             # correction stage
