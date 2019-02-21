@@ -7,6 +7,33 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
+class FPState(FPBase):
+    def __init__(self, state_from, state_to):
+        self.state_from = state_from
+        self.state_to = state_to
+
+    def set_inputs(self, inputs):
+        self.inputs = inputs
+        for k,v in inputs.items():
+            setattr(self, k, v)
+
+    def set_outputs(self, outputs):
+        self.outputs = outputs
+        for k,v in outputs.items():
+            setattr(self, k, v)
+
+
+class FPGetOpA(FPState):
+
+    def action(self, m):
+        self.get_op(m, self.in_a, self.a, self.state_to)
+
+
+class FPGetOpB(FPState):
+
+    def action(self, m):
+        self.get_op(m, self.in_b, self.b, self.state_to)
+
 
 class FPADD(FPBase):
 
@@ -33,15 +60,21 @@ class FPADD(FPBase):
         m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
 
-        m.d.comb += a.v.eq(self.in_a.v)
-        m.d.comb += b.v.eq(self.in_b.v)
-
         w = z.m_width + 4
         tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
 
         of = Overflow()
-
         m.submodules.overflow = of
+
+        geta = FPGetOpA("get_a", "get_b")
+        geta.set_inputs({"in_a": self.in_a})
+        geta.set_outputs({"a": a})
+        m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
+
+        getb = FPGetOpB("get_b", "special_cases")
+        getb.set_inputs({"in_b": self.in_b})
+        getb.set_outputs({"b": b})
+        m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
 
         with m.FSM() as fsm:
 
@@ -49,13 +82,14 @@ class FPADD(FPBase):
             # gets operand a
 
             with m.State("get_a"):
-                self.get_op(m, self.in_a, a, "get_b")
+                geta.action(m)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
-                self.get_op(m, self.in_b, b, "special_cases")
+                #self.get_op(m, self.in_b, b, "special_cases")
+                getb.action(m)
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
