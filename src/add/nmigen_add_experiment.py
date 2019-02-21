@@ -221,6 +221,18 @@ class FPAddStage1(FPState):
         ]
 
 
+class FPNorm1(FPState):
+
+    def action(self, m):
+        self.normalise_1(m, self.z, self.of, "normalise_2")
+
+
+class FPNorm2(FPState):
+
+    def action(self, m):
+        self.normalise_2(m, self.z, self.of, "round")
+
+
 class FPADD(FPBase):
 
     def __init__(self, width, single_cycle=False):
@@ -285,6 +297,14 @@ class FPADD(FPBase):
         add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
         add1.set_outputs({"z": z, "of": of})  # XXX Z as output
 
+        n1 = FPNorm1("normalise_1")
+        n1.set_inputs({"z": z, "of": of})  # XXX Z as output
+        n1.set_outputs({"z": z})  # XXX Z as output
+
+        n2 = FPNorm2("normalise_2")
+        n2.set_inputs({"z": z, "of": of})  # XXX Z as output
+        n2.set_outputs({"z": z})  # XXX Z as output
+
         with m.FSM() as fsm:
 
             # ******
@@ -339,13 +359,13 @@ class FPADD(FPBase):
             # First stage of normalisation.
 
             with m.State("normalise_1"):
-                self.normalise_1(m, z, of, "normalise_2")
+                n1.action(m)
 
             # ******
             # Second stage of normalisation.
 
             with m.State("normalise_2"):
-                self.normalise_2(m, z, of, "round")
+                n2.action(m)
 
             # ******
             # rounding stage
