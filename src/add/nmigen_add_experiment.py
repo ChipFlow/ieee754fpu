@@ -111,6 +111,15 @@ class FPAddSpecialCases(FPState):
             m.next = "denormalise"
 
 
+class FPAddDeNorm(FPState):
+
+    def action(self, m):
+        # Denormalised Number checks
+        m.next = "align"
+        self.denormalise(m, self.a)
+        self.denormalise(m, self.b)
+
+
 class FPADD(FPBase):
 
     def __init__(self, width, single_cycle=False):
@@ -156,6 +165,10 @@ class FPADD(FPBase):
         sc.set_inputs({"a": a, "b": b})
         sc.set_outputs({"z": z})
 
+        dn = FPAddDeNorm("denormalise")
+        dn.set_inputs({"a": a, "b": b})
+        dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+
         with m.FSM() as fsm:
 
             # ******
@@ -183,10 +196,7 @@ class FPADD(FPBase):
             # denormalise.
 
             with m.State("denormalise"):
-                # Denormalised Number checks
-                m.next = "align"
-                self.denormalise(m, a)
-                self.denormalise(m, b)
+                dn.action(m)
 
             # ******
             # align.
