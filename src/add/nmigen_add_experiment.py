@@ -119,6 +119,7 @@ class FPAddDeNorm(FPState):
         self.denormalise(m, self.a)
         self.denormalise(m, self.b)
 
+
 class FPAddAlignMulti(FPState):
 
     def action(self, m):
@@ -156,6 +157,35 @@ class FPAddAlignSingle(FPState):
             m.d.sync += self.a.shift_down_multi(ediffr)
 
         m.next = "add_0"
+
+
+class FPAddStage0(FPState):
+
+    def action(self, m):
+        """ First stage of add.  covers same-sign (add) and subtract
+            special-casing when mantissas are greater or equal, to
+            give greatest accuracy.
+        """
+        m.next = "add_1"
+        m.d.sync += self.z.e.eq(self.a.e)
+        # same-sign (both negative or both positive) add mantissas
+        with m.If(self.a.s == self.b.s):
+            m.d.sync += [
+                self.tot.eq(Cat(self.a.m, 0) + Cat(self.b.m, 0)),
+                self.z.s.eq(self.a.s)
+            ]
+        # a mantissa greater than b, use a
+        with m.Elif(self.a.m >= self.b.m):
+            m.d.sync += [
+                self.tot.eq(Cat(self.a.m, 0) - Cat(self.b.m, 0)),
+                self.z.s.eq(self.a.s)
+            ]
+        # b mantissa greater than a, use b
+        with m.Else():
+            m.d.sync += [
+                self.tot.eq(Cat(self.b.m, 0) - Cat(self.a.m, 0)),
+                self.z.s.eq(self.b.s)
+        ]
 
 
 class FPADD(FPBase):
@@ -214,6 +244,10 @@ class FPADD(FPBase):
         alm.set_inputs({"a": a, "b": b})
         alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
+        add0 = FPAddStage0("add_0")
+        add0.set_inputs({"a": a, "b": b})
+        add0.set_outputs({"z": z, "tot": tot})
+
         with m.FSM() as fsm:
 
             # ******
@@ -255,26 +289,7 @@ class FPADD(FPBase):
             # give greatest accuracy.
 
             with m.State("add_0"):
-                m.next = "add_1"
-                m.d.sync += z.e.eq(a.e)
-                # same-sign (both negative or both positive) add mantissas
-                with m.If(a.s == b.s):
-                    m.d.sync += [
-                        tot.eq(Cat(a.m, 0) + Cat(b.m, 0)),
-                        z.s.eq(a.s)
-                    ]
-                # a mantissa greater than b, use a
-                with m.Elif(a.m >= b.m):
-                    m.d.sync += [
-                        tot.eq(Cat(a.m, 0) - Cat(b.m, 0)),
-                        z.s.eq(a.s)
-                    ]
-                # b mantissa greater than a, use b
-                with m.Else():
-                    m.d.sync += [
-                        tot.eq(Cat(b.m, 0) - Cat(a.m, 0)),
-                        z.s.eq(b.s)
-                ]
+                add0.action(m)
 
             # ******
             # Second stage of add: preparation for normalisation.
