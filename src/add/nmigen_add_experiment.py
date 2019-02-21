@@ -238,10 +238,17 @@ class FPRound(FPState):
     def action(self, m):
         self.roundz(m, self.z, self.of, "corrections")
 
+
 class FPCorrections(FPState):
 
     def action(self, m):
         self.corrections(m, self.z, "pack")
+
+
+class FPPack(FPState):
+
+    def action(self, m):
+        self.pack(m, self.z, "put_z")
 
 
 class FPADD(FPBase):
@@ -324,6 +331,10 @@ class FPADD(FPBase):
         cor.set_inputs({"z": z})  # XXX Z as output
         cor.set_outputs({"z": z})  # XXX Z as output
 
+        pa = FPPack("pack")
+        pa.set_inputs({"z": z})  # XXX Z as output
+        pa.set_outputs({"z": z})  # XXX Z as output
+
         with m.FSM() as fsm:
 
             # ******
@@ -402,7 +413,7 @@ class FPADD(FPBase):
             # pack stage
 
             with m.State("pack"):
-                self.pack(m, z, "put_z")
+                pa.action(m)
 
             # ******
             # put_z stage
