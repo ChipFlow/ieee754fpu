@@ -260,10 +260,9 @@ class FPPutZ(FPState):
         self.put_z(m, self.z, self.out_z, "get_a")
 
 
-class FPADD(FPBase):
+class FPADD:
 
     def __init__(self, width, single_cycle=False):
-        FPBase.__init__(self)
         self.width = width
         self.single_cycle = single_cycle
 
