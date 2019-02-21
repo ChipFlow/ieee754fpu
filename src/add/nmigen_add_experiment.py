@@ -24,24 +24,28 @@ class FPState(FPBase):
 
 
 class FPGetOpA(FPState):
+    """ gets operand a
+    """
 
     def action(self, m):
         self.get_op(m, self.in_a, self.a, "get_b")
 
 
 class FPGetOpB(FPState):
+    """ gets operand b
+    """
 
     def action(self, m):
         self.get_op(m, self.in_b, self.b, "special_cases")
 
 
 class FPAddSpecialCases(FPState):
+    """ special cases: NaNs, infs, zeros, denormalised
+        NOTE: some of these are unique to add.  see "Special Operations"
+        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+    """
 
     def action(self, m):
-        """ special cases: NaNs, infs, zeros, denormalised
-            NOTE: some of these are unique to add.  see "Special Operations"
-            https://steve.hollasch.net/cgindex/coding/ieeefloat.html
-        """
         s_nomatch = Signal()
         m.d.comb += s_nomatch.eq(self.a.s != self.b.s)
 
@@ -164,12 +168,12 @@ class FPAddAlignSingle(FPState):
 
 
 class FPAddStage0(FPState):
+    """ First stage of add.  covers same-sign (add) and subtract
+        special-casing when mantissas are greater or equal, to
+        give greatest accuracy.
+    """
 
     def action(self, m):
-        """ First stage of add.  covers same-sign (add) and subtract
-            special-casing when mantissas are greater or equal, to
-            give greatest accuracy.
-        """
         m.next = "add_1"
         m.d.sync += self.z.e.eq(self.a.e)
         # same-sign (both negative or both positive) add mantissas
@@ -192,11 +196,10 @@ class FPAddStage0(FPState):
         ]
 
 
-        """ Second stage of add: preparation for normalisation.
-            detects when tot sum is too big (tot[27] is kinda a carry bit)
-        """
-
 class FPAddStage1(FPState):
+    """ Second stage of add: preparation for normalisation.
+        detects when tot sum is too big (tot[27] is kinda a carry bit)
+    """
 
     def action(self, m):
         m.next = "normalise_1"
@@ -268,6 +271,12 @@ class FPADD(FPBase):
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
 
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+        return state
+
     def get_fragment(self, platform=None):
         """ creates the HDL code-fragment for FPAdd
         """
@@ -288,148 +297,68 @@ class FPADD(FPBase):
         of = Overflow()
         m.submodules.overflow = of
 
-        geta = FPGetOpA("get_a")
+        geta = self.add_state(FPGetOpA("get_a"))
         geta.set_inputs({"in_a": self.in_a})
         geta.set_outputs({"a": a})
         m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
 
-        getb = FPGetOpB("get_b")
+        getb = self.add_state(FPGetOpB("get_b"))
         getb.set_inputs({"in_b": self.in_b})
         getb.set_outputs({"b": b})
         m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
 
-        sc = FPAddSpecialCases("special_cases")
+        sc = self.add_state(FPAddSpecialCases("special_cases"))
         sc.set_inputs({"a": a, "b": b})
         sc.set_outputs({"z": z})
 
-        dn = FPAddDeNorm("denormalise")
+        dn = self.add_state(FPAddDeNorm("denormalise"))
         dn.set_inputs({"a": a, "b": b})
         dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
         if self.single_cycle:
-            alm = FPAddAlignSingle("align")
+            alm = self.add_state(FPAddAlignSingle("align"))
         else:
-            alm = FPAddAlignMulti("align")
+            alm = self.add_state(FPAddAlignMulti("align"))
         alm.set_inputs({"a": a, "b": b})
         alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
-        add0 = FPAddStage0("add_0")
+        add0 = self.add_state(FPAddStage0("add_0"))
         add0.set_inputs({"a": a, "b": b})
         add0.set_outputs({"z": z, "tot": tot})
 
-        add1 = FPAddStage1("add_1")
+        add1 = self.add_state(FPAddStage1("add_1"))
         add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
         add1.set_outputs({"z": z, "of": of})  # XXX Z as output
 
-        n1 = FPNorm1("normalise_1")
+        n1 = self.add_state(FPNorm1("normalise_1"))
         n1.set_inputs({"z": z, "of": of})  # XXX Z as output
         n1.set_outputs({"z": z})  # XXX Z as output
 
-        n2 = FPNorm2("normalise_2")
+        n2 = self.add_state(FPNorm2("normalise_2"))
         n2.set_inputs({"z": z, "of": of})  # XXX Z as output
         n2.set_outputs({"z": z})  # XXX Z as output
 
-        rn = FPRound("round")
+        rn = self.add_state(FPRound("round"))
         rn.set_inputs({"z": z, "of": of})  # XXX Z as output
         rn.set_outputs({"z": z})  # XXX Z as output
 
-        cor = FPCorrections("corrections")
+        cor = self.add_state(FPCorrections("corrections"))
         cor.set_inputs({"z": z})  # XXX Z as output
         cor.set_outputs({"z": z})  # XXX Z as output
 
-        pa = FPPack("pack")
+        pa = self.add_state(FPPack("pack"))
         pa.set_inputs({"z": z})  # XXX Z as output
         pa.set_outputs({"z": z})  # XXX Z as output
 
-        pz = FPPutZ("put_z")
+        pz = self.add_state(FPPutZ("put_z"))
         pz.set_inputs({"z": z})
         pz.set_outputs({"out_z": self.out_z})
 
         with m.FSM() as fsm:
 
-            # ******
-            # gets operand a
-
-            with m.State("get_a"):
-                geta.action(m)
-
-            # ******
-            # gets operand b
-
-            with m.State("get_b"):
-                #self.get_op(m, self.in_b, b, "special_cases")
-                getb.action(m)
-
-            # ******
-            # special cases: NaNs, infs, zeros, denormalised
-            # NOTE: some of these are unique to add.  see "Special Operations"
-            # https://steve.hollasch.net/cgindex/coding/ieeefloat.html
-
-            with m.State("special_cases"):
-                sc.action(m)
-
-            # ******
-            # denormalise.
-
-            with m.State("denormalise"):
-                dn.action(m)
-
-            # ******
-            # align.
-
-            with m.State("align"):
-                alm.action(m)
-
-            # ******
-            # First stage of add.  covers same-sign (add) and subtract
-            # special-casing when mantissas are greater or equal, to
-            # give greatest accuracy.
-
-            with m.State("add_0"):
-                add0.action(m)
-
-            # ******
-            # Second stage of add: preparation for normalisation.
-            # detects when tot sum is too big (tot[27] is kinda a carry bit)
-
-            with m.State("add_1"):
-                add1.action(m)
-
-            # ******
-            # First stage of normalisation.
-
-            with m.State("normalise_1"):
-                n1.action(m)
-
-            # ******
-            # Second stage of normalisation.
-
-            with m.State("normalise_2"):
-                n2.action(m)
-
-            # ******
-            # rounding stage
-
-            with m.State("round"):
-                rn.action(m)
-
-            # ******
-            # correction stage
-
-            with m.State("corrections"):
-                cor.action(m)
-
-            # ******
-            # pack stage
-
-            with m.State("pack"):
-                pa.action(m)
-
-            # ******
-            # put_z stage
-
-            with m.State("put_z"):
-                pz.action(m)
+            for state in self.states:
+                with m.State(state.state_from):
+                    state.action(m)
 
         return m
 
