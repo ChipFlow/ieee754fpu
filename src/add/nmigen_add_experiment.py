@@ -119,6 +119,44 @@ class FPAddDeNorm(FPState):
         self.denormalise(m, self.a)
         self.denormalise(m, self.b)
 
+class FPAddAlignMulti(FPState):
+
+    def action(self, m):
+        # NOTE: this does *not* do single-cycle multi-shifting,
+        #       it *STAYS* in the align state until exponents match
+
+        # exponent of a greater than b: shift b down
+        with m.If(self.a.e > self.b.e):
+            m.d.sync += self.b.shift_down()
+        # exponent of b greater than a: shift a down
+        with m.Elif(self.a.e < self.b.e):
+            m.d.sync += self.a.shift_down()
+        # exponents equal: move to next stage.
+        with m.Else():
+            m.next = "add_0"
+
+
+class FPAddAlignSingle(FPState):
+
+    def action(self, m):
+        # This one however (single-cycle) will do the shift
+        # in one go.
+
+        # XXX TODO: the shifter used here is quite expensive
+        # having only one would be better
+
+        ediff = Signal((len(self.a.e), True), reset_less=True)
+        ediffr = Signal((len(self.a.e), True), reset_less=True)
+        m.d.comb += ediff.eq(self.a.e - self.b.e)
+        m.d.comb += ediffr.eq(self.b.e - self.a.e)
+        with m.If(ediff > 0):
+            m.d.sync += self.b.shift_down_multi(ediff)
+        # exponent of b greater than a: shift a down
+        with m.Elif(ediff < 0):
+            m.d.sync += self.a.shift_down_multi(ediffr)
+
+        m.next = "add_0"
+
 
 class FPADD(FPBase):
 
@@ -169,6 +207,13 @@ class FPADD(FPBase):
         dn.set_inputs({"a": a, "b": b})
         dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
+        if self.single_cycle:
+            alm = FPAddAlignSingle("align")
+        else:
+            alm = FPAddAlignMulti("align")
+        alm.set_inputs({"a": a, "b": b})
+        alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+
         with m.FSM() as fsm:
 
             # ******
@@ -202,37 +247,7 @@ class FPADD(FPBase):
             # align.
 
             with m.State("align"):
-                if not self.single_cycle:
-                    # NOTE: this does *not* do single-cycle multi-shifting,
-                    #       it *STAYS* in the align state until exponents match
-
-                    # exponent of a greater than b: shift b down
-                    with m.If(a.e > b.e):
-                        m.d.sync += b.shift_down()
-                    # exponent of b greater than a: shift a down
-                    with m.Elif(a.e < b.e):
-                        m.d.sync += a.shift_down()
-                    # exponents equal: move to next stage.
-                    with m.Else():
-                        m.next = "add_0"
-                else:
-                    # This one however (single-cycle) will do the shift
-                    # in one go.
-
-                    # XXX TODO: the shifter used here is quite expensive
-                    # having only one would be better
-
-                    ediff = Signal((len(a.e), True), reset_less=True)
-                    ediffr = Signal((len(a.e), True), reset_less=True)
-                    m.d.comb += ediff.eq(a.e - b.e)
-                    m.d.comb += ediffr.eq(b.e - a.e)
-                    with m.If(ediff > 0):
-                        m.d.sync += b.shift_down_multi(ediff)
-                    # exponent of b greater than a: shift a down
-                    with m.Elif(ediff < 0):
-                        m.d.sync += a.shift_down_multi(ediffr)
-
-                    m.next = "add_0"
+                alm.action(m)
 
             # ******
             # First stage of add.  covers same-sign (add) and subtract
