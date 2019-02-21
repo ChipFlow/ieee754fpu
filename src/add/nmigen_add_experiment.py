@@ -7,10 +7,10 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
+
 class FPState(FPBase):
-    def __init__(self, state_from, state_to):
+    def __init__(self, state_from):
         self.state_from = state_from
-        self.state_to = state_to
 
     def set_inputs(self, inputs):
         self.inputs = inputs
@@ -26,13 +26,89 @@ class FPState(FPBase):
 class FPGetOpA(FPState):
 
     def action(self, m):
-        self.get_op(m, self.in_a, self.a, self.state_to)
+        self.get_op(m, self.in_a, self.a, "get_b")
 
 
 class FPGetOpB(FPState):
 
     def action(self, m):
-        self.get_op(m, self.in_b, self.b, self.state_to)
+        self.get_op(m, self.in_b, self.b, "special_cases")
+
+
+class FPAddSpecialCases(FPState):
+
+    def action(self, m):
+        s_nomatch = Signal()
+        m.d.comb += s_nomatch.eq(self.a.s != self.b.s)
+
+        m_match = Signal()
+        m.d.comb += m_match.eq(self.a.m == self.b.m)
+
+        # if a is NaN or b is NaN return NaN
+        with m.If(self.a.is_nan | self.b.is_nan):
+            m.next = "put_z"
+            m.d.sync += self.z.nan(1)
+
+        # XXX WEIRDNESS for FP16 non-canonical NaN handling
+        # under review
+
+        ## if a is zero and b is NaN return -b
+        #with m.If(a.is_zero & (a.s==0) & b.is_nan):
+        #    m.next = "put_z"
+        #    m.d.sync += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
+
+        ## if b is zero and a is NaN return -a
+        #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
+        #    m.next = "put_z"
+        #    m.d.sync += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
+
+        ## if a is -zero and b is NaN return -b
+        #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
+        #    m.next = "put_z"
+        #    m.d.sync += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
+
+        ## if b is -zero and a is NaN return -a
+        #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
+        #    m.next = "put_z"
+        #    m.d.sync += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
+
+        # if a is inf return inf (or NaN)
+        with m.Elif(self.a.is_inf):
+            m.next = "put_z"
+            m.d.sync += self.z.inf(self.a.s)
+            # if a is inf and signs don't match return NaN
+            with m.If(self.b.exp_128 & s_nomatch):
+                m.d.sync += self.z.nan(1)
+
+        # if b is inf return inf
+        with m.Elif(self.b.is_inf):
+            m.next = "put_z"
+            m.d.sync += self.z.inf(self.b.s)
+
+        # if a is zero and b zero return signed-a/b
+        with m.Elif(self.a.is_zero & self.b.is_zero):
+            m.next = "put_z"
+            m.d.sync += self.z.create(self.a.s & self.b.s, self.b.e,
+                                      self.b.m[3:-1])
+
+        # if a is zero return b
+        with m.Elif(self.a.is_zero):
+            m.next = "put_z"
+            m.d.sync += self.z.create(self.b.s, self.b.e, self.b.m[3:-1])
+
+        # if b is zero return a
+        with m.Elif(self.b.is_zero):
+            m.next = "put_z"
+            m.d.sync += self.z.create(self.a.s, self.a.e, self.a.m[3:-1])
+
+        # if a equal to -b return zero (+ve zero)
+        with m.Elif(s_nomatch & m_match & (self.a.e == self.b.e)):
+            m.next = "put_z"
+            m.d.sync += self.z.zero(0)
+
+        # Denormalised Number checks
+        with m.Else():
+            m.next = "denormalise"
 
 
 class FPADD(FPBase):
@@ -66,15 +142,19 @@ class FPADD(FPBase):
         of = Overflow()
         m.submodules.overflow = of
 
-        geta = FPGetOpA("get_a", "get_b")
+        geta = FPGetOpA("get_a")
         geta.set_inputs({"in_a": self.in_a})
         geta.set_outputs({"a": a})
         m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
 
-        getb = FPGetOpB("get_b", "special_cases")
+        getb = FPGetOpB("get_b")
         getb.set_inputs({"in_b": self.in_b})
         getb.set_outputs({"b": b})
         m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
+
+        sc = FPAddSpecialCases("special_cases")
+        sc.set_inputs({"a": a, "b": b})
+        sc.set_outputs({"z": z})
 
         with m.FSM() as fsm:
 
@@ -97,77 +177,7 @@ class FPADD(FPBase):
             # https://steve.hollasch.net/cgindex/coding/ieeefloat.html
 
             with m.State("special_cases"):
-
-                s_nomatch = Signal()
-                m.d.comb += s_nomatch.eq(a.s != b.s)
-
-                m_match = Signal()
-                m.d.comb += m_match.eq(a.m == b.m)
-
-                # if a is NaN or b is NaN return NaN
-                with m.If(a.is_nan | b.is_nan):
-                    m.next = "put_z"
-                    m.d.sync += z.nan(1)
-
-                # XXX WEIRDNESS for FP16 non-canonical NaN handling
-                # under review
-
-                ## if a is zero and b is NaN return -b
-                #with m.If(a.is_zero & (a.s==0) & b.is_nan):
-                #    m.next = "put_z"
-                #    m.d.sync += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
-
-                ## if b is zero and a is NaN return -a
-                #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
-                #    m.next = "put_z"
-                #    m.d.sync += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
-
-                ## if a is -zero and b is NaN return -b
-                #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
-                #    m.next = "put_z"
-                #    m.d.sync += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
-
-                ## if b is -zero and a is NaN return -a
-                #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
-                #    m.next = "put_z"
-                #    m.d.sync += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
-
-                # if a is inf return inf (or NaN)
-                with m.Elif(a.is_inf):
-                    m.next = "put_z"
-                    m.d.sync += z.inf(a.s)
-                    # if a is inf and signs don't match return NaN
-                    with m.If(b.exp_128 & s_nomatch):
-                        m.d.sync += z.nan(1)
-
-                # if b is inf return inf
-                with m.Elif(b.is_inf):
-                    m.next = "put_z"
-                    m.d.sync += z.inf(b.s)
-
-                # if a is zero and b zero return signed-a/b
-                with m.Elif(a.is_zero & b.is_zero):
-                    m.next = "put_z"
-                    m.d.sync += z.create(a.s & b.s, b.e, b.m[3:-1])
-
-                # if a is zero return b
-                with m.Elif(a.is_zero):
-                    m.next = "put_z"
-                    m.d.sync += z.create(b.s, b.e, b.m[3:-1])
-
-                # if b is zero return a
-                with m.Elif(b.is_zero):
-                    m.next = "put_z"
-                    m.d.sync += z.create(a.s, a.e, a.m[3:-1])
-
-                # if a equal to -b return zero (+ve zero)
-                with m.Elif(s_nomatch & m_match & (a.e == b.e)):
-                    m.next = "put_z"
-                    m.d.sync += z.zero(0)
-
-                # Denormalised Number checks
-                with m.Else():
-                    m.next = "denormalise"
+                sc.action(m)
 
             # ******
             # denormalise.
