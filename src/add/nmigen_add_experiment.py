@@ -192,6 +192,35 @@ class FPAddStage0(FPState):
         ]
 
 
+        """ Second stage of add: preparation for normalisation.
+            detects when tot sum is too big (tot[27] is kinda a carry bit)
+        """
+
+class FPAddStage1(FPState):
+
+    def action(self, m):
+        m.next = "normalise_1"
+        # tot[27] gets set when the sum overflows. shift result down
+        with m.If(self.tot[-1]):
+            m.d.sync += [
+                self.z.m.eq(self.tot[4:]),
+                self.of.m0.eq(self.tot[4]),
+                self.of.guard.eq(self.tot[3]),
+                self.of.round_bit.eq(self.tot[2]),
+                self.of.sticky.eq(self.tot[1] | self.tot[0]),
+                self.z.e.eq(self.z.e + 1)
+        ]
+        # tot[27] zero case
+        with m.Else():
+            m.d.sync += [
+                self.z.m.eq(self.tot[3:]),
+                self.of.m0.eq(self.tot[3]),
+                self.of.guard.eq(self.tot[2]),
+                self.of.round_bit.eq(self.tot[1]),
+                self.of.sticky.eq(self.tot[0])
+        ]
+
+
 class FPADD(FPBase):
 
     def __init__(self, width, single_cycle=False):
@@ -252,6 +281,10 @@ class FPADD(FPBase):
         add0.set_inputs({"a": a, "b": b})
         add0.set_outputs({"z": z, "tot": tot})
 
+        add1 = FPAddStage1("add_1")
+        add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
+        add1.set_outputs({"z": z, "of": of})  # XXX Z as output
+
         with m.FSM() as fsm:
 
             # ******
@@ -300,26 +333,7 @@ class FPADD(FPBase):
             # detects when tot sum is too big (tot[27] is kinda a carry bit)
 
             with m.State("add_1"):
-                m.next = "normalise_1"
-                # tot[27] gets set when the sum overflows. shift result down
-                with m.If(tot[-1]):
-                    m.d.sync += [
-                        z.m.eq(tot[4:]),
-                        of.m0.eq(tot[4]),
-                        of.guard.eq(tot[3]),
-                        of.round_bit.eq(tot[2]),
-                        of.sticky.eq(tot[1] | tot[0]),
-                        z.e.eq(z.e + 1)
-                ]
-                # tot[27] zero case
-                with m.Else():
-                    m.d.sync += [
-                        z.m.eq(tot[3:]),
-                        of.m0.eq(tot[3]),
-                        of.guard.eq(tot[2]),
-                        of.round_bit.eq(tot[1]),
-                        of.sticky.eq(tot[0])
-                ]
+                add1.action(m)
 
             # ******
             # First stage of normalisation.
