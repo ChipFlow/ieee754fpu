@@ -342,6 +342,12 @@ class FPOp:
         self.stb = Signal()
         self.ack = Signal()
 
+    def chain_from(self, in_op):
+        return [self.v.eq(in_op.v),          # receive value
+                self.stb.eq(in_op.stb),      # receive STB
+                in_op.ack.eq(self.ack), # send ACK
+               ]
+
     def ports(self):
         return [self.v, self.stb, self.ack]
 
