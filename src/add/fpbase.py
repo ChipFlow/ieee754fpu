@@ -96,6 +96,11 @@ class FPNumBase:
         self.is_overflowed = Signal(reset_less=True)
         self.is_denormalised = Signal(reset_less=True)
         self.exp_128 = Signal(reset_less=True)
+        self.exp_gt127 = Signal(reset_less=True)
+        self.exp_n127 = Signal(reset_less=True)
+        self.exp_n126 = Signal(reset_less=True)
+        self.m_zero = Signal(reset_less=True)
+        self.m_msbzero = Signal(reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
@@ -105,23 +110,28 @@ class FPNumBase:
         m.d.comb += self.is_overflowed.eq(self._is_overflowed())
         m.d.comb += self.is_denormalised.eq(self._is_denormalised())
         m.d.comb += self.exp_128.eq(self.e == self.P128)
+        m.d.comb += self.exp_gt127.eq(self.e > self.P127)
+        m.d.comb += self.exp_n127.eq(self.e == self.N127)
+        m.d.comb += self.exp_n126.eq(self.e == self.N126)
+        m.d.comb += self.m_zero.eq(self.m == self.mzero)
+        m.d.comb += self.m_msbzero.eq(self.m[self.e_start] == 0)
 
         return m
 
     def _is_nan(self):
-        return (self.e == self.P128) & (self.m != 0)
+        return (self.exp_128) & (~self.m_zero)
 
     def _is_inf(self):
-        return (self.e == self.P128) & (self.m == 0)
+        return (self.exp_128) & (self.m_zero)
 
     def _is_zero(self):
-        return (self.e == self.N127) & (self.m == self.mzero)
+        return (self.exp_n127) & (self.m_zero)
 
     def _is_overflowed(self):
-        return (self.e > self.P127)
+        return self.exp_gt127
 
     def _is_denormalised(self):
-        return (self.e == self.N126) & (self.m[self.e_start] == 0)
+        return (self.exp_n126) & (self.m_msbzero)
 
 
 class FPNumOut(FPNumBase):
