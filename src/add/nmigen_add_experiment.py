@@ -287,6 +287,7 @@ class FPADD:
         m = Module()
 
         # Latches
+        #a = FPNumIn(self.in_a, self.width)
         b = FPNumIn(self.in_b, self.width)
         z = FPNumOut(self.width, False)
 
