@@ -33,10 +33,11 @@ def get_case(dut, a, b, c):
 
         out_z = yield dut.z.v
 
+        yield dut.z.ack.eq(1)
         yield dut.a.stb.eq(0)
         yield dut.b.stb.eq(0)
         yield dut.c.stb.eq(0)
-        yield dut.z.ack.eq(1)
+        yield
         yield
         yield dut.z.ack.eq(0)
         yield
@@ -47,7 +48,7 @@ def get_case(dut, a, b, c):
 
 def check_case(dut, a, b, c, z):
     out_z = yield from get_case(dut, a, b, c)
-    assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
+    assert out_z == z, "Output z 0x%x != 0x%x" % (out_z, z)
 
 def testbench(dut):
     yield from check_case(dut, 0, 0, 0, 0)
