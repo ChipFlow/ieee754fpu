@@ -45,28 +45,26 @@ class ALU:
         m.submodules.add1 = self.add1
         m.submodules.add2 = self.add2
         m.d.comb += [
-            # join add1 a to a
+            # join add1 a to a: add1.in_a = a
             self.add1.in_a.v.eq(self.a.v),
             self.add1.in_a.stb.eq(self.a.stb),
-            # join add1 b to b
+            self.a.ack.eq(self.add1.in_a.ack),
+            # join add1 b to b: add1.in_b = b
             self.add1.in_b.v.eq(self.b.v),
             self.add1.in_b.stb.eq(self.b.stb),
-            # join add2 a to c
+            self.b.ack.eq(self.add1.in_b.ack),
+            # join add2 a to c: add2.in_a = c
             self.add2.in_a.v.eq(self.c.v),
             self.add2.in_a.stb.eq(self.c.stb),
-            # join add2 b to add1 z
+            self.c.ack.eq(self.add2.in_a.ack),
+            # join add2 b to add1 z: add2.in_b = add1.out_z
             self.add2.in_b.v.eq(self.add1.out_z.v),
             self.add2.in_b.stb.eq(self.add1.out_z.stb),
-        ]
-        m.d.sync += [
-            # join add1 a to a
-            self.add1.in_a.ack.eq(self.a.ack),
-            # join add1 b to b
-            self.add1.in_b.ack.eq(self.b.ack),
-            # join add2 a to c
-            self.add2.in_a.ack.eq(self.c.ack),
-            # join add2 b to add1 z
-            self.add2.in_b.ack.eq(self.add1.out_z.ack),
+            self.add1.out_z.ack.eq(self.add2.in_b.ack),
+            # join output from add2 to z: z = add2.out_z
+            self.z.v.eq(self.add2.out_z.v),
+            self.z.stb.eq(self.add2.out_z.stb),
+            self.add2.out_z.ack.eq(self.z.ack),
         ]
         #with m.If(self.op):
         #    m.d.comb += self.o.eq(self.sub.o)

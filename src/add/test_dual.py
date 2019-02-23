@@ -20,6 +20,8 @@ def get_case(dut, a, b, c):
 
     yield dut.b.v.eq(b)
     yield dut.b.stb.eq(1)
+    yield
+    yield
     b_ack = (yield dut.b.ack)
     assert b_ack == 0
 
@@ -28,6 +30,9 @@ def get_case(dut, a, b, c):
         out_z_stb = (yield dut.z.stb)
         if not out_z_stb:
             continue
+
+        out_z = yield dut.z.v
+
         yield dut.a.stb.eq(0)
         yield dut.b.stb.eq(0)
         yield dut.c.stb.eq(0)
@@ -38,7 +43,6 @@ def get_case(dut, a, b, c):
         yield
         break
 
-    out_z = yield dut.z.v
     return out_z
 
 def check_case(dut, a, b, c, z):
