@@ -304,13 +304,13 @@ class FPADD:
         #geta.set_inputs({"in_a": self.in_a})
         #geta.set_outputs({"a": a})
         a = geta.a
-        m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
+        # XXX m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
         m.submodules.fpnum_a = a
 
         getb = self.add_state(FPGetOpB("get_b"))
         getb.set_inputs({"in_b": self.in_b})
         getb.set_outputs({"b": b})
-        m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
+        # XXX m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
 
         sc = self.add_state(FPAddSpecialCases("special_cases"))
         sc.set_inputs({"a": a, "b": b})

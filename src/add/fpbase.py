@@ -266,9 +266,9 @@ class FPNumIn(FPNumBase):
     def elaborate(self, platform):
         m = FPNumBase.elaborate(self, platform)
 
-        m.d.comb += self.latch_in.eq(self.op.ack & self.op.stb)
-        with m.If(self.latch_in):
-            m.d.sync += self.decode(self.v)
+        #m.d.comb += self.latch_in.eq(self.op.ack & self.op.stb)
+        #with m.If(self.latch_in):
+        #    m.d.sync += self.decode(self.v)
 
         return m
 
@@ -379,6 +379,7 @@ class FPBase:
             m.next = next_state
             m.d.sync += [
                 # op is latched in from FPNumIn class on same ack/stb
+                v.decode(op.v),
                 op.ack.eq(0)
             ]
         with m.Else():
