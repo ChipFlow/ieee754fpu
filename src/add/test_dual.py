@@ -4,13 +4,6 @@ from dual_add_experiment import ALU
 
 
 def get_case(dut, a, b, c):
-    yield dut.c.v.eq(c)
-    yield dut.c.stb.eq(1)
-    yield
-    yield
-    c_ack = (yield dut.c.ack)
-    assert c_ack == 0
-
     yield dut.a.v.eq(a)
     yield dut.a.stb.eq(1)
     yield
@@ -26,6 +19,20 @@ def get_case(dut, a, b, c):
     assert b_ack == 0
 
     while True:
+        out_z_stb = (yield dut.int_stb)
+        if not out_z_stb:
+            yield
+            continue
+        break
+
+    yield dut.c.v.eq(c)
+    yield dut.c.stb.eq(1)
+    yield
+    yield
+    c_ack = (yield dut.c.ack)
+    assert c_ack == 0
+
+    while True:
         yield
         out_z_stb = (yield dut.z.stb)
         if not out_z_stb:
@@ -33,13 +40,19 @@ def get_case(dut, a, b, c):
 
         out_z = yield dut.z.v
 
-        yield dut.z.ack.eq(1)
+        yield dut.z.ack.eq(0)
         yield dut.a.stb.eq(0)
         yield dut.b.stb.eq(0)
         yield dut.c.stb.eq(0)
         yield
         yield
-        yield dut.z.ack.eq(0)
+        yield
+        yield
+        yield
+        yield
+        yield dut.z.ack.eq(1)
+        yield
+        yield
         yield
         yield
         break

@@ -36,6 +36,7 @@ class ALU:
         self.b   = FPOp(width)
         self.c   = FPOp(width)
         self.z   = FPOp(width)
+        self.int_stb = Signal()
 
         self.add1 = FPADD(width)
         self.add2 = FPADD(width)
@@ -54,6 +55,8 @@ class ALU:
         m.d.comb += self.add2.in_b.chain_from(self.add1.out_z)
         # join output from add2 to z: z = add2.out_z
         m.d.comb += self.z.chain_from(self.add2.out_z)
+        # get at add1's stb signal
+        m.d.comb += self.int_stb.eq(self.add1.out_z.stb)
         #with m.If(self.op):
         #    m.d.comb += self.o.eq(self.sub.o)
         #with m.Else():

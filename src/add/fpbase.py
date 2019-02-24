@@ -339,12 +339,15 @@ class FPOp:
         self.width = width
 
         self.v   = Signal(width)
-        self.stb = Signal()
+        self.stb = Signal(reset=0)
         self.ack = Signal()
 
-    def chain_from(self, in_op):
+    def chain_from(self, in_op, extra=None):
+        stb = in_op.stb
+        if extra is not None:
+            stb = stb & extra
         return [self.v.eq(in_op.v),          # receive value
-                self.stb.eq(in_op.stb),      # receive STB
+                self.stb.eq(stb),      # receive STB
                 in_op.ack.eq(self.ack), # send ACK
                ]
 

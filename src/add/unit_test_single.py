@@ -53,16 +53,14 @@ def get_case(dut, a, b):
         out_z_stb = (yield dut.out_z.stb)
         if not out_z_stb:
             continue
+        out_z = yield dut.out_z.v
+        yield dut.out_z.ack.eq(0)
         yield dut.in_a.stb.eq(0)
         yield dut.in_b.stb.eq(0)
+        yield
         yield dut.out_z.ack.eq(1)
-        yield
-        yield dut.out_z.ack.eq(0)
-        yield
-        yield
         break
 
-    out_z = yield dut.out_z.v
     return out_z
 
 def check_case(dut, a, b, z):
