@@ -33,9 +33,9 @@ def get_case(dut, a, b, c):
     assert c_ack == 0
 
     while True:
-        yield
         out_z_stb = (yield dut.z.stb)
         if not out_z_stb:
+            yield
             continue
 
         out_z = yield dut.z.v
@@ -45,15 +45,7 @@ def get_case(dut, a, b, c):
         yield dut.b.stb.eq(0)
         yield dut.c.stb.eq(0)
         yield
-        yield
-        yield
-        yield
-        yield
-        yield
         yield dut.z.ack.eq(1)
-        yield
-        yield
-        yield
         yield
         break
 

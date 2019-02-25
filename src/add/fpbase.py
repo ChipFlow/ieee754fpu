@@ -342,6 +342,15 @@ class FPOp:
         self.stb = Signal(reset=0)
         self.ack = Signal()
 
+    def chain_inv(self, in_op, extra=None):
+        stb = in_op.stb
+        if extra is not None:
+            stb = stb & extra
+        return [self.v.eq(in_op.v),          # receive value
+                self.stb.eq(~stb),      # receive STB
+                in_op.ack.eq(~self.ack), # send ACK
+               ]
+
     def chain_from(self, in_op, extra=None):
         stb = in_op.stb
         if extra is not None:
