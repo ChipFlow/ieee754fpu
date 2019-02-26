@@ -18,19 +18,19 @@ def get_case(dut, a, b, c):
     b_ack = (yield dut.b.ack)
     assert b_ack == 0
 
-    while True:
-        out_z_stb = (yield dut.int_stb)
-        if not out_z_stb:
-            yield
-            continue
-        break
-
     yield dut.c.v.eq(c)
     yield dut.c.stb.eq(1)
     yield
     yield
     c_ack = (yield dut.c.ack)
     assert c_ack == 0
+
+    while True:
+        out_z_stb = (yield dut.int_stb)
+        if not out_z_stb:
+            yield
+            continue
+        break
 
     while True:
         out_z_stb = (yield dut.z.stb)
