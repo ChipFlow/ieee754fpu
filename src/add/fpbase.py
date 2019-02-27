@@ -376,6 +376,12 @@ class Overflow:
 
         self.roundz = Signal(reset_less=True)
 
+    def copy(self, inp):
+        return [self.guard.eq(inp.guard),
+                self.round_bit.eq(inp.round_bit),
+                self.sticky.eq(inp.sticky),
+                self.m0.eq(inp.m0)]
+
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.roundz.eq(self.guard & \

@@ -274,10 +274,61 @@ class FPAddStage1(FPState):
         ]
 
 
+class FPNorm1Mod:
+
+    def __init__(self, width):
+        self.out_norm = Signal(reset_less=True)
+        self.in_z = FPNumBase(width, False)
+        self.out_z = FPNumBase(width, False)
+        self.in_of = Overflow()
+        self.out_of = Overflow()
+
+    def setup(self, m, in_z, out_z, in_of, out_of, out_norm):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += self.in_of.copy(in_of)
+        m.d.comb += out_of.copy(self.out_of)
+        m.d.comb += out_norm.eq(self.out_norm)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.norm1_in_overflow = self.in_of
+        m.submodules.norm1_out_overflow = self.out_of
+        m.submodules.norm1_in_z = self.in_z
+        m.submodules.norm1_out_z = self.out_z
+        m.d.comb += self.out_z.copy(self.in_z)
+        m.d.comb += self.out_of.copy(self.in_of)
+        m.d.comb += self.out_norm.eq((self.in_z.m[-1] == 0) & \
+                                     (self.in_z.e > self.in_z.N126))
+        with m.If(self.out_norm):
+            m.d.comb += [
+                self.out_z.e.eq(self.in_z.e - 1),  # DECREASE exponent
+                self.out_z.m.eq(self.in_z.m << 1), # shift mantissa UP
+                self.out_z.m[0].eq(self.in_of.guard), # steal guard (was tot[2])
+                self.out_of.guard.eq(self.in_of.round_bit), # round (was tot[1])
+                self.out_of.round_bit.eq(0),        # reset round bit
+                self.out_of.m0.eq(self.in_of.guard),
+            ]
+
+        return m
+
+
 class FPNorm1(FPState):
 
+    def __init__(self, width):
+        FPState.__init__(self, "normalise_1")
+        self.mod = FPNorm1Mod(width)
+        self.out_norm = Signal(reset_less=True)
+        self.out_z = FPNumBase(width)
+        self.out_of = Overflow()
+
     def action(self, m):
-        self.normalise_1(m, self.z, self.of, "normalise_2")
+        m.d.sync += self.of.copy(self.out_of)
+        m.d.sync += self.z.copy(self.out_z)
+        with m.If(~self.out_norm):
+            m.next = "normalise_2"
 
 
 class FPNorm2(FPState):
@@ -473,9 +524,11 @@ class FPADD:
         add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
         add1.set_outputs({"z": z, "of": of})  # XXX Z as output
 
-        n1 = self.add_state(FPNorm1("normalise_1"))
+        n1 = self.add_state(FPNorm1(self.width))
         n1.set_inputs({"z": z, "of": of})  # XXX Z as output
         n1.set_outputs({"z": z})  # XXX Z as output
+        n1.mod.setup(m, z, n1.out_z, of, n1.out_of, n1.out_norm)
+        m.submodules.normalise_1 = n1.mod
 
         n2 = self.add_state(FPNorm2("normalise_2"))
         n2.set_inputs({"z": z, "of": of})  # XXX Z as output
