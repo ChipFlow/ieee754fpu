@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 
 
 class FPState(FPBase):
@@ -244,7 +244,9 @@ class FPNorm2(FPState):
 class FPRound(FPState):
 
     def action(self, m):
-        self.roundz(m, self.z, self.of, "corrections")
+        out_z = FPNumBase(self.z.width)
+        self.roundz(m, self.z, out_z, self.of, "corrections")
+        m.d.sync += self.z.copy(out_z)
 
 
 class FPCorrections(FPState):

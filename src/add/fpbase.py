@@ -133,6 +133,9 @@ class FPNumBase:
     def _is_denormalised(self):
         return (self.exp_n126) & (self.m_msbzero)
 
+    def copy(self, inp):
+        return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
+
 
 class FPNumOut(FPNumBase):
     """ Floating-point Number Class
@@ -348,7 +351,7 @@ class FPOp:
             stb = stb & extra
         return [self.v.eq(in_op.v),          # receive value
                 self.stb.eq(stb),      # receive STB
-                in_op.ack.eq(self.ack), # send ACK
+                in_op.ack.eq(~self.ack), # send ACK
                ]
 
     def chain_from(self, in_op, extra=None):
@@ -471,14 +474,15 @@ class FPBase:
         with m.Else():
             m.next = next_state
 
-    def roundz(self, m, z, of, next_state):
+    def roundz(self, m, z, out_z, of, next_state):
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
         m.next = next_state
+        m.d.comb += out_z.copy(z) # copies input to output first
         with m.If(of.roundz):
-            m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
+            m.d.comb += out_z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
-                m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
+                m.d.comb += out_z.e.eq(z.e + 1) # exponent rounds up
 
     def corrections(self, m, z, next_state):
         """ denormalisation and sign-bug corrections
