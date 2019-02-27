@@ -183,7 +183,7 @@ def run_cases(dut, count, op, fixed_num, num_entries):
 def run_edge_cases(dut, count, op):
     #edge cases
     for testme in corner_cases:
-        count = yield from run_cases(dut, count, op, testme, 1000)
+        count = yield from run_cases(dut, count, op, testme, 10)
 
     for i in range(100000):
         stimulus_a = [randint(0, 1<<32) for i in range(1000)]
