@@ -278,7 +278,6 @@ class FPAddStage0(FPState):
 
     def action(self, m):
         m.next = "add_1"
-        m.d.sync += self.tot.eq(self.out_tot)
         m.d.sync += self.z.copy(self.out_z)
 
 
@@ -603,7 +602,6 @@ class FPADD:
         m.submodules.fpnum_z = z
 
         w = z.m_width + 4
-        tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
 
         of = Overflow()
         m.submodules.overflow = of
@@ -639,7 +637,7 @@ class FPADD:
 
         add0 = self.add_state(FPAddStage0(self.width))
         add0.set_inputs({"a": a, "b": b})
-        add0.set_outputs({"z": z, "tot": tot})
+        add0.set_outputs({"z": z})
         add0.mod.setup(m, a, b, z, add0.out_z, add0.out_tot)
         m.submodules.add0 = add0.mod
 
