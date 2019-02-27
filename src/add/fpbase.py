@@ -474,12 +474,11 @@ class FPBase:
         with m.Else():
             m.next = next_state
 
-    def roundz(self, m, z, out_z, of, next_state):
+    def roundz(self, m, z, out_z, roundz):
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
-        m.next = next_state
         m.d.comb += out_z.copy(z) # copies input to output first
-        with m.If(of.roundz):
+        with m.If(roundz):
             m.d.comb += out_z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
                 m.d.comb += out_z.e.eq(z.e + 1) # exponent rounds up

@@ -241,12 +241,40 @@ class FPNorm2(FPState):
         self.normalise_2(m, self.z, self.of, "round")
 
 
+class FPRoundMod:
+
+    def __init__(self, width):
+        self.in_roundz = Signal(reset_less=True)
+        self.in_z = FPNumBase(width, False)
+        self.out_z = FPNumBase(width, False)
+
+    def setup(self, m, in_z, out_z, in_of):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += self.in_roundz.eq(in_of.roundz)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.out_z.copy(self.in_z)
+        with m.If(self.in_roundz):
+            m.d.comb += self.out_z.m.eq(self.in_z.m + 1) # mantissa rounds up
+            with m.If(self.in_z.m == self.in_z.m1s): # all 1s
+                m.d.comb += self.out_z.e.eq(self.in_z.e + 1) # exponent up
+        return m
+
+
 class FPRound(FPState):
 
+    def __init__(self, width):
+        FPState.__init__(self, "round")
+        self.mod = FPRoundMod(width)
+        self.out_z = FPNumBase(width)
+
     def action(self, m):
-        out_z = FPNumBase(self.z.width)
-        self.roundz(m, self.z, out_z, self.of, "corrections")
-        m.d.sync += self.z.copy(out_z)
+        m.d.sync += self.z.copy(self.out_z)
+        m.next = "corrections"
 
 
 class FPCorrections(FPState):
@@ -345,9 +373,12 @@ class FPADD:
         n2.set_inputs({"z": z, "of": of})  # XXX Z as output
         n2.set_outputs({"z": z})  # XXX Z as output
 
-        rn = self.add_state(FPRound("round"))
+        rn = self.add_state(FPRound(self.width))
         rn.set_inputs({"z": z, "of": of})  # XXX Z as output
         rn.set_outputs({"z": z})  # XXX Z as output
+        rn.mod.setup(m, z, rn.out_z, of)
+
+        m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections("corrections"))
         cor.set_inputs({"z": z})  # XXX Z as output
