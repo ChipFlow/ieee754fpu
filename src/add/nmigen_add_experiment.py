@@ -644,9 +644,9 @@ class FPADD:
         m.submodules.add0 = add0.mod
 
         add1 = self.add_state(FPAddStage1(self.width))
-        add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
+        add1.set_inputs({"tot": add0.out_tot, "z": add0.out_z})
         add1.set_outputs({"z": z, "of": of})  # XXX Z as output
-        add1.mod.setup(m, tot, z, add1.out_z, add1.out_of)
+        add1.mod.setup(m, add0.out_tot, z, add1.out_z, add1.out_of)
         m.submodules.add1 = add1.mod
 
         n1 = self.add_state(FPNorm1(self.width))
