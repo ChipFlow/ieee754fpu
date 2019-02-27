@@ -277,10 +277,38 @@ class FPRound(FPState):
         m.next = "corrections"
 
 
+class FPCorrectionsMod:
+
+    def __init__(self, width):
+        self.in_z = FPNumOut(width, False)
+        self.out_z = FPNumOut(width, False)
+
+    def setup(self, m, in_z, out_z):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += out_z.copy(self.out_z)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.corr_in_z = self.in_z
+        m.submodules.corr_out_z = self.out_z
+        m.d.comb += self.out_z.copy(self.in_z)
+        with m.If(self.in_z.is_denormalised):
+            m.d.comb += self.out_z.e.eq(self.in_z.N127)
+        return m
+
+
 class FPCorrections(FPState):
 
+    def __init__(self, width):
+        FPState.__init__(self, "corrections")
+        self.mod = FPCorrectionsMod(width)
+        self.out_z = FPNumBase(width)
+
     def action(self, m):
-        self.corrections(m, self.z, "pack")
+        m.d.sync += self.z.copy(self.out_z)
+        m.next = "pack"
 
 
 class FPPack(FPState):
@@ -377,12 +405,13 @@ class FPADD:
         rn.set_inputs({"z": z, "of": of})  # XXX Z as output
         rn.set_outputs({"z": z})  # XXX Z as output
         rn.mod.setup(m, z, rn.out_z, of)
-
         m.submodules.roundz = rn.mod
 
-        cor = self.add_state(FPCorrections("corrections"))
+        cor = self.add_state(FPCorrections(self.width))
         cor.set_inputs({"z": z})  # XXX Z as output
         cor.set_outputs({"z": z})  # XXX Z as output
+        cor.mod.setup(m, z, cor.out_z)
+        m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack("pack"))
         pa.set_inputs({"z": z})  # XXX Z as output
