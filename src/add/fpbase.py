@@ -205,14 +205,14 @@ class FPNumShift(FPNumBase):
 
         return m
 
-    def shift_down(self):
+    def shift_down(self, inp):
         """ shifts a mantissa down by one. exponent is increased to compensate
 
             accuracy is lost as a result in the mantissa however there are 3
             guard bits (the latter of which is the "sticky" bit)
         """
-        return [self.e.eq(self.e + 1),
-                self.m.eq(Cat(self.m[0] | self.m[1], self.m[2:], 0))
+        return [self.e.eq(inp.e + 1),
+                self.m.eq(Cat(inp.m[0] | inp.m[1], inp.m[2:], 0))
                ]
 
     def shift_down_multi(self, diff):
@@ -293,14 +293,14 @@ class FPNumIn(FPNumBase):
                 self.s.eq(v[-1]),                 # sign
                 ]
 
-    def shift_down(self):
+    def shift_down(self, inp):
         """ shifts a mantissa down by one. exponent is increased to compensate
 
             accuracy is lost as a result in the mantissa however there are 3
             guard bits (the latter of which is the "sticky" bit)
         """
-        return [self.e.eq(self.e + 1),
-                self.m.eq(Cat(self.m[0] | self.m[1], self.m[2:], 0))
+        return [self.e.eq(inp.e + 1),
+                self.m.eq(Cat(inp.m[0] | inp.m[1], inp.m[2:], 0))
                ]
 
     def shift_down_multi(self, diff):

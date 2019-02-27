@@ -178,42 +178,126 @@ class FPAddDeNorm(FPState):
         self.denormalise(m, self.b)
 
 
-class FPAddAlignMulti(FPState):
+class FPAddAlignMultiMod(FPState):
 
-    def action(self, m):
+    def __init__(self, width):
+        self.in_a = FPNumBase(width)
+        self.in_b = FPNumBase(width)
+        self.out_a = FPNumIn(None, width)
+        self.out_b = FPNumIn(None, width)
+        self.exp_eq = Signal(reset_less=True)
+
+    def setup(self, m, in_a, in_b, out_a, out_b, exp_eq):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += out_a.copy(self.out_a)
+        m.d.comb += out_b.copy(self.out_b)
+        m.d.comb += exp_eq.eq(self.exp_eq)
+
+    def elaborate(self, platform):
+        # This one however (single-cycle) will do the shift
+        # in one go.
+
+        m = Module()
+
+        #m.submodules.align_in_a = self.in_a
+        #m.submodules.align_in_b = self.in_b
+        m.submodules.align_out_a = self.out_a
+        m.submodules.align_out_b = self.out_b
+
         # NOTE: this does *not* do single-cycle multi-shifting,
         #       it *STAYS* in the align state until exponents match
 
         # exponent of a greater than b: shift b down
-        with m.If(self.a.e > self.b.e):
-            m.d.sync += self.b.shift_down()
+        m.d.comb += self.exp_eq.eq(0)
+        m.d.comb += self.out_a.copy(self.in_a)
+        m.d.comb += self.out_b.copy(self.in_b)
+        with m.If(self.in_a.e > self.in_b.e):
+            m.d.comb += self.out_b.shift_down(self.in_b)
         # exponent of b greater than a: shift a down
-        with m.Elif(self.a.e < self.b.e):
-            m.d.sync += self.a.shift_down()
+        with m.Elif(self.in_a.e < self.in_b.e):
+            m.d.comb += self.out_a.shift_down(self.in_a)
         # exponents equal: move to next stage.
         with m.Else():
+            m.d.comb += self.exp_eq.eq(1)
+        return m
+
+
+class FPAddAlignMulti(FPState):
+
+    def __init__(self, width):
+        FPState.__init__(self, "align")
+        self.mod = FPAddAlignMultiMod(width)
+        self.out_a = FPNumIn(None, width)
+        self.out_b = FPNumIn(None, width)
+        self.exp_eq = Signal(reset_less=True)
+
+    def action(self, m):
+        m.d.sync += self.a.copy(self.out_a)
+        m.d.sync += self.b.copy(self.out_b)
+        with m.If(self.exp_eq):
             m.next = "add_0"
 
 
-class FPAddAlignSingle(FPState):
+class FPAddAlignSingleMod:
 
-    def action(self, m):
+    def __init__(self, width):
+        self.in_a = FPNumBase(width)
+        self.in_b = FPNumBase(width)
+        self.out_a = FPNumIn(None, width)
+        self.out_b = FPNumIn(None, width)
+        #self.out_a = FPNumBase(width)
+        #self.out_b = FPNumBase(width)
+
+    def setup(self, m, in_a, in_b, out_a, out_b):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += out_a.copy(self.out_a)
+        m.d.comb += out_b.copy(self.out_b)
+
+    def elaborate(self, platform):
         # This one however (single-cycle) will do the shift
         # in one go.
+
+        m = Module()
+
+        #m.submodules.align_in_a = self.in_a
+        #m.submodules.align_in_b = self.in_b
+        m.submodules.align_out_a = self.out_a
+        m.submodules.align_out_b = self.out_b
 
         # XXX TODO: the shifter used here is quite expensive
         # having only one would be better
 
-        ediff = Signal((len(self.a.e), True), reset_less=True)
-        ediffr = Signal((len(self.a.e), True), reset_less=True)
-        m.d.comb += ediff.eq(self.a.e - self.b.e)
-        m.d.comb += ediffr.eq(self.b.e - self.a.e)
+        ediff = Signal((len(self.in_a.e), True), reset_less=True)
+        ediffr = Signal((len(self.in_a.e), True), reset_less=True)
+        m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
+        m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
+        m.d.comb += self.out_a.copy(self.in_a)
+        m.d.comb += self.out_b.copy(self.in_b)
         with m.If(ediff > 0):
-            m.d.sync += self.b.shift_down_multi(ediff)
+            m.d.comb += self.out_b.shift_down_multi(ediff)
         # exponent of b greater than a: shift a down
         with m.Elif(ediff < 0):
-            m.d.sync += self.a.shift_down_multi(ediffr)
+            m.d.comb += self.out_a.shift_down_multi(ediffr)
+        return m
 
+
+class FPAddAlignSingle(FPState):
+
+    def __init__(self, width):
+        FPState.__init__(self, "align")
+        self.mod = FPAddAlignSingleMod(width)
+        self.out_a = FPNumIn(None, width)
+        self.out_b = FPNumIn(None, width)
+
+    def action(self, m):
+        m.d.sync += self.a.copy(self.out_a)
+        m.d.sync += self.b.copy(self.out_b)
         m.next = "add_0"
 
 
@@ -629,11 +713,16 @@ class FPADD:
         dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
         if self.single_cycle:
-            alm = self.add_state(FPAddAlignSingle("align"))
+            alm = self.add_state(FPAddAlignSingle(self.width))
+            alm.set_inputs({"a": a, "b": b})
+            alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+            alm.mod.setup(m, a, b, alm.out_a, alm.out_b)
         else:
-            alm = self.add_state(FPAddAlignMulti("align"))
-        alm.set_inputs({"a": a, "b": b})
-        alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+            alm = self.add_state(FPAddAlignMulti(self.width))
+            alm.set_inputs({"a": a, "b": b})
+            alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+            alm.mod.setup(m, a, b, alm.out_a, alm.out_b, alm.exp_eq)
+        m.submodules.align = alm.mod
 
         add0 = self.add_state(FPAddStage0(self.width))
         add0.set_inputs({"a": a, "b": b})
