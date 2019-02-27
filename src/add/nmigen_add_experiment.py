@@ -217,33 +217,69 @@ class FPAddAlignSingle(FPState):
         m.next = "add_0"
 
 
+class FPAddStage0Mod:
+
+    def __init__(self, width):
+        self.in_a = FPNumBase(width)
+        self.in_b = FPNumBase(width)
+        self.in_z = FPNumBase(width, False)
+        self.out_z = FPNumBase(width, False)
+        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+
+    def setup(self, m, in_a, in_b, in_z, out_z, out_tot):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += out_tot.eq(self.out_tot)
+
+    def elaborate(self, platform):
+        m = Module()
+        #m.submodules.add0_in_a = self.in_a
+        #m.submodules.add0_in_b = self.in_b
+        #m.submodules.add0_in_z = self.in_z
+        #m.submodules.add0_out_z = self.out_z
+
+        m.d.comb += self.out_z.e.eq(self.in_a.e)
+        # same-sign (both negative or both positive) add mantissas
+        with m.If(self.in_a.s == self.in_b.s):
+            m.d.comb += [
+                self.out_tot.eq(Cat(self.in_a.m, 0) + Cat(self.in_b.m, 0)),
+                self.out_z.s.eq(self.in_a.s)
+            ]
+        # a mantissa greater than b, use a
+        with m.Elif(self.in_a.m >= self.in_b.m):
+            m.d.comb += [
+                self.out_tot.eq(Cat(self.in_a.m, 0) - Cat(self.in_b.m, 0)),
+                self.out_z.s.eq(self.in_a.s)
+            ]
+        # b mantissa greater than a, use b
+        with m.Else():
+            m.d.comb += [
+                self.out_tot.eq(Cat(self.in_b.m, 0) - Cat(self.in_a.m, 0)),
+                self.out_z.s.eq(self.in_b.s)
+        ]
+        return m
+
+
 class FPAddStage0(FPState):
     """ First stage of add.  covers same-sign (add) and subtract
         special-casing when mantissas are greater or equal, to
         give greatest accuracy.
     """
 
+    def __init__(self, width):
+        FPState.__init__(self, "add_0")
+        self.mod = FPAddStage0Mod(width)
+        self.out_z = FPNumBase(width, False)
+        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+
     def action(self, m):
         m.next = "add_1"
-        m.d.sync += self.z.e.eq(self.a.e)
-        # same-sign (both negative or both positive) add mantissas
-        with m.If(self.a.s == self.b.s):
-            m.d.sync += [
-                self.tot.eq(Cat(self.a.m, 0) + Cat(self.b.m, 0)),
-                self.z.s.eq(self.a.s)
-            ]
-        # a mantissa greater than b, use a
-        with m.Elif(self.a.m >= self.b.m):
-            m.d.sync += [
-                self.tot.eq(Cat(self.a.m, 0) - Cat(self.b.m, 0)),
-                self.z.s.eq(self.a.s)
-            ]
-        # b mantissa greater than a, use b
-        with m.Else():
-            m.d.sync += [
-                self.tot.eq(Cat(self.b.m, 0) - Cat(self.a.m, 0)),
-                self.z.s.eq(self.b.s)
-        ]
+        m.d.sync += self.tot.eq(self.out_tot)
+        m.d.sync += self.z.copy(self.out_z)
 
 
 class FPAddStage1(FPState):
@@ -566,9 +602,11 @@ class FPADD:
         alm.set_inputs({"a": a, "b": b})
         alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
 
-        add0 = self.add_state(FPAddStage0("add_0"))
+        add0 = self.add_state(FPAddStage0(self.width))
         add0.set_inputs({"a": a, "b": b})
         add0.set_outputs({"z": z, "tot": tot})
+        add0.mod.setup(m, a, b, z, add0.out_z, add0.out_tot)
+        m.submodules.add0 = add0.mod
 
         add1 = self.add_state(FPAddStage1("add_1"))
         add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
