@@ -300,8 +300,8 @@ class FPNorm1Mod:
         m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.out_z.copy(self.in_z)
         m.d.comb += self.out_of.copy(self.in_of)
-        m.d.comb += self.out_norm.eq((self.in_z.m[-1] == 0) & \
-                                     (self.in_z.e > self.in_z.N126))
+        m.d.comb += self.out_norm.eq((self.in_z.m_msbzero) & \
+                                     (self.in_z.exp_gt_n126))
         with m.If(self.out_norm):
             m.d.comb += [
                 self.out_z.e.eq(self.in_z.e - 1),  # DECREASE exponent
