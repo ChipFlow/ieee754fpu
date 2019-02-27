@@ -186,7 +186,7 @@ def run_edge_cases(dut, count, op):
         count = yield from run_cases(dut, count, op, testme, 10)
 
     for i in range(100000):
-        stimulus_a = [randint(0, 1<<32) for i in range(1000)]
-        count = yield from run_cases(dut, count, op, stimulus_a, 1000)
+        stimulus_a = [randint(0, 1<<32) for i in range(10)]
+        count = yield from run_cases(dut, count, op, stimulus_a, 10)
     return count
 
