@@ -375,7 +375,7 @@ class FPNorm2(FPState):
 
     def __init__(self, width):
         FPState.__init__(self, "normalise_2")
-        self.mod = FPNorm1Mod(width)
+        self.mod = FPNorm2Mod(width)
         self.out_norm = Signal(reset_less=True)
         self.out_z = FPNumBase(width)
         self.out_of = Overflow()
