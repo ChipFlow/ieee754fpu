@@ -351,10 +351,10 @@ class FPNorm2Mod:
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.norm1_in_overflow = self.in_of
-        m.submodules.norm1_out_overflow = self.out_of
-        m.submodules.norm1_in_z = self.in_z
-        m.submodules.norm1_out_z = self.out_z
+        m.submodules.norm2_in_overflow = self.in_of
+        m.submodules.norm2_out_overflow = self.out_of
+        m.submodules.norm2_in_z = self.in_z
+        m.submodules.norm2_out_z = self.out_z
         m.d.comb += self.out_z.copy(self.in_z)
         m.d.comb += self.out_of.copy(self.in_of)
         m.d.comb += self.out_norm.eq(self.in_z.exp_lt_n126)
