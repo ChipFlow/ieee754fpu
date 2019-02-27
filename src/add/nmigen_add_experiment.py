@@ -625,9 +625,9 @@ class FPADD:
         m.submodules.normalise_2 = n2.mod
 
         rn = self.add_state(FPRound(self.width))
-        rn.set_inputs({"z": z, "of": of})  # XXX Z as output
+        rn.set_inputs({"z": n2.out_z, "of": of})  # XXX Z as output
         rn.set_outputs({"z": z})  # XXX Z as output
-        rn.mod.setup(m, z, rn.out_z, of)
+        rn.mod.setup(m, n2.out_z, rn.out_z, of)
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
