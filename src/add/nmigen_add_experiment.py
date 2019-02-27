@@ -282,32 +282,67 @@ class FPAddStage0(FPState):
         m.d.sync += self.z.copy(self.out_z)
 
 
-class FPAddStage1(FPState):
+class FPAddStage1Mod(FPState):
     """ Second stage of add: preparation for normalisation.
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """
 
-    def action(self, m):
-        m.next = "normalise_1"
+    def __init__(self, width):
+        self.out_norm = Signal(reset_less=True)
+        self.in_z = FPNumBase(width, False)
+        self.in_tot = Signal(self.in_z.m_width + 4, reset_less=True)
+        self.out_z = FPNumBase(width, False)
+        self.out_of = Overflow()
+
+    def setup(self, m, in_tot, in_z, out_z, out_of):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_tot.eq(in_tot)
+        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += out_of.copy(self.out_of)
+
+    def elaborate(self, platform):
+        m = Module()
+        #m.submodules.norm1_in_overflow = self.in_of
+        #m.submodules.norm1_out_overflow = self.out_of
+        #m.submodules.norm1_in_z = self.in_z
+        #m.submodules.norm1_out_z = self.out_z
+        m.d.comb += self.out_z.copy(self.in_z)
         # tot[27] gets set when the sum overflows. shift result down
-        with m.If(self.tot[-1]):
-            m.d.sync += [
-                self.z.m.eq(self.tot[4:]),
-                self.of.m0.eq(self.tot[4]),
-                self.of.guard.eq(self.tot[3]),
-                self.of.round_bit.eq(self.tot[2]),
-                self.of.sticky.eq(self.tot[1] | self.tot[0]),
-                self.z.e.eq(self.z.e + 1)
+        with m.If(self.in_tot[-1]):
+            m.d.comb += [
+                self.out_z.m.eq(self.in_tot[4:]),
+                self.out_of.m0.eq(self.in_tot[4]),
+                self.out_of.guard.eq(self.in_tot[3]),
+                self.out_of.round_bit.eq(self.in_tot[2]),
+                self.out_of.sticky.eq(self.in_tot[1] | self.in_tot[0]),
+                self.out_z.e.eq(self.in_z.e + 1)
         ]
         # tot[27] zero case
         with m.Else():
-            m.d.sync += [
-                self.z.m.eq(self.tot[3:]),
-                self.of.m0.eq(self.tot[3]),
-                self.of.guard.eq(self.tot[2]),
-                self.of.round_bit.eq(self.tot[1]),
-                self.of.sticky.eq(self.tot[0])
+            m.d.comb += [
+                self.out_z.m.eq(self.in_tot[3:]),
+                self.out_of.m0.eq(self.in_tot[3]),
+                self.out_of.guard.eq(self.in_tot[2]),
+                self.out_of.round_bit.eq(self.in_tot[1]),
+                self.out_of.sticky.eq(self.in_tot[0])
         ]
+        return m
+
+
+class FPAddStage1(FPState):
+
+    def __init__(self, width):
+        FPState.__init__(self, "add_1")
+        self.mod = FPAddStage1Mod(width)
+        self.out_z = FPNumBase(width, False)
+        self.out_of = Overflow()
+
+    def action(self, m):
+        m.d.sync += self.of.copy(self.out_of)
+        m.d.sync += self.z.copy(self.out_z)
+        m.next = "normalise_1"
 
 
 class FPNorm1Mod:
@@ -608,9 +643,11 @@ class FPADD:
         add0.mod.setup(m, a, b, z, add0.out_z, add0.out_tot)
         m.submodules.add0 = add0.mod
 
-        add1 = self.add_state(FPAddStage1("add_1"))
+        add1 = self.add_state(FPAddStage1(self.width))
         add1.set_inputs({"tot": tot, "z": z}) # Z input passes through
         add1.set_outputs({"z": z, "of": of})  # XXX Z as output
+        add1.mod.setup(m, tot, z, add1.out_z, add1.out_of)
+        m.submodules.add1 = add1.mod
 
         n1 = self.add_state(FPNorm1(self.width))
         n1.set_inputs({"z": z, "of": of})  # XXX Z as output
