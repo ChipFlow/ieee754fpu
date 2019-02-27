@@ -214,10 +214,14 @@ class FPAddAlignMultiMod(FPState):
         m.d.comb += self.exp_eq.eq(0)
         m.d.comb += self.out_a.copy(self.in_a)
         m.d.comb += self.out_b.copy(self.in_b)
-        with m.If(self.in_a.e > self.in_b.e):
+        agtb = Signal(reset_less=True)
+        altb = Signal(reset_less=True)
+        m.d.comb += agtb.eq(self.in_a.e > self.in_b.e)
+        m.d.comb += altb.eq(self.in_a.e < self.in_b.e)
+        with m.If(agtb):
             m.d.comb += self.out_b.shift_down(self.in_b)
         # exponent of b greater than a: shift a down
-        with m.Elif(self.in_a.e < self.in_b.e):
+        with m.Elif(altb):
             m.d.comb += self.out_a.shift_down(self.in_a)
         # exponents equal: move to next stage.
         with m.Else():
