@@ -475,6 +475,8 @@ class FPRoundMod:
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_z.copy(self.in_z)
+        m.submodules.round_in_z = self.in_z
+        m.submodules.round_out_z = self.out_z
         with m.If(self.in_roundz):
             m.d.comb += self.out_z.m.eq(self.in_z.m + 1) # mantissa rounds up
             with m.If(self.in_z.m == self.in_z.m1s): # all 1s
@@ -642,7 +644,7 @@ class FPADD:
         add1 = self.add_state(FPAddStage1(self.width))
         add1.set_inputs({"tot": add0.out_tot, "z": add0.out_z})
         add1.set_outputs({"z": z})  # XXX Z as output
-        add1.mod.setup(m, add0.out_tot, z, add1.out_z, add1.out_of)
+        add1.mod.setup(m, add0.out_tot, add0.out_z, add1.out_z, add1.out_of)
         m.submodules.add1 = add1.mod
 
         n1 = self.add_state(FPNorm1(self.width))
@@ -664,15 +666,15 @@ class FPADD:
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
-        cor.set_inputs({"z": z})  # XXX Z as output
+        cor.set_inputs({"z": rn.out_z})  # XXX Z as output
         cor.set_outputs({"z": z})  # XXX Z as output
         cor.mod.setup(m, z, cor.out_z)
         m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack(self.width))
-        pa.set_inputs({"z": z})  # XXX Z as output
+        pa.set_inputs({"z": cor.out_z})  # XXX Z as output
         pa.set_outputs({"z": z})  # XXX Z as output
-        pa.mod.setup(m, z, pa.out_z)
+        pa.mod.setup(m, cor.out_z, pa.out_z)
         m.submodules.pack = pa.mod
 
         pz = self.add_state(FPPutZ("put_z"))
