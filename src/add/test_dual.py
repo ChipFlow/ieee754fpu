@@ -11,12 +11,16 @@ def get_case(dut, a, b, c):
     a_ack = (yield dut.a.ack)
     assert a_ack == 0
 
+    yield dut.a.stb.eq(0)
+
     yield dut.b.v.eq(b)
     yield dut.b.stb.eq(1)
     yield
     yield
     b_ack = (yield dut.b.ack)
     assert b_ack == 0
+
+    yield dut.b.stb.eq(0)
 
     yield dut.c.v.eq(c)
     yield dut.c.stb.eq(1)
@@ -25,12 +29,9 @@ def get_case(dut, a, b, c):
     c_ack = (yield dut.c.ack)
     assert c_ack == 0
 
-    while True:
-        out_z_stb = (yield dut.int_stb)
-        if not out_z_stb:
-            yield
-            continue
-        break
+    yield dut.c.stb.eq(0)
+
+    yield dut.z.ack.eq(1)
 
     while True:
         out_z_stb = (yield dut.z.stb)
@@ -41,12 +42,6 @@ def get_case(dut, a, b, c):
         out_z = yield dut.z.v
 
         yield dut.z.ack.eq(0)
-        yield dut.a.stb.eq(0)
-        yield dut.b.stb.eq(0)
-        yield dut.c.stb.eq(0)
-        yield
-        yield dut.z.ack.eq(1)
-        yield
         break
 
     return out_z

@@ -347,8 +347,8 @@ class FPOp:
         if extra is not None:
             stb = stb & extra
         return [self.v.eq(in_op.v),          # receive value
-                self.stb.eq(~stb),      # receive STB
-                in_op.ack.eq(~self.ack), # send ACK
+                self.stb.eq(stb),      # receive STB
+                in_op.ack.eq(self.ack), # send ACK
                ]
 
     def chain_from(self, in_op, extra=None):
