@@ -296,6 +296,11 @@ class FPCorrectionsMod:
         m.d.comb += self.out_z.copy(self.in_z)
         with m.If(self.in_z.is_denormalised):
             m.d.comb += self.out_z.e.eq(self.in_z.N127)
+
+        #        with m.If(self.in_z.is_overflowed):
+        #            m.d.comb += self.out_z.inf(self.in_z.s)
+        #        with m.Else():
+        #            m.d.comb += self.out_z.create(self.in_z.s, self.in_z.e, self.in_z.m)
         return m
 
 
@@ -311,10 +316,39 @@ class FPCorrections(FPState):
         m.next = "pack"
 
 
+class FPPackMod:
+
+    def __init__(self, width):
+        self.in_z = FPNumOut(width, False)
+        self.out_z = FPNumOut(width, False)
+
+    def setup(self, m, in_z, out_z):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_z.copy(in_z)
+        #m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += out_z.v.eq(self.out_z.v)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.pack_in_z = self.in_z
+        with m.If(self.in_z.is_overflowed):
+            m.d.comb += self.out_z.inf(self.in_z.s)
+        with m.Else():
+            m.d.comb += self.out_z.create(self.in_z.s, self.in_z.e, self.in_z.m)
+        return m
+
+
 class FPPack(FPState):
 
+    def __init__(self, width):
+        FPState.__init__(self, "pack")
+        self.mod = FPPackMod(width)
+        self.out_z = FPNumOut(width, False)
+
     def action(self, m):
-        self.pack(m, self.z, "put_z")
+        m.d.sync += self.z.v.eq(self.out_z.v)
+        m.next = "put_z"
 
 
 class FPPutZ(FPState):
@@ -413,9 +447,11 @@ class FPADD:
         cor.mod.setup(m, z, cor.out_z)
         m.submodules.corrections = cor.mod
 
-        pa = self.add_state(FPPack("pack"))
+        pa = self.add_state(FPPack(self.width))
         pa.set_inputs({"z": z})  # XXX Z as output
         pa.set_outputs({"z": z})  # XXX Z as output
+        pa.mod.setup(m, z, pa.out_z)
+        m.submodules.pack = pa.mod
 
         pz = self.add_state(FPPutZ("put_z"))
         pz.set_inputs({"z": z})
