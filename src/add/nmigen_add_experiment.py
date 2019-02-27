@@ -44,82 +44,127 @@ class FPGetOpB(FPState):
         self.get_op(m, self.in_b, self.b, "special_cases")
 
 
-class FPAddSpecialCases(FPState):
+class FPAddSpecialCasesMod:
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def action(self, m):
+    def __init__(self, width):
+        self.in_a = FPNumBase(width)
+        self.in_b = FPNumBase(width)
+        self.out_z = FPNumOut(width, False)
+        self.out_do_z = Signal(reset_less=True)
+
+    def setup(self, m, in_a, in_b, out_z, out_do_z):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += out_z.v.eq(self.out_z.v)
+        m.d.comb += out_do_z.eq(self.out_do_z)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules.sc_in_a = self.in_a
+        m.submodules.sc_in_b = self.in_b
+        m.submodules.sc_out_z = self.out_z
+
         s_nomatch = Signal()
-        m.d.comb += s_nomatch.eq(self.a.s != self.b.s)
+        m.d.comb += s_nomatch.eq(self.in_a.s != self.in_b.s)
 
         m_match = Signal()
-        m.d.comb += m_match.eq(self.a.m == self.b.m)
+        m.d.comb += m_match.eq(self.in_a.m == self.in_b.m)
 
         # if a is NaN or b is NaN return NaN
-        with m.If(self.a.is_nan | self.b.is_nan):
-            m.next = "put_z"
-            m.d.sync += self.z.nan(1)
+        with m.If(self.in_a.is_nan | self.in_b.is_nan):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.nan(1)
 
         # XXX WEIRDNESS for FP16 non-canonical NaN handling
         # under review
 
         ## if a is zero and b is NaN return -b
         #with m.If(a.is_zero & (a.s==0) & b.is_nan):
-        #    m.next = "put_z"
-        #    m.d.sync += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
+        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
 
         ## if b is zero and a is NaN return -a
         #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
-        #    m.next = "put_z"
-        #    m.d.sync += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
+        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
 
         ## if a is -zero and b is NaN return -b
         #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
-        #    m.next = "put_z"
-        #    m.d.sync += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
+        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
 
         ## if b is -zero and a is NaN return -a
         #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
-        #    m.next = "put_z"
-        #    m.d.sync += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
+        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
         # if a is inf return inf (or NaN)
-        with m.Elif(self.a.is_inf):
-            m.next = "put_z"
-            m.d.sync += self.z.inf(self.a.s)
+        with m.Elif(self.in_a.is_inf):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.inf(self.in_a.s)
             # if a is inf and signs don't match return NaN
-            with m.If(self.b.exp_128 & s_nomatch):
-                m.d.sync += self.z.nan(1)
+            with m.If(self.in_b.exp_128 & s_nomatch):
+                m.d.comb += self.out_z.nan(1)
 
         # if b is inf return inf
-        with m.Elif(self.b.is_inf):
-            m.next = "put_z"
-            m.d.sync += self.z.inf(self.b.s)
+        with m.Elif(self.in_b.is_inf):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.inf(self.in_b.s)
 
         # if a is zero and b zero return signed-a/b
-        with m.Elif(self.a.is_zero & self.b.is_zero):
-            m.next = "put_z"
-            m.d.sync += self.z.create(self.a.s & self.b.s, self.b.e,
-                                      self.b.m[3:-1])
+        with m.Elif(self.in_a.is_zero & self.in_b.is_zero):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.create(self.in_a.s & self.in_b.s,
+                                          self.in_b.e,
+                                          self.in_b.m[3:-1])
 
         # if a is zero return b
-        with m.Elif(self.a.is_zero):
-            m.next = "put_z"
-            m.d.sync += self.z.create(self.b.s, self.b.e, self.b.m[3:-1])
+        with m.Elif(self.in_a.is_zero):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.create(self.in_b.s, self.in_b.e,
+                                      self.in_b.m[3:-1])
 
         # if b is zero return a
-        with m.Elif(self.b.is_zero):
-            m.next = "put_z"
-            m.d.sync += self.z.create(self.a.s, self.a.e, self.a.m[3:-1])
+        with m.Elif(self.in_b.is_zero):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.create(self.in_a.s, self.in_a.e,
+                                      self.in_a.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
-        with m.Elif(s_nomatch & m_match & (self.a.e == self.b.e)):
-            m.next = "put_z"
-            m.d.sync += self.z.zero(0)
+        with m.Elif(s_nomatch & m_match & (self.in_a.e == self.in_b.e)):
+            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.out_z.zero(0)
 
         # Denormalised Number checks
+        with m.Else():
+            m.d.comb += self.out_do_z.eq(0)
+
+        return m
+
+
+class FPAddSpecialCases(FPState):
+    """ special cases: NaNs, infs, zeros, denormalised
+        NOTE: some of these are unique to add.  see "Special Operations"
+        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+    """
+
+    def __init__(self, width):
+        FPState.__init__(self, "special_cases")
+        self.mod = FPAddSpecialCasesMod(width)
+        self.out_z = FPNumOut(width, False)
+        self.out_do_z = Signal(reset_less=True)
+
+    def action(self, m):
+        with m.If(self.out_do_z):
+            m.d.sync += self.z.v.eq(self.out_z.v) # only take the output
+            m.next = "put_z"
         with m.Else():
             m.next = "denormalise"
 
@@ -326,7 +371,6 @@ class FPPackMod:
         """ links module to inputs and outputs
         """
         m.d.comb += self.in_z.copy(in_z)
-        #m.d.comb += out_z.copy(self.out_z)
         m.d.comb += out_z.v.eq(self.out_z.v)
 
     def elaborate(self, platform):
@@ -404,9 +448,11 @@ class FPADD:
         getb.set_outputs({"b": b})
         # XXX m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
 
-        sc = self.add_state(FPAddSpecialCases("special_cases"))
+        sc = self.add_state(FPAddSpecialCases(self.width))
         sc.set_inputs({"a": a, "b": b})
         sc.set_outputs({"z": z})
+        sc.mod.setup(m, a, b, sc.out_z, sc.out_do_z)
+        m.submodules.specialcases = sc.mod
 
         dn = self.add_state(FPAddDeNorm("denormalise"))
         dn.set_inputs({"a": a, "b": b})
