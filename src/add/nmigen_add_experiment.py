@@ -766,11 +766,7 @@ class FPADD:
         m = Module()
 
         # Latches
-        #a = FPNumIn(self.in_a, self.width)
-        #b = FPNumIn(self.in_b, self.width)
         z = FPNumOut(self.width, False)
-
-        #m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
 
         w = z.m_width + 4
@@ -778,24 +774,17 @@ class FPADD:
         of = Overflow()
         m.submodules.overflow = of
 
-        geta = self.add_state(FPGetOp("get_a", "get_b", self.in_a, self.width))
-        #geta.set_inputs({"in_a": self.in_a})
-        #geta.set_outputs({"a": a})
+        geta = self.add_state(FPGetOp("get_a", "get_b",
+                                      self.in_a, self.width))
         a = geta.out_op
-        # XXX m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
         geta.mod.setup(m, self.in_a, geta.out_op, geta.out_decode)
         m.submodules.get_a = geta.mod
-        #m.submodules.fpnum_a = a
 
         getb = self.add_state(FPGetOp("get_b", "special_cases",
                                       self.in_b, self.width))
-        #getb.set_inputs({"in_b": self.in_b})
-        #getb.set_outputs({"b": b})
         b = getb.out_op
         getb.mod.setup(m, self.in_b, getb.out_op, getb.out_decode)
-        # XXX m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
         m.submodules.get_b = getb.mod
-        #m.submodules.fpnum_b = b
 
         sc = self.add_state(FPAddSpecialCases(self.width))
         sc.set_inputs({"a": a, "b": b})
