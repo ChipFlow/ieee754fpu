@@ -787,12 +787,15 @@ class FPADD:
         m.submodules.get_a = geta.mod
         #m.submodules.fpnum_a = a
 
-        getb = self.add_state(FPGetOpB(self.in_b, self.width))
+        getb = self.add_state(FPGetOp("get_b", "special_cases",
+                                      self.in_b, self.width))
         #getb.set_inputs({"in_b": self.in_b})
         #getb.set_outputs({"b": b})
-        b = getb.b
+        b = getb.out_op
+        getb.mod.setup(m, self.in_b, getb.out_op, getb.out_decode)
         # XXX m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
-        m.submodules.fpnum_b = b
+        m.submodules.get_b = getb.mod
+        #m.submodules.fpnum_b = b
 
         sc = self.add_state(FPAddSpecialCases(self.width))
         sc.set_inputs({"a": a, "b": b})
