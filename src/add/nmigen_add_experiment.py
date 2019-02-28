@@ -23,17 +23,52 @@ class FPState(FPBase):
             setattr(self, k, v)
 
 
-class FPGetOpA(FPState):
-    """ gets operand a
+class FPGetOpMod:
+    def __init__(self, width):
+        self.in_op = FPOp(width)
+        self.out_op = FPNumIn(self.in_op, width)
+        self.out_decode = Signal(reset_less=True)
+
+    def setup(self, m, in_op, out_op, out_decode):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_op.copy(in_op)
+        m.d.comb += out_op.v.eq(self.out_op.v)
+        m.d.comb += out_decode.eq(self.out_decode)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.out_decode.eq((self.in_op.ack) & (self.in_op.stb))
+        #m.submodules.get_op_in = self.in_op
+        m.submodules.get_op_out = self.out_op
+        with m.If(self.out_decode):
+            m.d.comb += [
+                self.out_op.decode(self.in_op.v),
+            ]
+        return m
+
+
+class FPGetOp(FPState):
+    """ gets operand
     """
 
-    def __init__(self, in_a, width):
-        FPState.__init__(self, "get_a")
-        self.in_a = in_a
-        self.a = FPNumIn(in_a, width)
+    def __init__(self, in_state, out_state, in_op, width):
+        FPState.__init__(self, in_state)
+        self.out_state = out_state
+        self.mod = FPGetOpMod(width)
+        self.in_op = in_op
+        self.out_op = FPNumIn(in_op, width)
+        self.out_decode = Signal(reset_less=True)
 
     def action(self, m):
-        self.get_op(m, self.in_a, self.a, "get_b")
+        with m.If(self.out_decode):
+            m.next = self.out_state
+            m.d.sync += [
+                self.in_op.ack.eq(0),
+                self.out_op.copy(self.mod.out_op)
+            ]
+        with m.Else():
+            m.d.sync += self.in_op.ack.eq(1)
 
 
 class FPGetOpB(FPState):
@@ -374,8 +409,8 @@ class FPAddStage0Mod:
 
     def elaborate(self, platform):
         m = Module()
-        #m.submodules.add0_in_a = self.in_a
-        #m.submodules.add0_in_b = self.in_b
+        m.submodules.add0_in_a = self.in_a
+        m.submodules.add0_in_b = self.in_b
         #m.submodules.add0_in_z = self.in_z
         #m.submodules.add0_out_z = self.out_z
 
@@ -743,12 +778,14 @@ class FPADD:
         of = Overflow()
         m.submodules.overflow = of
 
-        geta = self.add_state(FPGetOpA(self.in_a, self.width))
+        geta = self.add_state(FPGetOp("get_a", "get_b", self.in_a, self.width))
         #geta.set_inputs({"in_a": self.in_a})
         #geta.set_outputs({"a": a})
-        a = geta.a
+        a = geta.out_op
         # XXX m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
-        m.submodules.fpnum_a = a
+        geta.mod.setup(m, self.in_a, geta.out_op, geta.out_decode)
+        m.submodules.get_a = geta.mod
+        #m.submodules.fpnum_a = a
 
         getb = self.add_state(FPGetOpB(self.in_b, self.width))
         #getb.set_inputs({"in_b": self.in_b})

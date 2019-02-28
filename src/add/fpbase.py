@@ -367,6 +367,12 @@ class FPOp:
                 in_op.ack.eq(self.ack), # send ACK
                ]
 
+    def copy(self, inp):
+        return [self.v.eq(inp.v),
+                self.stb.eq(inp.stb),
+                self.ack.eq(inp.ack)
+               ]
+
     def ports(self):
         return [self.v, self.stb, self.ack]
 
