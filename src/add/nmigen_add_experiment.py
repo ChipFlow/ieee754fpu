@@ -40,6 +40,11 @@ class FPGetOpB(FPState):
     """ gets operand b
     """
 
+    def __init__(self, in_b, width):
+        FPState.__init__(self, "get_b")
+        self.in_b = in_b
+        self.b = FPNumIn(self.in_b, width)
+
     def action(self, m):
         self.get_op(m, self.in_b, self.b, "special_cases")
 
@@ -727,10 +732,10 @@ class FPADD:
 
         # Latches
         #a = FPNumIn(self.in_a, self.width)
-        b = FPNumIn(self.in_b, self.width)
+        #b = FPNumIn(self.in_b, self.width)
         z = FPNumOut(self.width, False)
 
-        m.submodules.fpnum_b = b
+        #m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
 
         w = z.m_width + 4
@@ -745,10 +750,12 @@ class FPADD:
         # XXX m.d.comb += a.v.eq(self.in_a.v) # links in_a to a
         m.submodules.fpnum_a = a
 
-        getb = self.add_state(FPGetOpB("get_b"))
-        getb.set_inputs({"in_b": self.in_b})
-        getb.set_outputs({"b": b})
+        getb = self.add_state(FPGetOpB(self.in_b, self.width))
+        #getb.set_inputs({"in_b": self.in_b})
+        #getb.set_outputs({"b": b})
+        b = getb.b
         # XXX m.d.comb += b.v.eq(self.in_b.v) # links in_b to b
+        m.submodules.fpnum_b = b
 
         sc = self.add_state(FPAddSpecialCases(self.width))
         sc.set_inputs({"a": a, "b": b})
