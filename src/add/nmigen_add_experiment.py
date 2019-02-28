@@ -169,13 +169,57 @@ class FPAddSpecialCases(FPState):
             m.next = "denormalise"
 
 
+class FPAddDeNormMod(FPState):
+
+    def __init__(self, width):
+        self.in_a = FPNumBase(width)
+        self.in_b = FPNumBase(width)
+        self.out_a = FPNumBase(width)
+        self.out_b = FPNumBase(width)
+
+    def setup(self, m, in_a, in_b, out_a, out_b):
+        """ links module to inputs and outputs
+        """
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += out_a.copy(self.out_a)
+        m.d.comb += out_b.copy(self.out_b)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.denorm_in_a = self.in_a
+        m.submodules.denorm_in_b = self.in_b
+        m.submodules.denorm_out_a = self.out_a
+        m.submodules.denorm_out_b = self.out_b
+        # hmmm, don't like repeating identical code
+        m.d.comb += self.out_a.copy(self.in_a)
+        with m.If(self.in_a.exp_n127):
+            m.d.comb += self.out_a.e.eq(self.in_a.N126) # limit a exponent
+        with m.Else():
+            m.d.comb += self.out_a.m[-1].eq(1) # set top mantissa bit
+
+        m.d.comb += self.out_b.copy(self.in_b)
+        with m.If(self.in_b.exp_n127):
+            m.d.comb += self.out_b.e.eq(self.in_b.N126) # limit a exponent
+        with m.Else():
+            m.d.comb += self.out_b.m[-1].eq(1) # set top mantissa bit
+
+        return m
+
+
 class FPAddDeNorm(FPState):
+
+    def __init__(self, width):
+        FPState.__init__(self, "denormalise")
+        self.mod = FPAddDeNormMod(width)
+        self.out_a = FPNumBase(width)
+        self.out_b = FPNumBase(width)
 
     def action(self, m):
         # Denormalised Number checks
         m.next = "align"
-        self.denormalise(m, self.a)
-        self.denormalise(m, self.b)
+        m.d.sync += self.a.copy(self.out_a)
+        m.d.sync += self.b.copy(self.out_b)
 
 
 class FPAddAlignMultiMod(FPState):
@@ -712,9 +756,11 @@ class FPADD:
         sc.mod.setup(m, a, b, sc.out_z, sc.out_do_z)
         m.submodules.specialcases = sc.mod
 
-        dn = self.add_state(FPAddDeNorm("denormalise"))
+        dn = self.add_state(FPAddDeNorm(self.width))
         dn.set_inputs({"a": a, "b": b})
         dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+        dn.mod.setup(m, a, b, dn.out_a, dn.out_b)
+        m.submodules.denormalise = dn.mod
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width))
