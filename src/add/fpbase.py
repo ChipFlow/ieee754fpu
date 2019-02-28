@@ -426,7 +426,7 @@ class FPBase:
             both cases *effectively multiply the number stored by 2*,
             which has to be taken into account when extracting the result.
         """
-        with m.If(a.e == a.N127):
+        with m.If(a.exp_n127):
             m.d.sync += a.e.eq(a.N126) # limit a exponent
         with m.Else():
             m.d.sync += a.m[-1].eq(1) # set top mantissa bit
