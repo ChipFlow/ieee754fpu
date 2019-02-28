@@ -40,6 +40,6 @@ def testbench(dut):
 
 
 if __name__ == '__main__':
-    dut = FPADD(width=64, single_cycle=True)
+    dut = FPADD(width=64, single_cycle=False)
     run_simulation(dut, testbench(dut), vcd_name="test_add64.vcd")
 

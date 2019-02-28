@@ -80,7 +80,7 @@ class FPAddSpecialCasesMod:
         # if a is NaN or b is NaN return NaN
         with m.If(self.in_a.is_nan | self.in_b.is_nan):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.nan(1)
+            m.d.comb += self.out_z.nan(0)
 
         # XXX WEIRDNESS for FP16 non-canonical NaN handling
         # under review
@@ -111,7 +111,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.out_z.inf(self.in_a.s)
             # if a is inf and signs don't match return NaN
             with m.If(self.in_b.exp_128 & s_nomatch):
-                m.d.comb += self.out_z.nan(1)
+                m.d.comb += self.out_z.nan(0)
 
         # if b is inf return inf
         with m.Elif(self.in_b.is_inf):

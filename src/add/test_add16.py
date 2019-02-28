@@ -1,5 +1,3 @@
-from random import randint
-from random import seed
 from operator import add
 
 from nmigen import Module, Signal
@@ -22,15 +20,17 @@ def testbench(dut):
     #yield from check_case(dut, 0x8000, 0x7c8c, 0x7e8c)
     #yield from check_case(dut, 0x8000, 0xfc55, 0xfe55)
     #yield from check_case(dut, 0x8000, 0x7e1a, 0x7e1a)
-    #yield from check_case(dut, 0xfc00, 0x7c00, 0xfe00)
+
+    #yield from check_case(dut, 0x8000, 0xfc01, 0x7e00)
+    yield from check_case(dut, 0xfc00, 0x7c00, 0x7e00)
     yield from check_case(dut, 0x8000, 0, 0)
     yield from check_case(dut, 0, 0, 0)
 
     count = 0
 
     #regression tests
-    stimulus_a = [ 0x8000 ]
-    stimulus_b = [ 0x0000 ]
+    stimulus_a = [ 0x8000, 0x8000 ]
+    stimulus_b = [ 0x0000, 0xfc01 ]
     yield from run_test(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
