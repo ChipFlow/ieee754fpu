@@ -811,9 +811,9 @@ class FPADD:
         m.submodules.align = alm.mod
 
         add0 = self.add_state(FPAddStage0(self.width))
-        add0.set_inputs({"a": a, "b": b})
+        add0.set_inputs({"a": alm.out_a, "b": alm.out_b})
         add0.set_outputs({"z": z})
-        add0.mod.setup(m, a, b, z, add0.out_z, add0.out_tot)
+        add0.mod.setup(m, alm.out_a, alm.out_b, z, add0.out_z, add0.out_tot)
         m.submodules.add0 = add0.mod
 
         add1 = self.add_state(FPAddStage1(self.width))
