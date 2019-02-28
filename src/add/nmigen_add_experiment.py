@@ -583,7 +583,7 @@ class FPNorm2(FPState):
         self.out_of = Overflow()
 
     def action(self, m):
-        m.d.sync += self.of.copy(self.out_of)
+        #m.d.sync += self.of.copy(self.out_of)
         m.d.sync += self.z.copy(self.out_z)
         with m.If(~self.out_norm):
             m.next = "round"
@@ -793,13 +793,13 @@ class FPADD:
         m.submodules.normalise_1 = n1.mod
 
         n2 = self.add_state(FPNorm2(self.width))
-        n2.set_inputs({"z": n1.out_z, "of": of})
+        n2.set_inputs({"z": n1.out_z, "of": n1.out_of})
         n2.set_outputs({"z": z})
         n2.mod.setup(m, n1.out_z, n2.out_z, of, n2.out_of, n2.out_norm)
         m.submodules.normalise_2 = n2.mod
 
         rn = self.add_state(FPRound(self.width))
-        rn.set_inputs({"z": n2.out_z, "of": of})
+        rn.set_inputs({"z": n2.out_z, "of": n2.out_of})
         rn.set_outputs({"z": z})
         rn.mod.setup(m, n2.out_z, rn.out_z, of)
         m.submodules.roundz = rn.mod
