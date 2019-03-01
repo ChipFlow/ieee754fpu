@@ -802,26 +802,29 @@ class FPADD:
         n1.mod.setup(m, az, n1.out_z, add1.out_of, n1.out_of, n1.out_norm)
         m.submodules.normalise_1 = n1.mod
 
+        rnz = FPNumOut(self.width, False)
+        m.submodules.fpnum_rnz = rnz
+
         rn = self.add_state(FPRound(self.width))
-        rn.set_inputs({"z": n1.out_z, "of": n1.out_of})
-        rn.set_outputs({"z": az})
+        rn.set_inputs({"of": n1.out_of})
+        rn.set_outputs({"z": rnz})
         rn.mod.setup(m, n1.out_z, rn.out_z, of)
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
-        cor.set_inputs({"z": az})  # XXX Z as output
-        cor.set_outputs({"z": az})  # XXX Z as output
-        cor.mod.setup(m, az, cor.out_z)
+        cor.set_inputs({"z": rnz})  # XXX Z as output
+        cor.set_outputs({"z": rnz})  # XXX Z as output
+        cor.mod.setup(m, rnz, cor.out_z)
         m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack(self.width))
-        pa.set_inputs({"z": az})  # XXX Z as output
-        pa.set_outputs({"z": az})  # XXX Z as output
-        pa.mod.setup(m, az, pa.out_z)
+        pa.set_inputs({"z": rnz})  # XXX Z as output
+        pa.set_outputs({"z": rnz})  # XXX Z as output
+        pa.mod.setup(m, rnz, pa.out_z)
         m.submodules.pack = pa.mod
 
         pz = self.add_state(FPPutZ("pack_put_z"))
-        pz.set_inputs({"z": az})
+        pz.set_inputs({"z": rnz})
         pz.set_outputs({"out_z": self.out_z})
 
         pz = self.add_state(FPPutZ("put_z"))
