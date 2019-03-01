@@ -553,9 +553,12 @@ class FPNorm1Mod:
         m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.out_z.copy(self.in_z)
         m.d.comb += self.out_of.copy(self.in_of)
-        m.d.comb += self.out_norm.eq((self.in_z.m_msbzero) & \
-                                     (self.in_z.exp_gt_n126))
-        with m.If(self.out_norm):
+        decrease = Signal(reset_less=True)
+        increase = Signal(reset_less=True)
+        m.d.comb += decrease.eq(self.in_z.m_msbzero & self.in_z.exp_gt_n126)
+        m.d.comb += increase.eq(self.in_z.exp_lt_n126)
+        m.d.comb += self.out_norm.eq(decrease | increase)
+        with m.If(decrease):
             m.d.comb += [
                 self.out_z.e.eq(self.in_z.e - 1),  # DECREASE exponent
                 self.out_z.m.eq(self.in_z.m << 1), # shift mantissa UP
@@ -563,6 +566,15 @@ class FPNorm1Mod:
                 self.out_of.guard.eq(self.in_of.round_bit), # round (was tot[1])
                 self.out_of.round_bit.eq(0),        # reset round bit
                 self.out_of.m0.eq(self.in_of.guard),
+            ]
+        with m.If(increase):
+            m.d.comb += [
+                self.out_z.e.eq(self.in_z.e + 1),  # INCREASE exponent
+                self.out_z.m.eq(self.in_z.m >> 1), # shift mantissa DOWN
+                self.out_of.guard.eq(self.in_z.m[0]),
+                self.out_of.m0.eq(self.in_z.m[1]),
+                self.out_of.round_bit.eq(self.in_of.guard),
+                self.out_of.sticky.eq(self.in_of.sticky | self.in_of.round_bit)
             ]
 
         return m
@@ -579,62 +591,6 @@ class FPNorm1(FPState):
 
     def action(self, m):
         m.d.sync += self.of.copy(self.out_of)
-        m.d.sync += self.z.copy(self.out_z)
-        with m.If(~self.out_norm):
-            m.next = "normalise_2"
-
-
-class FPNorm2Mod:
-
-    def __init__(self, width):
-        self.out_norm = Signal(reset_less=True)
-        self.in_z = FPNumBase(width, False)
-        self.out_z = FPNumBase(width, False)
-        self.in_of = Overflow()
-        self.out_of = Overflow()
-
-    def setup(self, m, in_z, out_z, in_of, out_of, out_norm):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.copy(self.out_z)
-        m.d.comb += self.in_of.copy(in_of)
-        m.d.comb += out_of.copy(self.out_of)
-        m.d.comb += out_norm.eq(self.out_norm)
-
-    def elaborate(self, platform):
-        m = Module()
-        m.submodules.norm2_in_overflow = self.in_of
-        m.submodules.norm2_out_overflow = self.out_of
-        m.submodules.norm2_in_z = self.in_z
-        m.submodules.norm2_out_z = self.out_z
-        m.d.comb += self.out_z.copy(self.in_z)
-        m.d.comb += self.out_of.copy(self.in_of)
-        m.d.comb += self.out_norm.eq(self.in_z.exp_lt_n126)
-        with m.If(self.out_norm):
-            m.d.comb += [
-                self.out_z.e.eq(self.in_z.e + 1),  # INCREASE exponent
-                self.out_z.m.eq(self.in_z.m >> 1), # shift mantissa DOWN
-                self.out_of.guard.eq(self.in_z.m[0]),
-                self.out_of.m0.eq(self.in_z.m[1]),
-                self.out_of.round_bit.eq(self.in_of.guard),
-                self.out_of.sticky.eq(self.in_of.sticky | self.in_of.round_bit)
-            ]
-
-        return m
-
-
-class FPNorm2(FPState):
-
-    def __init__(self, width):
-        FPState.__init__(self, "normalise_2")
-        self.mod = FPNorm2Mod(width)
-        self.out_norm = Signal(reset_less=True)
-        self.out_z = FPNumBase(width)
-        self.out_of = Overflow()
-
-    def action(self, m):
-        #m.d.sync += self.of.copy(self.out_of)
         m.d.sync += self.z.copy(self.out_z)
         with m.If(~self.out_norm):
             m.next = "round"
@@ -839,16 +795,10 @@ class FPADD:
         n1.mod.setup(m, z, n1.out_z, of, n1.out_of, n1.out_norm)
         m.submodules.normalise_1 = n1.mod
 
-        n2 = self.add_state(FPNorm2(self.width))
-        n2.set_inputs({"z": n1.out_z, "of": n1.out_of})
-        n2.set_outputs({"z": z})
-        n2.mod.setup(m, n1.out_z, n2.out_z, n1.out_of, n2.out_of, n2.out_norm)
-        m.submodules.normalise_2 = n2.mod
-
         rn = self.add_state(FPRound(self.width))
-        rn.set_inputs({"z": n2.out_z, "of": n2.out_of})
+        rn.set_inputs({"z": n1.out_z, "of": n1.out_of})
         rn.set_outputs({"z": z})
-        rn.mod.setup(m, n2.out_z, rn.out_z, of)
+        rn.mod.setup(m, n1.out_z, rn.out_z, of)
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
