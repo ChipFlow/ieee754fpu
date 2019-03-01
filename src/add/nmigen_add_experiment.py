@@ -418,23 +418,28 @@ class FPAddStage0Mod:
         # same-sign (both negative or both positive) add mantissas
         seq = Signal(reset_less=True)
         mge = Signal(reset_less=True)
-        m.d.comb += seq.eq(self.in_a.s == self.in_b.s)
-        m.d.comb += mge.eq(self.in_a.m >= self.in_b.m)
+        am0 = Signal(len(self.in_a.m)+1, reset_less=True)
+        bm0 = Signal(len(self.in_b.m)+1, reset_less=True)
+        m.d.comb += [seq.eq(self.in_a.s == self.in_b.s),
+                     mge.eq(self.in_a.m >= self.in_b.m),
+                     am0.eq(Cat(self.in_a.m, 0)),
+                     bm0.eq(Cat(self.in_b.m, 0))
+                    ]
         with m.If(seq):
             m.d.comb += [
-                self.out_tot.eq(Cat(self.in_a.m, 0) + Cat(self.in_b.m, 0)),
+                self.out_tot.eq(am0 + bm0),
                 self.out_z.s.eq(self.in_a.s)
             ]
         # a mantissa greater than b, use a
         with m.Elif(mge):
             m.d.comb += [
-                self.out_tot.eq(Cat(self.in_a.m, 0) - Cat(self.in_b.m, 0)),
+                self.out_tot.eq(am0 - bm0),
                 self.out_z.s.eq(self.in_a.s)
             ]
         # b mantissa greater than a, use b
         with m.Else():
             m.d.comb += [
-                self.out_tot.eq(Cat(self.in_b.m, 0) - Cat(self.in_a.m, 0)),
+                self.out_tot.eq(bm0 - am0),
                 self.out_z.s.eq(self.in_b.s)
         ]
         return m
