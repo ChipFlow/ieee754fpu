@@ -739,9 +739,6 @@ class FPADD:
 
         w = z.m_width + 4
 
-        #of = Overflow()
-        #m.submodules.overflow = of
-
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       self.in_a, self.width))
         a = geta.out_op
@@ -794,8 +791,6 @@ class FPADD:
 
         az = add1.out_z
 
-        of = add1.out_of
-
         n1 = self.add_state(FPNorm1(self.width))
         n1.set_inputs({"z": az, "of": add1.out_of})  # XXX Z as output
         n1.set_outputs({"z": az})  # XXX Z as output
@@ -808,7 +803,7 @@ class FPADD:
         rn = self.add_state(FPRound(self.width))
         rn.set_inputs({"of": n1.out_of})
         rn.set_outputs({"z": rnz})
-        rn.mod.setup(m, n1.out_z, rn.out_z, of)
+        rn.mod.setup(m, n1.out_z, rn.out_z, add1.out_of)
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
