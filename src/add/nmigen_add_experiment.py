@@ -482,7 +482,7 @@ class FPAddStage1Mod(FPState):
         m.d.comb += self.in_z.copy(in_z)
         m.d.comb += self.in_tot.eq(in_tot)
         m.d.comb += out_z.copy(self.out_z)
-        m.d.comb += out_of.copy(self.out_of)
+        #m.d.comb += out_of.copy(self.out_of)
 
     def elaborate(self, platform):
         m = Module()
@@ -522,7 +522,8 @@ class FPAddStage1(FPState):
         self.out_of = Overflow()
 
     def action(self, m):
-        m.d.sync += self.of.copy(self.out_of)
+        m.submodules.add1_out_overflow = self.out_of
+        m.d.sync += self.out_of.copy(self.mod.out_of)
         m.d.sync += self.z.copy(self.out_z)
         m.next = "normalise_1"
 
@@ -738,8 +739,8 @@ class FPADD:
 
         w = z.m_width + 4
 
-        of = Overflow()
-        m.submodules.overflow = of
+        #of = Overflow()
+        #m.submodules.overflow = of
 
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       self.in_a, self.width))
@@ -785,14 +786,16 @@ class FPADD:
 
         add1 = self.add_state(FPAddStage1(self.width))
         add1.set_inputs({"tot": add0.out_tot, "z": add0.out_z})
-        add1.set_outputs({"z": z, "of": of})  # XXX Z as output
+        add1.set_outputs({"z": z})  # XXX Z as output
         add1.mod.setup(m, add0.out_tot, z, add1.out_z, add1.out_of)
         m.submodules.add1 = add1.mod
 
+        of = add1.out_of
+
         n1 = self.add_state(FPNorm1(self.width))
-        n1.set_inputs({"z": z, "of": of})  # XXX Z as output
+        n1.set_inputs({"z": z, "of": add1.out_of})  # XXX Z as output
         n1.set_outputs({"z": z})  # XXX Z as output
-        n1.mod.setup(m, z, n1.out_z, of, n1.out_of, n1.out_norm)
+        n1.mod.setup(m, z, n1.out_z, add1.out_of, n1.out_of, n1.out_norm)
         m.submodules.normalise_1 = n1.mod
 
         rn = self.add_state(FPRound(self.width))
