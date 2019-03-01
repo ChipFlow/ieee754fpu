@@ -415,7 +415,8 @@ class FPAddStage0Mod:
         #m.submodules.add0_out_z = self.out_z
 
         m.d.comb += self.out_z.e.eq(self.in_a.e)
-        # same-sign (both negative or both positive) add mantissas
+
+        # store intermediate tests (and zero-extended mantissas)
         seq = Signal(reset_less=True)
         mge = Signal(reset_less=True)
         am0 = Signal(len(self.in_a.m)+1, reset_less=True)
@@ -425,6 +426,7 @@ class FPAddStage0Mod:
                      am0.eq(Cat(self.in_a.m, 0)),
                      bm0.eq(Cat(self.in_b.m, 0))
                     ]
+        # same-sign (both negative or both positive) add mantissas
         with m.If(seq):
             m.d.comb += [
                 self.out_tot.eq(am0 + bm0),
