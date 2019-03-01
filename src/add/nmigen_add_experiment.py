@@ -703,7 +703,7 @@ class FPPack(FPState):
 
     def action(self, m):
         m.d.sync += self.z.v.eq(self.out_z.v)
-        m.next = "put_z"
+        m.next = "pack_put_z"
 
 
 class FPPutZ(FPState):
@@ -778,43 +778,49 @@ class FPADD:
             alm.mod.setup(m, a, b, alm.out_a, alm.out_b, alm.exp_eq)
         m.submodules.align = alm.mod
 
+        az = FPNumOut(self.width, False)
+        m.submodules.fpnum_az = az
+
         add0 = self.add_state(FPAddStage0(self.width))
         add0.set_inputs({"a": alm.out_a, "b": alm.out_b})
-        add0.set_outputs({"z": z})
-        add0.mod.setup(m, alm.out_a, alm.out_b, z, add0.out_z, add0.out_tot)
+        add0.set_outputs({"z": az})
+        add0.mod.setup(m, alm.out_a, alm.out_b, az, add0.out_z, add0.out_tot)
         m.submodules.add0 = add0.mod
 
         add1 = self.add_state(FPAddStage1(self.width))
-        add1.set_inputs({"tot": add0.out_tot, "z": add0.out_z})
-        add1.set_outputs({"z": z})  # XXX Z as output
-        add1.mod.setup(m, add0.out_tot, z, add1.out_z, add1.out_of)
+        add1.set_outputs({"z": az})  # XXX Z as output
+        add1.mod.setup(m, add0.out_tot, az, add1.out_z, add1.out_of)
         m.submodules.add1 = add1.mod
 
         of = add1.out_of
 
         n1 = self.add_state(FPNorm1(self.width))
-        n1.set_inputs({"z": z, "of": add1.out_of})  # XXX Z as output
-        n1.set_outputs({"z": z})  # XXX Z as output
-        n1.mod.setup(m, z, n1.out_z, add1.out_of, n1.out_of, n1.out_norm)
+        n1.set_inputs({"z": az, "of": add1.out_of})  # XXX Z as output
+        n1.set_outputs({"z": az})  # XXX Z as output
+        n1.mod.setup(m, az, n1.out_z, add1.out_of, n1.out_of, n1.out_norm)
         m.submodules.normalise_1 = n1.mod
 
         rn = self.add_state(FPRound(self.width))
         rn.set_inputs({"z": n1.out_z, "of": n1.out_of})
-        rn.set_outputs({"z": z})
+        rn.set_outputs({"z": az})
         rn.mod.setup(m, n1.out_z, rn.out_z, of)
         m.submodules.roundz = rn.mod
 
         cor = self.add_state(FPCorrections(self.width))
-        cor.set_inputs({"z": z})  # XXX Z as output
-        cor.set_outputs({"z": z})  # XXX Z as output
-        cor.mod.setup(m, z, cor.out_z)
+        cor.set_inputs({"z": az})  # XXX Z as output
+        cor.set_outputs({"z": az})  # XXX Z as output
+        cor.mod.setup(m, az, cor.out_z)
         m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack(self.width))
-        pa.set_inputs({"z": z})  # XXX Z as output
-        pa.set_outputs({"z": z})  # XXX Z as output
-        pa.mod.setup(m, z, pa.out_z)
+        pa.set_inputs({"z": az})  # XXX Z as output
+        pa.set_outputs({"z": az})  # XXX Z as output
+        pa.mod.setup(m, az, pa.out_z)
         m.submodules.pack = pa.mod
+
+        pz = self.add_state(FPPutZ("pack_put_z"))
+        pz.set_inputs({"z": az})
+        pz.set_outputs({"out_z": self.out_z})
 
         pz = self.add_state(FPPutZ("put_z"))
         pz.set_inputs({"z": z})
