@@ -416,13 +416,17 @@ class FPAddStage0Mod:
 
         m.d.comb += self.out_z.e.eq(self.in_a.e)
         # same-sign (both negative or both positive) add mantissas
-        with m.If(self.in_a.s == self.in_b.s):
+        seq = Signal(reset_less=True)
+        mge = Signal(reset_less=True)
+        m.d.comb += seq.eq(self.in_a.s == self.in_b.s)
+        m.d.comb += mge.eq(self.in_a.m >= self.in_b.m)
+        with m.If(seq):
             m.d.comb += [
                 self.out_tot.eq(Cat(self.in_a.m, 0) + Cat(self.in_b.m, 0)),
                 self.out_z.s.eq(self.in_a.s)
             ]
         # a mantissa greater than b, use a
-        with m.Elif(self.in_a.m >= self.in_b.m):
+        with m.Elif(mge):
             m.d.comb += [
                 self.out_tot.eq(Cat(self.in_a.m, 0) - Cat(self.in_b.m, 0)),
                 self.out_z.s.eq(self.in_a.s)
