@@ -794,7 +794,7 @@ class FPADD:
 
         dn = self.add_state(FPAddDeNorm(self.width))
         dn.set_inputs({"a": a, "b": b})
-        dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+        #dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
         dn.mod.setup(m, a, b, dn.out_a, dn.out_b)
         m.submodules.denormalise = dn.mod
 
@@ -806,7 +806,7 @@ class FPADD:
         else:
             alm = self.add_state(FPAddAlignMulti(self.width))
             alm.set_inputs({"a": a, "b": b})
-            alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
+            #alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
             alm.mod.setup(m, a, b, alm.out_a, alm.out_b, alm.exp_eq)
         m.submodules.align = alm.mod
 
@@ -831,7 +831,7 @@ class FPADD:
         n2 = self.add_state(FPNorm2(self.width))
         n2.set_inputs({"z": n1.out_z, "of": n1.out_of})
         n2.set_outputs({"z": z})
-        n2.mod.setup(m, n1.out_z, n2.out_z, of, n2.out_of, n2.out_norm)
+        n2.mod.setup(m, n1.out_z, n2.out_z, n1.out_of, n2.out_of, n2.out_norm)
         m.submodules.normalise_2 = n2.mod
 
         rn = self.add_state(FPRound(self.width))
