@@ -101,7 +101,7 @@ class FPAddSpecialCasesMod:
         """
         m.d.comb += self.in_a.copy(in_a)
         m.d.comb += self.in_b.copy(in_b)
-        m.d.comb += out_z.v.eq(self.out_z.v)
+        #m.d.comb += out_z.v.eq(self.out_z.v)
         m.d.comb += out_do_z.eq(self.out_do_z)
 
     def elaborate(self, platform):
@@ -203,7 +203,7 @@ class FPAddSpecialCases(FPState):
 
     def action(self, m):
         with m.If(self.out_do_z):
-            m.d.sync += self.z.v.eq(self.out_z.v) # only take the output
+            m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
             m.next = "put_z"
         with m.Else():
             m.next = "denormalise"
@@ -785,12 +785,6 @@ class FPADD:
         """
         m = Module()
 
-        # Latches
-        z = FPNumOut(self.width, False)
-        m.submodules.fpnum_z = z
-
-        w = z.m_width + 4
-
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       self.in_a, self.width))
         a = geta.out_op
@@ -804,8 +798,6 @@ class FPADD:
         m.submodules.get_b = getb.mod
 
         sc = self.add_state(FPAddSpecialCases(self.width))
-        sc.set_inputs({"a": a, "b": b})
-        sc.set_outputs({"z": z})
         sc.mod.setup(m, a, b, sc.out_z, sc.out_do_z)
         m.submodules.specialcases = sc.mod
 
@@ -855,7 +847,7 @@ class FPADD:
         ppz.set_outputs({"out_z": self.out_z})
 
         pz = self.add_state(FPPutZ("put_z"))
-        pz.set_inputs({"z": z})
+        pz.set_inputs({"z": sc.out_z})
         pz.set_outputs({"out_z": self.out_z})
 
         with m.FSM() as fsm:
