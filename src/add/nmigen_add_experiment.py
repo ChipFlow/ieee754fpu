@@ -679,11 +679,10 @@ class FPRound(FPState):
         m.submodules.roundz = self.mod
 
         m.d.comb += self.mod.in_z.copy(in_z)
-        m.d.comb += self.out_z.copy(self.mod.out_z)
         m.d.comb += self.mod.in_roundz.eq(in_of.roundz)
 
     def action(self, m):
-        m.d.sync += self.z.copy(self.out_z)
+        m.d.sync += self.out_z.copy(self.mod.out_z)
         m.next = "corrections"
 
 
@@ -842,17 +841,12 @@ class FPADD:
         n1.set_outputs({"z": az})  # XXX Z as output
         n1.setup(m, az, add1.out_of, add1.norm_stb)
 
-        rnz = FPNumOut(self.width, False)
-        m.submodules.fpnum_rnz = rnz
-
         rn = self.add_state(FPRound(self.width))
-        rn.set_inputs({"of": n1.out_of})
-        rn.set_outputs({"z": rnz})
         rn.setup(m, n1.out_z, add1.out_of)
 
         cor = self.add_state(FPCorrections(self.width))
-        cor.set_inputs({"z": rnz})  # XXX Z as output
-        cor.mod.setup(m, rnz, cor.out_z)
+        cor.set_inputs({"z": rn.out_z})  # XXX Z as output
+        cor.mod.setup(m, rn.out_z, cor.out_z)
         m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack(self.width))
