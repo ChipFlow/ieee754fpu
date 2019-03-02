@@ -398,15 +398,6 @@ class FPAddStage0Mod:
         self.out_z = FPNumBase(width, False)
         self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
 
-    def setup(self, m, in_a, in_b, in_z, out_z, out_tot):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.copy(self.out_z)
-        m.d.comb += out_tot.eq(self.out_tot)
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.add0_in_a = self.in_a
@@ -458,6 +449,18 @@ class FPAddStage0(FPState):
         self.mod = FPAddStage0Mod(width)
         self.out_z = FPNumBase(width, False)
         self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+
+    def setup(self, m, in_a, in_b, in_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.add0 = self.mod
+
+        m.d.comb += self.mod.in_a.copy(in_a)
+        m.d.comb += self.mod.in_b.copy(in_b)
+        m.d.comb += self.mod.in_z.copy(in_z)
+
+        m.d.comb += self.out_z.copy(self.mod.out_z)
+        m.d.comb += self.out_tot.eq(self.mod.out_tot)
 
     def action(self, m):
         m.next = "add_1"
@@ -831,8 +834,7 @@ class FPADD:
         add0 = self.add_state(FPAddStage0(self.width))
         add0.set_inputs({"a": alm.out_a, "b": alm.out_b})
         add0.set_outputs({"z": az1})
-        add0.mod.setup(m, alm.out_a, alm.out_b, az1, add0.out_z, add0.out_tot)
-        m.submodules.add0 = add0.mod
+        add0.setup(m, alm.out_a, alm.out_b, az1)
 
         add1 = self.add_state(FPAddStage1(self.width))
         #add1.set_outputs({"z": az})  # XXX Z as output
