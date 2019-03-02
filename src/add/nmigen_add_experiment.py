@@ -858,19 +858,17 @@ class FPADD:
 
         cor = self.add_state(FPCorrections(self.width))
         cor.set_inputs({"z": rnz})  # XXX Z as output
-        #cor.set_outputs({"z": rnz})  # XXX Z as output
         cor.mod.setup(m, rnz, cor.out_z)
         m.submodules.corrections = cor.mod
 
         pa = self.add_state(FPPack(self.width))
         pa.set_inputs({"z": cor.out_z})  # XXX Z as output
-        pa.set_outputs({"z": cor.out_z})  # XXX Z as output
         pa.mod.setup(m, cor.out_z, pa.out_z)
         m.submodules.pack = pa.mod
 
-        pz = self.add_state(FPPutZ("pack_put_z"))
-        pz.set_inputs({"z": cor.out_z})
-        pz.set_outputs({"out_z": self.out_z})
+        ppz = self.add_state(FPPutZ("pack_put_z"))
+        ppz.set_inputs({"z": pa.out_z})
+        ppz.set_outputs({"out_z": self.out_z})
 
         pz = self.add_state(FPPutZ("put_z"))
         pz.set_inputs({"z": z})
