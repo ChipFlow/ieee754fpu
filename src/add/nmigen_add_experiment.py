@@ -609,12 +609,14 @@ class FPNorm1(FPState):
         self.temp_z = FPNumBase(width)
         self.temp_of = Overflow()
         self.out_z = FPNumBase(width)
-        self.out_of = Overflow()
+        self.out_roundz = Signal(reset_less=True)
+        self.out_of = Overflow() # not actual output: out_roundz is
 
     def setup(self, m, in_z, in_of, norm_stb):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self.mod
+        m.submodules.normalise_1_of = self.out_of
 
         m.d.comb += self.mod.in_z.copy(in_z)
         m.d.comb += self.mod.in_of.copy(in_of)
@@ -632,8 +634,7 @@ class FPNorm1(FPState):
 
     def action(self, m):
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
-        m.d.sync += self.of.copy(self.out_of)
-        m.d.sync += self.z.copy(self.out_z)
+        #m.d.sync += self.z.copy(self.out_z)
         m.d.sync += self.temp_of.copy(self.out_of)
         m.d.sync += self.temp_z.copy(self.out_z)
         with m.If(self.out_norm):
@@ -647,6 +648,7 @@ class FPNorm1(FPState):
             # normalisation not required (or done).
             m.next = "round"
             m.d.sync += self.ack.eq(1)
+            m.d.sync += self.out_roundz.eq(self.out_of.roundz)
 
 
 class FPRoundMod:
@@ -673,13 +675,13 @@ class FPRound(FPState):
         self.mod = FPRoundMod(width)
         self.out_z = FPNumBase(width)
 
-    def setup(self, m, in_z, in_of):
+    def setup(self, m, in_z, roundz):
         """ links module to inputs and outputs
         """
         m.submodules.roundz = self.mod
 
         m.d.comb += self.mod.in_z.copy(in_z)
-        m.d.comb += self.mod.in_roundz.eq(in_of.roundz)
+        m.d.comb += self.mod.in_roundz.eq(roundz)
 
     def action(self, m):
         m.d.sync += self.out_z.copy(self.mod.out_z)
@@ -835,12 +837,11 @@ class FPADD:
         add1.setup(m, add0.out_tot, add0.out_z)
 
         n1 = self.add_state(FPNorm1(self.width))
-        n1.set_inputs({"z": add1.out_z, "of": add1.out_of})  # XXX Z as output
-        n1.set_outputs({"z": add1.out_z})  # XXX Z as output
+        n1.set_inputs({"of": add1.out_of})  # XXX Z as output
         n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb)
 
         rn = self.add_state(FPRound(self.width))
-        rn.setup(m, n1.out_z, add1.out_of)
+        rn.setup(m, n1.out_z, n1.out_roundz)
 
         cor = self.add_state(FPCorrections(self.width))
         cor.set_inputs({"z": rn.out_z})  # XXX Z as output
