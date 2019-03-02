@@ -543,20 +543,6 @@ class FPNorm1Mod:
         self.out_z = FPNumBase(width, False)
         self.out_of = Overflow()
 
-    def setup(self, m, in_select, in_z, temp_z, out_z,
-                       in_of, temp_of, out_of,
-                       out_norm):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_select.eq(in_select)
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += self.in_of.copy(in_of)
-        m.d.comb += self.temp_z.copy(temp_z)
-        m.d.comb += self.temp_of.copy(temp_of)
-        m.d.comb += out_z.copy(self.out_z)
-        m.d.comb += out_of.copy(self.out_of)
-        m.d.comb += out_norm.eq(self.out_norm)
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.norm1_out_z = self.out_z
@@ -622,6 +608,25 @@ class FPNorm1(FPState):
         self.temp_of = Overflow()
         self.out_z = FPNumBase(width)
         self.out_of = Overflow()
+
+    def setup(self, m, in_z, in_of, norm_stb):
+        """ links module to inputs and outputs
+        """
+        m.submodules.normalise_1 = self.mod
+
+        m.d.comb += self.mod.in_z.copy(in_z)
+        m.d.comb += self.mod.in_of.copy(in_of)
+
+        m.d.comb += self.mod.in_select.eq(self.in_accept)
+        m.d.comb += self.mod.temp_z.copy(self.temp_z)
+        m.d.comb += self.mod.temp_of.copy(self.temp_of)
+
+        m.d.comb += self.out_z.copy(self.mod.out_z)
+        m.d.comb += self.out_of.copy(self.mod.out_of)
+        m.d.comb += self.out_norm.eq(self.mod.out_norm)
+
+        m.d.comb += self.stb.eq(norm_stb)
+        m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
 
     def action(self, m):
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
@@ -840,13 +845,7 @@ class FPADD:
         n1 = self.add_state(FPNorm1(self.width))
         n1.set_inputs({"z": az, "of": add1.out_of})  # XXX Z as output
         n1.set_outputs({"z": az})  # XXX Z as output
-        n1.mod.setup(m, n1.in_accept,
-                        az, n1.temp_z, n1.out_z,
-                        add1.out_of, n1.temp_of, n1.out_of,
-                        n1.out_norm)
-        m.submodules.normalise_1 = n1.mod
-        m.d.comb += n1.stb.eq(add1.norm_stb)
-        m.d.sync += n1.ack.eq(0) # sets to zero when not in normalise_1 state
+        n1.setup(m, az, add1.out_of, add1.norm_stb)
 
         rnz = FPNumOut(self.width, False)
         m.submodules.fpnum_rnz = rnz
