@@ -834,12 +834,10 @@ class FPADD:
         add1 = self.add_state(FPAddStage1(self.width))
         add1.setup(m, add0.out_tot, add0.out_z)
 
-        az = add1.out_z
-
         n1 = self.add_state(FPNorm1(self.width))
-        n1.set_inputs({"z": az, "of": add1.out_of})  # XXX Z as output
-        n1.set_outputs({"z": az})  # XXX Z as output
-        n1.setup(m, az, add1.out_of, add1.norm_stb)
+        n1.set_inputs({"z": add1.out_z, "of": add1.out_of})  # XXX Z as output
+        n1.set_outputs({"z": add1.out_z})  # XXX Z as output
+        n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb)
 
         rn = self.add_state(FPRound(self.width))
         rn.setup(m, n1.out_z, add1.out_of)
