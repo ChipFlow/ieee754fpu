@@ -730,12 +730,6 @@ class FPPackMod:
         self.in_z = FPNumOut(width, False)
         self.out_z = FPNumOut(width, False)
 
-    def setup(self, m, in_z, out_z):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.v.eq(self.out_z.v)
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.pack_in_z = self.in_z
@@ -753,8 +747,14 @@ class FPPack(FPState):
         self.mod = FPPackMod(width)
         self.out_z = FPNumOut(width, False)
 
+    def setup(self, m, in_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.pack = self.mod
+        m.d.comb += self.mod.in_z.copy(in_z)
+
     def action(self, m):
-        m.d.sync += self.z.v.eq(self.out_z.v)
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)
         m.next = "pack_put_z"
 
 
@@ -835,9 +835,7 @@ class FPADD:
         cor.setup(m, rn.out_z)
 
         pa = self.add_state(FPPack(self.width))
-        pa.set_inputs({"z": cor.out_z})  # XXX Z as output
-        pa.mod.setup(m, cor.out_z, pa.out_z)
-        m.submodules.pack = pa.mod
+        pa.setup(m, cor.out_z)
 
         ppz = self.add_state(FPPutZ("pack_put_z"))
         ppz.set_inputs({"z": pa.out_z})
