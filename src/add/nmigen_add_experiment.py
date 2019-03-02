@@ -867,7 +867,7 @@ class FPADD:
 
 
 if __name__ == "__main__":
-    alu = FPADD(width=32)
+    alu = FPADD(width=32, single_cycle=True)
     main(alu, ports=alu.in_a.ports() + alu.in_b.ports() + alu.out_z.ports())
 
 
