@@ -459,6 +459,7 @@ class FPAddStage0(FPState):
 
     def action(self, m):
         m.next = "add_1"
+        # NOTE: these could be done as combinatorial (merge add0+add1)
         m.d.sync += self.out_z.copy(self.mod.out_z)
         m.d.sync += self.out_tot.eq(self.mod.out_tot)
 
