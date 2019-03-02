@@ -353,8 +353,8 @@ class FPAddAlignSingleMod:
 
         m = Module()
 
-        #m.submodules.align_in_a = self.in_a
-        #m.submodules.align_in_b = self.in_b
+        m.submodules.align_in_a = self.in_a
+        m.submodules.align_in_b = self.in_b
         m.submodules.align_out_a = self.out_a
         m.submodules.align_out_b = self.out_b
 
@@ -363,15 +363,16 @@ class FPAddAlignSingleMod:
 
         ediff = Signal((len(self.in_a.e), True), reset_less=True)
         ediffr = Signal((len(self.in_a.e), True), reset_less=True)
+
         m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
         m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
         m.d.comb += self.out_a.copy(self.in_a)
         m.d.comb += self.out_b.copy(self.in_b)
         with m.If(ediff > 0):
-            m.d.comb += self.out_b.shift_down_multi(ediff)
+            m.d.comb += self.out_b.shift_down_multi(ediff, self.in_b)
         # exponent of b greater than a: shift a down
         with m.Elif(ediff < 0):
-            m.d.comb += self.out_a.shift_down_multi(ediffr)
+            m.d.comb += self.out_a.shift_down_multi(ediffr, self.in_a)
         return m
 
 

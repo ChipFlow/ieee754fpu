@@ -303,7 +303,7 @@ class FPNumIn(FPNumBase):
                 self.m.eq(Cat(inp.m[0] | inp.m[1], inp.m[2:], 0))
                ]
 
-    def shift_down_multi(self, diff):
+    def shift_down_multi(self, diff, inp=None):
         """ shifts a mantissa down. exponent is increased to compensate
 
             accuracy is lost as a result in the mantissa however there are 3
@@ -318,15 +318,17 @@ class FPNumIn(FPNumBase):
             inverted and used as a mask to get the LSBs of the mantissa.
             those are then |'d into the sticky bit.
         """
+        if inp is None:
+            inp = self
         sm = MultiShift(self.width)
         mw = Const(self.m_width-1, len(diff))
         maxslen = Mux(diff > mw, mw, diff)
-        rs = sm.rshift(self.m[1:], maxslen)
+        rs = sm.rshift(inp.m[1:], maxslen)
         maxsleni = mw - maxslen
         m_mask = sm.rshift(self.m1s[1:], maxsleni) # shift and invert
 
-        stickybits = reduce(or_, self.m[1:] & m_mask) | self.m[0]
-        return [self.e.eq(self.e + diff),
+        stickybits = reduce(or_, inp.m[1:] & m_mask) | inp.m[0]
+        return [self.e.eq(inp.e + diff),
                 self.m.eq(Cat(stickybits, rs))
                ]
 
