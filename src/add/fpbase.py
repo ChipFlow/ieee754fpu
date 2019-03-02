@@ -348,6 +348,12 @@ class FPOp:
         self.v   = Signal(width)
         self.stb = Signal(reset=0)
         self.ack = Signal()
+        self.trigger = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.sync += self.trigger.eq(self.stb & self.ack)
+        return m
 
     def chain_inv(self, in_op, extra=None):
         stb = in_op.stb

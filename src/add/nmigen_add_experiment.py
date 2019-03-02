@@ -760,9 +760,14 @@ class FPPack(FPState):
 
 class FPPutZ(FPState):
 
+    def __init__(self, state, in_z, out_z):
+        FPState.__init__(self, state)
+        self.in_z = in_z
+        self.out_z = out_z
+
     def action(self, m):
         m.d.sync += [
-          self.out_z.v.eq(self.z.v)
+          self.out_z.v.eq(self.in_z.v)
         ]
         with m.If(self.out_z.stb & self.out_z.ack):
             m.d.sync += self.out_z.stb.eq(0)
@@ -791,6 +796,9 @@ class FPADD:
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
+        m.submodules.in_a = self.in_a
+        m.submodules.in_b = self.in_b
+        m.submodules.out_z = self.out_z
 
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       self.in_a, self.width))
@@ -844,13 +852,9 @@ class FPADD:
         pa = self.add_state(FPPack(self.width))
         pa.setup(m, cor.out_z)
 
-        ppz = self.add_state(FPPutZ("pack_put_z"))
-        ppz.set_inputs({"z": pa.out_z})
-        ppz.set_outputs({"out_z": self.out_z})
+        ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z))
 
-        pz = self.add_state(FPPutZ("put_z"))
-        pz.set_inputs({"z": sc.out_z})
-        pz.set_outputs({"out_z": self.out_z})
+        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z))
 
         with m.FSM() as fsm:
 
