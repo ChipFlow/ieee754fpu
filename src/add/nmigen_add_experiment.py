@@ -826,7 +826,6 @@ class FPADD:
         add1.setup(m, add0.out_tot, add0.out_z)
 
         n1 = self.add_state(FPNorm1(self.width))
-        n1.set_inputs({"of": add1.out_of})  # XXX Z as output
         n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb)
 
         rn = self.add_state(FPRound(self.width))
