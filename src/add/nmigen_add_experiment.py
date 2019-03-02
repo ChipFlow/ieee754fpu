@@ -610,13 +610,11 @@ class FPNorm1(FPState):
         self.temp_of = Overflow()
         self.out_z = FPNumBase(width)
         self.out_roundz = Signal(reset_less=True)
-        self.out_of = Overflow() # not actual output: out_roundz is
 
     def setup(self, m, in_z, in_of, norm_stb):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self.mod
-        m.submodules.normalise_1_of = self.out_of
 
         m.d.comb += self.mod.in_z.copy(in_z)
         m.d.comb += self.mod.in_of.copy(in_of)
@@ -626,16 +624,15 @@ class FPNorm1(FPState):
         m.d.comb += self.mod.temp_of.copy(self.temp_of)
 
         m.d.comb += self.out_z.copy(self.mod.out_z)
-        m.d.comb += self.out_of.copy(self.mod.out_of)
         m.d.comb += self.out_norm.eq(self.mod.out_norm)
 
         m.d.comb += self.stb.eq(norm_stb)
         m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
 
     def action(self, m):
+
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
-        #m.d.sync += self.z.copy(self.out_z)
-        m.d.sync += self.temp_of.copy(self.out_of)
+        m.d.sync += self.temp_of.copy(self.mod.out_of)
         m.d.sync += self.temp_z.copy(self.out_z)
         with m.If(self.out_norm):
             with m.If(self.in_accept):
@@ -648,7 +645,7 @@ class FPNorm1(FPState):
             # normalisation not required (or done).
             m.next = "round"
             m.d.sync += self.ack.eq(1)
-            m.d.sync += self.out_roundz.eq(self.out_of.roundz)
+            m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
 
 
 class FPRoundMod:
