@@ -761,7 +761,14 @@ class FPPack(FPState):
 class FPPutZ(FPState):
 
     def action(self, m):
-        self.put_z(m, self.z, self.out_z, "get_a")
+        m.d.sync += [
+          self.out_z.v.eq(self.z.v)
+        ]
+        with m.If(self.out_z.stb & self.out_z.ack):
+            m.d.sync += self.out_z.stb.eq(0)
+            m.next = "get_a"
+        with m.Else():
+            m.d.sync += self.out_z.stb.eq(1)
 
 
 class FPADD:
