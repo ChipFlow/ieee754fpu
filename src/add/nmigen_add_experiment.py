@@ -656,13 +656,6 @@ class FPRoundMod:
         self.in_z = FPNumBase(width, False)
         self.out_z = FPNumBase(width, False)
 
-    def setup(self, m, in_z, out_z, in_of):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.copy(self.out_z)
-        m.d.comb += self.in_roundz.eq(in_of.roundz)
-
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_z.copy(self.in_z)
@@ -679,6 +672,15 @@ class FPRound(FPState):
         FPState.__init__(self, "round")
         self.mod = FPRoundMod(width)
         self.out_z = FPNumBase(width)
+
+    def setup(self, m, in_z, in_of):
+        """ links module to inputs and outputs
+        """
+        m.submodules.roundz = self.mod
+
+        m.d.comb += self.mod.in_z.copy(in_z)
+        m.d.comb += self.out_z.copy(self.mod.out_z)
+        m.d.comb += self.mod.in_roundz.eq(in_of.roundz)
 
     def action(self, m):
         m.d.sync += self.z.copy(self.out_z)
@@ -846,8 +848,7 @@ class FPADD:
         rn = self.add_state(FPRound(self.width))
         rn.set_inputs({"of": n1.out_of})
         rn.set_outputs({"z": rnz})
-        rn.mod.setup(m, n1.out_z, rn.out_z, add1.out_of)
-        m.submodules.roundz = rn.mod
+        rn.setup(m, n1.out_z, add1.out_of)
 
         cor = self.add_state(FPCorrections(self.width))
         cor.set_inputs({"z": rnz})  # XXX Z as output
