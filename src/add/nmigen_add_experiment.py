@@ -691,12 +691,6 @@ class FPCorrectionsMod:
         self.in_z = FPNumOut(width, False)
         self.out_z = FPNumOut(width, False)
 
-    def setup(self, m, in_z, out_z):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.copy(self.out_z)
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.corr_in_z = self.in_z
@@ -719,8 +713,14 @@ class FPCorrections(FPState):
         self.mod = FPCorrectionsMod(width)
         self.out_z = FPNumBase(width)
 
+    def setup(self, m, in_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.corrections = self.mod
+        m.d.comb += self.mod.in_z.copy(in_z)
+
     def action(self, m):
-        m.d.sync += self.z.copy(self.out_z)
+        m.d.sync += self.out_z.copy(self.mod.out_z)
         m.next = "pack"
 
 
@@ -832,9 +832,7 @@ class FPADD:
         rn.setup(m, n1.out_z, n1.out_roundz)
 
         cor = self.add_state(FPCorrections(self.width))
-        cor.set_inputs({"z": rn.out_z})  # XXX Z as output
-        cor.mod.setup(m, rn.out_z, cor.out_z)
-        m.submodules.corrections = cor.mod
+        cor.setup(m, rn.out_z)
 
         pa = self.add_state(FPPack(self.width))
         pa.set_inputs({"z": cor.out_z})  # XXX Z as output
