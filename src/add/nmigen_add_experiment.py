@@ -563,10 +563,12 @@ class FPNorm1Mod:
         m.submodules.norm1_out_overflow = self.out_of
         m.submodules.norm1_temp_z = self.temp_z
         m.submodules.norm1_temp_of = self.temp_of
+        m.submodules.norm1_in_z = self.in_z
+        m.submodules.norm1_in_overflow = self.in_of
         in_z = FPNumBase(self.width, False)
         in_of = Overflow()
-        m.submodules.norm1_in_z = in_z
-        m.submodules.norm1_in_overflow = in_of
+        m.submodules.norm1_insel_z = in_z
+        m.submodules.norm1_insel_overflow = in_of
         # select which of temp or in z/of to use
         with m.If(self.in_select):
             m.d.comb += in_z.copy(self.in_z)
