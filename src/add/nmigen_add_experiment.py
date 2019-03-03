@@ -614,9 +614,7 @@ class FPNorm1Mod:
                              in_z.exp_sub_n126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
-                    temp_m.eq(Cat(in_of.round_bit,
-                                  in_of.guard,
-                                  in_z.m)),
+                    temp_m.eq(Cat(in_of.round_bit, in_of.guard, in_z.m)),
                     pe.i.eq(temp_m[::-1]),          # inverted
                     clz.eq(limclz),                 # count zeros from MSB down
                     temp_s.eq(temp_m << clz),       # shift mantissa UP
