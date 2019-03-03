@@ -3,6 +3,7 @@
 # 2013-12-12
 
 from nmigen import Module, Signal, Cat
+from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
@@ -535,7 +536,8 @@ class FPAddStage1(FPState):
 
 class FPNorm1Mod:
 
-    def __init__(self, width):
+    def __init__(self, width, single_cycle=True):
+        self.single_cycle = single_cycle
         self.width = width
         self.in_select = Signal(reset_less=True)
         self.out_norm = Signal(reset_less=True)
@@ -548,6 +550,9 @@ class FPNorm1Mod:
 
     def elaborate(self, platform):
         m = Module()
+        mwid = self.out_z.m_width+2
+        pe = PriorityEncoder(mwid)
+        m.submodules.norm_pe = pe
         m.submodules.norm1_out_z = self.out_z
         m.submodules.norm1_out_overflow = self.out_of
         m.submodules.norm1_temp_z = self.temp_z
@@ -576,14 +581,37 @@ class FPNorm1Mod:
         m.d.comb += self.out_norm.eq(decrease | increase) # loop-end condition
         # decrease exponent
         with m.If(decrease):
-            m.d.comb += [
+            if not self.single_cycle:
+                m.d.comb += [
                 self.out_z.e.eq(in_z.e - 1),  # DECREASE exponent
                 self.out_z.m.eq(in_z.m << 1), # shift mantissa UP
                 self.out_z.m[0].eq(in_of.guard), # steal guard (was tot[2])
                 self.out_of.guard.eq(in_of.round_bit), # round (was tot[1])
                 self.out_of.round_bit.eq(0),        # reset round bit
                 self.out_of.m0.eq(in_of.guard),
-            ]
+                ]
+            else:
+                # *sigh* not entirely obvious: count leading zeros (clz)
+                # with a PriorityEncoder: to find from the MSB
+                # we reverse the order of the bits.
+                temp_m = Signal(mwid, reset_less=True)
+                temp_s = Signal(mwid+1, reset_less=True)
+                clz = Signal((len(in_z.e), True), reset_less=True)
+                m.d.comb += [
+                    # cat round and guard bits back into the mantissa
+                    temp_m.eq(Cat(in_of.round_bit,
+                                  in_of.guard,
+                                  in_z.m)),
+                    pe.i.eq(temp_m[::-1]),          # inverted
+                    clz.eq(pe.o),                   # count zeros from MSB down
+                    temp_s.eq(temp_m << clz),       # shift mantissa UP
+                    self.out_z.e.eq(in_z.e - clz),  # DECREASE exponent
+                    self.out_z.m.eq(temp_s[2:]),    # exclude bits 0&1
+                    self.out_of.m0.eq(temp_s[2]),   # copy of mantissa[0]
+                    # overflow in bits 0..1: got shifted too (leave sticky)
+                    self.out_of.guard.eq(temp_s[1]),     # guard
+                    self.out_of.round_bit.eq(temp_s[0]), # round
+                ]
         # increase exponent
         with m.If(increase):
             m.d.comb += [
