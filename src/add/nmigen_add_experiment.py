@@ -2,12 +2,12 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Mux
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-
+from fpbase import FPNumShiftMultiRight
 
 class FPState(FPBase):
     def __init__(self, state_from):
@@ -550,19 +550,27 @@ class FPNorm1Mod:
 
     def elaborate(self, platform):
         m = Module()
+
         mwid = self.out_z.m_width+2
         pe = PriorityEncoder(mwid)
         m.submodules.norm_pe = pe
+
         m.submodules.norm1_out_z = self.out_z
         m.submodules.norm1_out_overflow = self.out_of
         m.submodules.norm1_temp_z = self.temp_z
         m.submodules.norm1_temp_of = self.temp_of
         m.submodules.norm1_in_z = self.in_z
         m.submodules.norm1_in_overflow = self.in_of
+
         in_z = FPNumBase(self.width, False)
         in_of = Overflow()
         m.submodules.norm1_insel_z = in_z
         m.submodules.norm1_insel_overflow = in_of
+
+        ediff_n126 = Signal((len(in_z.e), True), reset_less=True)
+        smr = FPNumShiftMultiRight(in_z, ediff_n126, in_z.m_width+2)
+        m.submodules.norm1_smr = smr
+
         # select which of temp or in z/of to use
         with m.If(self.in_select):
             m.d.comb += in_z.copy(self.in_z)
@@ -578,7 +586,10 @@ class FPNorm1Mod:
         increase = Signal(reset_less=True)
         m.d.comb += decrease.eq(in_z.m_msbzero & in_z.exp_gt_n126)
         m.d.comb += increase.eq(in_z.exp_lt_n126)
-        m.d.comb += self.out_norm.eq(decrease | increase) # loop-end condition
+        if not self.single_cycle:
+            m.d.comb += self.out_norm.eq(decrease | increase) # loop-end 
+        else:
+            m.d.comb += self.out_norm.eq(increase) # loop-end condition
         # decrease exponent
         with m.If(decrease):
             if not self.single_cycle:
@@ -597,13 +608,17 @@ class FPNorm1Mod:
                 temp_m = Signal(mwid, reset_less=True)
                 temp_s = Signal(mwid+1, reset_less=True)
                 clz = Signal((len(in_z.e), True), reset_less=True)
+                # make sure that the amount to decrease by does NOT
+                # go below the minimum non-INF/NaN exponent
+                limclz = Mux(in_z.e - pe.o - in_z.N126 > 0, pe.o,
+                             in_z.e - in_z.N126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
                     temp_m.eq(Cat(in_of.round_bit,
                                   in_of.guard,
                                   in_z.m)),
                     pe.i.eq(temp_m[::-1]),          # inverted
-                    clz.eq(pe.o),                   # count zeros from MSB down
+                    clz.eq(limclz),                 # count zeros from MSB down
                     temp_s.eq(temp_m << clz),       # shift mantissa UP
                     self.out_z.e.eq(in_z.e - clz),  # DECREASE exponent
                     self.out_z.m.eq(temp_s[2:]),    # exclude bits 0&1
@@ -613,15 +628,20 @@ class FPNorm1Mod:
                     self.out_of.round_bit.eq(temp_s[0]), # round
                 ]
         # increase exponent
-        with m.If(increase):
-            m.d.comb += [
+        with m.Elif(increase):
+            if self.single_cycle:
+                m.d.comb += [
                 self.out_z.e.eq(in_z.e + 1),  # INCREASE exponent
                 self.out_z.m.eq(in_z.m >> 1), # shift mantissa DOWN
                 self.out_of.guard.eq(in_z.m[0]),
                 self.out_of.m0.eq(in_z.m[1]),
                 self.out_of.round_bit.eq(in_of.guard),
                 self.out_of.sticky.eq(in_of.sticky | in_of.round_bit)
-            ]
+                ]
+            else:
+                m.d.comb += [
+                    ediff_n126.eq(in_z.N126 - in_z.e),
+                ]
 
         return m
 
