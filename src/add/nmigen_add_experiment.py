@@ -610,8 +610,8 @@ class FPNorm1Mod:
                 clz = Signal((len(in_z.e), True), reset_less=True)
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
-                limclz = Mux(in_z.e - pe.o - in_z.N126 > 0, pe.o,
-                             in_z.e - in_z.N126)
+                limclz = Mux(in_z.exp_sub_n126 > pe.o, pe.o,
+                             in_z.exp_sub_n126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
                     temp_m.eq(Cat(in_of.round_bit,
