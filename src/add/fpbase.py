@@ -182,6 +182,54 @@ class FPNumOut(FPNumBase):
         return self.create(s, self.N127, 0)
 
 
+class FPNumShiftMultiRight(FPNumBase):
+    """ shifts a mantissa down. exponent is increased to compensate
+
+        accuracy is lost as a result in the mantissa however there are 3
+        guard bits (the latter of which is the "sticky" bit)
+
+        this code works by variable-shifting the mantissa by up to
+        its maximum bit-length: no point doing more (it'll still be
+        zero).
+
+        the sticky bit is computed by shifting a batch of 1s by
+        the same amount, which will introduce zeros.  it's then
+        inverted and used as a mask to get the LSBs of the mantissa.
+        those are then |'d into the sticky bit.
+    """
+    def __init__(self, inp, diff, width, m_extra=True):
+        FPNumBase.__init__(self, width, m_extra)
+        self.inp = inp
+        self.diff = diff
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+        m.submodules.inp = self.inp
+
+        rs = Signal(self.width, reset_less=True)
+        m_mask = Signal(self.width, reset_less=True)
+        smask = Signal(self.width, reset_less=True)
+        stickybit = Signal(reset_less=True)
+
+        sm = MultiShift(self.m_width-1)
+        mw = Const(self.m_width-1, len(self.diff))
+        maxslen = Mux(diff > mw, mw, self.diff)
+        maxsleni = mw - maxslen
+        m.d.comb += [
+                # shift mantissa by maxslen, mask by inverse
+                rs.eq(sm.rshift(self.inp.m[1:], maxslen)),
+                m_mask.eq(sm.rshift(self.m1s[1:], maxsleni)),
+                smask.eq(inp.m[1:] & m_mask),
+                # sticky bit combines all mask (and mantissa low bit)
+                stickybit.eq(smask.bool() | inp.m[0]),
+                self.s.eq(self.inp.s),
+                self.e.eq(self.inp.e + diff),
+                # mantissa result contains m[0] already.
+                self.m.eq(Cat(stickybit, rs))
+           ]
+        return m
+
+
 class FPNumShift(FPNumBase):
     """ Floating-point Number Class for shifting
     """
