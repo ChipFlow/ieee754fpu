@@ -197,33 +197,34 @@ class FPNumShiftMultiRight(FPNumBase):
         inverted and used as a mask to get the LSBs of the mantissa.
         those are then |'d into the sticky bit.
     """
-    def __init__(self, inp, diff, width, m_extra=True):
-        FPNumBase.__init__(self, width, m_extra)
+    def __init__(self, inp, diff, width):
+        self.m = Signal(width, reset_less=True)
         self.inp = inp
         self.diff = diff
+        self.width = width
 
     def elaborate(self, platform):
-        m = FPNumBase.elaborate(self, platform)
-        m.submodules.inp = self.inp
+        m = Module()
+        #m.submodules.inp = self.inp
 
         rs = Signal(self.width, reset_less=True)
         m_mask = Signal(self.width, reset_less=True)
         smask = Signal(self.width, reset_less=True)
         stickybit = Signal(reset_less=True)
 
-        sm = MultiShift(self.m_width-1)
-        mw = Const(self.m_width-1, len(self.diff))
-        maxslen = Mux(diff > mw, mw, self.diff)
+        sm = MultiShift(self.width-1)
+        mw = Const(self.width-1, len(self.diff))
+        maxslen = Mux(self.diff > mw, mw, self.diff)
         maxsleni = mw - maxslen
         m.d.comb += [
                 # shift mantissa by maxslen, mask by inverse
                 rs.eq(sm.rshift(self.inp.m[1:], maxslen)),
-                m_mask.eq(sm.rshift(self.m1s[1:], maxsleni)),
-                smask.eq(inp.m[1:] & m_mask),
+                m_mask.eq(sm.rshift(self.inp.m1s[1:], maxsleni)),
+                smask.eq(self.inp.m[1:] & m_mask),
                 # sticky bit combines all mask (and mantissa low bit)
-                stickybit.eq(smask.bool() | inp.m[0]),
-                self.s.eq(self.inp.s),
-                self.e.eq(self.inp.e + diff),
+                stickybit.eq(smask.bool() | self.inp.m[0]),
+                #self.s.eq(self.inp.s),
+                #self.e.eq(self.inp.e + diff),
                 # mantissa result contains m[0] already.
                 self.m.eq(Cat(stickybit, rs))
            ]
