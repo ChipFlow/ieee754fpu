@@ -333,12 +333,11 @@ class FPAddAlignMulti(FPState):
 class FPAddAlignSingleMod:
 
     def __init__(self, width):
+        self.width = width
         self.in_a = FPNumBase(width)
         self.in_b = FPNumBase(width)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
-        #self.out_a = FPNumBase(width)
-        #self.out_b = FPNumBase(width)
 
     def setup(self, m, in_a, in_b, out_a, out_b):
         """ links module to inputs and outputs
@@ -349,9 +348,14 @@ class FPAddAlignSingleMod:
         m.d.comb += out_b.copy(self.out_b)
 
     def elaborate(self, platform):
-        # This one however (single-cycle) will do the shift
-        # in one go.
+        """ Aligns A against B or B against A, depending on which has the
+            greater exponent.  This is done in a *single* cycle using
+            variable-width bit-shift
 
+            the shifter used here is quite expensive in terms of gates.
+            Mux A or B in (and out) into temporaries, as only one of them
+            needs to be aligned against the other
+        """
         m = Module()
 
         m.submodules.align_in_a = self.in_a
@@ -359,21 +363,42 @@ class FPAddAlignSingleMod:
         m.submodules.align_out_a = self.out_a
         m.submodules.align_out_b = self.out_b
 
-        # XXX TODO: the shifter used here is quite expensive
-        # having only one would be better
+        # temporary (muxed) input and output to be shifted
+        t_inp = FPNumBase(self.width)
+        t_out = FPNumIn(None, self.width)
+        m.submodules.align_t_in = t_inp
+        m.submodules.align_t_out = t_out
 
         ediff = Signal((len(self.in_a.e), True), reset_less=True)
         ediffr = Signal((len(self.in_a.e), True), reset_less=True)
+        tdiff = Signal((len(self.in_a.e), True), reset_less=True)
+        elz = Signal(reset_less=True)
+        egz = Signal(reset_less=True)
 
         m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
         m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
+        m.d.comb += elz.eq(ediff < 0)
+        m.d.comb += egz.eq(ediff > 0)
+
+        # default: A-exp == B-exp, A and B untouched (fall through)
         m.d.comb += self.out_a.copy(self.in_a)
         m.d.comb += self.out_b.copy(self.in_b)
-        with m.If(ediff > 0):
-            m.d.comb += self.out_b.shift_down_multi(ediff, self.in_b)
+        # only one shifter (muxed)
+        m.d.comb += t_out.shift_down_multi(tdiff, t_inp)
+        # exponent of a greater than b: shift b down
+        with m.If(egz):
+            m.d.comb += [t_inp.copy(self.in_b),
+                         tdiff.eq(ediff),
+                         self.out_b.copy(t_out),
+                         self.out_b.s.eq(self.in_b.s), # whoops forgot sign
+                        ]
         # exponent of b greater than a: shift a down
-        with m.Elif(ediff < 0):
-            m.d.comb += self.out_a.shift_down_multi(ediffr, self.in_a)
+        with m.Elif(elz):
+            m.d.comb += [t_inp.copy(self.in_a),
+                         tdiff.eq(ediffr),
+                         self.out_a.copy(t_out),
+                         self.out_a.s.eq(self.in_a.s), # whoops forgot sign
+                        ]
         return m
 
 
