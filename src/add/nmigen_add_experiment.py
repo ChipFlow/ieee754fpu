@@ -7,7 +7,7 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-from fpbase import FPNumShiftMultiRight
+#from fpbase import FPNumShiftMultiRight
 
 class FPState(FPBase):
     def __init__(self, state_from):
@@ -593,8 +593,8 @@ class FPNorm1Mod:
         m.submodules.norm1_insel_overflow = in_of
 
         ediff_n126 = Signal((len(in_z.e), True), reset_less=True)
-        smr = FPNumShiftMultiRight(in_z, ediff_n126, in_z.m_width+2)
-        m.submodules.norm1_smr = smr
+        #smr = FPNumShiftMultiRight(in_z, ediff_n126, in_z.m_width+2)
+        #m.submodules.norm1_smr = smr
 
         # select which of temp or in z/of to use
         with m.If(self.in_select):
