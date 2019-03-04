@@ -377,8 +377,8 @@ class FPAddAlignSingleMod:
 
         m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
         m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
-        m.d.comb += elz.eq(ediff < 0)
-        m.d.comb += egz.eq(ediff > 0)
+        m.d.comb += elz.eq(self.in_a.e < self.in_b.e)
+        m.d.comb += egz.eq(self.in_a.e > self.in_b.e)
 
         # default: A-exp == B-exp, A and B untouched (fall through)
         m.d.comb += self.out_a.copy(self.in_a)
