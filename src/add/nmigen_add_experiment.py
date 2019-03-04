@@ -86,14 +86,6 @@ class FPAddSpecialCasesMod:
         self.out_z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b, out_z, out_do_z):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
-        #m.d.comb += out_z.v.eq(self.out_z.v)
-        m.d.comb += out_do_z.eq(self.out_do_z)
-
     def elaborate(self, platform):
         m = Module()
 
@@ -190,6 +182,15 @@ class FPAddSpecialCases(FPState):
         self.mod = FPAddSpecialCasesMod(width)
         self.out_z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
+
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.specialcases = self.mod
+        m.d.comb += self.mod.in_a.copy(in_a)
+        m.d.comb += self.mod.in_b.copy(in_b)
+        #m.d.comb += self.out_z.v.eq(self.mod.out_z.v)
+        m.d.comb += self.out_do_z.eq(self.mod.out_do_z)
 
     def action(self, m):
         with m.If(self.out_do_z):
@@ -948,8 +949,7 @@ class FPADD:
         b = getb.out_op
 
         sc = self.add_state(FPAddSpecialCases(self.width))
-        sc.mod.setup(m, a, b, sc.out_z, sc.out_do_z)
-        m.submodules.specialcases = sc.mod
+        sc.setup(m, a, b)
 
         dn = self.add_state(FPAddDeNorm(self.width))
         dn.setup(m, a, b)
