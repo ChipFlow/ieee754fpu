@@ -224,8 +224,6 @@ class FPAddDeNormMod(FPState):
         """
         m.d.comb += self.in_a.copy(in_a)
         m.d.comb += self.in_b.copy(in_b)
-        m.d.comb += out_a.copy(self.out_a)
-        m.d.comb += out_b.copy(self.out_b)
 
     def elaborate(self, platform):
         m = Module()
@@ -260,8 +258,8 @@ class FPAddDeNorm(FPState):
     def action(self, m):
         # Denormalised Number checks
         m.next = "align"
-        m.d.sync += self.a.copy(self.out_a)
-        m.d.sync += self.b.copy(self.out_b)
+        m.d.sync += self.out_a.copy(self.mod.out_a)
+        m.d.sync += self.out_b.copy(self.mod.out_b)
 
 
 class FPAddAlignMultiMod(FPState):
@@ -273,23 +271,14 @@ class FPAddAlignMultiMod(FPState):
         self.out_b = FPNumIn(None, width)
         self.exp_eq = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b, out_a, out_b, exp_eq):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
-        m.d.comb += out_a.copy(self.out_a)
-        m.d.comb += out_b.copy(self.out_b)
-        m.d.comb += exp_eq.eq(self.exp_eq)
-
     def elaborate(self, platform):
         # This one however (single-cycle) will do the shift
         # in one go.
 
         m = Module()
 
-        #m.submodules.align_in_a = self.in_a
-        #m.submodules.align_in_b = self.in_b
+        m.submodules.align_in_a = self.in_a
+        m.submodules.align_in_b = self.in_b
         m.submodules.align_out_a = self.out_a
         m.submodules.align_out_b = self.out_b
 
@@ -324,9 +313,19 @@ class FPAddAlignMulti(FPState):
         self.out_b = FPNumIn(None, width)
         self.exp_eq = Signal(reset_less=True)
 
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.align = self.mod
+        m.d.comb += self.mod.in_a.copy(in_a)
+        m.d.comb += self.mod.in_b.copy(in_b)
+        #m.d.comb += self.out_a.copy(self.mod.out_a)
+        #m.d.comb += self.out_b.copy(self.mod.out_b)
+        m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
+
     def action(self, m):
-        m.d.sync += self.a.copy(self.out_a)
-        m.d.sync += self.b.copy(self.out_b)
+        m.d.sync += self.out_a.copy(self.mod.out_a)
+        m.d.sync += self.out_b.copy(self.mod.out_b)
         with m.If(self.exp_eq):
             m.next = "add_0"
 
@@ -339,14 +338,6 @@ class FPAddAlignSingleMod:
         self.in_b = FPNumBase(width)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
-
-    def setup(self, m, in_a, in_b, out_a, out_b):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
-        m.d.comb += out_a.copy(self.out_a)
-        m.d.comb += out_b.copy(self.out_b)
 
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the
@@ -421,9 +412,17 @@ class FPAddAlignSingle(FPState):
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.align = self.mod
+        m.d.comb += self.mod.in_a.copy(in_a)
+        m.d.comb += self.mod.in_b.copy(in_b)
+
     def action(self, m):
-        m.d.sync += self.a.copy(self.out_a)
-        m.d.sync += self.b.copy(self.out_b)
+        # NOTE: could be done as comb
+        m.d.sync += self.out_a.copy(self.mod.out_a)
+        m.d.sync += self.out_b.copy(self.mod.out_b)
         m.next = "add_0"
 
 
@@ -961,22 +960,16 @@ class FPADD:
         m.submodules.specialcases = sc.mod
 
         dn = self.add_state(FPAddDeNorm(self.width))
-        dn.set_inputs({"a": a, "b": b})
-        #dn.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
         dn.mod.setup(m, a, b, dn.out_a, dn.out_b)
         m.submodules.denormalise = dn.mod
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width))
-            alm.set_inputs({"a": a, "b": b})
-            alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
-            alm.mod.setup(m, a, b, alm.out_a, alm.out_b)
+            alm.setup(m, dn.out_a, dn.out_b)
         else:
             alm = self.add_state(FPAddAlignMulti(self.width))
-            alm.set_inputs({"a": a, "b": b})
-            #alm.set_outputs({"a": a, "b": b}) # XXX outputs same as inputs
-            alm.mod.setup(m, a, b, alm.out_a, alm.out_b, alm.exp_eq)
-        m.submodules.align = alm.mod
+            #alm.set_inputs({"a": a, "b": b})
+            alm.setup(m, dn.out_a, dn.out_b)
 
         add0 = self.add_state(FPAddStage0(self.width))
         add0.setup(m, alm.out_a, alm.out_b)
