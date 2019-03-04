@@ -188,11 +188,13 @@ class MultiShiftRMerge:
     """ shifts down (right) and merges lower bits into m[0].
         m[0] is the "sticky" bit, basically
     """
-    def __init__(self, width):
-        self.smax = int(log(width) / log(2))
+    def __init__(self, width, s_max=None):
+        if s_max is None:
+            s_max = int(log(width) / log(2))
+        self.smax = s_max
         self.m = Signal(width, reset_less=True)
         self.inp = Signal(width, reset_less=True)
-        self.diff = Signal(self.smax, reset_less=True)
+        self.diff = Signal(s_max, reset_less=True)
         self.width = width
 
     def elaborate(self, platform):
@@ -202,12 +204,16 @@ class MultiShiftRMerge:
         m_mask = Signal(self.width, reset_less=True)
         smask = Signal(self.width, reset_less=True)
         stickybit = Signal(reset_less=True)
+        maxslen = Signal(self.smax, reset_less=True)
+        maxsleni = Signal(self.smax, reset_less=True)
 
         sm = MultiShift(self.width-1)
         m0s = Const(0, self.width-1)
         mw = Const(self.width-1, len(self.diff))
-        maxslen = Mux(self.diff > mw, mw, self.diff)
-        maxsleni = mw - maxslen
+        m.d.comb += [maxslen.eq(Mux(self.diff > mw, mw, self.diff)),
+                     maxsleni.eq(Mux(self.diff > mw, 0, mw-self.diff)),
+                    ]
+
         m.d.comb += [
                 # shift mantissa by maxslen, mask by inverse
                 rs.eq(sm.rshift(self.inp[1:], maxslen)),

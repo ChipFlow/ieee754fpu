@@ -11,6 +11,7 @@ from unit_test_single import (get_mantissa, get_exponent, get_sign, is_nan,
                                 run_edge_cases, run_corner_cases)
 
 def testbench(dut):
+    yield from check_case(dut, 0x36093399, 0x7f6a12f1, 0x7f6a12f1)
     yield from check_case(dut, 0x006CE3EE, 0x806CE3EC, 0x00000002)
     yield from check_case(dut, 0x00000047, 0x80000048, 0x80000001)
     yield from check_case(dut, 0x000116C2, 0x8001170A, 0x80000048)

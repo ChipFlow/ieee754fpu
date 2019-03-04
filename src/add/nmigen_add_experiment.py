@@ -7,6 +7,7 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
+from fpbase import MultiShiftRMerge
 #from fpbase import FPNumShiftMultiRight
 
 class FPState(FPBase):
@@ -366,14 +367,24 @@ class FPAddAlignSingleMod:
         # temporary (muxed) input and output to be shifted
         t_inp = FPNumBase(self.width)
         t_out = FPNumIn(None, self.width)
+        espec = (len(self.in_a.e), True)
+        msr = MultiShiftRMerge(self.in_a.m_width, espec)
         m.submodules.align_t_in = t_inp
         m.submodules.align_t_out = t_out
+        m.submodules.multishift_r = msr
 
-        ediff = Signal((len(self.in_a.e), True), reset_less=True)
-        ediffr = Signal((len(self.in_a.e), True), reset_less=True)
-        tdiff = Signal((len(self.in_a.e), True), reset_less=True)
+        ediff = Signal(espec, reset_less=True)
+        ediffr = Signal(espec, reset_less=True)
+        tdiff = Signal(espec, reset_less=True)
         elz = Signal(reset_less=True)
         egz = Signal(reset_less=True)
+
+        # connect multi-shifter to t_inp/out mantissa (and tdiff)
+        m.d.comb += msr.inp.eq(t_inp.m)
+        m.d.comb += msr.diff.eq(tdiff)
+        m.d.comb += t_out.m.eq(msr.m)
+        m.d.comb += t_out.e.eq(t_inp.e + tdiff)
+        m.d.comb += t_out.s.eq(t_inp.s)
 
         m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
         m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
@@ -384,7 +395,7 @@ class FPAddAlignSingleMod:
         m.d.comb += self.out_a.copy(self.in_a)
         m.d.comb += self.out_b.copy(self.in_b)
         # only one shifter (muxed)
-        m.d.comb += t_out.shift_down_multi(tdiff, t_inp)
+        #m.d.comb += t_out.shift_down_multi(tdiff, t_inp)
         # exponent of a greater than b: shift b down
         with m.If(egz):
             m.d.comb += [t_inp.copy(self.in_b),
