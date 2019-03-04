@@ -603,9 +603,11 @@ class FPNorm1Mod:
         m.submodules.norm1_insel_z = in_z
         m.submodules.norm1_insel_overflow = in_of
 
-        ediff_n126 = Signal((len(in_z.e), True), reset_less=True)
-        #smr = FPNumShiftMultiRight(in_z, ediff_n126, in_z.m_width+2)
-        #m.submodules.norm1_smr = smr
+        if self.single_cycle:
+            espec = (len(in_z.e), True)
+            ediff_n126 = Signal(espec, reset_less=True)
+            msr = MultiShiftRMerge(mwid, espec)
+            m.submodules.multishift_r = msr
 
         # select which of temp or in z/of to use
         with m.If(self.in_select):
@@ -625,7 +627,7 @@ class FPNorm1Mod:
         if not self.single_cycle:
             m.d.comb += self.out_norm.eq(decrease | increase) # loop-end 
         else:
-            m.d.comb += self.out_norm.eq(increase) # loop-end condition
+            m.d.comb += self.out_norm.eq(0) # loop-end condition
         # decrease exponent
         with m.If(decrease):
             if not self.single_cycle:
@@ -663,7 +665,7 @@ class FPNorm1Mod:
                 ]
         # increase exponent
         with m.Elif(increase):
-            if self.single_cycle:
+            if not self.single_cycle:
                 m.d.comb += [
                 self.out_z.e.eq(in_z.e + 1),  # INCREASE exponent
                 self.out_z.m.eq(in_z.m >> 1), # shift mantissa DOWN
@@ -675,6 +677,11 @@ class FPNorm1Mod:
             else:
                 m.d.comb += [
                     ediff_n126.eq(in_z.N126 - in_z.e),
+                    # connect multi-shifter to inp/out mantissa (and ediff)
+                    msr.inp.eq(in_z.m),
+                    msr.diff.eq(ediff_n126),
+                    self.out_z.m.eq(msr.m),
+                    self.out_z.e.eq(in_z.e + ediff_n126),
                 ]
 
         return m
