@@ -39,6 +39,6 @@ def testbench(dut):
     yield from run_edge_cases(dut, count, add)
 
 if __name__ == '__main__':
-    dut = FPADD(width=16, single_cycle=False)
+    dut = FPADD(width=16, single_cycle=True)
     run_simulation(dut, testbench(dut), vcd_name="test_add16.vcd")
 
