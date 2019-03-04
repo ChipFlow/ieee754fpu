@@ -74,19 +74,6 @@ class FPGetOp(FPState):
             m.d.sync += self.in_op.ack.eq(1)
 
 
-class FPGetOpB(FPState):
-    """ gets operand b
-    """
-
-    def __init__(self, in_b, width):
-        FPState.__init__(self, "get_b")
-        self.in_b = in_b
-        self.b = FPNumIn(self.in_b, width)
-
-    def action(self, m):
-        self.get_op(m, self.in_b, self.b, "special_cases")
-
-
 class FPAddSpecialCasesMod:
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
@@ -843,11 +830,6 @@ class FPCorrectionsMod:
         m.d.comb += self.out_z.copy(self.in_z)
         with m.If(self.in_z.is_denormalised):
             m.d.comb += self.out_z.e.eq(self.in_z.N127)
-
-        #        with m.If(self.in_z.is_overflowed):
-        #            m.d.comb += self.out_z.inf(self.in_z.s)
-        #        with m.Else():
-        #            m.d.comb += self.out_z.create(self.in_z.s, self.in_z.e, self.in_z.m)
         return m
 
 
@@ -967,7 +949,6 @@ class FPADD:
             alm.setup(m, dn.out_a, dn.out_b)
         else:
             alm = self.add_state(FPAddAlignMulti(self.width))
-            #alm.set_inputs({"a": a, "b": b})
             alm.setup(m, dn.out_a, dn.out_b)
 
         add0 = self.add_state(FPAddStage0(self.width))
