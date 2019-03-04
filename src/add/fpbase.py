@@ -366,10 +366,10 @@ class FPNumIn(FPNumBase):
         maxsleni = mw - maxslen
         m_mask = sm.rshift(self.m1s[1:], maxsleni) # shift and invert
 
-        #stickybits = reduce(or_, inp.m[1:] & m_mask) | inp.m[0]
-        stickybits = (inp.m[1:] & m_mask).bool() | inp.m[0]
+        #stickybit = reduce(or_, inp.m[1:] & m_mask) | inp.m[0]
+        stickybit = (inp.m[1:] & m_mask).bool() | inp.m[0]
         return [self.e.eq(inp.e + diff),
-                self.m.eq(Cat(stickybits, rs))
+                self.m.eq(Cat(stickybit, rs))
                ]
 
     def shift_up_multi(self, diff):
