@@ -31,13 +31,6 @@ class FPGetOpMod:
         self.out_op = FPNumIn(self.in_op, width)
         self.out_decode = Signal(reset_less=True)
 
-    def setup(self, m, in_op, out_op, out_decode):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_op.copy(in_op)
-        m.d.comb += out_op.v.eq(self.out_op.v)
-        m.d.comb += out_decode.eq(self.out_decode)
-
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_decode.eq((self.in_op.ack) & (self.in_op.stb))
@@ -61,6 +54,14 @@ class FPGetOp(FPState):
         self.in_op = in_op
         self.out_op = FPNumIn(in_op, width)
         self.out_decode = Signal(reset_less=True)
+
+    def setup(self, m, in_op):
+        """ links module to inputs and outputs
+        """
+        setattr(m.submodules, self.state_from, self.mod)
+        m.d.comb += self.mod.in_op.copy(in_op)
+        m.d.comb += self.out_op.v.eq(self.mod.out_op.v)
+        m.d.comb += self.out_decode.eq(self.mod.out_decode)
 
     def action(self, m):
         with m.If(self.out_decode):
@@ -219,12 +220,6 @@ class FPAddDeNormMod(FPState):
         self.out_a = FPNumBase(width)
         self.out_b = FPNumBase(width)
 
-    def setup(self, m, in_a, in_b, out_a, out_b):
-        """ links module to inputs and outputs
-        """
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
-
     def elaborate(self, platform):
         m = Module()
         m.submodules.denorm_in_a = self.in_a
@@ -254,6 +249,13 @@ class FPAddDeNorm(FPState):
         self.mod = FPAddDeNormMod(width)
         self.out_a = FPNumBase(width)
         self.out_b = FPNumBase(width)
+
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.denormalise = self.mod
+        m.d.comb += self.mod.in_a.copy(in_a)
+        m.d.comb += self.mod.in_b.copy(in_b)
 
     def action(self, m):
         # Denormalised Number checks
@@ -945,23 +947,20 @@ class FPADD:
 
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       self.in_a, self.width))
+        geta.setup(m, self.in_a)
         a = geta.out_op
-        geta.mod.setup(m, self.in_a, geta.out_op, geta.out_decode)
-        m.submodules.get_a = geta.mod
 
         getb = self.add_state(FPGetOp("get_b", "special_cases",
                                       self.in_b, self.width))
+        getb.setup(m, self.in_b)
         b = getb.out_op
-        getb.mod.setup(m, self.in_b, getb.out_op, getb.out_decode)
-        m.submodules.get_b = getb.mod
 
         sc = self.add_state(FPAddSpecialCases(self.width))
         sc.mod.setup(m, a, b, sc.out_z, sc.out_do_z)
         m.submodules.specialcases = sc.mod
 
         dn = self.add_state(FPAddDeNorm(self.width))
-        dn.mod.setup(m, a, b, dn.out_a, dn.out_b)
-        m.submodules.denormalise = dn.mod
+        dn.setup(m, a, b)
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width))
