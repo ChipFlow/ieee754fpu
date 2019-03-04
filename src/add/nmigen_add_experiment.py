@@ -905,10 +905,20 @@ class FPPutZ(FPState):
 
 class FPADD:
 
-    def __init__(self, width, single_cycle=False):
+    def __init__(self, width, id_wid=None, single_cycle=False):
+        """ IEEE754 FP Add
+
+            * width: bit-width of IEEE754.  supported: 16, 32, 64
+            * id_wid: an identifier that is sync-connected to the input
+            * single_cycle: True indicates each stage to complete in 1 clock
+        """
+        self.id_wid = id_wid
         self.width = width
         self.single_cycle = single_cycle
 
+        if self.id_wid:
+            self.in_mid = Signal(self.id_wid)
+            self.out_mid = Signal(self.id_wid)
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
