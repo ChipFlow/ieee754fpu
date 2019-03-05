@@ -766,9 +766,10 @@ class FPNorm1ModMulti:
         return m
 
 
-class FPNorm1(FPState):
+class FPNorm1(FPState, FPID):
 
-    def __init__(self, width, single_cycle=True):
+    def __init__(self, width, id_wid, single_cycle=True):
+        FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         if single_cycle:
             self.mod = FPNorm1ModSingle(width)
@@ -783,7 +784,7 @@ class FPNorm1(FPState):
         self.out_z = FPNumBase(width)
         self.out_roundz = Signal(reset_less=True)
 
-    def setup(self, m, in_z, in_of, norm_stb):
+    def setup(self, m, in_z, in_of, norm_stb, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self.mod
@@ -801,8 +802,11 @@ class FPNorm1(FPState):
         m.d.comb += self.stb.eq(norm_stb)
         m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
 
-    def action(self, m):
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
+    def action(self, m):
+        self.idsync(m)
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
         m.d.sync += self.temp_of.copy(self.mod.out_of)
         m.d.sync += self.temp_z.copy(self.out_z)
@@ -1003,8 +1007,8 @@ class FPADD(FPID):
         add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
         add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
 
-        n1 = self.add_state(FPNorm1(self.width))
-        n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb)
+        n1 = self.add_state(FPNorm1(self.width, self.id_wid))
+        n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb, add0.in_mid)
 
         rn = self.add_state(FPRound(self.width))
         rn.setup(m, n1.out_z, n1.out_roundz)
