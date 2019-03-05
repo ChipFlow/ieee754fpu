@@ -175,14 +175,14 @@ class FPID:
     def __init__(self, id_wid):
         self.id_wid = id_wid
         if self.id_wid:
-            self.in_mid = Signal(width, reset_less)
-            self.out_mid = Signal(width, reset_less)
+            self.in_mid = Signal(id_wid, reset_less=True)
+            self.out_mid = Signal(id_wid, reset_less=True)
         else:
             self.in_mid = None
             self.out_mid = None
 
     def idsync(self, m):
-        if self.id_wid:
+        if self.id_wid is not None:
             m.d.sync += self.out_mid.eq(self.in_mid)
 
 
@@ -207,7 +207,7 @@ class FPAddSpecialCases(FPState, FPID):
         m.d.comb += self.mod.in_b.copy(in_b)
         #m.d.comb += self.out_z.v.eq(self.mod.out_z.v)
         m.d.comb += self.out_do_z.eq(self.mod.out_do_z)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -264,7 +264,7 @@ class FPAddDeNorm(FPState, FPID):
         m.submodules.denormalise = self.mod
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -336,7 +336,7 @@ class FPAddAlignMulti(FPState, FPID):
         #m.d.comb += self.out_a.copy(self.mod.out_a)
         #m.d.comb += self.out_b.copy(self.mod.out_b)
         m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -436,7 +436,7 @@ class FPAddAlignSingle(FPState, FPID):
         m.submodules.align = self.mod
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -514,7 +514,7 @@ class FPAddStage0(FPState, FPID):
         m.submodules.add0 = self.mod
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -587,7 +587,7 @@ class FPAddStage1(FPState, FPID):
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in add1 state
 
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -802,7 +802,7 @@ class FPNorm1(FPState, FPID):
         m.d.comb += self.stb.eq(norm_stb)
         m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
 
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -856,7 +856,7 @@ class FPRound(FPState, FPID):
 
         m.d.comb += self.mod.in_z.copy(in_z)
         m.d.comb += self.mod.in_roundz.eq(roundz)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -894,7 +894,7 @@ class FPCorrections(FPState, FPID):
         """
         m.submodules.corrections = self.mod
         m.d.comb += self.mod.in_z.copy(in_z)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -932,7 +932,7 @@ class FPPack(FPState, FPID):
         """
         m.submodules.pack = self.mod
         m.d.comb += self.mod.in_z.copy(in_z)
-        if self.in_mid:
+        if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
@@ -951,12 +951,12 @@ class FPPutZ(FPState):
         self.out_mid = out_mid
 
     def action(self, m):
+        if self.in_mid is not None:
+            m.d.sync += self.out_mid.eq(self.in_mid)
         m.d.sync += [
           self.out_z.v.eq(self.in_z.v)
         ]
         with m.If(self.out_z.stb & self.out_z.ack):
-            if self.in_mid:
-                m.d.sync += self.out_mid.eq(self.in_mid)
             m.d.sync += self.out_z.stb.eq(0)
             m.next = "get_a"
         with m.Else():
@@ -1051,8 +1051,11 @@ class FPADD(FPID):
 
 
 if __name__ == "__main__":
-    alu = FPADD(width=32, single_cycle=True)
-    main(alu, ports=alu.in_a.ports() + alu.in_b.ports() + alu.out_z.ports())
+    alu = FPADD(width=32, in_wid=5, single_cycle=True)
+    main(alu, ports=alu.in_a.ports() + \
+                    alu.in_b.ports() + \
+                    alu.out_z.ports() + \
+                    [alu.in_mid, alu.out_mid])
 
 
     # works... but don't use, just do "python fname.py convert -t v"

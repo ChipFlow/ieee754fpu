@@ -36,7 +36,8 @@ def match(x, y):
         (x == y)
         )
 
-def get_case(dut, a, b):
+def get_case(dut, a, b, mid):
+    yield dut.in_mid.eq(mid)
     yield dut.in_a.v.eq(a)
     yield dut.in_a.stb.eq(1)
     yield
@@ -63,15 +64,19 @@ def get_case(dut, a, b):
             yield
             continue
         out_z = yield dut.out_z.v
+        out_mid = yield dut.out_mid
         yield dut.out_z.ack.eq(0)
         yield
         break
 
-    return out_z
+    return out_z, out_mid
 
-def check_case(dut, a, b, z):
-    out_z = yield from get_case(dut, a, b)
+def check_case(dut, a, b, z, mid=None):
+    if mid is None:
+        mid = randint(0, 6)
+    out_z, out_mid = yield from get_case(dut, a, b, mid)
     assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
+    assert out_mid == mid, "Output mid 0x%x != expected 0x%x" % (out_mid, mid)
 
 
 def run_test(dut, stimulus_a, stimulus_b, op):
@@ -79,12 +84,13 @@ def run_test(dut, stimulus_a, stimulus_b, op):
     expected_responses = []
     actual_responses = []
     for a, b in zip(stimulus_a, stimulus_b):
+        mid = randint(0, 6)
         af = Float32.from_bits(a)
         bf = Float32.from_bits(b)
         z = op(af, bf)
-        expected_responses.append(z.get_bits())
+        expected_responses.append((z.get_bits(), mid))
         #print (af, bf, z)
-        actual = yield from get_case(dut, a, b)
+        actual = yield from get_case(dut, a, b, mid)
         actual_responses.append(actual)
 
     if len(actual_responses) < len(expected_responses):
@@ -93,7 +99,10 @@ def run_test(dut, stimulus_a, stimulus_b, op):
 
     for expected, actual, a, b in zip(expected_responses, actual_responses,
                                       stimulus_a, stimulus_b):
-        passed = match(expected, actual)
+        passed = match(expected[0], actual[0])
+        if expected[1] != actual[1]: # check mid
+            print ("MID failed", expected[1], actual[1])
+            sys.exit(0)
 
         if not passed:
 
