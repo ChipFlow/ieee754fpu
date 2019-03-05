@@ -317,16 +317,17 @@ class FPAddAlignMultiMod(FPState):
         return m
 
 
-class FPAddAlignMulti(FPState):
+class FPAddAlignMulti(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
+        FPID.__init__(self, id_wid)
         FPState.__init__(self, "align")
         self.mod = FPAddAlignMultiMod(width)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
         self.exp_eq = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.align = self.mod
@@ -335,8 +336,11 @@ class FPAddAlignMulti(FPState):
         #m.d.comb += self.out_a.copy(self.mod.out_a)
         #m.d.comb += self.out_b.copy(self.mod.out_b)
         m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         m.d.sync += self.out_a.copy(self.mod.out_a)
         m.d.sync += self.out_b.copy(self.mod.out_b)
         with m.If(self.exp_eq):
@@ -417,22 +421,26 @@ class FPAddAlignSingleMod:
         return m
 
 
-class FPAddAlignSingle(FPState):
+class FPAddAlignSingle(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
+        FPID.__init__(self, id_wid)
         self.mod = FPAddAlignSingleMod(width)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.align = self.mod
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         # NOTE: could be done as comb
         m.d.sync += self.out_a.copy(self.mod.out_a)
         m.d.sync += self.out_b.copy(self.mod.out_b)
@@ -975,11 +983,11 @@ class FPADD(FPID):
         dn.setup(m, a, b, sc.in_mid)
 
         if self.single_cycle:
-            alm = self.add_state(FPAddAlignSingle(self.width))
-            alm.setup(m, dn.out_a, dn.out_b)
+            alm = self.add_state(FPAddAlignSingle(self.width, self.id_wid))
+            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
         else:
-            alm = self.add_state(FPAddAlignMulti(self.width))
-            alm.setup(m, dn.out_a, dn.out_b)
+            alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
+            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
 
         add0 = self.add_state(FPAddStage0(self.width))
         add0.setup(m, alm.out_a, alm.out_b)
