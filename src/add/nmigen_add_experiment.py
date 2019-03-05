@@ -171,19 +171,35 @@ class FPAddSpecialCasesMod:
         return m
 
 
-class FPAddSpecialCases(FPState):
+class FPID:
+    def __init__(self, id_wid):
+        self.id_wid = id_wid
+        if self.id_wid:
+            self.in_mid = Signal(width, reset_less)
+            self.out_mid = Signal(width, reset_less)
+        else:
+            self.in_mid = None
+            self.out_mid = None
+
+    def idsync(self, m):
+        if self.id_wid:
+            m.d.sync += self.out_mid.eq(self.in_mid)
+
+
+class FPAddSpecialCases(FPState, FPID):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
+        FPID.__init__(self, id_wid)
         self.mod = FPAddSpecialCasesMod(width)
         self.out_z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.specialcases = self.mod
@@ -191,8 +207,11 @@ class FPAddSpecialCases(FPState):
         m.d.comb += self.mod.in_b.copy(in_b)
         #m.d.comb += self.out_z.v.eq(self.mod.out_z.v)
         m.d.comb += self.out_do_z.eq(self.mod.out_do_z)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         with m.If(self.out_do_z):
             m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
             m.next = "put_z"
@@ -904,7 +923,7 @@ class FPPutZ(FPState):
             m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADD:
+class FPADD(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -913,13 +932,10 @@ class FPADD:
             * id_wid: an identifier that is sync-connected to the input
             * single_cycle: True indicates each stage to complete in 1 clock
         """
-        self.id_wid = id_wid
+        FPID.__init__(self, id_wid)
         self.width = width
         self.single_cycle = single_cycle
 
-        if self.id_wid:
-            self.in_mid = Signal(self.id_wid)
-            self.out_mid = Signal(self.id_wid)
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
@@ -948,8 +964,8 @@ class FPADD:
         getb.setup(m, self.in_b)
         b = getb.out_op
 
-        sc = self.add_state(FPAddSpecialCases(self.width))
-        sc.setup(m, a, b)
+        sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
+        sc.setup(m, a, b, self.in_mid)
 
         dn = self.add_state(FPAddDeNorm(self.width))
         dn.setup(m, a, b)
