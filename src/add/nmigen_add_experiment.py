@@ -881,20 +881,24 @@ class FPCorrectionsMod:
         return m
 
 
-class FPCorrections(FPState):
+class FPCorrections(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "corrections")
+        FPID.__init__(self, id_wid)
         self.mod = FPCorrectionsMod(width)
         self.out_z = FPNumBase(width)
 
-    def setup(self, m, in_z):
+    def setup(self, m, in_z, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.corrections = self.mod
         m.d.comb += self.mod.in_z.copy(in_z)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         m.d.sync += self.out_z.copy(self.mod.out_z)
         m.next = "pack"
 
@@ -1017,8 +1021,8 @@ class FPADD(FPID):
         rn = self.add_state(FPRound(self.width, self.id_wid))
         rn.setup(m, n1.out_z, n1.out_roundz, n1.in_mid)
 
-        cor = self.add_state(FPCorrections(self.width))
-        cor.setup(m, rn.out_z)
+        cor = self.add_state(FPCorrections(self.width, self.id_wid))
+        cor.setup(m, rn.out_z, rn.in_mid)
 
         pa = self.add_state(FPPack(self.width))
         pa.setup(m, cor.out_z)
