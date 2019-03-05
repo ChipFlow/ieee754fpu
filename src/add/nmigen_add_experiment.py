@@ -495,31 +495,34 @@ class FPAddStage0Mod:
         return m
 
 
-class FPAddStage0(FPState):
+class FPAddStage0(FPState, FPID):
     """ First stage of add.  covers same-sign (add) and subtract
         special-casing when mantissas are greater or equal, to
         give greatest accuracy.
     """
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "add_0")
+        FPID.__init__(self, id_wid)
         self.mod = FPAddStage0Mod(width)
         self.out_z = FPNumBase(width, False)
         self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.add0 = self.mod
-
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
-        m.next = "add_1"
+        self.idsync(m)
         # NOTE: these could be done as combinatorial (merge add0+add1)
         m.d.sync += self.out_z.copy(self.mod.out_z)
         m.d.sync += self.out_tot.eq(self.mod.out_tot)
+        m.next = "add_1"
 
 
 class FPAddStage1Mod(FPState):
@@ -989,8 +992,8 @@ class FPADD(FPID):
             alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
             alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
 
-        add0 = self.add_state(FPAddStage0(self.width))
-        add0.setup(m, alm.out_a, alm.out_b)
+        add0 = self.add_state(FPAddStage0(self.width, self.id_wid))
+        add0.setup(m, alm.out_a, alm.out_b, alm.in_mid)
 
         add1 = self.add_state(FPAddStage1(self.width))
         add1.setup(m, add0.out_tot, add0.out_z)
