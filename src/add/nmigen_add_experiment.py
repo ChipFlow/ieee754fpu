@@ -249,22 +249,26 @@ class FPAddDeNormMod(FPState):
         return m
 
 
-class FPAddDeNorm(FPState):
+class FPAddDeNorm(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "denormalise")
+        FPID.__init__(self, id_wid)
         self.mod = FPAddDeNormMod(width)
         self.out_a = FPNumBase(width)
         self.out_b = FPNumBase(width)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.denormalise = self.mod
         m.d.comb += self.mod.in_a.copy(in_a)
         m.d.comb += self.mod.in_b.copy(in_b)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         # Denormalised Number checks
         m.next = "align"
         m.d.sync += self.out_a.copy(self.mod.out_a)
@@ -967,8 +971,8 @@ class FPADD(FPID):
         sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
 
-        dn = self.add_state(FPAddDeNorm(self.width))
-        dn.setup(m, a, b)
+        dn = self.add_state(FPAddDeNorm(self.width, self.id_wid))
+        dn.setup(m, a, b, sc.in_mid)
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width))
