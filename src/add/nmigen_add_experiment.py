@@ -566,27 +566,32 @@ class FPAddStage1Mod(FPState):
         return m
 
 
-class FPAddStage1(FPState):
+class FPAddStage1(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "add_1")
+        FPID.__init__(self, id_wid)
         self.mod = FPAddStage1Mod(width)
         self.out_z = FPNumBase(width, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()
 
-    def setup(self, m, in_tot, in_z):
+    def setup(self, m, in_tot, in_z, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.add1 = self.mod
+        m.submodules.add1_out_overflow = self.out_of
 
         m.d.comb += self.mod.in_z.copy(in_z)
         m.d.comb += self.mod.in_tot.eq(in_tot)
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in add1 state
 
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
+
     def action(self, m):
-        m.submodules.add1_out_overflow = self.out_of
+        self.idsync(m)
         m.d.sync += self.out_of.copy(self.mod.out_of)
         m.d.sync += self.out_z.copy(self.mod.out_z)
         m.d.sync += self.norm_stb.eq(1)
@@ -995,8 +1000,8 @@ class FPADD(FPID):
         add0 = self.add_state(FPAddStage0(self.width, self.id_wid))
         add0.setup(m, alm.out_a, alm.out_b, alm.in_mid)
 
-        add1 = self.add_state(FPAddStage1(self.width))
-        add1.setup(m, add0.out_tot, add0.out_z)
+        add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
+        add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
 
         n1 = self.add_state(FPNorm1(self.width))
         n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb)
