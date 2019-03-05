@@ -919,20 +919,24 @@ class FPPackMod:
         return m
 
 
-class FPPack(FPState):
+class FPPack(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "pack")
+        FPID.__init__(self, id_wid)
         self.mod = FPPackMod(width)
         self.out_z = FPNumOut(width, False)
 
-    def setup(self, m, in_z):
+    def setup(self, m, in_z, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.pack = self.mod
         m.d.comb += self.mod.in_z.copy(in_z)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v)
         m.next = "pack_put_z"
 
@@ -1024,8 +1028,8 @@ class FPADD(FPID):
         cor = self.add_state(FPCorrections(self.width, self.id_wid))
         cor.setup(m, rn.out_z, rn.in_mid)
 
-        pa = self.add_state(FPPack(self.width))
-        pa.setup(m, cor.out_z)
+        pa = self.add_state(FPPack(self.width, self.id_wid))
+        pa.setup(m, cor.out_z, rn.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z))
 
