@@ -943,16 +943,20 @@ class FPPack(FPState, FPID):
 
 class FPPutZ(FPState):
 
-    def __init__(self, state, in_z, out_z):
+    def __init__(self, state, in_z, out_z, in_mid, out_mid):
         FPState.__init__(self, state)
         self.in_z = in_z
         self.out_z = out_z
+        self.in_mid = in_mid
+        self.out_mid = out_mid
 
     def action(self, m):
         m.d.sync += [
           self.out_z.v.eq(self.in_z.v)
         ]
         with m.If(self.out_z.stb & self.out_z.ack):
+            if self.in_mid:
+                m.d.sync += self.out_mid.eq(self.in_mid)
             m.d.sync += self.out_z.stb.eq(0)
             m.next = "get_a"
         with m.Else():
@@ -1031,9 +1035,11 @@ class FPADD(FPID):
         pa = self.add_state(FPPack(self.width, self.id_wid))
         pa.setup(m, cor.out_z, rn.in_mid)
 
-        ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z))
+        ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z,
+                                    pa.in_mid, self.out_mid))
 
-        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z))
+        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
+                                    pa.in_mid, self.out_mid))
 
         with m.FSM() as fsm:
 
