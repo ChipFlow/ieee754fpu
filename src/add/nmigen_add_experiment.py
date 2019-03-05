@@ -841,22 +841,26 @@ class FPRoundMod:
         return m
 
 
-class FPRound(FPState):
+class FPRound(FPState, FPID):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         FPState.__init__(self, "round")
+        FPID.__init__(self, id_wid)
         self.mod = FPRoundMod(width)
         self.out_z = FPNumBase(width)
 
-    def setup(self, m, in_z, roundz):
+    def setup(self, m, in_z, roundz, in_mid):
         """ links module to inputs and outputs
         """
         m.submodules.roundz = self.mod
 
         m.d.comb += self.mod.in_z.copy(in_z)
         m.d.comb += self.mod.in_roundz.eq(roundz)
+        if self.in_mid:
+            m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
+        self.idsync(m)
         m.d.sync += self.out_z.copy(self.mod.out_z)
         m.next = "corrections"
 
@@ -1010,8 +1014,8 @@ class FPADD(FPID):
         n1 = self.add_state(FPNorm1(self.width, self.id_wid))
         n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb, add0.in_mid)
 
-        rn = self.add_state(FPRound(self.width))
-        rn.setup(m, n1.out_z, n1.out_roundz)
+        rn = self.add_state(FPRound(self.width, self.id_wid))
+        rn.setup(m, n1.out_z, n1.out_roundz, n1.in_mid)
 
         cor = self.add_state(FPCorrections(self.width))
         cor.setup(m, rn.out_z)
