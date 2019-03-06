@@ -89,6 +89,6 @@ def testbench(dut):
     yield from check_case(dut, 0x42500000, 0x4E5693A4, 0x4E5693A5)
 
 if __name__ == '__main__':
-    dut = FPADDBase(width=32, id_wid=5, single_cycle=True)
+    dut = FPADDBaseMod(width=32, id_wid=5, single_cycle=True)
     run_simulation(dut, testbench(dut), vcd_name="test_add.vcd")
 

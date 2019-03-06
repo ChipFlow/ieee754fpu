@@ -28,7 +28,7 @@ class FPState(FPBase):
 class FPGetOpMod:
     def __init__(self, width):
         self.in_op = FPOp(width)
-        self.out_op = FPNumIn(self.in_op, width)
+        self.out_op = Signal(width)
         self.out_decode = Signal(reset_less=True)
 
     def elaborate(self, platform):
@@ -38,7 +38,7 @@ class FPGetOpMod:
         m.submodules.get_op_out = self.out_op
         with m.If(self.out_decode):
             m.d.comb += [
-                self.out_op.decode(self.in_op.v),
+                self.out_op.eq(self.in_op.v),
             ]
         return m
 
@@ -52,7 +52,7 @@ class FPGetOp(FPState):
         self.out_state = out_state
         self.mod = FPGetOpMod(width)
         self.in_op = in_op
-        self.out_op = FPNumIn(in_op, width)
+        self.out_op = Signal(width)
         self.out_decode = Signal(reset_less=True)
 
     def setup(self, m, in_op):
@@ -60,7 +60,7 @@ class FPGetOp(FPState):
         """
         setattr(m.submodules, self.state_from, self.mod)
         m.d.comb += self.mod.in_op.copy(in_op)
-        m.d.comb += self.out_op.v.eq(self.mod.out_op.v)
+        #m.d.comb += self.out_op.eq(self.mod.out_op)
         m.d.comb += self.out_decode.eq(self.mod.out_decode)
 
     def action(self, m):
@@ -68,7 +68,7 @@ class FPGetOp(FPState):
             m.next = self.out_state
             m.d.sync += [
                 self.in_op.ack.eq(0),
-                self.out_op.copy(self.mod.out_op)
+                self.out_op.eq(self.mod.out_op)
             ]
         with m.Else():
             m.d.sync += self.in_op.ack.eq(1)
@@ -1026,7 +1026,7 @@ class FPPutZ(FPState):
             m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADDBase(FPID):
+class FPADDBaseMod(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -1109,8 +1109,7 @@ class FPADDBase(FPID):
 
         return m
 
-
-class FPADD(FPID):
+class FPADDBase(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -1121,6 +1120,85 @@ class FPADD(FPID):
         """
         FPID.__init__(self, id_wid)
         self.width = width
+        self.single_cycle = single_cycle
+        self.mod = FPADDBaseMod(width, id_wid, single_cycle)
+
+        self.in_t = Trigger()
+        self.in_a  = Signal(width)
+        self.in_b  = Signal(width)
+        self.out_z = FPOp(width)
+
+        self.in_accept = Signal(reset_less=True)
+        self.stb = Signal(reset_less=True)
+        self.ack = Signal(reset=0, reset_less=True)
+
+    def setup(self, a, b, add_stb):
+        m.d.comb += [self.in_a.eq(a),
+                     self.in_b.eq(b),
+                     self.in_mid.eq(self.in_mod),
+
+                    ]
+
+        m.d.comb += self.stb.eq(add_stb)
+        m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
+
+        m.submodules.add = ab
+
+    def action(self, m):
+
+        m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
+
+        with m.If(self.out_norm):
+            with m.If(self.in_accept):
+                m.d.sync += [
+                    self.ack.eq(1),
+                ]
+            with m.Else():
+                m.d.sync += self.ack.eq(0)
+        with m.Else():
+            # normalisation not required (or done).
+            m.next = "round"
+            m.d.sync += self.ack.eq(1)
+            m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
+
+        if self.in_mid is not None:
+            m.d.sync += self.out_mid.eq(self.in_mid)
+
+        m.d.sync += [
+          self.out_z.v.eq(self.in_z.v)
+        ]
+        # move to output state on detecting z
+        with m.If(self.out_z.stb & self.out_z.ack):
+            m.d.sync += self.out_z.stb.eq(0)
+            m.next = "put_z"
+        with m.Else():
+            m.d.sync += self.out_z.stb.eq(1)
+
+
+class FPADD(FPID):
+    """ FPADD: stages as follows:
+
+        FPGetOp (a)
+           |
+        FPGetOp (b)
+           |
+        FPAddBase---> GetOps->Specials->Align->Add1/2->Norm->Round/Pack->PutZ
+           |
+        PutZ
+
+        FPAddBase is tricky: it is both a stage and *has* stages.
+    """
+
+    def __init__(self, width, id_wid=None, single_cycle=False):
+        """ IEEE754 FP Add
+
+            * width: bit-width of IEEE754.  supported: 16, 32, 64
+            * id_wid: an identifier that is sync-connected to the input
+            * single_cycle: True indicates each stage to complete in 1 clock
+        """
+        FPID.__init__(self, id_wid)
+        self.width = width
+        self.id_wid = id_wid
         self.single_cycle = single_cycle
 
         self.in_a  = FPOp(width)
@@ -1146,17 +1224,16 @@ class FPADD(FPID):
         geta.setup(m, self.in_a)
         a = geta.out_op
 
-        getb = self.add_state(FPGetOp("get_b", "special_cases",
+        getb = self.add_state(FPGetOp("get_b", "add",
                                       self.in_b, self.width))
         getb.setup(m, self.in_b)
         b = getb.out_op
 
-        ab = FPADDBase()
-        #pa = self.add_state(FPPack(self.width, self.id_wid))
-        #pa.setup(m, cor.out_z, rn.in_mid)
+        ab = FPADDBase(self.width, self.id_wid, self.single_cycle))
+        ab = self.add_state("add", ab)
 
-        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
-                                    pa.in_mid, self.out_mid))
+        pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
+                                    ab.out_mid, self.out_mid))
 
         with m.FSM() as fsm:
 
