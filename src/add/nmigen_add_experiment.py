@@ -7,7 +7,7 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-from fpbase import MultiShiftRMerge
+from fpbase import MultiShiftRMerge, Trigger
 #from fpbase import FPNumShiftMultiRight
 
 class FPState(FPBase):
@@ -72,6 +72,69 @@ class FPGetOp(FPState):
             ]
         with m.Else():
             m.d.sync += self.in_op.ack.eq(1)
+
+
+class FPGet2OpMod(Trigger):
+    def __init__(self, width):
+        Trigger.__init__(self)
+        self.in_op1 = Signal(width, reset_less=True)
+        self.in_op2 = Signal(width, reset_less=True)
+        self.out_op1 = FPNumIn(None, width)
+        self.out_op2 = FPNumIn(None, width)
+
+    def elaborate(self, platform):
+        m = Trigger.elaborate(self, platform)
+        #m.submodules.get_op_in = self.in_op
+        m.submodules.get_op1_out = self.out_op1
+        m.submodules.get_op2_out = self.out_op2
+        with m.If(self.trigger):
+            m.d.comb += [
+                self.out_op1.decode(self.in_op1),
+                self.out_op2.decode(self.in_op2),
+            ]
+        return m
+
+
+class FPGet2Op(FPState):
+    """ gets operands
+    """
+
+    def __init__(self, in_state, out_state, in_op1, in_op2, width):
+        FPState.__init__(self, in_state)
+        self.out_state = out_state
+        self.mod = FPGet2OpMod(width)
+        self.in_op1 = in_op1
+        self.in_op2 = in_op2
+        self.out_op1 = FPNumIn(None, width)
+        self.out_op2 = FPNumIn(None, width)
+        self.in_stb = Signal(reset_less=True)
+        self.out_ack = Signal(reset_less=True)
+        self.out_decode = Signal(reset_less=True)
+
+    def setup(self, m, in_op1, in_op2, in_stb):
+        """ links module to inputs and outputs
+        """
+        m.submodules.get_ops = self.mod
+        m.d.comb += self.mod.in_op1.eq(in_op1)
+        m.d.comb += self.mod.in_op2.eq(in_op2)
+        m.d.comb += self.mod.stb.eq(in_stb)
+        m.d.comb += self.out_ack.eq(self.mod.ack)
+        m.d.comb += self.out_decode.eq(self.mod.trigger)
+        #m.d.comb += self.out_op1.v.eq(self.mod.out_op1.v)
+        #m.d.comb += self.out_op2.v.eq(self.mod.out_op2.v)
+
+    def action(self, m):
+        with m.If(self.out_decode):
+            m.next = self.out_state
+            m.d.sync += [
+                self.mod.ack.eq(0),
+                #self.out_op1.v.eq(self.mod.out_op1.v),
+                #self.out_op2.v.eq(self.mod.out_op2.v),
+                self.out_op1.copy(self.mod.out_op1),
+                self.out_op2.copy(self.mod.out_op2)
+            ]
+        with m.Else():
+            m.d.sync += self.mod.ack.eq(1)
 
 
 class FPAddSpecialCasesMod:
@@ -958,12 +1021,12 @@ class FPPutZ(FPState):
         ]
         with m.If(self.out_z.stb & self.out_z.ack):
             m.d.sync += self.out_z.stb.eq(0)
-            m.next = "get_a"
+            m.next = "get_ops"
         with m.Else():
             m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADD(FPID):
+class FPADDBase(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -976,8 +1039,9 @@ class FPADD(FPID):
         self.width = width
         self.single_cycle = single_cycle
 
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
+        self.in_t = Trigger()
+        self.in_a  = Signal(width)
+        self.in_b  = Signal(width)
         self.out_z = FPOp(width)
 
         self.states = []
@@ -990,19 +1054,15 @@ class FPADD(FPID):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
-        m.submodules.in_a = self.in_a
-        m.submodules.in_b = self.in_b
         m.submodules.out_z = self.out_z
+        m.submodules.in_t = self.in_t
 
-        geta = self.add_state(FPGetOp("get_a", "get_b",
-                                      self.in_a, self.width))
-        geta.setup(m, self.in_a)
-        a = geta.out_op
-
-        getb = self.add_state(FPGetOp("get_b", "special_cases",
-                                      self.in_b, self.width))
-        getb.setup(m, self.in_b)
-        b = getb.out_op
+        get = self.add_state(FPGet2Op("get_ops", "special_cases",
+                                      self.in_a, self.in_b, self.width))
+        get.setup(m, self.in_a, self.in_b, self.in_t.stb)
+        m.d.comb += self.in_t.ack.eq(get.mod.ack)
+        a = get.out_op1
+        b = get.out_op2
 
         sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
@@ -1050,10 +1110,67 @@ class FPADD(FPID):
         return m
 
 
+class FPADD(FPID):
+
+    def __init__(self, width, id_wid=None, single_cycle=False):
+        """ IEEE754 FP Add
+
+            * width: bit-width of IEEE754.  supported: 16, 32, 64
+            * id_wid: an identifier that is sync-connected to the input
+            * single_cycle: True indicates each stage to complete in 1 clock
+        """
+        FPID.__init__(self, id_wid)
+        self.width = width
+        self.single_cycle = single_cycle
+
+        self.in_a  = FPOp(width)
+        self.in_b  = FPOp(width)
+        self.out_z = FPOp(width)
+
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+        return state
+
+    def get_fragment(self, platform=None):
+        """ creates the HDL code-fragment for FPAdd
+        """
+        m = Module()
+        m.submodules.in_a = self.in_a
+        m.submodules.in_b = self.in_b
+        m.submodules.out_z = self.out_z
+
+        geta = self.add_state(FPGetOp("get_a", "get_b",
+                                      self.in_a, self.width))
+        geta.setup(m, self.in_a)
+        a = geta.out_op
+
+        getb = self.add_state(FPGetOp("get_b", "special_cases",
+                                      self.in_b, self.width))
+        getb.setup(m, self.in_b)
+        b = getb.out_op
+
+        ab = FPADDBase()
+        #pa = self.add_state(FPPack(self.width, self.id_wid))
+        #pa.setup(m, cor.out_z, rn.in_mid)
+
+        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
+                                    pa.in_mid, self.out_mid))
+
+        with m.FSM() as fsm:
+
+            for state in self.states:
+                with m.State(state.state_from):
+                    state.action(m)
+
+        return m
+
+
 if __name__ == "__main__":
-    alu = FPADD(width=32, in_wid=5, single_cycle=True)
-    main(alu, ports=alu.in_a.ports() + \
-                    alu.in_b.ports() + \
+    alu = FPADDBase(width=32, id_wid=5, single_cycle=True)
+    main(alu, ports=[alu.in_a, alu.in_b] + \
+                    alu.in_t.ports() + \
                     alu.out_z.ports() + \
                     [alu.in_mid, alu.out_mid])
 

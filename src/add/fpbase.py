@@ -389,11 +389,9 @@ class FPNumIn(FPNumBase):
                 self.m.eq(sm.lshift(self.m, maxslen))
                ]
 
-class FPOp:
-    def __init__(self, width):
-        self.width = width
+class Trigger:
+    def __init__(self):
 
-        self.v   = Signal(width)
         self.stb = Signal(reset=0)
         self.ack = Signal()
         self.trigger = Signal(reset_less=True)
@@ -402,6 +400,22 @@ class FPOp:
         m = Module()
         m.d.sync += self.trigger.eq(self.stb & self.ack)
         return m
+
+    def copy(self, inp):
+        return [self.stb.eq(inp.stb),
+                self.ack.eq(inp.ack)
+               ]
+
+    def ports(self):
+        return [self.stb, self.ack]
+
+
+class FPOp(Trigger):
+    def __init__(self, width):
+        Trigger.__init__(self)
+        self.width = width
+
+        self.v   = Signal(width)
 
     def chain_inv(self, in_op, extra=None):
         stb = in_op.stb
