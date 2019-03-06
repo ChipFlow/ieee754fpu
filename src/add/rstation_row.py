@@ -29,7 +29,7 @@ class ReservationStationRow:
 
 
 if __name__ == "__main__":
-    rs = ReservationStationRow(width=32, id_wid=Const(1,4)
+    rs = ReservationStationRow(width=32, id_wid=Const(1,4))
     main(alu, ports=[rs.in_a, rs.in_b, rs.out_z]
 
     # works... but don't use, just do "python fname.py convert -t v"
