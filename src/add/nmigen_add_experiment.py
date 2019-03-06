@@ -1182,11 +1182,14 @@ class FPADD(FPID):
            |
         FPGetOp (b)
            |
-        FPAddBase---> GetOps->Specials->Align->Add1/2->Norm->Round/Pack->PutZ
-           |
-        PutZ
+        FPAddBase---> FPAddBaseMod
+           |            |
+        PutZ          GetOps->Specials->Align->Add1/2->Norm->Round/Pack->PutZ
 
         FPAddBase is tricky: it is both a stage and *has* stages.
+        Connection to FPAddBaseMod therefore requires an in stb/ack
+        and an out stb/ack.  Just as with Add1-Norm1 interaction, FPGetOp
+        needs to be the thing that raises the incoming stb.
     """
 
     def __init__(self, width, id_wid=None, single_cycle=False):
