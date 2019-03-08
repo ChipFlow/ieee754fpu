@@ -42,6 +42,8 @@ def get_case(dut, a, b, mid):
     yield dut.in_a.stb.eq(1)
     yield
     yield
+    yield
+    yield
     a_ack = (yield dut.in_a.ack)
     assert a_ack == 0
 

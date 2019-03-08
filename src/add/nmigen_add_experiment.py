@@ -34,8 +34,8 @@ class FPGetOpMod:
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_decode.eq((self.in_op.ack) & (self.in_op.stb))
-        #m.submodules.get_op_in = self.in_op
-        m.submodules.get_op_out = self.out_op
+        m.submodules.get_op_in = self.in_op
+        #m.submodules.get_op_out = self.out_op
         with m.If(self.out_decode):
             m.d.comb += [
                 self.out_op.eq(self.in_op.v),
@@ -1109,7 +1109,7 @@ class FPADDBaseMod(FPID):
 
         return m
 
-class FPADDBase(FPID):
+class FPADDBase(FPState, FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -1119,6 +1119,7 @@ class FPADDBase(FPID):
             * single_cycle: True indicates each stage to complete in 1 clock
         """
         FPID.__init__(self, id_wid)
+        FPState.__init__(self, "fpadd")
         self.width = width
         self.single_cycle = single_cycle
         self.mod = FPADDBaseMod(width, id_wid, single_cycle)
@@ -1126,53 +1127,77 @@ class FPADDBase(FPID):
         self.in_t = Trigger()
         self.in_a  = Signal(width)
         self.in_b  = Signal(width)
-        self.out_z = FPOp(width)
+        #self.out_z = FPOp(width)
 
+        self.z_done = Signal(reset_less=True) # connects to out_z Strobe
         self.in_accept = Signal(reset_less=True)
-        self.stb = Signal(reset_less=True)
-        self.ack = Signal(reset=0, reset_less=True)
+        self.add_stb = Signal(reset_less=True)
+        self.add_ack = Signal(reset=0, reset_less=True)
 
-    def setup(self, a, b, add_stb):
+    def setup(self, m, a, b, add_stb, in_mid, out_z, out_mid):
+        self.out_z = out_z
+        self.out_mid = out_mid
         m.d.comb += [self.in_a.eq(a),
                      self.in_b.eq(b),
-                     self.in_mid.eq(self.in_mod),
-
+                     self.mod.in_a.eq(self.in_a),
+                     self.mod.in_b.eq(self.in_b),
+                     self.in_mid.eq(in_mid),
+                     self.mod.in_mid.eq(self.in_mid),
+                     self.z_done.eq(self.mod.out_z.trigger),
+                     #self.add_stb.eq(add_stb),
+                     self.mod.in_t.stb.eq(self.in_t.stb),
+                     self.in_t.ack.eq(self.mod.in_t.ack),
+                     self.out_mid.eq(self.mod.out_mid),
+                     self.out_z.v.eq(self.mod.out_z.v),
+                     self.out_z.stb.eq(self.mod.out_z.stb),
+                     self.mod.out_z.ack.eq(self.out_z.ack),
                     ]
 
-        m.d.comb += self.stb.eq(add_stb)
-        m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
+        m.d.sync += self.add_stb.eq(add_stb)
+        m.d.sync += self.add_ack.eq(0) # sets to zero when not in active state
+        #m.d.sync += self.in_t.stb.eq(0)
 
-        m.submodules.add = ab
+        m.submodules.fpadd = self.mod
 
     def action(self, m):
 
-        m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
+        # in_accept is set on incoming strobe HIGH and ack LOW.
+        m.d.comb += self.in_accept.eq((~self.add_ack) & (self.add_stb))
 
-        with m.If(self.out_norm):
+        #with m.If(self.in_t.ack):
+        #    m.d.sync += self.in_t.stb.eq(0)
+        with m.If(~self.z_done):
+            # not done: test for accepting an incoming operand pair
             with m.If(self.in_accept):
                 m.d.sync += [
-                    self.ack.eq(1),
+                    self.add_ack.eq(1), # acknowledge receipt...
+                    self.in_t.stb.eq(1), # initiate add
                 ]
             with m.Else():
-                m.d.sync += self.ack.eq(0)
+                m.d.sync += [self.add_ack.eq(0),
+                             self.in_t.stb.eq(0),
+                            ]
         with m.Else():
-            # normalisation not required (or done).
-            m.next = "round"
-            m.d.sync += self.ack.eq(1)
-            m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
+            # done: acknowledge, and write out id and value
+            m.d.sync += [self.add_ack.eq(1),
+                         self.in_t.stb.eq(0)
+                        ]
+            m.next = "get_a"
 
-        if self.in_mid is not None:
-            m.d.sync += self.out_mid.eq(self.in_mid)
+            return
 
-        m.d.sync += [
-          self.out_z.v.eq(self.in_z.v)
-        ]
-        # move to output state on detecting z
-        with m.If(self.out_z.stb & self.out_z.ack):
-            m.d.sync += self.out_z.stb.eq(0)
-            m.next = "put_z"
-        with m.Else():
-            m.d.sync += self.out_z.stb.eq(1)
+            if self.in_mid is not None:
+                m.d.sync += self.out_mid.eq(self.mod.out_mid)
+
+            m.d.sync += [
+              self.out_z.v.eq(self.mod.out_z.v)
+            ]
+            # move to output state on detecting z ack
+            with m.If(self.out_z.trigger):
+                m.d.sync += self.out_z.stb.eq(0)
+                m.next = "put_z"
+            with m.Else():
+                m.d.sync += self.out_z.stb.eq(1)
 
 
 class FPADD(FPID):
@@ -1227,16 +1252,18 @@ class FPADD(FPID):
         geta.setup(m, self.in_a)
         a = geta.out_op
 
-        getb = self.add_state(FPGetOp("get_b", "add",
+        getb = self.add_state(FPGetOp("get_b", "fpadd",
                                       self.in_b, self.width))
         getb.setup(m, self.in_b)
         b = getb.out_op
 
-        ab = FPADDBase(self.width, self.id_wid, self.single_cycle))
-        ab = self.add_state("add", ab)
+        ab = FPADDBase(self.width, self.id_wid, self.single_cycle)
+        ab = self.add_state(ab)
+        ab.setup(m, a, b, getb.out_decode, self.in_mid,
+                 self.out_z, self.out_mid)
 
-        pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
-                                    ab.out_mid, self.out_mid))
+        #pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
+        #                            ab.out_mid, self.out_mid))
 
         with m.FSM() as fsm:
 

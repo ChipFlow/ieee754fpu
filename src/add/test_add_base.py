@@ -4,7 +4,7 @@ from operator import add
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 
-from nmigen_add_experiment import FPADDBase
+from nmigen_add_experiment import FPADDBase, FPADDBaseMod
 
 def get_case(dut, a, b, mid):
     yield dut.in_mid.eq(mid)
