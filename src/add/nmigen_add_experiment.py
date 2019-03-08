@@ -1275,11 +1275,18 @@ class FPADD(FPID):
 
 
 if __name__ == "__main__":
-    alu = FPADDBase(width=32, id_wid=5, single_cycle=True)
-    main(alu, ports=[alu.in_a, alu.in_b] + \
-                    alu.in_t.ports() + \
-                    alu.out_z.ports() + \
-                    [alu.in_mid, alu.out_mid])
+    if True:
+        alu = FPADD(width=32, id_wid=5, single_cycle=True)
+        main(alu, ports=alu.in_a.ports() + \
+                        alu.in_b.ports() + \
+                        alu.out_z.ports() + \
+                        [alu.in_mid, alu.out_mid])
+    else:
+        alu = FPADDBase(width=32, id_wid=5, single_cycle=True)
+        main(alu, ports=[alu.in_a, alu.in_b] + \
+                        alu.in_t.ports() + \
+                        alu.out_z.ports() + \
+                        [alu.in_mid, alu.out_mid])
 
 
     # works... but don't use, just do "python fname.py convert -t v"
