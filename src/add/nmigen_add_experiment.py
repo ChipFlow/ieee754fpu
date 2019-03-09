@@ -908,6 +908,9 @@ class FPNormToPack(FPState, FPID):
         self.n_out_roundz = Signal(reset_less=True)
 
         self.rmod = FPRoundMod(width)
+        self.r_out_z = FPNumBase(width)
+
+        self.cmod = FPCorrectionsMod(width)
         self.out_z = FPNumBase(width)
 
     def setup(self, m, in_z, in_of, in_mid):
@@ -915,16 +918,17 @@ class FPNormToPack(FPState, FPID):
         """
         self.mod.setup(m, in_z, in_of, self.n_out_z)
         self.rmod.setup(m, self.n_out_z, self.n_out_roundz)
-
         m.d.comb += self.n_out_roundz.eq(self.mod.out_of.roundz)
+        m.d.comb += self.r_out_z.copy(self.rmod.out_z)
+        self.cmod.setup(m, self.r_out_z)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
         self.idsync(m)
-        m.next = "corrections"
-        m.d.sync += self.out_z.copy(self.rmod.out_z)
+        m.next = "pack"
+        m.d.sync += self.out_z.copy(self.cmod.out_z)
 
 
 class FPRoundMod:
@@ -978,6 +982,12 @@ class FPCorrectionsMod:
         self.in_z = FPNumOut(width, False)
         self.out_z = FPNumOut(width, False)
 
+    def setup(self, m, in_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.corrections = self
+        m.d.comb += self.in_z.copy(in_z)
+
     def elaborate(self, platform):
         m = Module()
         m.submodules.corr_in_z = self.in_z
@@ -999,8 +1009,7 @@ class FPCorrections(FPState, FPID):
     def setup(self, m, in_z, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.corrections = self.mod
-        m.d.comb += self.mod.in_z.copy(in_z)
+        self.mod.setup(m, in_z)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
@@ -1194,11 +1203,8 @@ class FPADDBaseMod(FPID):
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, add1.out_z, add1.out_of, add0.in_mid)
 
-        cor = self.add_state(FPCorrections(self.width, self.id_wid))
-        cor.setup(m, n1.out_z, n1.in_mid)
-
         pa = self.add_state(FPPack(self.width, self.id_wid))
-        pa.setup(m, cor.out_z, cor.in_mid)
+        pa.setup(m, n1.out_z, n1.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z,
                                     pa.in_mid, self.out_mid))
