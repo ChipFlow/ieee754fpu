@@ -1028,16 +1028,18 @@ class FPPutZ(FPState):
 
 class FPADDBaseMod(FPID):
 
-    def __init__(self, width, id_wid=None, single_cycle=False):
+    def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
         """ IEEE754 FP Add
 
             * width: bit-width of IEEE754.  supported: 16, 32, 64
             * id_wid: an identifier that is sync-connected to the input
             * single_cycle: True indicates each stage to complete in 1 clock
+            * compact: True indicates a reduced number of stages
         """
         FPID.__init__(self, id_wid)
         self.width = width
         self.single_cycle = single_cycle
+        self.compact = compact
 
         self.in_t = Trigger()
         self.in_a  = Signal(width)
