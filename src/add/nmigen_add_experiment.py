@@ -929,8 +929,8 @@ class FPNormToPack(FPState, FPID):
         m.d.comb += c_out_z.copy(cmod.out_z)
 
         # Pack (chained to corrections)
-        self.pmod = FPPackMod(width)
-        self.out_z = FPNumBase(width)
+        self.pmod = FPPackMod(self.width)
+        self.out_z = FPNumBase(self.width)
         self.pmod.setup(m, c_out_z)
 
         # Multiplex ID
