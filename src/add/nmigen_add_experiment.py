@@ -463,6 +463,13 @@ class FPAddAlignSingleMod:
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.align = self
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the
             greater exponent.  This is done in a *single* cycle using
@@ -540,9 +547,7 @@ class FPAddAlignSingle(FPState, FPID):
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.align = self.mod
-        m.d.comb += self.mod.in_a.copy(in_a)
-        m.d.comb += self.mod.in_b.copy(in_b)
+        self.mod.setup(m, in_a, in_b)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
@@ -554,6 +559,38 @@ class FPAddAlignSingle(FPState, FPID):
         m.next = "add_0"
 
 
+class FPAddAlignSingleAdd(FPState, FPID):
+
+    def __init__(self, width, id_wid):
+        FPState.__init__(self, "align")
+        FPID.__init__(self, id_wid)
+        self.mod = FPAddAlignSingleMod(width)
+        self.out_a = FPNumIn(None, width)
+        self.out_b = FPNumIn(None, width)
+
+        self.a0mod = FPAddStage0Mod(width)
+        self.out_z = FPNumBase(width, False)
+        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+
+    def setup(self, m, in_a, in_b, in_mid):
+        """ links module to inputs and outputs
+        """
+        self.mod.setup(m, in_a, in_b)
+        m.d.comb += self.out_a.copy(self.mod.out_a)
+        m.d.comb += self.out_b.copy(self.mod.out_b)
+
+        self.a0mod.setup(m, self.out_a, self.out_b)
+
+        if self.in_mid is not None:
+            m.d.comb += self.in_mid.eq(in_mid)
+
+    def action(self, m):
+        self.idsync(m)
+        m.d.sync += self.out_z.copy(self.a0mod.out_z)
+        m.d.sync += self.out_tot.eq(self.a0mod.out_tot)
+        m.next = "add_1"
+
+
 class FPAddStage0Mod:
 
     def __init__(self, width):
@@ -562,6 +599,13 @@ class FPAddStage0Mod:
         self.in_z = FPNumBase(width, False)
         self.out_z = FPNumBase(width, False)
         self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.add0 = self
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
 
     def elaborate(self, platform):
         m = Module()
@@ -618,9 +662,7 @@ class FPAddStage0(FPState, FPID):
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.add0 = self.mod
-        m.d.comb += self.mod.in_a.copy(in_a)
-        m.d.comb += self.mod.in_b.copy(in_b)
+        self.mod.setup(m, in_a, in_b)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
@@ -1246,21 +1288,14 @@ class FPADDBaseMod(FPID):
         sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
 
-        if self.single_cycle:
-            alm = self.add_state(FPAddAlignSingle(self.width, self.id_wid))
-            alm.setup(m, sc.out_a, sc.out_b, sc.in_mid)
-        else:
-            alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
-            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
-
-        add0 = self.add_state(FPAddStage0(self.width, self.id_wid))
-        add0.setup(m, alm.out_a, alm.out_b, alm.in_mid)
+        alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
+        alm.setup(m, sc.out_a, sc.out_b, sc.in_mid)
 
         add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
-        add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
+        add1.setup(m, alm.out_tot, alm.out_z, alm.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, add1.out_z, add1.out_of, add0.in_mid)
+        n1.setup(m, add1.out_z, add1.out_of, add1.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z, self.out_z,
                                     n1.in_mid, self.out_mid))
