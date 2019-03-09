@@ -904,38 +904,42 @@ class FPNormToPack(FPState, FPID):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.width = width
-        self.pmod = FPPackMod(width)
-        self.out_z = FPNumBase(width)
 
     def setup(self, m, in_z, in_of, in_mid):
         """ links module to inputs and outputs
         """
 
+        # Normalisation (chained to input in_z+in_of)
         nmod = FPNorm1ModSingle(self.width)
         n_out_z = FPNumBase(self.width)
         n_out_roundz = Signal(reset_less=True)
-
         nmod.setup(m, in_z, in_of, n_out_z)
 
+        # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width)
         r_out_z = FPNumBase(self.width)
         rmod.setup(m, n_out_z, n_out_roundz)
         m.d.comb += n_out_roundz.eq(nmod.out_of.roundz)
         m.d.comb += r_out_z.copy(rmod.out_z)
 
+        # Corrections (chained to rounding)
         cmod = FPCorrectionsMod(self.width)
         c_out_z = FPNumBase(self.width)
         cmod.setup(m, r_out_z)
         m.d.comb += c_out_z.copy(cmod.out_z)
 
+        # Pack (chained to corrections)
+        self.pmod = FPPackMod(width)
+        self.out_z = FPNumBase(width)
         self.pmod.setup(m, c_out_z)
 
+        # Multiplex ID
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
-        self.idsync(m)
-        m.d.sync += self.out_z.v.eq(self.pmod.out_z.v)
+        self.idsync(m) # copies incoming ID to outgoing
+        m.d.sync += self.out_z.v.eq(self.pmod.out_z.v) # outputs packed result
         m.next = "pack_put_z"
 
 
