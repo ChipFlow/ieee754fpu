@@ -1057,6 +1057,20 @@ class FPADDBaseMod(FPID):
         m = Module()
         m.submodules.out_z = self.out_z
         m.submodules.in_t = self.in_t
+        if self.compact:
+            self.get_compact_fragment(m, platform)
+        else:
+            self.get_longer_fragment(m, platform)
+
+        with m.FSM() as fsm:
+
+            for state in self.states:
+                with m.State(state.state_from):
+                    state.action(m)
+
+        return m
+
+    def get_longer_fragment(self, m, platform=None):
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
                                       self.in_a, self.in_b, self.width))
@@ -1101,13 +1115,51 @@ class FPADDBaseMod(FPID):
         pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
                                     pa.in_mid, self.out_mid))
 
-        with m.FSM() as fsm:
+    def get_compact_fragment(self, m, platform=None):
 
-            for state in self.states:
-                with m.State(state.state_from):
-                    state.action(m)
+        get = self.add_state(FPGet2Op("get_ops", "special_cases",
+                                      self.in_a, self.in_b, self.width))
+        get.setup(m, self.in_a, self.in_b, self.in_t.stb, self.in_t.ack)
+        a = get.out_op1
+        b = get.out_op2
 
-        return m
+        sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
+        sc.setup(m, a, b, self.in_mid)
+
+        dn = self.add_state(FPAddDeNorm(self.width, self.id_wid))
+        dn.setup(m, a, b, sc.in_mid)
+
+        if self.single_cycle:
+            alm = self.add_state(FPAddAlignSingle(self.width, self.id_wid))
+            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
+        else:
+            alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
+            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
+
+        add0 = self.add_state(FPAddStage0(self.width, self.id_wid))
+        add0.setup(m, alm.out_a, alm.out_b, alm.in_mid)
+
+        add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
+        add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
+
+        n1 = self.add_state(FPNorm1(self.width, self.id_wid))
+        n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb, add0.in_mid)
+
+        rn = self.add_state(FPRound(self.width, self.id_wid))
+        rn.setup(m, n1.out_z, n1.out_roundz, n1.in_mid)
+
+        cor = self.add_state(FPCorrections(self.width, self.id_wid))
+        cor.setup(m, rn.out_z, rn.in_mid)
+
+        pa = self.add_state(FPPack(self.width, self.id_wid))
+        pa.setup(m, cor.out_z, rn.in_mid)
+
+        ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z,
+                                    pa.in_mid, self.out_mid))
+
+        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
+                                    pa.in_mid, self.out_mid))
+
 
 class FPADDBase(FPState, FPID):
 
