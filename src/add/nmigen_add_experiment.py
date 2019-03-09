@@ -903,32 +903,32 @@ class FPNormToPack(FPState, FPID):
     def __init__(self, width, id_wid):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
-        self.mod = FPNorm1ModSingle(width)
-        self.n_out_z = FPNumBase(width)
-        self.n_out_roundz = Signal(reset_less=True)
-
-        self.rmod = FPRoundMod(width)
-        self.r_out_z = FPNumBase(width)
-
-        self.cmod = FPCorrectionsMod(width)
-        self.c_out_z = FPNumBase(width)
-
+        self.width = width
         self.pmod = FPPackMod(width)
         self.out_z = FPNumBase(width)
 
     def setup(self, m, in_z, in_of, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_z, in_of, self.n_out_z)
 
-        self.rmod.setup(m, self.n_out_z, self.n_out_roundz)
-        m.d.comb += self.n_out_roundz.eq(self.mod.out_of.roundz)
-        m.d.comb += self.r_out_z.copy(self.rmod.out_z)
+        nmod = FPNorm1ModSingle(self.width)
+        n_out_z = FPNumBase(self.width)
+        n_out_roundz = Signal(reset_less=True)
 
-        self.cmod.setup(m, self.r_out_z)
-        m.d.comb += self.c_out_z.copy(self.cmod.out_z)
+        nmod.setup(m, in_z, in_of, n_out_z)
 
-        self.pmod.setup(m, self.c_out_z)
+        rmod = FPRoundMod(self.width)
+        r_out_z = FPNumBase(self.width)
+        rmod.setup(m, n_out_z, n_out_roundz)
+        m.d.comb += n_out_roundz.eq(nmod.out_of.roundz)
+        m.d.comb += r_out_z.copy(rmod.out_z)
+
+        cmod = FPCorrectionsMod(self.width)
+        c_out_z = FPNumBase(self.width)
+        cmod.setup(m, r_out_z)
+        m.d.comb += c_out_z.copy(cmod.out_z)
+
+        self.pmod.setup(m, c_out_z)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
