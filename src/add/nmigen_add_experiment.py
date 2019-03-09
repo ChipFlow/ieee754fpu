@@ -148,6 +148,14 @@ class FPAddSpecialCasesMod:
         self.out_z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
 
+    def setup(self, m, in_a, in_b, out_do_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.specialcases = self
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += out_do_z.eq(self.out_do_z)
+
     def elaborate(self, platform):
         m = Module()
 
@@ -264,11 +272,7 @@ class FPAddSpecialCases(FPState, FPID):
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.specialcases = self.mod
-        m.d.comb += self.mod.in_a.copy(in_a)
-        m.d.comb += self.mod.in_b.copy(in_b)
-        #m.d.comb += self.out_z.v.eq(self.mod.out_z.v)
-        m.d.comb += self.out_do_z.eq(self.mod.out_do_z)
+        self.mod.setup(m, in_a, in_b, self.out_do_z)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
