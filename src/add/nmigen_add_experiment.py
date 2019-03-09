@@ -285,6 +285,42 @@ class FPAddSpecialCases(FPState, FPID):
             m.next = "denormalise"
 
 
+class FPAddSpecialCasesDeNorm(FPState, FPID):
+    """ special cases: NaNs, infs, zeros, denormalised
+        NOTE: some of these are unique to add.  see "Special Operations"
+        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+    """
+
+    def __init__(self, width, id_wid):
+        FPState.__init__(self, "special_cases")
+        FPID.__init__(self, id_wid)
+        self.smod = FPAddSpecialCasesMod(width)
+        self.out_z = FPNumOut(width, False)
+        self.out_do_z = Signal(reset_less=True)
+
+        self.dmod = FPAddDeNormMod(width)
+        self.out_a = FPNumBase(width)
+        self.out_b = FPNumBase(width)
+
+    def setup(self, m, in_a, in_b, in_mid):
+        """ links module to inputs and outputs
+        """
+        self.smod.setup(m, in_a, in_b, self.out_do_z)
+        self.dmod.setup(m, in_a, in_b)
+        if self.in_mid is not None:
+            m.d.comb += self.in_mid.eq(in_mid)
+
+    def action(self, m):
+        self.idsync(m)
+        with m.If(self.out_do_z):
+            m.d.sync += self.out_z.v.eq(self.smod.out_z.v) # only take output
+            m.next = "put_z"
+        with m.Else():
+            m.next = "align"
+            m.d.sync += self.out_a.copy(self.dmod.out_a)
+            m.d.sync += self.out_b.copy(self.dmod.out_b)
+
+
 class FPAddDeNormMod(FPState):
 
     def __init__(self, width):
@@ -292,6 +328,13 @@ class FPAddDeNormMod(FPState):
         self.in_b = FPNumBase(width)
         self.out_a = FPNumBase(width)
         self.out_b = FPNumBase(width)
+
+    def setup(self, m, in_a, in_b):
+        """ links module to inputs and outputs
+        """
+        m.submodules.denormalise = self
+        m.d.comb += self.in_a.copy(in_a)
+        m.d.comb += self.in_b.copy(in_b)
 
     def elaborate(self, platform):
         m = Module()
@@ -327,9 +370,7 @@ class FPAddDeNorm(FPState, FPID):
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.denormalise = self.mod
-        m.d.comb += self.mod.in_a.copy(in_a)
-        m.d.comb += self.mod.in_b.copy(in_b)
+        self.mod.setup(m, in_a, in_b)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
@@ -1202,15 +1243,12 @@ class FPADDBaseMod(FPID):
         a = get.out_op1
         b = get.out_op2
 
-        sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
+        sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
-
-        dn = self.add_state(FPAddDeNorm(self.width, self.id_wid))
-        dn.setup(m, a, b, sc.in_mid)
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width, self.id_wid))
-            alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
+            alm.setup(m, sc.out_a, sc.out_b, sc.in_mid)
         else:
             alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
             alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
