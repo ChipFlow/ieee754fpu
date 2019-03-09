@@ -569,8 +569,13 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.out_b = FPNumIn(None, width)
 
         self.a0mod = FPAddStage0Mod(width)
+        self.a0_out_z = FPNumBase(width, False)
+        self.out_tot = Signal(self.a0_out_z.m_width + 4, reset_less=True)
+        self.a0_out_z = FPNumBase(width, False)
+
+        self.a1mod = FPAddStage1Mod(width)
         self.out_z = FPNumBase(width, False)
-        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+        self.out_of = Overflow()
 
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
@@ -580,15 +585,19 @@ class FPAddAlignSingleAdd(FPState, FPID):
         m.d.comb += self.out_b.copy(self.mod.out_b)
 
         self.a0mod.setup(m, self.out_a, self.out_b)
+        m.d.comb += self.a0_out_z.copy(self.a0mod.out_z)
+        m.d.comb += self.out_tot.eq(self.a0mod.out_tot)
+
+        self.a1mod.setup(m, self.out_tot, self.a0_out_z)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_z.copy(self.a0mod.out_z)
-        m.d.sync += self.out_tot.eq(self.a0mod.out_tot)
-        m.next = "add_1"
+        m.d.sync += self.out_of.copy(self.a1mod.out_of)
+        m.d.sync += self.out_z.copy(self.a1mod.out_z)
+        m.next = "normalise_1"
 
 
 class FPAddStage0Mod:
@@ -686,6 +695,15 @@ class FPAddStage1Mod(FPState):
         self.out_z = FPNumBase(width, False)
         self.out_of = Overflow()
 
+    def setup(self, m, in_tot, in_z):
+        """ links module to inputs and outputs
+        """
+        m.submodules.add1 = self
+        m.submodules.add1_out_overflow = self.out_of
+
+        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_tot.eq(in_tot)
+
     def elaborate(self, platform):
         m = Module()
         #m.submodules.norm1_in_overflow = self.in_of
@@ -728,11 +746,7 @@ class FPAddStage1(FPState, FPID):
     def setup(self, m, in_tot, in_z, in_mid):
         """ links module to inputs and outputs
         """
-        m.submodules.add1 = self.mod
-        m.submodules.add1_out_overflow = self.out_of
-
-        m.d.comb += self.mod.in_z.copy(in_z)
-        m.d.comb += self.mod.in_tot.eq(in_tot)
+        self.mod.setup(m, in_tot, in_z)
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in add1 state
 
@@ -1291,11 +1305,8 @@ class FPADDBaseMod(FPID):
         alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
         alm.setup(m, sc.out_a, sc.out_b, sc.in_mid)
 
-        add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
-        add1.setup(m, alm.out_tot, alm.out_z, alm.in_mid)
-
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, add1.out_z, add1.out_of, add1.in_mid)
+        n1.setup(m, alm.out_z, alm.out_of, alm.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z, self.out_z,
                                     n1.in_mid, self.out_mid))
