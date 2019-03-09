@@ -898,59 +898,33 @@ class FPNorm1Multi(FPState, FPID):
             m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
 
 
-class FPNorm1ToPack(FPState, FPID):
+class FPNormToPack(FPState, FPID):
 
-    def __init__(self, width, id_wid, single_cycle=True):
+    def __init__(self, width, id_wid):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
-        if single_cycle:
-            self.mod = FPNorm1ModSingle(width)
-        else:
-            self.mod = FPNorm1ModMulti(width)
-        self.mod = FPNorm1ModMulti(width)
-        self.stb = Signal(reset_less=True)
-        self.ack = Signal(reset=0, reset_less=True)
-        self.out_norm = Signal(reset_less=True)
-        self.in_accept = Signal(reset_less=True)
-        self.temp_z = FPNumBase(width)
-        self.temp_of = Overflow()
+        self.mod = FPNorm1ModSingle(width)
         self.n_out_z = FPNumBase(width)
         self.n_out_roundz = Signal(reset_less=True)
 
         self.rmod = FPRoundMod(width)
         self.out_z = FPNumBase(width)
-        self.rmod.setup(m, self.n_out_z, self.n_out_roundz)
 
-    def setup(self, m, in_z, in_of, norm_stb, in_mid):
+    def setup(self, m, in_z, in_of, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_z, in_of, norm_stb,
-                       self.in_accept, self.temp_z, self.temp_of,
-                       self.n_out_z, self.out_norm)
+        self.mod.setup(m, in_z, in_of, self.n_out_z)
+        self.rmod.setup(m, self.n_out_z, self.n_out_roundz)
 
-        m.d.comb += self.stb.eq(norm_stb)
-        m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
+        m.d.comb += self.n_out_roundz.eq(self.mod.out_of.roundz)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
         self.idsync(m)
-        m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
-        m.d.sync += self.temp_of.copy(self.mod.out_of)
-        m.d.sync += self.temp_z.copy(self.n_out_z)
-        with m.If(self.out_norm):
-            with m.If(self.in_accept):
-                m.d.sync += [
-                    self.ack.eq(1),
-                ]
-            with m.Else():
-                m.d.sync += self.ack.eq(0)
-        with m.Else():
-            # normalisation not required (or done).
-            m.next = "round"
-            m.d.sync += self.ack.eq(1)
-            m.d.sync += self.n_out_roundz.eq(self.mod.out_of.roundz)
+        m.next = "corrections"
+        m.d.sync += self.out_z.copy(self.rmod.out_z)
 
 
 class FPRoundMod:
@@ -1098,7 +1072,7 @@ class FPPutZ(FPState):
 
 class FPADDBaseMod(FPID):
 
-    def __init__(self, width, id_wid=None, single_cycle=False, compact=False):
+    def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
         """ IEEE754 FP Add
 
             * width: bit-width of IEEE754.  supported: 16, 32, 64
@@ -1218,13 +1192,13 @@ class FPADDBaseMod(FPID):
         add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, add1.out_z, add1.out_of, add1.norm_stb, add0.in_mid)
+        n1.setup(m, add1.out_z, add1.out_of, add0.in_mid)
 
         cor = self.add_state(FPCorrections(self.width, self.id_wid))
-        cor.setup(m, n1.out_z, rn.in_mid)
+        cor.setup(m, n1.out_z, n1.in_mid)
 
         pa = self.add_state(FPPack(self.width, self.id_wid))
-        pa.setup(m, cor.out_z, rn.in_mid)
+        pa.setup(m, cor.out_z, cor.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", pa.out_z, self.out_z,
                                     pa.in_mid, self.out_mid))
