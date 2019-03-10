@@ -1493,10 +1493,10 @@ class FPADD(FPID):
 if __name__ == "__main__":
     if True:
         alu = FPADD(width=32, id_wid=5, single_cycle=True)
-        main(alu, ports=alu.in_a.ports() + \
-                        alu.in_b.ports() + \
-                        alu.out_z.ports() + \
-                        [alu.in_mid, alu.out_mid])
+        main(alu, ports=alu.rs[0][0].ports() + \
+                        alu.rs[0][1].ports() + \
+                        alu.rs[0][2].ports() + \
+                        [alu.ids.in_mid, alu.ids.out_mid])
     else:
         alu = FPADDBase(width=32, id_wid=5, single_cycle=True)
         main(alu, ports=[alu.in_a, alu.in_b] + \
