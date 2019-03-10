@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux
+from nmigen import Module, Signal, Cat, Mux, Array
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
@@ -1423,7 +1423,7 @@ class FPADD(FPID):
         needs to be the thing that raises the incoming stb.
     """
 
-    def __init__(self, width, id_wid=None, single_cycle=False):
+    def __init__(self, width, id_wid=None, single_cycle=False, rs_sz=1):
         """ IEEE754 FP Add
 
             * width: bit-width of IEEE754.  supported: 16, 32, 64
@@ -1434,10 +1434,19 @@ class FPADD(FPID):
         self.id_wid = id_wid
         self.single_cycle = single_cycle
 
+        #self.out_z = FPOp(width)
         self.ids = FPID(id_wid)
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
-        self.out_z = FPOp(width)
+
+        rs = []
+        for i in range(rs_sz):
+            in_a  = FPOp(width)
+            in_b  = FPOp(width)
+            out_z = FPOp(width)
+            in_a.name = "in_a_%d" % i
+            in_b.name = "in_b_%d" % i
+            out_z.name = "out_z_%d" % i
+            rs.append((in_a, in_b, out_z))
+        self.rs = Array(rs)
 
         self.states = []
 
@@ -1449,24 +1458,25 @@ class FPADD(FPID):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
-        m.submodules.in_a = self.in_a
-        m.submodules.in_b = self.in_b
-        m.submodules.out_z = self.out_z
+        m.submodules += self.rs
 
+        in_a = self.rs[0][0]
+        in_b = self.rs[0][1]
+        out_z = self.rs[0][2]
         geta = self.add_state(FPGetOp("get_a", "get_b",
-                                      self.in_a, self.width))
-        geta.setup(m, self.in_a)
+                                      in_a, self.width))
+        geta.setup(m, in_a)
         a = geta.out_op
 
         getb = self.add_state(FPGetOp("get_b", "fpadd",
-                                      self.in_b, self.width))
-        getb.setup(m, self.in_b)
+                                      in_b, self.width))
+        getb.setup(m, in_b)
         b = getb.out_op
 
         ab = FPADDBase(self.width, self.id_wid, self.single_cycle)
         ab = self.add_state(ab)
         ab.setup(m, a, b, getb.out_decode, self.ids.in_mid,
-                 self.out_z, self.ids.out_mid)
+                 out_z, self.ids.out_mid)
 
         #pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
         #                            ab.out_mid, self.out_mid))

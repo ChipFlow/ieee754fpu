@@ -37,41 +37,42 @@ def match(x, y):
         )
 
 def get_case(dut, a, b, mid):
+    in_a, in_b, out_z = dut.rs[0]
     yield dut.ids.in_mid.eq(mid)
-    yield dut.in_a.v.eq(a)
-    yield dut.in_a.stb.eq(1)
+    yield in_a.v.eq(a)
+    yield in_a.stb.eq(1)
     yield
     yield
     yield
     yield
-    a_ack = (yield dut.in_a.ack)
+    a_ack = (yield in_a.ack)
     assert a_ack == 0
 
-    yield dut.in_a.stb.eq(0)
+    yield in_a.stb.eq(0)
 
-    yield dut.in_b.v.eq(b)
-    yield dut.in_b.stb.eq(1)
+    yield in_b.v.eq(b)
+    yield in_b.stb.eq(1)
     yield
     yield
-    b_ack = (yield dut.in_b.ack)
+    b_ack = (yield in_b.ack)
     assert b_ack == 0
 
-    yield dut.in_b.stb.eq(0)
+    yield in_b.stb.eq(0)
 
-    yield dut.out_z.ack.eq(1)
+    yield out_z.ack.eq(1)
 
     while True:
-        out_z_stb = (yield dut.out_z.stb)
+        out_z_stb = (yield out_z.stb)
         if not out_z_stb:
             yield
             continue
-        out_z = yield dut.out_z.v
+        vout_z = yield out_z.v
         out_mid = yield dut.ids.out_mid
-        yield dut.out_z.ack.eq(0)
+        yield out_z.ack.eq(0)
         yield
         break
 
-    return out_z, out_mid
+    return vout_z, out_mid
 
 def check_case(dut, a, b, z, mid=None):
     if mid is None:
