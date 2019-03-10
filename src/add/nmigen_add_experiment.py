@@ -1200,6 +1200,33 @@ class FPPutZ(FPState):
             m.d.sync += self.out_z.stb.eq(1)
 
 
+class FPPutZIdx(FPState):
+
+    def __init__(self, state, in_z, out_zs, in_mid, to_state=None):
+        FPState.__init__(self, state)
+        if to_state is None:
+            to_state = "get_ops"
+        self.to_state = to_state
+        self.in_z = in_z
+        self.out_zs = out_zs
+        self.in_mid = in_mid
+
+    def action(self, m):
+        outz_stb = Signal(reset_less=True)
+        outz_ack = Signal(reset_less=True)
+        m.d.comb += [outz_stb.eq(self.out_zs[self.in_mid].stb),
+                     outz_ack.eq(self.out_zs[self.in_mid].ack),
+                    ]
+        m.d.sync += [
+          self.out_zs[self.in_mid].v.eq(self.in_z.v)
+        ]
+        with m.If(outz_stb & outz_ack):
+            m.d.sync += self.out_zs[self.in_mid].stb.eq(0)
+            m.next = self.to_state
+        with m.Else():
+            m.d.sync += self.out_zs[self.in_mid].stb.eq(1)
+
+
 class FPADDBaseMod(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
@@ -1428,7 +1455,7 @@ class FPADD(FPID):
         needs to be the thing that raises the incoming stb.
     """
 
-    def __init__(self, width, id_wid=None, single_cycle=False, rs_sz=1):
+    def __init__(self, width, id_wid=None, single_cycle=False, rs_sz=2):
         """ IEEE754 FP Add
 
             * width: bit-width of IEEE754.  supported: 16, 32, 64
@@ -1446,12 +1473,17 @@ class FPADD(FPID):
         for i in range(rs_sz):
             in_a  = FPOp(width)
             in_b  = FPOp(width)
-            out_z = FPOp(width)
             in_a.name = "in_a_%d" % i
             in_b.name = "in_b_%d" % i
-            out_z.name = "out_z_%d" % i
-            rs.append((in_a, in_b, out_z))
+            rs.append((in_a, in_b))
         self.rs = Array(rs)
+
+        res = []
+        for i in range(rs_sz):
+            out_z = FPOp(width)
+            out_z.name = "out_z_%d" % i
+            res.append(out_z)
+        self.res = Array(res)
 
         self.states = []
 
@@ -1467,7 +1499,6 @@ class FPADD(FPID):
 
         in_a = self.rs[0][0]
         in_b = self.rs[0][1]
-        mout_z = self.rs[0][2]
 
         out_z = FPOp(self.width)
         out_mid = Signal(self.id_wid, reset_less=True)
@@ -1488,8 +1519,8 @@ class FPADD(FPID):
         ab.setup(m, a, b, getb.out_decode, self.ids.in_mid,
                  out_z, out_mid)
 
-        pz = self.add_state(FPPutZ("put_z", ab.out_z, mout_z,
-                                    ab.out_mid, self.ids.out_mid, "get_a"))
+        pz = self.add_state(FPPutZIdx("put_z", ab.out_z, self.res,
+                                    ab.out_mid, "get_a"))
 
         with m.FSM() as fsm:
 
@@ -1505,7 +1536,7 @@ if __name__ == "__main__":
         alu = FPADD(width=32, id_wid=5, single_cycle=True)
         main(alu, ports=alu.rs[0][0].ports() + \
                         alu.rs[0][1].ports() + \
-                        alu.rs[0][2].ports() + \
+                        alu.res[0].ports() + \
                         [alu.ids.in_mid, alu.ids.out_mid])
     else:
         alu = FPADDBase(width=32, id_wid=5, single_cycle=True)
