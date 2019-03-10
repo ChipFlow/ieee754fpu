@@ -37,7 +37,7 @@ def match(x, y):
         )
 
 def get_case(dut, a, b, mid):
-    yield dut.in_mid.eq(mid)
+    yield dut.ids.in_mid.eq(mid)
     yield dut.in_a.v.eq(a)
     yield dut.in_a.stb.eq(1)
     yield
@@ -66,7 +66,7 @@ def get_case(dut, a, b, mid):
             yield
             continue
         out_z = yield dut.out_z.v
-        out_mid = yield dut.out_mid
+        out_mid = yield dut.ids.out_mid
         yield dut.out_z.ack.eq(0)
         yield
         break

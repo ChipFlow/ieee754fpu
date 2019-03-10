@@ -1430,11 +1430,11 @@ class FPADD(FPID):
             * id_wid: an identifier that is sync-connected to the input
             * single_cycle: True indicates each stage to complete in 1 clock
         """
-        FPID.__init__(self, id_wid)
         self.width = width
         self.id_wid = id_wid
         self.single_cycle = single_cycle
 
+        self.ids = FPID(id_wid)
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
@@ -1465,8 +1465,8 @@ class FPADD(FPID):
 
         ab = FPADDBase(self.width, self.id_wid, self.single_cycle)
         ab = self.add_state(ab)
-        ab.setup(m, a, b, getb.out_decode, self.in_mid,
-                 self.out_z, self.out_mid)
+        ab.setup(m, a, b, getb.out_decode, self.ids.in_mid,
+                 self.out_z, self.ids.out_mid)
 
         #pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
         #                            ab.out_mid, self.out_mid))
