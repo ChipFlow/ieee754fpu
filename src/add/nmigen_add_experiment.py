@@ -1177,8 +1177,11 @@ class FPPack(FPState, FPID):
 
 class FPPutZ(FPState):
 
-    def __init__(self, state, in_z, out_z, in_mid, out_mid):
+    def __init__(self, state, in_z, out_z, in_mid, out_mid, to_state=None):
         FPState.__init__(self, state)
+        if to_state is None:
+            to_state = "get_ops"
+        self.to_state = to_state
         self.in_z = in_z
         self.out_z = out_z
         self.in_mid = in_mid
@@ -1192,7 +1195,7 @@ class FPPutZ(FPState):
         ]
         with m.If(self.out_z.stb & self.out_z.ack):
             m.d.sync += self.out_z.stb.eq(0)
-            m.next = "get_ops"
+            m.next = self.to_state
         with m.Else():
             m.d.sync += self.out_z.stb.eq(1)
 
@@ -1361,6 +1364,7 @@ class FPADDBase(FPState, FPID):
 
         m.d.sync += self.add_stb.eq(add_stb)
         m.d.sync += self.add_ack.eq(0) # sets to zero when not in active state
+        m.d.sync += self.out_z.ack.eq(0) # likewise
         #m.d.sync += self.in_t.stb.eq(0)
 
         m.submodules.fpadd = self.mod
@@ -1382,13 +1386,14 @@ class FPADDBase(FPState, FPID):
             with m.Else():
                 m.d.sync += [self.add_ack.eq(0),
                              self.in_t.stb.eq(0),
+                             self.out_z.ack.eq(1),
                             ]
         with m.Else():
             # done: acknowledge, and write out id and value
             m.d.sync += [self.add_ack.eq(1),
                          self.in_t.stb.eq(0)
                         ]
-            m.next = "get_a"
+            m.next = "put_z"
 
             return
 
@@ -1462,7 +1467,12 @@ class FPADD(FPID):
 
         in_a = self.rs[0][0]
         in_b = self.rs[0][1]
-        out_z = self.rs[0][2]
+        mout_z = self.rs[0][2]
+
+        out_z = FPOp(self.width)
+        out_mid = Signal(self.id_wid, reset_less=True)
+        m.submodules.out_z = out_z
+
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       in_a, self.width))
         geta.setup(m, in_a)
@@ -1476,10 +1486,10 @@ class FPADD(FPID):
         ab = FPADDBase(self.width, self.id_wid, self.single_cycle)
         ab = self.add_state(ab)
         ab.setup(m, a, b, getb.out_decode, self.ids.in_mid,
-                 out_z, self.ids.out_mid)
+                 out_z, out_mid)
 
-        #pz = self.add_state(FPPutZ("put_z", ab.out_z, self.out_z,
-        #                            ab.out_mid, self.out_mid))
+        pz = self.add_state(FPPutZ("put_z", ab.out_z, mout_z,
+                                    ab.out_mid, self.ids.out_mid, "get_a"))
 
         with m.FSM() as fsm:
 
