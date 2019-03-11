@@ -39,13 +39,13 @@ class FPGetSyncOpsMod:
         self.out_op = outops
         self.stb = Signal(num_ops)
         self.ack = Signal()
+        self.ready = Signal(reset_less=True)
         self.out_decode = Signal(reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
-        stb = Signal(reset_less=True)
-        m.d.comb += stb.eq(self.stb == Const(-1, (self.num_ops, False)))
-        m.d.comb += self.out_decode.eq(self.ack & stb)
+        m.d.comb += self.ready.eq(self.stb == Const(-1, (self.num_ops, False)))
+        m.d.comb += self.out_decode.eq(self.ack & self.ready)
         with m.If(self.out_decode):
             for i in range(self.num_ops):
                 m.d.comb += [
@@ -55,6 +55,37 @@ class FPGetSyncOpsMod:
 
     def ports(self):
         return self.in_op + self.out_op + [self.stb, self.ack]
+
+
+class InputGroup(Trigger):
+    def __init__(self, width, num_ops=2, num_rows=4):
+        Trigger.__init__(self)
+        self.width = width
+        self.num_ops = num_ops
+        self.num_rows = num_rows
+        self.rs = []
+        for i in range(num_rows):
+            self.rs.append(FPGetSyncOpsMod(width, num_ops))
+
+        outops = []
+        for i in range(num_ops):
+            outops.append(Signal(width, reset_less=True))
+        self.out_op = outops
+
+    def elaborate(self, platform):
+        m = Trigger.elaborate(platform)
+        pe = PriorityEncoder(self.num_rows)
+        m.submodules.selector = pe
+
+        # connect priority encoder
+        in_ready = []
+        for i in range(self.num_rows):
+            in_ready.append(self.rs[i].ready)
+        m.d.comb += self.pe.i.eq(Cat(*in_ready))
+        m.d.comb += self.stb.eq(pe.n) # strobe-out valid when encoder is active
+
+        return m
+
 
 class FPGetOpMod:
     def __init__(self, width):
