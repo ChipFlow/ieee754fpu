@@ -98,6 +98,7 @@ class InputGroup:
         pe = PriorityEncoder(self.num_rows)
         m.submodules.selector = pe
         m.submodules.out_op = self.out_op
+        m.submodules.out_op_v = self.out_op.v
         m.submodules += self.rs
 
         # connect priority encoder
@@ -105,12 +106,26 @@ class InputGroup:
         for i in range(self.num_rows):
             in_ready.append(self.rs[i].ready)
         m.d.comb += pe.i.eq(Cat(*in_ready))
-        m.d.comb += self.out_op.stb.eq(~pe.n) # strobe-out when encoder active
 
-        with m.If(self.out_op.trigger):
+        active = Signal(reset_less=True)
+        out_en = Signal(reset_less=True)
+        m.d.comb += active.eq(~pe.n) # encoder active
+        m.d.comb += out_en.eq(active & self.out_op.trigger)
+
+        # encoder active: ack relevant input, record MID, pass output
+        with m.If(out_en):
+            rs = self.rs[pe.o]
             m.d.sync += self.mid.eq(pe.o)
+            m.d.sync += rs.ack.eq(0)
+            m.d.sync += self.out_op.stb.eq(0)
             for j in range(self.num_ops):
-                m.d.sync += self.out_op.v[j].eq(self.rs[pe.o].out_op[j])
+                m.d.sync += self.out_op.v[j].eq(rs.out_op[j])
+        with m.Else():
+            m.d.sync += self.out_op.stb.eq(1)
+            # acks all default to zero
+            for i in range(self.num_rows):
+                m.d.sync += self.rs[i].ack.eq(1)
+
         return m
 
     def ports(self):
