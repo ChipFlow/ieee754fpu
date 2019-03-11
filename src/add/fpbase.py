@@ -398,7 +398,7 @@ class Trigger:
 
     def elaborate(self, platform):
         m = Module()
-        m.d.sync += self.trigger.eq(self.stb & self.ack)
+        m.d.comb += self.trigger.eq(self.stb & self.ack)
         return m
 
     def copy(self, inp):
