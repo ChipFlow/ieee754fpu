@@ -10,6 +10,7 @@ from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 #from fpbase import FPNumShiftMultiRight
 
+
 class FPState(FPBase):
     def __init__(self, state_from):
         self.state_from = state_from
@@ -1437,6 +1438,38 @@ class FPADDBase(FPState, FPID):
             with m.Else():
                 m.d.sync += self.out_z.stb.eq(1)
 
+class ResArray:
+    def __init__(self, width, id_wid):
+        self.width = width
+        self.id_wid = id_wid
+        res = []
+        for i in range(rs_sz):
+            out_z = FPOp(width)
+            out_z.name = "out_z_%d" % i
+            res.append(out_z)
+        self.res = Array(res)
+        self.in_z = FPOp(width)
+        self.in_mid = Signal(self.id_wid, reset_less=True)
+
+    def setup(self, m, in_z, in_mid):
+        m.d.comb += [self.in_z.copy(in_z),
+                     self.in_mid.eq(in_mid)]
+
+    def get_fragment(self, platform=None):
+        """ creates the HDL code-fragment for FPAdd
+        """
+        m = Module()
+        m.submodules.res_in_z = self.in_z
+        m.submodules += self.res
+
+        return m
+
+    def ports(self):
+        res = []
+        for z in self.res:
+            res += z.ports()
+        return res
+
 
 class FPADD(FPID):
     """ FPADD: stages as follows:
@@ -1520,7 +1553,7 @@ class FPADD(FPID):
                  out_z, out_mid)
 
         pz = self.add_state(FPPutZIdx("put_z", ab.out_z, self.res,
-                                    ab.out_mid, "get_a"))
+                                    out_mid, "get_a"))
 
         with m.FSM() as fsm:
 
