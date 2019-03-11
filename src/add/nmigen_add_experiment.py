@@ -58,9 +58,28 @@ class FPGetSyncOpsMod:
         return self.in_op + self.out_op + [self.stb, self.ack]
 
 
-class InputGroup(Trigger):
-    def __init__(self, width, num_ops=2, num_rows=4):
+class FPOps(Trigger):
+    def __init__(self, width, num_ops):
         Trigger.__init__(self)
+        self.width = width
+        self.num_ops = num_ops
+
+        res = []
+        for i in range(num_ops):
+            res.append(Signal(width))
+        self.v  = Array(res)
+
+    def ports(self):
+        res = []
+        for i in range(self.num_ops):
+            res.append(self.v[i])
+        res.append(self.ack)
+        res.append(self.stb)
+        return res
+
+
+class InputGroup:
+    def __init__(self, width, num_ops=2, num_rows=4):
         self.width = width
         self.num_ops = num_ops
         self.num_rows = num_rows
@@ -70,29 +89,29 @@ class InputGroup(Trigger):
         for i in range(num_rows):
             self.rs.append(FPGetSyncOpsMod(width, num_ops))
 
-        outops = []
-        for i in range(num_ops):
-            outops.append(Signal(width, reset_less=True))
-        self.out_op = outops
+        self.out_op = FPOps(width, num_ops)
 
     def elaborate(self, platform):
-        m = Trigger.elaborate(self, platform)
+        m = Module()
+
         pe = PriorityEncoder(self.num_rows)
         m.submodules.selector = pe
+        m.submodules.out_op = self.out_op
+        m.submodules += self.rs
 
         # connect priority encoder
         in_ready = []
         for i in range(self.num_rows):
             in_ready.append(self.rs[i].ready)
         m.d.comb += pe.i.eq(Cat(*in_ready))
-        m.d.comb += self.stb.eq(pe.n) # strobe-out valid when encoder is active
+        m.d.comb += self.out_op.stb.eq(pe.n) # strobe-out when encoder active
 
         with m.If(pe.n):
             m.d.sync += self.mid.eq(pe.o)
             for i in range(self.num_rows):
                 with m.If(pe.o == Const(i, (self.mmax, False))):
                     for j in range(self.num_ops):
-                        m.d.sync += self.out_op[j].eq(self.rs[i].out_op[j])
+                        m.d.sync += self.out_op.v[j].eq(self.rs[i].out_op[j])
         return m
 
     def ports(self):
@@ -100,7 +119,8 @@ class InputGroup(Trigger):
         for i in range(self.num_rows):
             inop = self.rs[i]
             res += inop.in_op + [inop.stb]
-        return self.out_op + res #+ [self.ack + self.stb]
+        return self.out_op.ports() + res + [self.ack + self.stb]
+
 
 class FPGetOpMod:
     def __init__(self, width):
