@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array
+from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 
@@ -25,6 +25,36 @@ class FPState(FPBase):
         for k,v in outputs.items():
             setattr(self, k, v)
 
+
+class FPGetSyncOpsMod:
+    def __init__(self, width, num_ops=2):
+        self.width = width
+        self.num_ops = num_ops
+        inops = []
+        outops = []
+        for i in range(num_ops):
+            inops.append(Signal(width, reset_less=True))
+            outops.append(Signal(width, reset_less=True))
+        self.in_op = inops
+        self.out_op = outops
+        self.stb = Signal(num_ops)
+        self.ack = Signal()
+        self.out_decode = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        stb = Signal(reset_less=True)
+        m.d.comb += stb.eq(self.stb == Const(-1, (self.num_ops, False)))
+        m.d.comb += self.out_decode.eq(self.ack & stb)
+        with m.If(self.out_decode):
+            for i in range(self.num_ops):
+                m.d.comb += [
+                        self.out_op[i].eq(self.in_op[i]),
+                ]
+        return m
+
+    def ports(self):
+        return self.in_op + self.out_op + [self.stb, self.ack]
 
 class FPGetOpMod:
     def __init__(self, width):
