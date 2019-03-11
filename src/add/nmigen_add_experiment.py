@@ -105,9 +105,9 @@ class InputGroup:
         for i in range(self.num_rows):
             in_ready.append(self.rs[i].ready)
         m.d.comb += pe.i.eq(Cat(*in_ready))
-        m.d.comb += self.out_op.stb.eq(pe.n) # strobe-out when encoder active
+        m.d.comb += self.out_op.stb.eq(~pe.n) # strobe-out when encoder active
 
-        with m.If(pe.n):
+        with m.If(self.out_op.trigger):
             m.d.sync += self.mid.eq(pe.o)
             for j in range(self.num_ops):
                 m.d.sync += self.out_op.v[j].eq(self.rs[pe.o].out_op[j])
