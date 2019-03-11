@@ -118,7 +118,7 @@ class InputGroup:
         for i in range(self.num_rows):
             inop = self.rs[i]
             res += inop.in_op + [inop.stb]
-        return self.out_op.ports() + res #+ [self.ack + self.stb]
+        return self.out_op.ports() + res + [self.mid]
 
 
 class FPGetOpMod:
