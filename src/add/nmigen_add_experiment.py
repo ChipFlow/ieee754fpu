@@ -5,6 +5,7 @@
 from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
+from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
@@ -63,7 +64,9 @@ class InputGroup(Trigger):
         self.width = width
         self.num_ops = num_ops
         self.num_rows = num_rows
+        self.mmax = int(log(self.num_rows) / log(2))
         self.rs = []
+        self.mid = Signal(self.mmax, reset_less=True) # multiplex id
         for i in range(num_rows):
             self.rs.append(FPGetSyncOpsMod(width, num_ops))
 
@@ -73,7 +76,7 @@ class InputGroup(Trigger):
         self.out_op = outops
 
     def elaborate(self, platform):
-        m = Trigger.elaborate(platform)
+        m = Trigger.elaborate(self, platform)
         pe = PriorityEncoder(self.num_rows)
         m.submodules.selector = pe
 
@@ -81,11 +84,23 @@ class InputGroup(Trigger):
         in_ready = []
         for i in range(self.num_rows):
             in_ready.append(self.rs[i].ready)
-        m.d.comb += self.pe.i.eq(Cat(*in_ready))
+        m.d.comb += pe.i.eq(Cat(*in_ready))
         m.d.comb += self.stb.eq(pe.n) # strobe-out valid when encoder is active
 
+        with m.If(pe.n):
+            m.d.sync += self.mid.eq(pe.o)
+            for i in range(self.num_rows):
+                with m.If(pe.o == Const(i, (self.mmax, False))):
+                    for j in range(self.num_ops):
+                        m.d.sync += self.out_op[j].eq(self.rs[i].out_op[j])
         return m
 
+    def ports(self):
+        res = []
+        for i in range(self.num_rows):
+            inop = self.rs[i]
+            res += inop.in_op + [inop.stb]
+        return self.out_op + res #+ [self.ack + self.stb]
 
 class FPGetOpMod:
     def __init__(self, width):
