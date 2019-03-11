@@ -88,6 +88,7 @@ class InputGroup:
         self.mid = Signal(self.mmax, reset_less=True) # multiplex id
         for i in range(num_rows):
             self.rs.append(FPGetSyncOpsMod(width, num_ops))
+        self.rs = Array(self.rs)
 
         self.out_op = FPOps(width, num_ops)
 
@@ -108,10 +109,8 @@ class InputGroup:
 
         with m.If(pe.n):
             m.d.sync += self.mid.eq(pe.o)
-            for i in range(self.num_rows):
-                with m.If(pe.o == Const(i, (self.mmax, False))):
-                    for j in range(self.num_ops):
-                        m.d.sync += self.out_op.v[j].eq(self.rs[i].out_op[j])
+            for j in range(self.num_ops):
+                m.d.sync += self.out_op.v[j].eq(self.rs[pe.o].out_op[j])
         return m
 
     def ports(self):
@@ -119,7 +118,7 @@ class InputGroup:
         for i in range(self.num_rows):
             inop = self.rs[i]
             res += inop.in_op + [inop.stb]
-        return self.out_op.ports() + res + [self.ack + self.stb]
+        return self.out_op.ports() + res #+ [self.ack + self.stb]
 
 
 class FPGetOpMod:
