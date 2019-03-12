@@ -1,3 +1,6 @@
+""" nmigen implementation of buffered pipeline stage, based on zipcpu:
+    https://zipcpu.com/blog/2017/08/14/strategies-for-pipelining.html
+"""
 from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
