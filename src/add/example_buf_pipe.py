@@ -6,6 +6,16 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 class BufPipe:
+    """ buffered pipeline stage
+
+        stage-1   i_p_stb  >>in   stage   o_n_stb  out>>   stage+1
+        stage-1   o_p_busy <<out  stage   i_n_busy <<in    stage+1
+        stage-1   i_data   >>in   stage   o_data   out>>   stage+1
+                              |             |
+                              +------->  process
+                              |             |
+                              +-- r_data ---+
+    """
     def __init__(self):
         # input
         #self.i_p_rst = Signal()    # >>in - comes in from PREVIOUS stage
@@ -31,17 +41,24 @@ class BufPipe:
     def elaborate(self, platform):
         m = Module()
 
+        o_p_busyn = Signal(reset_less=True)
         i_p_stb_o_p_busyn = Signal(reset_less=True)
-        m.d.comb += i_p_stb_o_p_busyn.eq(self.i_p_stb & (~self.o_p_busy))
+        m.d.comb += o_p_busyn.eq(~self.o_p_busy)
+        m.d.comb += i_p_stb_o_p_busyn.eq(self.i_p_stb & o_p_busyn)
+
+        result = Signal(32)
+        m.d.comb += result.eq(self.process(self.i_data))
+        with m.If(o_p_busyn): # not stalled
+            m.d.sync += self.r_data.eq(result)
 
         #with m.If(self.i_p_rst): # reset
         #    m.d.sync += self.o_n_stb.eq(0)
         #    m.d.sync += self.o_p_busy.eq(0)
         with m.If(~self.i_n_busy): # previous stage is not busy
-            with m.If(~self.o_p_busy): # not stalled
+            with m.If(o_p_busyn): # not stalled
                 # nothing in buffer: send input direct to output
                 m.d.sync += self.o_n_stb.eq(self.i_p_stb)
-                m.d.sync += self.o_data.eq(self.process(self.i_data))
+                m.d.sync += self.o_data.eq(result)
             with m.Else(): # o_p_busy is true, and something is in our buffer.
                 # Flush the buffer to the output port.
                 m.d.sync += self.o_n_stb.eq(1)
@@ -55,18 +72,18 @@ class BufPipe:
             m.d.sync += self.o_n_stb.eq(self.i_p_stb)
             m.d.sync += self.o_p_busy.eq(0) # Keep the buffer empty
             # Apply the logic to the input data, and set the output data
-            m.d.sync += self.o_data.eq(self.process(self.i_data))
+            m.d.sync += self.o_data.eq(result)
 
         # (i_n_busy) and (o_n_stb) both true:
         with m.Elif(i_p_stb_o_p_busyn):
             # If next stage *is* busy, and not stalled yet, accept requested
             # input and store in temporary
             m.d.sync += self.o_p_busy.eq(self.i_p_stb & self.o_n_stb)
-            with m.If(~self.o_n_stb):
-                m.d.sync += self.r_data.eq(self.i_data)
+            #with m.If(~self.o_n_stb):
+                #m.d.sync += self.r_data.eq(self.i_data)
 
-        with m.If(~self.o_p_busy): # not stalled
-            m.d.sync += self.r_data.eq(self.pre_process(self.i_data))
+        with m.If(o_p_busyn): # not stalled
+            m.d.sync += self.r_data.eq(self.process(self.i_data))
 
         return m
 
@@ -95,9 +112,12 @@ def testbench(dut):
     yield dut.i_n_busy.eq(1)
     yield dut.i_data.eq(9)
     yield
+    yield dut.i_p_stb.eq(0)
     yield dut.i_data.eq(12)
     yield
+    yield dut.i_data.eq(32)
     yield dut.i_n_busy.eq(0)
+    yield
     yield
     yield
     yield
