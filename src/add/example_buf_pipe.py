@@ -8,6 +8,7 @@ from nmigen.cli import verilog, rtlil
 class BufPipe:
     def __init__(self):
         # input
+        #self.i_p_rst = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_p_stb = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage
         self.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
@@ -22,7 +23,7 @@ class BufPipe:
         self.o_data = Signal(32) # out>> - goes out to the NEXT stage
 
     def pre_process(self, d_in):
-        return d_in
+        return d_in | 0xf0000
 
     def process(self, d_in):
         return d_in + 1
@@ -33,6 +34,9 @@ class BufPipe:
         i_p_stb_o_p_busyn = Signal(reset_less=True)
         m.d.comb += i_p_stb_o_p_busyn.eq(self.i_p_stb & (~self.o_p_busy))
 
+        #with m.If(self.i_p_rst): # reset
+        #    m.d.sync += self.o_n_stb.eq(0)
+        #    m.d.sync += self.o_p_busy.eq(0)
         with m.If(~self.i_n_busy): # previous stage is not busy
             with m.If(~self.o_p_busy): # not stalled
                 # nothing in buffer: send input direct to output
@@ -74,6 +78,13 @@ class BufPipe:
 
 
 def testbench(dut):
+    #yield dut.i_p_rst.eq(1)
+    yield dut.i_n_busy.eq(1)
+    yield dut.o_p_busy.eq(1)
+    yield
+    yield
+    #yield dut.i_p_rst.eq(0)
+    yield dut.i_n_busy.eq(0)
     yield dut.i_data.eq(5)
     yield dut.i_p_stb.eq(1)
     yield
