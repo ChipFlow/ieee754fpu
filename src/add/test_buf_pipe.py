@@ -88,7 +88,7 @@ def testbench2(dut):
 
 def testbench3(dut):
     data = []
-    for i in range(1000):
+    for i in range(10000):
         #data.append(randint(0, 1<<16-1))
         data.append(i+1)
     i = 0
@@ -119,7 +119,7 @@ def testbench3(dut):
 
 def testbench4(dut):
     data = []
-    for i in range(1000):
+    for i in range(10000):
         #data.append(randint(0, 1<<16-1))
         data.append(i+1)
     i = 0
