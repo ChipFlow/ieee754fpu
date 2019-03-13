@@ -42,6 +42,10 @@
 from nmigen.compat.sim import run_simulation
 from example_buf_pipe import BufPipe
 
+def check_o_n_stb(dut, val):
+    o_n_stb = yield dut.o_n_stb
+    assert o_n_stb == val
+
 
 def testbench(dut):
     #yield dut.i_p_rst.eq(1)
@@ -54,8 +58,12 @@ def testbench(dut):
     yield dut.i_data.eq(5)
     yield dut.i_p_stb.eq(1)
     yield
+
     yield dut.i_data.eq(7)
+    yield from check_o_n_stb(dut, 0) # effects of i_p_stb delayed
     yield
+    yield from check_o_n_stb(dut, 1) # ok *now* i_p_stb effect is felt
+
     yield dut.i_data.eq(2)
     yield
     yield dut.i_n_busy.eq(1)
@@ -67,8 +75,11 @@ def testbench(dut):
     yield dut.i_data.eq(32)
     yield dut.i_n_busy.eq(0)
     yield
+    yield from check_o_n_stb(dut, 1) # buffer still needs to output
     yield
+    yield from check_o_n_stb(dut, 1) # buffer still needs to output
     yield
+    yield from check_o_n_stb(dut, 0) # buffer outputted, *now* we're done.
     yield
 
 
