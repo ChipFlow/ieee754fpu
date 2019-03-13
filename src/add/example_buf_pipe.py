@@ -40,7 +40,6 @@
 """
 
 from nmigen import Signal, Cat, Const, Mux, Module
-from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 class BufPipe:
@@ -92,7 +91,8 @@ class BufPipe:
 
         # store result of processing in combinatorial temporary
         result = Signal(32)
-        m.d.comb += result.eq(self.process(self.i_data))
+        with m.If(self.i_p_stb): # input is valid: process it
+            m.d.comb += result.eq(self.process(self.i_data))
         with m.If(o_p_busyn): # not stalled
             m.d.sync += self.r_data.eq(result)
 
