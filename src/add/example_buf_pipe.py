@@ -76,14 +76,13 @@ class BufPipe:
 
         # (i_n_busy) and (o_n_stb) both true:
         with m.Elif(i_p_stb_o_p_busyn):
-            # If next stage *is* busy, and not stalled yet, accept requested
-            # input and store in temporary
+            # If next stage *is* busy, and not stalled yet, accept input
             m.d.sync += self.o_p_busy.eq(self.i_p_stb & self.o_n_stb)
-            #with m.If(~self.o_n_stb):
-                #m.d.sync += self.r_data.eq(self.i_data)
 
         with m.If(o_p_busyn): # not stalled
-            m.d.sync += self.r_data.eq(self.process(self.i_data))
+            # turns out that from all of the above conditions, just
+            # always put result into buffer if not busy
+            m.d.sync += self.r_data.eq(result)
 
         return m
 
