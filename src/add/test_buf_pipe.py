@@ -1,6 +1,8 @@
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 from example_buf_pipe import BufPipe
+from random import randint
+
 
 def check_o_n_stb(dut, val):
     o_n_stb = yield dut.o_n_stb
@@ -84,6 +86,68 @@ def testbench2(dut):
     yield
 
 
+def testbench3(dut):
+    data = []
+    for i in range(1000):
+        #data.append(randint(0, 1<<16-1))
+        data.append(i+1)
+    i = 0
+    o = 0
+    while True:
+        stall = randint(0, 3) == 0
+        send = randint(0, 5) != 0
+        yield dut.i_n_busy.eq(stall)
+        o_p_busy = yield dut.o_p_busy
+        if not o_p_busy:
+            if send and i != len(data):
+                yield dut.i_p_stb.eq(1)
+                yield dut.stage.i_data.eq(data[i])
+                i += 1
+            else:
+                yield dut.i_p_stb.eq(0)
+        yield
+        o_n_stb = yield dut.o_n_stb
+        i_n_busy = yield dut.i_n_busy
+        if o_n_stb and not i_n_busy:
+            o_data = yield dut.stage.o_data
+            assert o_data == data[o] + 1, "%d-%d data %x not match %x\n" \
+                                        % (i, o, o_data, data[o])
+            o += 1
+            if o == len(data):
+                break
+
+
+def testbench4(dut):
+    data = []
+    for i in range(1000):
+        #data.append(randint(0, 1<<16-1))
+        data.append(i+1)
+    i = 0
+    o = 0
+    while True:
+        stall = randint(0, 3) == 0
+        send = randint(0, 5) != 0
+        yield dut.i_n_busy.eq(stall)
+        o_p_busy = yield dut.o_p_busy
+        if not o_p_busy:
+            if send and i != len(data):
+                yield dut.i_p_stb.eq(1)
+                yield dut.i_data.eq(data[i])
+                i += 1
+            else:
+                yield dut.i_p_stb.eq(0)
+        yield
+        o_n_stb = yield dut.o_n_stb
+        i_n_busy = yield dut.i_n_busy
+        if o_n_stb and not i_n_busy:
+            o_data = yield dut.o_data
+            assert o_data == data[o] + 2, "%d-%d data %x not match %x\n" \
+                                        % (i, o, o_data, data[o])
+            o += 1
+            if o == len(data):
+                break
+
+
 class BufPipe2:
     """
         connect these:  ------|---------------|
@@ -134,3 +198,9 @@ if __name__ == '__main__':
 
     dut = BufPipe2()
     run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe2.vcd")
+
+    dut = BufPipe()
+    run_simulation(dut, testbench3(dut), vcd_name="test_bufpipe3.vcd")
+
+    dut = BufPipe2()
+    run_simulation(dut, testbench4(dut), vcd_name="test_bufpipe4.vcd")
