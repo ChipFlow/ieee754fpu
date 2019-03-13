@@ -58,16 +58,16 @@ class BufPipe:
         #self.i_p_rst = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_p_stb = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage
-        self.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
+        self.i_data = Signal(16) # >>in - comes in from the PREVIOUS stage
         #self.i_rst = Signal()
 
         # buffered
-        self.r_data = Signal(32)
+        self.r_data = Signal(16)
 
         # output
         self.o_n_stb = Signal()    # out>> - goes out to the NEXT stage
         self.o_p_busy = Signal()   # <<out - goes out to the PREVIOUS stage
-        self.o_data = Signal(32) # out>> - goes out to the NEXT stage
+        self.o_data = Signal(16) # out>> - goes out to the NEXT stage
 
     def pre_process(self, d_in):
         return d_in | 0xf0000
@@ -90,7 +90,7 @@ class BufPipe:
         ]
 
         # store result of processing in combinatorial temporary
-        result = Signal(32)
+        result = Signal(16)
         with m.If(self.i_p_stb): # input is valid: process it
             m.d.comb += result.eq(self.process(self.i_data))
         with m.If(o_p_busyn): # not stalled
