@@ -25,7 +25,8 @@
     not ready".  unfortunately, it's not possible to "change the past":
     the previous stage *has no choice* but to pass on its data.
 
-    therefore, the incoming data *must* be accepted - and stored.
+    therefore, the incoming data *must* be accepted - and stored: that
+    is the responsibility / contract that this stage *must* accept.
     on the same clock, it's possible to tell the input that it must
     not send any more data.  this is the "stall" condition.
 
@@ -36,13 +37,71 @@
     the buffer if a stall had previously occurred, otherwise it comes
     direct from processing the input.
 
+    this allows us to respect a synchronous "travelling STB" with what
+    dan calls a "buffered handshake".
+
     it's quite a complex state machine!
 """
 
 from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.cli import verilog, rtlil
 
-class BufPipe:
+
+class ExampleStage:
+    """ an example of how to use the buffered pipeline.  actual names of
+        variables (i_data, r_data, o_data, result) below do not matter:
+        the functions however do.
+
+        input data i_data is read (only), is processed and goes into an
+        intermediate result store [process()].  this is updated combinatorially.
+
+        in a non-stall condition, the intermediate result will go into the
+        output (update_output).  however if ever there is a stall, it goes
+        into r_data instead [update_buffer()].
+
+        when the non-stall condition is released, r_data is the first
+        to be transferred to the output [flush_buffer()], and the stall
+        condition cleared.
+
+        on the next cycle (as long as stall is not raised again) the
+        input may begin to be processed and transferred directly to output.
+    """
+
+    def __init__(self):
+        """ i_data can be a DIFFERENT type from everything else
+            o_data, r_data and result must be of the same type
+        """
+        self.i_data = Signal(16)
+        self.r_data = Signal(16)
+        self.o_data = Signal(16)
+        self.result = Signal(16)
+
+    def process(self):
+        """ process the input data and store it in result.
+            (not needed to be known: result is combinatorial)
+        """
+        return self.result.eq(self.i_data + 1)
+
+    def update_buffer(self):
+        """ copies the result into the intermediate register r_data
+        """
+        return self.r_data.eq(self.result)
+
+    def update_output(self):
+        """ copies the (combinatorial) result into the output
+        """
+        return self.o_data.eq(self.result)
+
+    def flush_buffer(self):
+        """ copies the *intermediate* register r_data into the output
+        """
+        return self.o_data.eq(self.r_data)
+
+    def ports(self):
+        return [self.i_data, self.o_data]
+
+
+class BufferedPipeline:
     """ buffered pipeline stage
 
         stage-1   i_p_stb  >>in   stage   o_n_stb  out>>   stage+1
@@ -54,26 +113,14 @@ class BufPipe:
                               +-- r_data ---+
     """
     def __init__(self):
-        # input
+        # input: strobe comes in from previous stage, busy comes in from next
         #self.i_p_rst = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_p_stb = Signal()    # >>in - comes in from PREVIOUS stage
         self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage
-        self.i_data = Signal(16) # >>in - comes in from the PREVIOUS stage
-        #self.i_rst = Signal()
 
-        # buffered
-        self.r_data = Signal(16)
-
-        # output
+        # output: strobe goes out to next stage, busy comes in from previous
         self.o_n_stb = Signal()    # out>> - goes out to the NEXT stage
         self.o_p_busy = Signal()   # <<out - goes out to the PREVIOUS stage
-        self.o_data = Signal(16) # out>> - goes out to the NEXT stage
-
-    def pre_process(self, d_in):
-        return d_in | 0xf0000
-
-    def process(self, d_in):
-        return d_in + 1
 
     def elaborate(self, platform):
         m = Module()
@@ -90,25 +137,25 @@ class BufPipe:
         ]
 
         # store result of processing in combinatorial temporary
-        result = Signal(16)
         with m.If(self.i_p_stb): # input is valid: process it
-            m.d.comb += result.eq(self.process(self.i_data))
+            m.d.comb += self.stage.process()
+        # if not in stall condition, update the temporary register
         with m.If(o_p_busyn): # not stalled
-            m.d.sync += self.r_data.eq(result)
+            m.d.sync += self.stage.update_buffer()
 
         #with m.If(self.i_p_rst): # reset
         #    m.d.sync += self.o_n_stb.eq(0)
         #    m.d.sync += self.o_p_busy.eq(0)
         with m.If(i_n_busyn): # next stage is not busy
             with m.If(o_p_busyn): # not stalled
-                # nothing in buffer: send input direct to output
+                # nothing in buffer: send (processed) input direct to output
                 m.d.sync += [self.o_n_stb.eq(self.i_p_stb),
-                             self.o_data.eq(result),
+                             self.stage.update_output(),
                             ]
             with m.Else(): # o_p_busy is true, and something is in our buffer.
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.o_n_stb.eq(1),
-                             self.o_data.eq(self.r_data),
+                             self.stage.flush_buffer(),
                              # clear stall condition, declare register empty.
                              self.o_p_busy.eq(0),
                             ]
@@ -119,25 +166,29 @@ class BufPipe:
             m.d.sync += [self.o_n_stb.eq(self.i_p_stb),
                          self.o_p_busy.eq(0), # Keep the buffer empty
                          # set the output data (from comb result)
-                         self.o_data.eq(result),
+                         self.stage.update_output(),
                         ]
         # (i_n_busy) and (o_n_stb) both true:
         with m.Elif(i_p_stb_o_p_busyn):
             # If next stage *is* busy, and not stalled yet, accept input
             m.d.sync += self.o_p_busy.eq(self.i_p_stb & self.o_n_stb)
 
-        with m.If(o_p_busyn): # not stalled
-            # turns out that from all of the above conditions, just
-            # always put result into buffer if not busy
-            m.d.sync += self.r_data.eq(result)
-
         return m
 
     def ports(self):
-        return [self.i_p_stb, self.i_n_busy, self.i_data,
-                self.r_data,
-                self.o_n_stb, self.o_p_busy, self.o_data
+        return [self.i_p_stb, self.i_n_busy,
+                self.o_n_stb, self.o_p_busy,
                ]
+
+
+class BufPipe(BufferedPipeline, ExampleStage):
+
+    def __init__(self):
+        BufferedPipeline.__init__(self)
+        self.stage = ExampleStage()
+
+    def ports(self):
+        return self.stage.ports() + BufferedPipeline.ports(self)
 
 
 if __name__ == '__main__':
@@ -145,4 +196,3 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_bufpipe.il", "w") as f:
         f.write(vl)
-

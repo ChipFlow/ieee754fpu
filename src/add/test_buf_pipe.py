@@ -15,24 +15,24 @@ def testbench(dut):
     yield
     #yield dut.i_p_rst.eq(0)
     yield dut.i_n_busy.eq(0)
-    yield dut.i_data.eq(5)
+    yield dut.stage.i_data.eq(5)
     yield dut.i_p_stb.eq(1)
     yield
 
-    yield dut.i_data.eq(7)
+    yield dut.stage.i_data.eq(7)
     yield from check_o_n_stb(dut, 0) # effects of i_p_stb delayed
     yield
     yield from check_o_n_stb(dut, 1) # ok *now* i_p_stb effect is felt
 
-    yield dut.i_data.eq(2)
+    yield dut.stage.i_data.eq(2)
     yield
     yield dut.i_n_busy.eq(1) # begin going into "stall" (next stage says busy)
-    yield dut.i_data.eq(9)
+    yield dut.stage.i_data.eq(9)
     yield
     yield dut.i_p_stb.eq(0)
-    yield dut.i_data.eq(12)
+    yield dut.stage.i_data.eq(12)
     yield
-    yield dut.i_data.eq(32)
+    yield dut.stage.i_data.eq(32)
     yield dut.i_n_busy.eq(0)
     yield
     yield from check_o_n_stb(dut, 1) # buffer still needs to output
@@ -90,7 +90,7 @@ class BufPipe2:
                               v               v
         i_p_stb  >>in  pipe1 o_n_stb  out>> i_p_stb  >>in  pipe2
         o_p_busy <<out pipe1 i_n_busy <<in  o_p_busy <<out pipe2
-        i_data   >>in  pipe1 o_data   out>> i_data   >>in  pipe2
+        stage.i_data   >>in  pipe1 o_data   out>> stage.i_data   >>in  pipe2
     """
     def __init__(self):
         self.pipe1 = BufPipe()
@@ -114,17 +114,17 @@ class BufPipe2:
         # connect inter-pipe input/output stb/busy/data
         m.d.comb += self.pipe2.i_p_stb.eq(self.pipe1.o_n_stb)
         m.d.comb += self.pipe1.i_n_busy.eq(self.pipe2.o_p_busy)
-        m.d.comb += self.pipe2.i_data.eq(self.pipe1.o_data)
+        m.d.comb += self.pipe2.stage.i_data.eq(self.pipe1.stage.o_data)
 
         # inputs/outputs to the module: pipe1 connections here (LHS)
         m.d.comb += self.pipe1.i_p_stb.eq(self.i_p_stb)
         m.d.comb += self.o_p_busy.eq(self.pipe1.o_p_busy)
-        m.d.comb += self.pipe1.i_data.eq(self.i_data)
+        m.d.comb += self.pipe1.stage.i_data.eq(self.i_data)
 
         # now pipe2 connections (RHS)
         m.d.comb += self.o_n_stb.eq(self.pipe2.o_n_stb)
         m.d.comb += self.pipe2.i_n_busy.eq(self.i_n_busy)
-        m.d.comb += self.o_data.eq(self.pipe2.o_data)
+        m.d.comb += self.o_data.eq(self.pipe2.stage.o_data)
 
         return m
 
