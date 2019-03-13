@@ -79,15 +79,18 @@ class BufPipe:
     def elaborate(self, platform):
         m = Module()
 
+        # establish some combinatorial temporaries
         o_p_busyn = Signal(reset_less=True)
         o_n_stbn = Signal(reset_less=True)
         i_n_busyn = Signal(reset_less=True)
         i_p_stb_o_p_busyn = Signal(reset_less=True)
-        m.d.comb += i_n_busyn.eq(~self.i_n_busy)
-        m.d.comb += o_n_stbn.eq(~self.o_n_stb)
-        m.d.comb += o_p_busyn.eq(~self.o_p_busy)
-        m.d.comb += i_p_stb_o_p_busyn.eq(self.i_p_stb & o_p_busyn)
+        m.d.comb += [i_n_busyn.eq(~self.i_n_busy),
+                     o_n_stbn.eq(~self.o_n_stb),
+                     o_p_busyn.eq(~self.o_p_busy),
+                     i_p_stb_o_p_busyn.eq(self.i_p_stb & o_p_busyn),
+        ]
 
+        # store result of processing in combinatorial temporary
         result = Signal(32)
         m.d.comb += result.eq(self.process(self.i_data))
         with m.If(o_p_busyn): # not stalled
@@ -99,23 +102,25 @@ class BufPipe:
         with m.If(i_n_busyn): # next stage is not busy
             with m.If(o_p_busyn): # not stalled
                 # nothing in buffer: send input direct to output
-                m.d.sync += self.o_n_stb.eq(self.i_p_stb)
-                m.d.sync += self.o_data.eq(result)
+                m.d.sync += [self.o_n_stb.eq(self.i_p_stb),
+                             self.o_data.eq(result),
+                            ]
             with m.Else(): # o_p_busy is true, and something is in our buffer.
                 # Flush the [already processed] buffer to the output port.
-                m.d.sync += self.o_n_stb.eq(1)
-                m.d.sync += self.o_data.eq(self.r_data)
+                m.d.sync += [self.o_n_stb.eq(1),
+                             self.o_data.eq(self.r_data),
+                             # clear stall condition, declare register empty.
+                             self.o_p_busy.eq(0),
+                            ]
                 # ignore input, since o_p_busy is also true.
-                # also clear stall condition, declare register to be empty.
-                m.d.sync += self.o_p_busy.eq(0)
 
         # (i_n_busy) is true here: next stage is busy
         with m.Elif(o_n_stbn): # next stage being told "not busy"
-            m.d.sync += self.o_n_stb.eq(self.i_p_stb)
-            m.d.sync += self.o_p_busy.eq(0) # Keep the buffer empty
-            # Apply the logic to the input data, and set the output data
-            m.d.sync += self.o_data.eq(result)
-
+            m.d.sync += [self.o_n_stb.eq(self.i_p_stb),
+                         self.o_p_busy.eq(0), # Keep the buffer empty
+                         # set the output data (from comb result)
+                         self.o_data.eq(result),
+                        ]
         # (i_n_busy) and (o_n_stb) both true:
         with m.Elif(i_p_stb_o_p_busyn):
             # If next stage *is* busy, and not stalled yet, accept input
