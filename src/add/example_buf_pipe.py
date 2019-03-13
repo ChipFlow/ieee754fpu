@@ -140,39 +140,9 @@ class BufPipe:
                ]
 
 
-def testbench(dut):
-    #yield dut.i_p_rst.eq(1)
-    yield dut.i_n_busy.eq(1)
-    yield dut.o_p_busy.eq(1)
-    yield
-    yield
-    #yield dut.i_p_rst.eq(0)
-    yield dut.i_n_busy.eq(0)
-    yield dut.i_data.eq(5)
-    yield dut.i_p_stb.eq(1)
-    yield
-    yield dut.i_data.eq(7)
-    yield
-    yield dut.i_data.eq(2)
-    yield
-    yield dut.i_n_busy.eq(1)
-    yield dut.i_data.eq(9)
-    yield
-    yield dut.i_p_stb.eq(0)
-    yield dut.i_data.eq(12)
-    yield
-    yield dut.i_data.eq(32)
-    yield dut.i_n_busy.eq(0)
-    yield
-    yield
-    yield
-    yield
-
-
 if __name__ == '__main__':
     dut = BufPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_bufpipe.il", "w") as f:
         f.write(vl)
-    run_simulation(dut, testbench(dut), vcd_name="test_bufpipe.vcd")
 
