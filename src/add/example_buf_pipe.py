@@ -42,7 +42,9 @@ class BufPipe:
         m = Module()
 
         o_p_busyn = Signal(reset_less=True)
+        o_n_stbn = Signal(reset_less=True)
         i_p_stb_o_p_busyn = Signal(reset_less=True)
+        m.d.comb += o_n_stbn.eq(~self.o_n_stb)
         m.d.comb += o_p_busyn.eq(~self.o_p_busy)
         m.d.comb += i_p_stb_o_p_busyn.eq(self.i_p_stb & o_p_busyn)
 
@@ -68,7 +70,7 @@ class BufPipe:
             m.d.sync += self.o_p_busy.eq(0)
 
         # (i_n_busy) is true here: previous stage is busy
-        with m.Elif(~self.o_n_stb): # next stage being told "not busy"
+        with m.Elif(o_n_stbn): # next stage being told "not busy"
             m.d.sync += self.o_n_stb.eq(self.i_p_stb)
             m.d.sync += self.o_p_busy.eq(0) # Keep the buffer empty
             # Apply the logic to the input data, and set the output data
