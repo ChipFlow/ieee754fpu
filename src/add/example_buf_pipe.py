@@ -181,7 +181,7 @@ class BufferedPipeline:
                ]
 
 
-class BufPipe(BufferedPipeline, ExampleStage):
+class BufPipe(BufferedPipeline):
 
     def __init__(self):
         BufferedPipeline.__init__(self)

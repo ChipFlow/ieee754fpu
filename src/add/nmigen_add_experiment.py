@@ -98,7 +98,6 @@ class InputGroup:
         pe = PriorityEncoder(self.num_rows)
         m.submodules.selector = pe
         m.submodules.out_op = self.out_op
-        m.submodules.out_op_v = self.out_op.v
         m.submodules += self.rs
 
         # connect priority encoder
@@ -822,7 +821,7 @@ class FPAddStage1Mod(FPState):
         #m.submodules.norm1_in_z = self.in_z
         #m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.out_z.copy(self.in_z)
-        # tot[27] gets set when the sum overflows. shift result down
+        # tot[-1] (MSB) gets set when the sum overflows. shift result down
         with m.If(self.in_tot[-1]):
             m.d.comb += [
                 self.out_z.m.eq(self.in_tot[4:]),
@@ -832,7 +831,7 @@ class FPAddStage1Mod(FPState):
                 self.out_of.sticky.eq(self.in_tot[1] | self.in_tot[0]),
                 self.out_z.e.eq(self.in_z.e + 1)
         ]
-        # tot[27] zero case
+        # tot[-1] (MSB) zero case
         with m.Else():
             m.d.comb += [
                 self.out_z.m.eq(self.in_tot[3:]),
