@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
-from fpbase import FPNum, FPOp, Overflow, FPBase
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
 class Div:
     def __init__(self, width):
@@ -42,13 +42,17 @@ class FPDIV(FPBase):
         m = Module()
 
         # Latches
-        a = FPNum(self.width, False)
-        b = FPNum(self.width, False)
-        z = FPNum(self.width, False)
+        a = FPNumIn(None, self.width, False)
+        b = FPNumIn(None, self.width, False)
+        z = FPNumOut(self.width, False)
 
         div = Div(a.m_width*2 + 3) # double the mantissa width plus g/r/sticky
 
         of = Overflow()
+        m.submodules.in_a = a
+        m.submodules.in_b = b
+        m.submodules.z = z
+        m.submodules.of = of
 
         with m.FSM() as fsm:
 
@@ -72,36 +76,36 @@ class FPDIV(FPBase):
             with m.State("special_cases"):
 
                 # if a is NaN or b is NaN return NaN
-                with m.If(a.is_nan() | b.is_nan()):
+                with m.If(a.is_nan | b.is_nan):
                     m.next = "put_z"
                     m.d.sync += z.nan(1)
 
                 # if a is Inf and b is Inf return NaN
-                with m.Elif(a.is_inf() & b.is_inf()):
+                with m.Elif(a.is_inf & b.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.nan(1)
 
                 # if a is inf return inf (or NaN if b is zero)
-                with m.Elif(a.is_inf()):
+                with m.Elif(a.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s ^ b.s)
 
                 # if b is inf return zero
-                with m.Elif(b.is_inf()):
+                with m.Elif(b.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.zero(a.s ^ b.s)
 
                 # if a is zero return zero (or NaN if b is zero)
-                with m.Elif(a.is_zero()):
+                with m.Elif(a.is_zero):
                     m.next = "put_z"
                     # if b is zero return NaN
-                    with m.If(b.is_zero()):
+                    with m.If(b.is_zero):
                         m.d.sync += z.nan(1)
                     with m.Else():
                         m.d.sync += z.zero(a.s ^ b.s)
 
                 # if b is zero return Inf
-                with m.Elif(b.is_zero()):
+                with m.Elif(b.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s ^ b.s)
 
@@ -194,7 +198,8 @@ class FPDIV(FPBase):
             # rounding stage
 
             with m.State("round"):
-                self.roundz(m, z, of, "corrections")
+                self.roundz(m, z, of.roundz)
+                m.next = "corrections"
 
             # ******
             # correction stage
