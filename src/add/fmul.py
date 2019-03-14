@@ -127,7 +127,8 @@ class FPMUL(FPBase):
             # rounding stage
 
             with m.State("round"):
-                self.roundz(m, z, of, "corrections")
+                self.roundz(m, z, z, of.roundz)
+                m.next = "corrections"
 
             # ******
             # correction stage

@@ -561,11 +561,11 @@ class FPBase:
     def roundz(self, m, z, out_z, roundz):
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
-        m.d.comb += out_z.copy(z) # copies input to output first
+        #m.d.comb += out_z.copy(z) # copies input to output first
         with m.If(roundz):
-            m.d.comb += out_z.m.eq(z.m + 1) # mantissa rounds up
+            m.d.sync += out_z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
-                m.d.comb += out_z.e.eq(z.e + 1) # exponent rounds up
+                m.d.sync += out_z.e.eq(z.e + 1) # exponent rounds up
 
     def corrections(self, m, z, next_state):
         """ denormalisation and sign-bug corrections
