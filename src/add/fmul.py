@@ -1,7 +1,7 @@
 from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 
-from fpbase import FPNum, FPOp, Overflow, FPBase
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 from nmigen_add_experiment import FPState
 
 class FPMUL(FPBase):
@@ -20,9 +20,9 @@ class FPMUL(FPBase):
         m = Module()
 
         # Latches
-        a = FPNum(self.width, False)
-        b = FPNum(self.width, False)
-        z = FPNum(self.width, False)
+        a = FPNumIn(None, self.width, False)
+        b = FPNumIn(None, self.width, False)
+        z = FPNumOut(self.width, False)
 
         mw = (z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         product = Signal(mw)
@@ -48,30 +48,30 @@ class FPMUL(FPBase):
 
             with m.State("special_cases"):
                 #if a or b is NaN return NaN
-                with m.If(a.is_nan() | b.is_nan()):
+                with m.If(a.is_nan | b.is_nan):
                     m.next = "put_z"
                     m.d.sync += z.nan(1)
                 #if a is inf return inf
-                with m.Elif(a.is_inf()):
+                with m.Elif(a.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s ^ b.s)
                     #if b is zero return NaN
-                    with m.If(b.is_zero()):
+                    with m.If(b.is_zero):
                         m.d.sync += z.nan(1)
                 #if b is inf return inf
-                with m.Elif(b.is_inf()):
+                with m.Elif(b.is_inf):
                     m.next = "put_z"
                     m.d.sync += z.inf(a.s ^ b.s)
                     #if a is zero return NaN
-                    with m.If(a.is_zero()):
+                    with m.If(a.is_zero):
                         m.next = "put_z"
                         m.d.sync += z.nan(1)
                 #if a is zero return zero
-                with m.Elif(a.is_zero()):
+                with m.Elif(a.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.zero(a.s ^ b.s)
                 #if b is zero return zero
-                with m.Elif(b.is_zero()):
+                with m.Elif(b.is_zero):
                     m.next = "put_z"
                     m.d.sync += z.zero(a.s ^ b.s)
                 # Denormalised Number checks
