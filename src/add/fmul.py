@@ -2,24 +2,7 @@ from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 
 from fpbase import FPNum, FPOp, Overflow, FPBase
-
-class FPState(FPBase):
-    def __init__(self, state_from):
-        self.state_from = state_from
-
-    def set_inputs(self, inputs):
-        self.inputs = inputs
-        for k,v in inputs.items():
-            setattr(self, k, v)
-
-    def set_outputs(self, outputs):
-        self.outputs = outputs
-        for k,v in outputs.items():
-            setattr(self, k, v)
-
-'''
-
-# OLD DESIGN #
+from nmigen_add_experiment import FPState
 
 class FPMUL(FPBase):
 
@@ -169,5 +152,3 @@ class FPMUL(FPBase):
 if __name__ == "__main__":
     alu = FPMUL(width=32)
     main(alu, ports=alu.in_a.ports() + alu.in_b.ports() + alu.out_z.ports())
-    
-'''
