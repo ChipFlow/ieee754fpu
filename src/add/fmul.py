@@ -28,6 +28,10 @@ class FPMUL(FPBase):
         product = Signal(mw)
 
         of = Overflow()
+        m.submodules.of = of
+        m.submodules.a = a
+        m.submodules.b = b
+        m.submodules.z = z
 
         with m.FSM() as fsm:
 
@@ -127,7 +131,7 @@ class FPMUL(FPBase):
             # rounding stage
 
             with m.State("round"):
-                self.roundz(m, z, of)
+                self.roundz(m, z, of.roundz)
                 m.next = "corrections"
 
             # ******

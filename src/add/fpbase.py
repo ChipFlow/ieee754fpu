@@ -558,10 +558,10 @@ class FPBase:
         with m.Else():
             m.next = next_state
 
-    def roundz(self, m, z, of):
+    def roundz(self, m, z, roundz):
         """ performs rounding on the output.  TODO: different kinds of rounding
         """
-        with m.If(of.guard & (of.round_bit | of.sticky | z.m[0])):
+        with m.If(roundz):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
             with m.If(z.m == z.m1s): # all 1s
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
