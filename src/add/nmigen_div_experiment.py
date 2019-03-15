@@ -6,6 +6,7 @@ from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
+from nmigen_add_experiment import FPState
 
 class Div:
     def __init__(self, width):
@@ -35,6 +36,12 @@ class FPDIV(FPBase):
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
+
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+        return state
 
     def get_fragment(self, platform=None):
         """ creates the HDL code-fragment for FPDiv
