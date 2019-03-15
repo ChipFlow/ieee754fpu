@@ -70,7 +70,7 @@ class ExampleStage:
     def __init__(self):
         """ i_data can be a DIFFERENT type from everything else
             o_data, r_data and result are best of the same type.
-            however this is not strictly the case.  an intermediate
+            however this is not strictly necessary.  an intermediate
             transformation process could hypothetically be applied, however
             it is result and r_data that definitively need to be of the same
             (intermediary) type, as it is both result and r_data that
@@ -93,7 +93,9 @@ class ExampleStage:
         return self.result.eq(self.i_data + 1)
 
     def update_buffer(self):
-        """ copies the result into the intermediate register r_data
+        """ copies the result into the intermediate register r_data,
+            which will need to be outputted on a subsequent cycle
+            prior to allowing "normal" operation.
         """
         return self.r_data.eq(self.result)
 
