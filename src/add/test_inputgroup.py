@@ -130,7 +130,7 @@ class InputTest:
             yield rs.stb.eq(0)
 
             # wait random period of time before queueing another value
-            for i in range(randint(0, 12)):
+            for i in range(randint(0, 8)):
                 yield
 
     def recv(self):
@@ -138,10 +138,10 @@ class InputTest:
             stb = yield dut.out_op.stb
             yield dut.out_op.ack.eq(0)
             while not stb:
+                yield dut.out_op.ack.eq(1)
                 yield
                 stb = yield dut.out_op.stb
 
-            yield dut.out_op.ack.eq(1)
             stb = yield dut.out_op.stb
             while stb:
                 yield
