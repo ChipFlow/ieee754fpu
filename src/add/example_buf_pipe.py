@@ -113,23 +113,23 @@ class ExampleStage:
 class IOAckIn:
 
     def __init__(self):
-        self.p_valid = Signal()  # >>in - comes in from PREVIOUS stage
+        self.p_valid = Signal() # >>in - comes in from PREVIOUS stage
         self.n_ready = Signal() # in<< - comes in from the NEXT stage
 
 
 class IOAckOut:
 
     def __init__(self):
-        self.n_valid = Signal()  # out>> - goes out to the NEXT stage
+        self.n_valid = Signal() # out>> - goes out to the NEXT stage
         self.p_ready = Signal() # <<out - goes out to the PREVIOUS stage
 
 
 class BufferedPipeline:
     """ buffered pipeline stage
 
-        stage-1   i.p_valid  >>in   stage   o.n_valid  out>>   stage+1
+        stage-1   i.p_valid >>in   stage   o.n_valid out>>   stage+1
         stage-1   o.p_ready <<out  stage   i.n_ready <<in    stage+1
-        stage-1   i_data   >>in   stage   o_data   out>>   stage+1
+        stage-1   i_data    >>in   stage   o_data    out>>   stage+1
                               |             |
                               +------->  process
                               |             |
@@ -150,13 +150,9 @@ class BufferedPipeline:
         m = Module()
 
         # establish some combinatorial temporaries
-        o_p_readyn = Signal(reset_less=True)
         o_n_validn = Signal(reset_less=True)
-        i_n_readyn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
-        m.d.comb += [i_n_readyn.eq(~self.i.n_ready),
-                     o_n_validn.eq(~self.o.n_valid),
-                     o_p_readyn.eq(~self.o.p_ready),
+        m.d.comb += [o_n_validn.eq(~self.o.n_valid),
                      i_p_valid_o_p_ready.eq(self.i.p_valid & self.o.p_ready),
         ]
 
