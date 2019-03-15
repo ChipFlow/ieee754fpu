@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
-from nmigen_add_experiment import FPState
+from nmigen_add_experiment import FPState, FPGetOp
 
 class Div:
     def __init__(self, width):
@@ -66,14 +66,26 @@ class FPDIV(FPBase):
             # ******
             # gets operand a
 
+            geta = FPGetOp("get_a", "get_b", self.in_a, self.width)
+            geta.setup(m, self.in_a)
+
             with m.State("get_a"):
-                self.get_op(m, self.in_a, a, "get_b")
+                geta.action(m)
+                with m.If(geta.out_decode):
+                    m.d.sync += a.decode(self.in_a.v)
+                #self.get_op(m, self.in_a, a, "get_b")
 
             # ******
             # gets operand b
 
+            getb = FPGetOp("get_b", "special_cases", self.in_b, self.width)
+            getb.setup(m, self.in_b)
+
             with m.State("get_b"):
-                self.get_op(m, self.in_b, b, "special_cases")
+                getb.action(m)
+                with m.If(getb.out_decode):
+                    m.d.sync += b.decode(self.in_b.v)
+                #self.get_op(m, self.in_b, b, "special_cases")
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
