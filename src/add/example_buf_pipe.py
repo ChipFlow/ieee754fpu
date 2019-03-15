@@ -69,7 +69,17 @@ class ExampleStage:
 
     def __init__(self):
         """ i_data can be a DIFFERENT type from everything else
-            o_data, r_data and result must be of the same type
+            o_data, r_data and result are best of the same type.
+            however this is not strictly the case.  an intermediate
+            transformation process could hypothetically be applied, however
+            it is result and r_data that definitively need to be of the same
+            (intermediary) type, as it is both result and r_data that
+            are transferred into o_data:
+
+            i_data -> process() -> result --> o_data
+                                     |           ^
+                                     |           |
+                                     +-> r_data -+
         """
         self.i_data = Signal(16)
         self.r_data = Signal(16)
