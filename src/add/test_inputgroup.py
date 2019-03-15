@@ -99,9 +99,81 @@ def testbench(dut):
     assert out_mid == 3, "out mid %d" % out_mid
 
 
+class InputTest:
+    def __init__(self, dut):
+        self.dut = dut
+        self.di = {}
+        self.do = {}
+        self.tlen = 10
+        for mid in range(dut.num_rows):
+            self.di[mid] = {}
+            self.do[mid] = {}
+            for i in range(self.tlen):
+                self.di[mid][i] = randint(0, 100)
+                self.do[mid][i] = self.di[mid][i]
+
+    def send(self, mid):
+        for i in range(self.tlen):
+            op2 = self.di[mid][i]
+            rs = dut.rs[mid]
+            ack = yield rs.ack
+            while not ack:
+                yield
+                ack = yield rs.ack
+            yield rs.in_op[0].eq(i)
+            yield rs.in_op[1].eq(op2)
+            yield rs.stb.eq(0b11) # strobe indicate 1st op ready
+            ack = yield rs.ack
+            while ack:
+                yield
+                ack = yield rs.ack
+            yield rs.stb.eq(0)
+
+            # wait random period of time before queueing another value
+            for i in range(randint(0, 12)):
+                yield
+
+    def recv(self):
+        while True:
+            stb = yield dut.out_op.stb
+            yield dut.out_op.ack.eq(0)
+            while not stb:
+                yield
+                stb = yield dut.out_op.stb
+
+            yield dut.out_op.ack.eq(1)
+            stb = yield dut.out_op.stb
+            while stb:
+                yield
+                stb = yield dut.out_op.stb
+            mid = yield dut.mid
+            out_i = yield dut.out_op.v[0]
+            out_v = yield dut.out_op.v[1]
+
+            # see if this output has occurred already, delete it if it has
+            assert out_i in self.do[mid]
+            assert self.do[mid][out_i] == out_v
+            del self.do[mid][out_i]
+
+            # check if there's any more outputs
+            zerolen = True
+            for (k, v) in self.do.items():
+                if v:
+                    zerolen = False
+            if zerolen:
+                break
+
 if __name__ == '__main__':
     dut = InputGroup(width=32)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_inputgroup.il", "w") as f:
         f.write(vl)
     run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")
+
+    dut = InputGroup(width=16)
+    test = InputTest(dut)
+    run_simulation(dut, [test.send(3), test.send(2),
+                         test.send(1), test.send(0),
+                         test.recv()],
+                   vcd_name="test_inputgroup_parallel.vcd")
+
