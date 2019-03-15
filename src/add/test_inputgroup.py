@@ -138,10 +138,10 @@ class InputTest:
             stb = yield dut.out_op.stb
             yield dut.out_op.ack.eq(0)
             while not stb:
+                yield dut.out_op.ack.eq(1)
                 yield
                 stb = yield dut.out_op.stb
 
-            yield dut.out_op.ack.eq(1)
             stb = yield dut.out_op.stb
             while stb:
                 yield
