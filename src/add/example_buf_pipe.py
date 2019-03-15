@@ -203,7 +203,7 @@ class BufferedPipeline:
                ]
 
 
-class BufPipe(BufferedPipeline):
+class ExampleBufPipe(BufferedPipeline):
 
     def __init__(self):
         BufferedPipeline.__init__(self)

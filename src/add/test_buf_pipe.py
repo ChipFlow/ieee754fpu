@@ -1,6 +1,6 @@
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
-from example_buf_pipe import BufPipe
+from example_buf_pipe import ExampleBufPipe
 from random import randint
 
 
@@ -171,7 +171,7 @@ def testbench4(dut):
                 break
 
 
-class BufPipe2:
+class ExampleBufPipe2:
     """
         connect these:  ------|---------------|
                               v               v
@@ -180,8 +180,8 @@ class BufPipe2:
         stage.i_data   >>in  pipe1 o_data   out>> stage.i_data   >>in  pipe2
     """
     def __init__(self):
-        self.pipe1 = BufPipe()
-        self.pipe2 = BufPipe()
+        self.pipe1 = ExampleBufPipe()
+        self.pipe2 = ExampleBufPipe()
 
         # input
         self.i_p_valid = Signal()    # >>in - comes in from PREVIOUS stage
@@ -217,18 +217,18 @@ class BufPipe2:
 
 if __name__ == '__main__':
     print ("test 1")
-    dut = BufPipe()
+    dut = ExampleBufPipe()
     run_simulation(dut, testbench(dut), vcd_name="test_bufpipe.vcd")
 
     print ("test 2")
-    dut = BufPipe2()
+    dut = ExampleBufPipe2()
     run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe2.vcd")
 
     print ("test 3")
-    dut = BufPipe()
+    dut = ExampleBufPipe()
     test = Test3(dut)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
 
     print ("test 4")
-    dut = BufPipe2()
+    dut = ExampleBufPipe2()
     run_simulation(dut, testbench4(dut), vcd_name="test_bufpipe4.vcd")
