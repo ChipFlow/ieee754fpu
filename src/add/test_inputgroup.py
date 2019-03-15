@@ -130,7 +130,7 @@ class InputTest:
             yield rs.stb.eq(0)
 
             # wait random period of time before queueing another value
-            for i in range(randint(0, 12)):
+            for i in range(randint(0, 8)):
                 yield
 
     def recv(self):
