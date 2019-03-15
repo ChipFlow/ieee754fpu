@@ -1,0 +1,505 @@
+[33mcommit f02c6f4bbf463472d3d68e52bd5ededd3c937f58[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 12:37:14 2019 +0000
+
+    add parallel InputGroup unit test
+
+[33mcommit b13c8a7a5368a53bedc71e5b8969c721103144c4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 10:59:44 2019 +0000
+
+    rename BufPipe example to ExampleBufPipe
+
+[33mcommit a36447fcd4d4f049b7127e1fc02dc1390d05fa75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:59:07 2019 +0000
+
+    instantiate 2 FPGetOp instances and use them.  a little awkwardly.
+
+[33mcommit 092d2d78fa19a5c73863cb89c5d680cbd2afe027[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:33:44 2019 +0000
+
+    update comments
+
+[33mcommit 8989cd3452869d43a8a3655acffd3eb3288f5d9a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:22:58 2019 +0000
+
+    remove unnecessary code
+
+[33mcommit b90c533476affe63a34292bfe54dde62a105bed8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:47:21 2019 +0000
+
+    add extra comment block explaining pipe stage example
+
+[33mcommit 28a8ede4a797a76e83410fb42a9aaa02b44fb2ef[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:37:18 2019 +0000
+
+    inverted busy signal and named it "ready"
+
+[33mcommit 0ebc09c0a7b74e4807ccdb60ca0a10cbb605666a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:29:56 2019 +0000
+
+    rename stb to "valid"
+
+[33mcommit 0bfbc8ff919f0cd9c7f01b4c711b1b91a53ad480[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:28:18 2019 +0000
+
+    create classes for STB/BUSY, split in from out
+
+[33mcommit ca218a65dc9af73965a5c4f105a780ed04b588e0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 00:31:30 2019 +0000
+
+    add use of FPState, not being used yet
+
+[33mcommit ce7a1d5c48e987cbfb40236f13b17ffcea55b585[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 13:32:06 2019 +0000
+
+    split pipeline test into 2 functions, one send, one receive
+
+[33mcommit 481d00c37b31e7908e624235e6e9c93b12baeebb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 06:33:10 2019 +0000
+
+    got fpdiv up and running again
+
+[33mcommit 286fdefc4bbe8c7b4bb34ae33b513e8bb81b3d7e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:41:02 2019 +0000
+
+    forgot to add submodules
+
+[33mcommit 43c53078d577aa33d28ba0eb2af782b7d348a517[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:09:36 2019 +0000
+
+    got rounding working again for fmul
+
+[33mcommit 892d640f8224e6a52907c6899ab6ab671f5f53af[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:42:53 2019 +0000
+
+    remove extra arg from old roundz function
+
+[33mcommit ccd4d65a7bd2985edb5547daf7df623cda5ab9da[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:33:01 2019 +0000
+
+    make a bit of a mess of the unit tests, getting mul up and running again
+    taking a copy (sigh) of the old version of check_case and get_case
+
+[33mcommit 9b9732e1c96d085bc9c7b696e7c86dd0c4a4ae49[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:17:28 2019 +0000
+
+    get roundz working again, needed for mul stage
+
+[33mcommit 38452d7fb64752a897b26e1da96a27d3a5979a76[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:16:28 2019 +0000
+
+    add new FPNormaliseSingleMod, not tested
+
+[33mcommit 3e994c6039c3cce1dbecc6dddd1b6be23af390fb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 03:18:06 2019 +0000
+
+    start to get fpmul back up and running
+
+[33mcommit 5ca9e3ee685a261fbff9998ab37940aa3255b9fa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 03:04:33 2019 +0000
+
+    replace copy of FPState with import of FPState
+
+[33mcommit af3ae7902ba4e5a26556eb4442c8351c95b267a4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 02:54:57 2019 +0000
+
+    update comments
+
+[33mcommit 95cd53141ace92120fccb83a96af96323dea9c0d[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Wed Mar 13 18:39:14 2019 +0100
+
+    Started to update fmul.py to new conventions
+
+[33mcommit edf77dc7ee9fa94e1ec07e1ae4616e87c9f7298c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 12:39:09 2019 +0000
+
+    increase data set to throw at pipeline in tests
+
+[33mcommit 2ec9fee974fe500ff4e3375d35f6148ef3560e36[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 11:48:10 2019 +0000
+
+    add random-busy, random-send single and dual buffered pipeline tests
+
+[33mcommit 1abb4da885f1e66f800c310766924918a3b1474c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 11:01:22 2019 +0000
+
+    split out actual pipeline stage into separate class
+
+[33mcommit 9de2c40d3c1051650dd6f29b2ea5a0bd4e67b366[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 07:26:23 2019 +0000
+
+    add 2 stage buffered pipeline unit test, reduce to 16-bit to make vcd clearer
+
+[33mcommit b58c1a8f96dfaa63e89c7f3d7fd65f0fec9c1932[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 04:26:24 2019 +0000
+
+    only process data if the input strobe is valid
+
+[33mcommit b32f06d6ed5f6639b929d21453c09dee1296db96[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 04:24:50 2019 +0000
+
+    add in some assertions to check pipe output
+
+[33mcommit 14559d0d0edaee06af261a04ed0a33a5bd1e0479[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:49:48 2019 +0000
+
+    split out unit test in buf pipe example
+
+[33mcommit c10d9619880099356e760c4ae45c8a0b18d1aeac[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:47:49 2019 +0000
+
+    combine blocks to add list of statements, add comments
+
+[33mcommit c60a4997aa35ebc32e121d401af06d3bfee9c5c3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:35:41 2019 +0000
+
+    update comments
+
+[33mcommit e605dd06dae1fb584a25a526125179da8a6eac2e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:11:05 2019 +0000
+
+    store inv-strobe in temp signal
+
+[33mcommit 9432c1a8a962879685df5b4810ccf97db439c1a9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:10:44 2019 +0000
+
+    clean up code
+
+[33mcommit 5ecfe07d6d3fde658df517ab48bb515dfae32f26[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 15:14:13 2019 +0000
+
+    store processed input in intermediary
+
+[33mcommit 0e70fec7c3df1ee97020aa5be6f358c85898a5fb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:22:20 2019 +0000
+
+    add (but comment out) reset signal
+
+[33mcommit cfc989aa8b0d4c19a15c6e0d7210dde46bb480e8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:14:17 2019 +0000
+
+    add example buffered pipe
+
+[33mcommit e1336d2ad072dc6661c9af1b0460a69ff1bf588f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:13:33 2019 +0000
+
+    add example buffered pipe
+
+[33mcommit 289c5cf9f7510a9e9bc3239155db27bdbd982e70[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 19:09:39 2019 +0000
+
+    get InputGroup running
+
+[33mcommit 33b30ebf9210e7a3c03d3babc73ad4ed12b8685e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:54:57 2019 +0000
+
+    add inputgroup test
+
+[33mcommit bc8abd924298a632e586b34d072c5437844e8aea[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:54:32 2019 +0000
+
+    Trigger needs to be combinatorial (saves clock cycles)
+
+[33mcommit d0c5c2d71fb122797f6a02a6da30c404c0ff90b9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:32:48 2019 +0000
+
+    return mid as part of ports
+
+[33mcommit 9245c808cb817d0054b6c9fd9d510a4a722db308[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:32:09 2019 +0000
+
+    whoops, forgot to make input an Array, can use array indexing now
+
+[33mcommit 79192af4fd00e42156463bf2a32744a3f4f458ee[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 11:26:45 2019 +0000
+
+    create an FPOps output class to clean up the InputGroup
+
+[33mcommit 1fda7bf6bad5c48a295726a9a9cd0df0fc598114[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 11:15:29 2019 +0000
+
+    add capability to pass through operands and muxid to output
+
+[33mcommit 3eeb871f5920bdbb365f513440ee3bf57a491e08[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 09:37:19 2019 +0000
+
+    make a start on an InputGroup module
+
+[33mcommit dced2d8e93d5653a723fe77eec4f2cf87f004098[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 08:42:21 2019 +0000
+
+    add a multi-input stb/ack module
+    
+    to be used for acknowledging and passing on multiple inputs once all ready
+
+[33mcommit a6e7f74fa24d010999e6963ee33d3e078f83cfd2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 07:06:51 2019 +0000
+
+    add result array module
+
+[33mcommit bc8d3b3d11ae8e748e12bbb0b985d9ba54f11419[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 08:42:43 2019 +0000
+
+    create array of in/outs however set muxid to zero temporarily
+
+[33mcommit 93da24dcd72c6a7a39146c4dba6b5a882e7ef6ca[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 07:05:55 2019 +0000
+
+    store fpadd result in putz, next phase: direct to array of output results
+
+[33mcommit 9678f15f0c77d58649d1064e5d7268905da16937[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:37:36 2019 +0000
+
+    allow code-creation
+
+[33mcommit 9926a532bb3fdd1a7715f5ee3b68847e566e4f0b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:34:38 2019 +0000
+
+    create array of in_a, in_b and out_z
+
+[33mcommit 52a3d3916b905d3e9e7e7e606c77aa9ab58a4f3d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:22:31 2019 +0000
+
+    move ids to member variable
+
+[33mcommit 7522c2b5594486cba0e07df28bb74d0733d0ed1b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:23:05 2019 +0000
+
+    chain add stage 0 and 1 together with align in combinatorial block
+
+[33mcommit 5d1234824040d0903048476297a9be850ee08c54[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:11:27 2019 +0000
+
+    create combined combinatorial align and add0
+
+[33mcommit 677577b32e8323b0265aa16610f278e019692b97[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:01:29 2019 +0000
+
+    merge specialcases and denorm into single combinatorial chain
+
+[33mcommit ad26042b4e313d8f1273ff8bac9bac317440bffc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:46:54 2019 +0000
+
+    create specialcasesmod setup fn
+
+[33mcommit 5efb9e47fa9eb0529c142b175e0937b64de68d91[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:03:49 2019 +0000
+
+    whoops forgot self.width
+
+[33mcommit 698601cec4a9d46dbc4f0a92b66ad5d50a66bc26[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:03:28 2019 +0000
+
+    add comments
+
+[33mcommit 2c05d1d4507e0e50e36a02e08a0458b315be0ab3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:00:37 2019 +0000
+
+    move localiseable variables to local function
+
+[33mcommit f067330d9c1686e114a93480c3ffb781aac6d6a6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:54:03 2019 +0000
+
+    connect corrections to pack with combinatorial logic
+
+[33mcommit f14133ebce3e79e67ff35ff0720b51a3fb6a335c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:34:04 2019 +0000
+
+    connect round directly to corrections with combinatorial logic
+
+[33mcommit a641d2526a2d1e2fc7d04b40d41d10e114f0e7f9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:24:50 2019 +0000
+
+    connect normalisation directly to round with combinatorial logic
+
+[33mcommit ef144a6f35cf7d9bfc0268d50f1572be1ddf2e13[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:13:47 2019 +0000
+
+    big reorganisation
+    
+    splitting out Normalisation Single/Multi
+    adding beginnings of combinatorial-chained normalisation thru pack
+
+[33mcommit 71d97d936d73e8a47cdcc12d1e0888293c90c41e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:25:28 2019 +0000
+
+    split out into 2 functions, longer and compact fragment
+
+[33mcommit 56bd686dd363a532a9b4843c5c8ff710c24a24bc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:18:47 2019 +0000
+
+    move in_t_ack into FPGet2Op setup
+
+[33mcommit 0f141d1586b5865638db9626da05c1448578d9aa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:18:01 2019 +0000
+
+    add "compact" option
+
+[33mcommit 5e20d7a6fb0f8b623634951b64a932e5f2e97a0f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 8 12:59:11 2019 +0000
+
+    main on FPADD not on FPADDBase
+
+[33mcommit 4527b5644ba6e6c8d7ee8d1990775ff266011433[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 8 12:53:15 2019 +0000
+
+    big reorg, got FPADD to work using new FPADDBase
+
+[33mcommit 25a892466594952291f03b50c5daf29a1335c11f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 21:46:01 2019 +0000
+
+    add some comments to FPAddBase
+
+[33mcommit f39188c47f81343121785bad1366a831d115a924[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 12:14:47 2019 +0000
+
+    in the middle of rewiring FPADD to use FPADDBase
+
+[33mcommit e768533532bb2035e9cbc78e2db86affc694e290[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:09:15 2019 +0000
+
+    split out main stages of add to separate class, FPADDBase
+
+[33mcommit 63cd263891fb851e2585add543f9138f7d12710d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:08:20 2019 +0000
+
+    add function unit module
+
+[33mcommit 3e5ecb581d6b93019e088878231a9d871a2d686b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:08:09 2019 +0000
+
+    correct syntax error
+
+[33mcommit cbfd9aa5a65e7c0270e0d9fe1fc1667779a4742b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 03:06:04 2019 +0000
+
+    add reservation station row module
+
+[33mcommit b8d39c3d5295e7fdeb0e769c2bd84fe929457ef0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:50:36 2019 +0000
+
+    add MID testing
+
+[33mcommit cd5a425849b29b810b6ff16216296e286f1dcd27[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:36:50 2019 +0000
+
+    add id to pack and putz
+
+[33mcommit 4a10d39f2cb4eda127034a8f021eee6ccdf6de74[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:33:16 2019 +0000
+
+    add id to FPPack
+
+[33mcommit 52eb96de2fddee430954899471d10c012b5fd1d2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:30:20 2019 +0000
+
+    add id to FPCorrections
+
+[33mcommit 80faa8e2714b5417b40db99294bec8710bb8ec17[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:28:48 2019 +0000
+
+    add id to FPRound
+
+[33mcommit 8f9071b7d0a205b6dda40da28c358f1e26e007a0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:26:13 2019 +0000
+
+    add id to norm1
+
+[33mcommit e3197c61ce5de2cab4b36fe07b913c526844d328[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:24:54 2019 +0000
+
+    add id to stage1
+
+[33mcommit 3956a968ae847f27b3e46ff805dc75c259e1c544[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:22:19 2019 +0000
+
+    add id to stage0
+
+[33mcommit 074236f303578939f925f3668c88b7e6cd929c75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:18:39 2019 +0000
+
+    add id to align
+
+[33mcommit 3597dda29683c1b06bd70edc88

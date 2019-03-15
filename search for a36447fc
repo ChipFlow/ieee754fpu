@@ -1,0 +1,2363 @@
+[33mcommit f02c6f4bbf463472d3d68e52bd5ededd3c937f58[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 12:37:14 2019 +0000
+
+    add parallel InputGroup unit test
+
+[33mcommit b13c8a7a5368a53bedc71e5b8969c721103144c4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 10:59:44 2019 +0000
+
+    rename BufPipe example to ExampleBufPipe
+
+[33mcommit a36447fcd4d4f049b7127e1fc02dc1390d05fa75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:59:07 2019 +0000
+
+    instantiate 2 FPGetOp instances and use them.  a little awkwardly.
+
+[33mcommit 092d2d78fa19a5c73863cb89c5d680cbd2afe027[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:33:44 2019 +0000
+
+    update comments
+
+[33mcommit 8989cd3452869d43a8a3655acffd3eb3288f5d9a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:22:58 2019 +0000
+
+    remove unnecessary code
+
+[33mcommit b90c533476affe63a34292bfe54dde62a105bed8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:47:21 2019 +0000
+
+    add extra comment block explaining pipe stage example
+
+[33mcommit 28a8ede4a797a76e83410fb42a9aaa02b44fb2ef[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:37:18 2019 +0000
+
+    inverted busy signal and named it "ready"
+
+[33mcommit 0ebc09c0a7b74e4807ccdb60ca0a10cbb605666a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:29:56 2019 +0000
+
+    rename stb to "valid"
+
+[33mcommit 0bfbc8ff919f0cd9c7f01b4c711b1b91a53ad480[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:28:18 2019 +0000
+
+    create classes for STB/BUSY, split in from out
+
+[33mcommit ca218a65dc9af73965a5c4f105a780ed04b588e0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 00:31:30 2019 +0000
+
+    add use of FPState, not being used yet
+
+[33mcommit ce7a1d5c48e987cbfb40236f13b17ffcea55b585[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 13:32:06 2019 +0000
+
+    split pipeline test into 2 functions, one send, one receive
+
+[33mcommit 481d00c37b31e7908e624235e6e9c93b12baeebb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 06:33:10 2019 +0000
+
+    got fpdiv up and running again
+
+[33mcommit 286fdefc4bbe8c7b4bb34ae33b513e8bb81b3d7e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:41:02 2019 +0000
+
+    forgot to add submodules
+
+[33mcommit 43c53078d577aa33d28ba0eb2af782b7d348a517[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:09:36 2019 +0000
+
+    got rounding working again for fmul
+
+[33mcommit 892d640f8224e6a52907c6899ab6ab671f5f53af[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:42:53 2019 +0000
+
+    remove extra arg from old roundz function
+
+[33mcommit ccd4d65a7bd2985edb5547daf7df623cda5ab9da[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:33:01 2019 +0000
+
+    make a bit of a mess of the unit tests, getting mul up and running again
+    taking a copy (sigh) of the old version of check_case and get_case
+
+[33mcommit 9b9732e1c96d085bc9c7b696e7c86dd0c4a4ae49[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:17:28 2019 +0000
+
+    get roundz working again, needed for mul stage
+
+[33mcommit 38452d7fb64752a897b26e1da96a27d3a5979a76[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:16:28 2019 +0000
+
+    add new FPNormaliseSingleMod, not tested
+
+[33mcommit 3e994c6039c3cce1dbecc6dddd1b6be23af390fb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 03:18:06 2019 +0000
+
+    start to get fpmul back up and running
+
+[33mcommit 5ca9e3ee685a261fbff9998ab37940aa3255b9fa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 03:04:33 2019 +0000
+
+    replace copy of FPState with import of FPState
+
+[33mcommit af3ae7902ba4e5a26556eb4442c8351c95b267a4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 02:54:57 2019 +0000
+
+    update comments
+
+[33mcommit 95cd53141ace92120fccb83a96af96323dea9c0d[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Wed Mar 13 18:39:14 2019 +0100
+
+    Started to update fmul.py to new conventions
+
+[33mcommit edf77dc7ee9fa94e1ec07e1ae4616e87c9f7298c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 12:39:09 2019 +0000
+
+    increase data set to throw at pipeline in tests
+
+[33mcommit 2ec9fee974fe500ff4e3375d35f6148ef3560e36[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 11:48:10 2019 +0000
+
+    add random-busy, random-send single and dual buffered pipeline tests
+
+[33mcommit 1abb4da885f1e66f800c310766924918a3b1474c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 11:01:22 2019 +0000
+
+    split out actual pipeline stage into separate class
+
+[33mcommit 9de2c40d3c1051650dd6f29b2ea5a0bd4e67b366[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 07:26:23 2019 +0000
+
+    add 2 stage buffered pipeline unit test, reduce to 16-bit to make vcd clearer
+
+[33mcommit b58c1a8f96dfaa63e89c7f3d7fd65f0fec9c1932[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 04:26:24 2019 +0000
+
+    only process data if the input strobe is valid
+
+[33mcommit b32f06d6ed5f6639b929d21453c09dee1296db96[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 04:24:50 2019 +0000
+
+    add in some assertions to check pipe output
+
+[33mcommit 14559d0d0edaee06af261a04ed0a33a5bd1e0479[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:49:48 2019 +0000
+
+    split out unit test in buf pipe example
+
+[33mcommit c10d9619880099356e760c4ae45c8a0b18d1aeac[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:47:49 2019 +0000
+
+    combine blocks to add list of statements, add comments
+
+[33mcommit c60a4997aa35ebc32e121d401af06d3bfee9c5c3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:35:41 2019 +0000
+
+    update comments
+
+[33mcommit e605dd06dae1fb584a25a526125179da8a6eac2e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:11:05 2019 +0000
+
+    store inv-strobe in temp signal
+
+[33mcommit 9432c1a8a962879685df5b4810ccf97db439c1a9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 13 03:10:44 2019 +0000
+
+    clean up code
+
+[33mcommit 5ecfe07d6d3fde658df517ab48bb515dfae32f26[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 15:14:13 2019 +0000
+
+    store processed input in intermediary
+
+[33mcommit 0e70fec7c3df1ee97020aa5be6f358c85898a5fb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:22:20 2019 +0000
+
+    add (but comment out) reset signal
+
+[33mcommit cfc989aa8b0d4c19a15c6e0d7210dde46bb480e8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:14:17 2019 +0000
+
+    add example buffered pipe
+
+[33mcommit e1336d2ad072dc6661c9af1b0460a69ff1bf588f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 12 13:13:33 2019 +0000
+
+    add example buffered pipe
+
+[33mcommit 289c5cf9f7510a9e9bc3239155db27bdbd982e70[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 19:09:39 2019 +0000
+
+    get InputGroup running
+
+[33mcommit 33b30ebf9210e7a3c03d3babc73ad4ed12b8685e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:54:57 2019 +0000
+
+    add inputgroup test
+
+[33mcommit bc8abd924298a632e586b34d072c5437844e8aea[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:54:32 2019 +0000
+
+    Trigger needs to be combinatorial (saves clock cycles)
+
+[33mcommit d0c5c2d71fb122797f6a02a6da30c404c0ff90b9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:32:48 2019 +0000
+
+    return mid as part of ports
+
+[33mcommit 9245c808cb817d0054b6c9fd9d510a4a722db308[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 12:32:09 2019 +0000
+
+    whoops, forgot to make input an Array, can use array indexing now
+
+[33mcommit 79192af4fd00e42156463bf2a32744a3f4f458ee[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 11:26:45 2019 +0000
+
+    create an FPOps output class to clean up the InputGroup
+
+[33mcommit 1fda7bf6bad5c48a295726a9a9cd0df0fc598114[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 11:15:29 2019 +0000
+
+    add capability to pass through operands and muxid to output
+
+[33mcommit 3eeb871f5920bdbb365f513440ee3bf57a491e08[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 09:37:19 2019 +0000
+
+    make a start on an InputGroup module
+
+[33mcommit dced2d8e93d5653a723fe77eec4f2cf87f004098[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 08:42:21 2019 +0000
+
+    add a multi-input stb/ack module
+    
+    to be used for acknowledging and passing on multiple inputs once all ready
+
+[33mcommit a6e7f74fa24d010999e6963ee33d3e078f83cfd2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 11 07:06:51 2019 +0000
+
+    add result array module
+
+[33mcommit bc8d3b3d11ae8e748e12bbb0b985d9ba54f11419[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 08:42:43 2019 +0000
+
+    create array of in/outs however set muxid to zero temporarily
+
+[33mcommit 93da24dcd72c6a7a39146c4dba6b5a882e7ef6ca[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 07:05:55 2019 +0000
+
+    store fpadd result in putz, next phase: direct to array of output results
+
+[33mcommit 9678f15f0c77d58649d1064e5d7268905da16937[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:37:36 2019 +0000
+
+    allow code-creation
+
+[33mcommit 9926a532bb3fdd1a7715f5ee3b68847e566e4f0b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:34:38 2019 +0000
+
+    create array of in_a, in_b and out_z
+
+[33mcommit 52a3d3916b905d3e9e7e7e606c77aa9ab58a4f3d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 10 03:22:31 2019 +0000
+
+    move ids to member variable
+
+[33mcommit 7522c2b5594486cba0e07df28bb74d0733d0ed1b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:23:05 2019 +0000
+
+    chain add stage 0 and 1 together with align in combinatorial block
+
+[33mcommit 5d1234824040d0903048476297a9be850ee08c54[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:11:27 2019 +0000
+
+    create combined combinatorial align and add0
+
+[33mcommit 677577b32e8323b0265aa16610f278e019692b97[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 11:01:29 2019 +0000
+
+    merge specialcases and denorm into single combinatorial chain
+
+[33mcommit ad26042b4e313d8f1273ff8bac9bac317440bffc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:46:54 2019 +0000
+
+    create specialcasesmod setup fn
+
+[33mcommit 5efb9e47fa9eb0529c142b175e0937b64de68d91[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:03:49 2019 +0000
+
+    whoops forgot self.width
+
+[33mcommit 698601cec4a9d46dbc4f0a92b66ad5d50a66bc26[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:03:28 2019 +0000
+
+    add comments
+
+[33mcommit 2c05d1d4507e0e50e36a02e08a0458b315be0ab3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 10:00:37 2019 +0000
+
+    move localiseable variables to local function
+
+[33mcommit f067330d9c1686e114a93480c3ffb781aac6d6a6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:54:03 2019 +0000
+
+    connect corrections to pack with combinatorial logic
+
+[33mcommit f14133ebce3e79e67ff35ff0720b51a3fb6a335c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:34:04 2019 +0000
+
+    connect round directly to corrections with combinatorial logic
+
+[33mcommit a641d2526a2d1e2fc7d04b40d41d10e114f0e7f9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:24:50 2019 +0000
+
+    connect normalisation directly to round with combinatorial logic
+
+[33mcommit ef144a6f35cf7d9bfc0268d50f1572be1ddf2e13[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 09:13:47 2019 +0000
+
+    big reorganisation
+    
+    splitting out Normalisation Single/Multi
+    adding beginnings of combinatorial-chained normalisation thru pack
+
+[33mcommit 71d97d936d73e8a47cdcc12d1e0888293c90c41e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:25:28 2019 +0000
+
+    split out into 2 functions, longer and compact fragment
+
+[33mcommit 56bd686dd363a532a9b4843c5c8ff710c24a24bc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:18:47 2019 +0000
+
+    move in_t_ack into FPGet2Op setup
+
+[33mcommit 0f141d1586b5865638db9626da05c1448578d9aa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 9 07:18:01 2019 +0000
+
+    add "compact" option
+
+[33mcommit 5e20d7a6fb0f8b623634951b64a932e5f2e97a0f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 8 12:59:11 2019 +0000
+
+    main on FPADD not on FPADDBase
+
+[33mcommit 4527b5644ba6e6c8d7ee8d1990775ff266011433[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 8 12:53:15 2019 +0000
+
+    big reorg, got FPADD to work using new FPADDBase
+
+[33mcommit 25a892466594952291f03b50c5daf29a1335c11f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 21:46:01 2019 +0000
+
+    add some comments to FPAddBase
+
+[33mcommit f39188c47f81343121785bad1366a831d115a924[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 12:14:47 2019 +0000
+
+    in the middle of rewiring FPADD to use FPADDBase
+
+[33mcommit e768533532bb2035e9cbc78e2db86affc694e290[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:09:15 2019 +0000
+
+    split out main stages of add to separate class, FPADDBase
+
+[33mcommit 63cd263891fb851e2585add543f9138f7d12710d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:08:20 2019 +0000
+
+    add function unit module
+
+[33mcommit 3e5ecb581d6b93019e088878231a9d871a2d686b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Mar 6 06:08:09 2019 +0000
+
+    correct syntax error
+
+[33mcommit cbfd9aa5a65e7c0270e0d9fe1fc1667779a4742b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 03:06:04 2019 +0000
+
+    add reservation station row module
+
+[33mcommit b8d39c3d5295e7fdeb0e769c2bd84fe929457ef0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:50:36 2019 +0000
+
+    add MID testing
+
+[33mcommit cd5a425849b29b810b6ff16216296e286f1dcd27[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:36:50 2019 +0000
+
+    add id to pack and putz
+
+[33mcommit 4a10d39f2cb4eda127034a8f021eee6ccdf6de74[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:33:16 2019 +0000
+
+    add id to FPPack
+
+[33mcommit 52eb96de2fddee430954899471d10c012b5fd1d2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:30:20 2019 +0000
+
+    add id to FPCorrections
+
+[33mcommit 80faa8e2714b5417b40db99294bec8710bb8ec17[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:28:48 2019 +0000
+
+    add id to FPRound
+
+[33mcommit 8f9071b7d0a205b6dda40da28c358f1e26e007a0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:26:13 2019 +0000
+
+    add id to norm1
+
+[33mcommit e3197c61ce5de2cab4b36fe07b913c526844d328[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:24:54 2019 +0000
+
+    add id to stage1
+
+[33mcommit 3956a968ae847f27b3e46ff805dc75c259e1c544[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:22:19 2019 +0000
+
+    add id to stage0
+
+[33mcommit 074236f303578939f925f3668c88b7e6cd929c75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:18:39 2019 +0000
+
+    add id to align
+
+[33mcommit 3597dda29683c1b06bd70edc882f4585f1243350[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 02:15:21 2019 +0000
+
+    add id to denorm
+
+[33mcommit ec47adc80a3c803553eff3a72fb454535512bc68[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Mar 5 00:58:31 2019 +0000
+
+    add id passthrough to specialcases class
+
+[33mcommit dce49005fc8ff964c7d5cb29f4add1399c983e20[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 23:41:18 2019 +0000
+
+    reorg special cases setup
+
+[33mcommit 28a369a5101917cc87cd79529875583d6a3950fb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 23:38:19 2019 +0000
+
+    add id_width to parameters
+
+[33mcommit 5d8f6a372abb7416e9188a3c187bfd8dc5e78f2f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 10:59:07 2019 +0000
+
+    remove unneeded code
+
+[33mcommit 6b442c377264b326fded1d99bda44d4d6c5aab42[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 10:57:08 2019 +0000
+
+    reorg setup functions in more add phases
+
+[33mcommit a6144caf8ee4c7d943f2e12fa3060317a3139986[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 06:03:48 2019 +0000
+
+    cleanup modules, however multi-cycle align needs to be like norm1
+
+[33mcommit 6f579a121660f7b8f117dec32d3c98011d2302fc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 05:39:06 2019 +0000
+
+    split out single-cycle normalisation to separate module
+
+[33mcommit 1f54946e9b8215d0a26228722ba42f4793325901[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 05:38:45 2019 +0000
+
+    enable single-cycle in FP16 test
+
+[33mcommit 3cf40e4f10930eceece3dacbacc54586def45c1f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 04:25:56 2019 +0000
+
+    single-shift normalisation right-shift: normalisation now a single-cycle phase
+
+[33mcommit 48c84a9dcb92896ed84cc29fa5202302b9218baa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 04:13:02 2019 +0000
+
+    use MultiShiftRMerge module instead of shift_down_multi function
+
+[33mcommit a4750a653a71017c4169fe0064bae6a700e6a463[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 02:34:35 2019 +0000
+
+    remove chain dependence, calculate ediffs in parallel with comparisons
+
+[33mcommit 2a3b9f8b3e32f0290cf23553d4079c9b4372a942[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 02:26:23 2019 +0000
+
+    comment out unneeded code for now
+
+[33mcommit 3aed7e16d3e76217043c181b189d23d0689e78b6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 02:25:56 2019 +0000
+
+    convert to only use one multi-shifter
+
+[33mcommit b006a58e3980bca9d34b26b2222eb0bdee0291c9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Mar 4 01:11:10 2019 +0000
+
+    rename stickybit variable
+
+[33mcommit 51a14e0cd1245876b065be25d463c8e6509d30df[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 23:13:51 2019 +0000
+
+    unit test for multi-bit shift right with merge (sticky bit)
+
+[33mcommit 64a580f407733a1eda89998db5999ad6940eef4a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 10:12:51 2019 +0000
+
+    cleanup
+
+[33mcommit 17b7ad3644de8b7f25af107b5de362fdcef373f7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 10:12:04 2019 +0000
+
+    small optimisation, move subtraction of -126 from exponent into FPNumBase module, use it there and in normalisation
+
+[33mcommit 430d629639b88792caf81d987ae8eb1f1b1d8fa0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 09:59:56 2019 +0000
+
+    add 3 extra unit tests
+
+[33mcommit b206b4ffb1a2221d5f3c388f8c6ecc97bf2606c6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 09:55:44 2019 +0000
+
+    limit count leading zeros to stop exponent shift-amount going below min exp
+
+[33mcommit 7cef607cae22586ffa4b376fc167fc668f59be14[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 09:52:54 2019 +0000
+
+    fix shift class syntax errors (untested)
+
+[33mcommit fd8e37e252263867c93c32fc416202d5182c7b00[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 02:34:20 2019 +0000
+
+    use priority encoder for normalisation in single cycle (done decrease)
+
+[33mcommit 5385346fc59bc79f549d90bbf69e5d753040c4be[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Mar 3 02:30:59 2019 +0000
+
+    add in FPNumShiftMultiRight class
+
+[33mcommit 06dfe62eb9776d94513d7fb5905be4cd6afc077f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 19:20:25 2019 +0000
+
+    use bool() function instead of reduce(or_)
+
+[33mcommit b83c33f8f0ddfee98a3b0de002e397eb01c5aecb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 18:02:20 2019 +0000
+
+    got single-cycle align working again (accidental combinatorial loop)
+
+[33mcommit 559a675c570f9373777426ee80cedc9fed13690f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 14:13:45 2019 +0000
+
+    turn FPOp into module
+
+[33mcommit a6e70cb6a24ebff8ca2b6fbc98c64c687523a9bc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 13:58:45 2019 +0000
+
+    move put_z to PutZ class
+
+[33mcommit 6bc62eadaf1dce099817bf559905f2b92ad70351[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 13:14:28 2019 +0000
+
+    reorg pack setup
+
+[33mcommit a69d282cacb21f94c0917cfc4e0dbcb353d7f70e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 13:12:30 2019 +0000
+
+    reorg corrections setup
+
+[33mcommit 0e7946f9994c09b5f6cfe6eb66e6af0031a45b4c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 13:10:29 2019 +0000
+
+    remove unneeded function call
+
+[33mcommit 40145a6a5b049197f1f12cd678a05a41c2600145[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 12:56:38 2019 +0000
+
+    remove global z as output from specialcases, use sc.out_z
+
+[33mcommit 514166890e793688c593162877f599c8cf298151[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 12:47:46 2019 +0000
+
+    remove unneeded variable, use module overflow to get rounding signal
+
+[33mcommit b8b05bcf55a80a3cdd6e01aaa215e3c6948e9711[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 12:42:30 2019 +0000
+
+    managed to make round signal an output from normalisation phase
+
+[33mcommit 0242003ad6948764f337df73329d76aaf6802bb7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:22:58 2019 +0000
+
+    tidyup, remove unneeded intermediate
+
+[33mcommit ad575d8ff4cd6ac374ec0df793841928ba4e0f36[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:22:26 2019 +0000
+
+    tidyup, remove unneeded intermediate
+
+[33mcommit e93d491f1aea8c0adea47f4cc51c162dfc0a7f77[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:18:56 2019 +0000
+
+    reorg FPRound move setup function
+
+[33mcommit 6778b58b01d81f8babfb1561041eeb866979fa9e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:16:05 2019 +0000
+
+    add comment about add0+add1 stages
+
+[33mcommit 0b09b0e015ef54c7c74387d98192b81cee215bbd[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:09:44 2019 +0000
+
+    add1 module setup reorg
+
+[33mcommit c3ff4a18ff2dfdd6fcbe07bb2aa2cba0fcd05b58[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 11:01:41 2019 +0000
+
+    remove temporary external z, use add0 output, connect as add1 input
+
+[33mcommit 2f7e6ad5cb0fe76652d9d4cd6025f48b19f98da6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 10:52:52 2019 +0000
+
+    reorg: move add0 setup function
+
+[33mcommit 3e074b3bc5123a3d615379d56c4d18874dbf3576[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 10:49:54 2019 +0000
+
+    use correct local output from pack chain
+
+[33mcommit cabe068ee5b0e4990af8906c54a9b42b251eb712[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 10:46:29 2019 +0000
+
+    reorganise normalisation init: move setup function from mod to class
+
+[33mcommit 7aa9d4daf355080961dfef3d4fdeae70ee784b82[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 04:00:38 2019 +0000
+
+    add module links (gives useful names)
+
+[33mcommit 6f985a00540c00c590e3bffa26b214cd74477bb5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Mar 2 03:53:34 2019 +0000
+
+    complicated way to create a loop inside the normalisation module
+
+[33mcommit cebab15f305d2705943e5e8e6aa1dc660828bcc0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 22:47:31 2019 +0000
+
+    remove variable overflow
+
+[33mcommit 031369a527b2795212de74999128478b6c7face5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 22:31:40 2019 +0000
+
+    connect corrections to pack without global z
+
+[33mcommit 402940efb369b6463f576d22a1329cbb8d9a84b3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 22:25:40 2019 +0000
+
+    split roundz from norm z
+
+[33mcommit 96a14ea216c0496f839b3a4186516bd515d6f3c6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 22:14:02 2019 +0000
+
+    pass add0 z through to add1 independently
+
+[33mcommit b36be752d9217be6623edf635e327e5fcc8a93b7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 21:34:49 2019 +0000
+
+    add new temporary z for result chain
+
+[33mcommit 03eff98a7a6dc04be2ad45344d6e079a6289cb5b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 13:23:34 2019 +0000
+
+    connect add1 to norm1 overflow without global store
+
+[33mcommit 73034bf3d2a5af53d2269d8dceebf04616ee32a0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 13:05:24 2019 +0000
+
+    merge normalise_1 and normalise_2 stages
+
+[33mcommit 5266edd6310043d3b99f8584a0d65742bd3670d9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 12:01:26 2019 +0000
+
+    commennt use of intermediates
+
+[33mcommit d5dbc25f2758491615624074679303040063c1df[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 11:26:39 2019 +0000
+
+    store zero-extended a and b in temp signals
+
+[33mcommit f06311995594afbb362c238f43e3dfa573c614e6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 11:20:18 2019 +0000
+
+    store tests in temp signals
+
+[33mcommit 00d8cebaaba8b44f649f21156f2aa851d997b9ea[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 1 09:30:18 2019 +0000
+
+    experimenting with chaining Overflow module
+
+[33mcommit 3d0b7f7818a35c8284e45b9a32c2428e3adba7d0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 13:15:53 2019 +0000
+
+    use output from align as input to add0
+
+[33mcommit d36211df0eee2f878c97f533cd6e061b63765762[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 13:03:02 2019 +0000
+
+    remove commented-out code
+
+[33mcommit 34caed2a765f8380e9723cbd84741421a15b7465[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 13:02:18 2019 +0000
+
+    use GetOpMod for b
+
+[33mcommit 9bf1d5aa6c267ebac84f91b9328fa05908baae18[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 12:58:33 2019 +0000
+
+    create and use GetOp module
+
+[33mcommit 2c72bbaafc4e4ec55a4439f096a40e3d911cf599[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 04:42:13 2019 +0000
+
+    move fpnum_b to class FPGetB
+
+[33mcommit d3a98f8059ea45d4093957e38e9e56f1dbfc25da[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 03:43:05 2019 +0000
+
+    narrowing down rounding error to use of Norm1 module
+
+[33mcommit 1d9f17711b2b816f07ca3518ddcea612f23d0729[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 03:10:46 2019 +0000
+
+    separate denormalisation module and use it
+
+[33mcommit 5a1e9788c04b7ddeceb0cb709a6413da1a358a53[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 02:48:45 2019 +0000
+
+    use denorm exponent signal
+
+[33mcommit 628b86b268cef21f799f47b7c4a7f5a32c8d4c9c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 00:50:10 2019 +0000
+
+    sorting out unit tests, comply with IEEE754 on RISCV
+
+[33mcommit e209a4938625d7e0d43c4f477b824ef889999929[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 28 00:13:05 2019 +0000
+
+    recompiled sfpy, testing FP16 again
+
+[33mcommit 75d1c6da34bac478742a287f8e8e6783dce7cadc[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 23:09:06 2019 +0000
+
+    add Makefile patches to README
+
+[33mcommit 63aeeabaf9079b5bc648cedae1a243d85195a67b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 17:18:23 2019 +0000
+
+    whoops, overflow not right, reverting
+
+[33mcommit 5c757752c949da6db1684eeedfb58f23b90ac645[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 17:14:21 2019 +0000
+
+    add failed test
+
+[33mcommit 0aea70cc291d6ab896f33d80f2f1892ac1c5dff8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 17:14:17 2019 +0000
+
+    assign tests to signals
+
+[33mcommit 0e557669c53c1c7c0ee3ddbad3cf8bf151eeeb24[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 17:02:50 2019 +0000
+
+    create single and multi shift cycle, single doesnt work, multi does
+
+[33mcommit 34e5645ef036d6c545c112807d9d29599701e3e2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 15:34:32 2019 +0000
+
+    more chains between inputs and outputs
+
+[33mcommit 884a57f6ca458cdf0704f68be41fbb9ae0c275ab[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 15:24:18 2019 +0000
+
+    move of = Overflow() out of FPADD, use chain
+
+[33mcommit 53cf8aae6ffb355ce65a554e8987cb4fcb13c226[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 15:04:00 2019 +0000
+
+    remove tot from FPADD, use chain
+
+[33mcommit 8d5510e7181e1cec2a8f57e9d1625801e34d27c4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 13:58:51 2019 +0000
+
+    connect add0 to add1
+
+[33mcommit 43ad170c527b36cbe7f968feaacabb0de3d061e0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 13:56:31 2019 +0000
+
+    create add1 stage module and use it
+
+[33mcommit 59ac9d6289f3a45ec2d705adc494d48f21cf98e0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 13:30:36 2019 +0000
+
+    try some more chaining of inputs to outputs
+
+[33mcommit b832ccb1d4473c8c967e500493a28c3f232498a4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 13:21:22 2019 +0000
+
+    pass output from normalise_2 to input of roundz
+
+[33mcommit f5d86bd5e275785b798d477946831b4e47281b7c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 13:15:01 2019 +0000
+
+    create add0 stage module and use it
+
+[33mcommit d7b8cc01c5cf96424152812cb95044c017b995af[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:31:15 2019 +0000
+
+    name modules correctly
+
+[33mcommit faaf5021d71d92fd62ef8402b1f25b3a0be8a030[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:29:32 2019 +0000
+
+    whoops norm2 using norm1 mod
+
+[33mcommit 26471e1b679b7b2e9feffdca9e5258b3258c1406[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:26:16 2019 +0000
+
+    create normalise_2 module and use it
+
+[33mcommit 5dc0c2c2366eb9c51d25cf75fb9d6f6184bd7673[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:20:51 2019 +0000
+
+    put exponent > 126 logic in FPNumBase, use it in norm module
+
+[33mcommit e54f2c022828dd2e6a3f2bef011e0555cc5159e4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:15:34 2019 +0000
+
+    split out first stage normalisation to module and use it
+
+[33mcommit e0018a3337ee4582ab3eabeb57bee79bf067f4a7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 12:10:31 2019 +0000
+
+    reduce random case test numbers as well
+
+[33mcommit 626f7c38c3e5cee10ad185960b2bbda1233c0f0b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 11:47:15 2019 +0000
+
+    reduce number of unit test runs to get quicker more comprehensive coverage
+
+[33mcommit 18e958a59eb283112d9f134f4e7b1cfb7421dc57[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 11:46:54 2019 +0000
+
+    split special cases into separate module and use it
+
+[33mcommit 0310d8b65bc027d6072785b395a567149ba40c1a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 10:30:34 2019 +0000
+
+    create and use FPPack module
+
+[33mcommit 865757913bed95207c19debd632f94fd5b1b74cb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 10:13:50 2019 +0000
+
+    create and use corrections submodule
+
+[33mcommit bd8a1db591e70333a400543cc2225c7b7f2fea6c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 10:04:06 2019 +0000
+
+    rounding done in module
+
+[33mcommit 52b5af9b4d08920bb9d5284644e82df4f1012ef7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 08:07:54 2019 +0000
+
+    get roundz state to put answer in explicit output, sync it to z afterwards
+
+[33mcommit 7cbd033401d511e83145d91ce0061eb2d750e9c8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 00:29:50 2019 +0000
+
+    clean up unit_test_single get_case based on how dual_add works
+
+[33mcommit 262f37d15b93a473d8de4b31c0297bb130473bfd[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 27 00:12:27 2019 +0000
+
+    clear STB immediately after setting, stops add1 repeating computation
+
+[33mcommit 370ce3f6040fc62df2121a87328f6fdb44f75344[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 26 22:28:56 2019 +0000
+
+    moving internal strobe test forward is ok
+
+[33mcommit 480f720419c71a37c10ae78d28832f9757d74e91[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 25 08:15:57 2019 +0000
+
+    invert stb/ack between add1 and add2
+
+[33mcommit 50dbc469179f0d8bf310f2cf180b17be0ea1c650[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 24 09:27:30 2019 +0000
+
+    experimenting with dual add
+
+[33mcommit 6fed7002a094e27c85b2e74da887184d2bf08a0b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 12:57:26 2019 +0000
+
+    trying different testing for 2nd round
+
+[33mcommit c9caca5583aa11c10adf0902c0546e4c25b7d681[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 12:40:41 2019 +0000
+
+    use function to get chain of v/ack/stb
+
+[33mcommit 6487a34301595940debf733c6c0a7053fd30cefb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 12:33:31 2019 +0000
+
+    yippee got dual add chained together
+
+[33mcommit d1403516711e59fbc3860e51537f329549633d3b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 12:22:10 2019 +0000
+
+    whoops revert decode inside module FPNumIn, causing problems
+
+[33mcommit c4262e79c251db057cf49dbd2c753f3319b2ec25[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 11:56:58 2019 +0000
+
+    add dual unit test
+
+[33mcommit 15294360273b7610bc6c12584c82cd20651f6707[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 11:56:28 2019 +0000
+
+    move unit test order
+
+[33mcommit 0a433b8e6218ae36331aeb00ece4b004af00bdad[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 11:56:14 2019 +0000
+
+    remove unneeded class declaration
+
+[33mcommit d30f87d788f953fdac4db971da41d3d09cfc6807[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 11:30:44 2019 +0000
+
+    add a dual-chained add experiment
+
+[33mcommit 978906052a938cb8c6f0056d1f0395a18e6acaf8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 23 08:43:58 2019 +0000
+
+    store logic-test conditions in intermediates
+
+[33mcommit 46c346c523cf0a94f3f1b3060f139058a9539fd4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:55:44 2019 +0000
+
+    isolate inputs and outputs in FPGetA class
+
+[33mcommit 56797e67ce0f6150c3e55c4885959be6dbf4f3e7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:19:31 2019 +0000
+
+    FPADD need no longer be derived from FPBase
+
+[33mcommit 5dd4d809198de2ae03605173bfcf2c731be3474d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:18:15 2019 +0000
+
+    remove explicit code-adding of states, use for-loop instead
+
+[33mcommit 424780b0cb60d5ab487fef877b1fc469afa6841c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:13:14 2019 +0000
+
+    move putz to separate class
+
+[33mcommit 5b3fef624ed9a409a7c12a799153ab706b91dcc8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:11:53 2019 +0000
+
+    move pack to separate class
+
+[33mcommit 0932162242f7e77f8f8622eb0b03ceff1d332e73[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:10:41 2019 +0000
+
+    move corrections to separate class
+
+[33mcommit c9601b52ffa461d1eb6636d6d55e595733eef38d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 10:08:37 2019 +0000
+
+    move rounding to separate class
+
+[33mcommit b7595d8af6e1634e08dd7bca03f0ced228d7034d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:38:14 2019 +0000
+
+    move normalisation stages to separate classes
+
+[33mcommit 86a5fecd6baf56e431ae25502e8643ff68ccd573[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:27:49 2019 +0000
+
+    move add1 stage to separate class
+
+[33mcommit c21e755b12a7c7c12bf6cfd1f420b19e7bd8ecde[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:23:12 2019 +0000
+
+    add comment
+
+[33mcommit c7fea07d7328f7c144effdcbe8ce22352029d811[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:22:24 2019 +0000
+
+    split out add0 stage into separate class
+
+[33mcommit 4f274ca83d81bf1baa7002c2f5af89c2df3a91b7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:14:22 2019 +0000
+
+    move align to separate class
+
+[33mcommit 243ee0ba3850621d9cbb5d9f70ff1dfee04cad87[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 09:10:07 2019 +0000
+
+    create separate denormalisation class
+
+[33mcommit 20730a5c9556d5e35a21f71583a0b514f2dfb739[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 08:52:12 2019 +0000
+
+    move special cases to separate state class
+
+[33mcommit e1859a9abdb55c218b2272609a05750c11ab8634[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 21 08:45:33 2019 +0000
+
+    move get_a and get_b to their own classes
+
+[33mcommit d6e5544bcacbaca4934a63706892c042c01c3db7[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Wed Feb 20 18:50:07 2019 +0100
+
+    Remove coments with verilog code
+
+[33mcommit 78e77428174cfafa67b0f67e2db5a5a20e54ce75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 05:24:06 2019 +0000
+
+    split denormalisation to separate state
+
+[33mcommit cf05c428f2442b1432e2dfdc32f93c5db66cba44[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 04:54:41 2019 +0000
+
+    latch into FPNumIn within module
+
+[33mcommit ad854557f228ce234a0bfa41e8b315f2a54f8f4d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 04:26:31 2019 +0000
+
+    create separate modules for fpnum in and out
+
+[33mcommit 6d1c948b67f7155ab63475032b38ea5e3fdb99e3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 02:52:10 2019 +0000
+
+    make module out of overflow class
+
+[33mcommit 39be660b8a61d2af1348f4fedf507f2c492529c4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 02:30:03 2019 +0000
+
+    create module for FPNum
+
+[33mcommit b2cc0192847d019a30d7f760a1ffb71319f4935b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 02:17:33 2019 +0000
+
+    reset allowed on FPop, not on FPNum
+
+[33mcommit 606bf9eb6eba1ff0cbb2afcaa0a3d05c07f43bf2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 20 00:45:56 2019 +0000
+
+    store roundz test in comb variable
+
+[33mcommit 468cb689dc4e797c17065e7f882b936791420afa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 15:52:13 2019 +0000
+
+    store testing of nan/inf/zero in comb Signals
+
+[33mcommit 1ad14c0abd7e4fb79d0d45b8ae2d9248d0d8d7b9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 15:51:20 2019 +0000
+
+    move setting of stb into else block
+
+[33mcommit 06b5f4ac3d397ae96402169c23fdb1bf7eba4c30[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 15:27:12 2019 +0000
+
+    reset_less on signals that do not need it
+
+[33mcommit d26d9dd46e9fd22a1f89357a6fbcecf0eb723f44[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 12:51:50 2019 +0000
+
+    reorganise unit test single to do much more comprehensive test cases.
+    
+    specific edge cases on the exponent are covered, with random mantissas:
+    -126, -127, 127, 128
+
+[33mcommit ee00fd20e0d3717ac32227c6ecad308ede7d99e5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 11:23:22 2019 +0000
+
+    take out FP16 non-canonical NaN weirdness for now
+
+[33mcommit 9d56131f85e79434877858c4d4447151b6c54f4e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 09:20:13 2019 +0000
+
+    add corner-cases +/-0 + NaN
+
+[33mcommit 1105e1d4c6903edcde553a3bc190978fb8420e77[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 08:24:20 2019 +0000
+
+    add FP16 add unit test
+
+[33mcommit 5371cd400205c92593911ff94b4d5e050634bd5c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 08:23:20 2019 +0000
+
+    INF + -INF bug
+
+[33mcommit 5c0058aba5b26ccf44564b4cc490a08323786983[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 08:05:29 2019 +0000
+
+    whoops FP16 mantissa off-by-one
+
+[33mcommit d4a692ce3c03f415d625ad9ffc05218db442e9b6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 07:41:35 2019 +0000
+
+    remove hard-coded width
+
+[33mcommit c1e1bae5f4546aa2343a1b3238cc6d384dbed7f2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 07:41:23 2019 +0000
+
+    add FP16 format
+
+[33mcommit 223916b7bb72d4dc241c8fa275b6e1db173c01fe[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 06:41:50 2019 +0000
+
+    add shift up multi function
+
+[33mcommit 1bdd112da4fcfd5eac2d906e39c7802bff55f145[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 05:41:28 2019 +0000
+
+    add extra regression tests (a + -a) for add
+
+[33mcommit 47115959f204429fdbe22446e40b64ae6c6a79be[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Tue Feb 19 05:39:14 2019 +0000
+
+    comment for a + -a special case add
+
+[33mcommit 23e796da73962b32b5513d975446fa89dfabaca0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:32:38 2019 +0000
+
+    add 64 bit mul unit test
+
+[33mcommit 61b2d414a758e3ba146988f197311e510a1c1b97[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:32:20 2019 +0000
+
+    whoops, off-by-one in use of mw, in multiply_1 stage
+
+[33mcommit af56c28dd6b44f60eee106d8bd902314676b9381[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:26:52 2019 +0000
+
+    whoops, messing up on m_width *sigh*
+
+[33mcommit 4c3686c20c54004cfb96baf825d4c475a4f39a52[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:23:52 2019 +0000
+
+    use double run_corner_cases function in add unit test
+
+[33mcommit 6632e5ac2f86a4dd7b43b5951802774f14145711[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:22:57 2019 +0000
+
+    add corner case unit test function
+
+[33mcommit 66cb3b90e9337d28936849ae937e5507ee4ca54f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:21:52 2019 +0000
+
+    doh! use z mantissa width to specify product width.
+    also take out hard-coded numbers, ready for 64 bit
+
+[33mcommit 1c58ae1a0dfee9150ba23d3ff8a997e463cc5eb0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:16:08 2019 +0000
+
+    use common run_corner_cases function
+
+[33mcommit b4a06a1ee88e2c143a3f29e8a6331b23c36ca9b9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:15:03 2019 +0000
+
+    use common run_corner_cases function
+
+[33mcommit 0fc3bbc63935663feb4d9c2926dabaf9168e26b0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:13:31 2019 +0000
+
+    add mul unit test
+
+[33mcommit b1e75f684543b121fd25635e9c393c25331c5037[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:13:04 2019 +0000
+
+    special cases, sign of zero and inf matters: a.s ^ b.s
+
+[33mcommit a62c8c5881b2aa0054a0fa14eeae8723f92cb846[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:12:16 2019 +0000
+
+    missed indentation of if statements in special cases
+
+[33mcommit c530bcd516416b79cc3c98ba6884ef62e0731084[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:11:47 2019 +0000
+
+    of.guard, of.round, of.sticky - of is a class with members "guard, round etc"
+
+[33mcommit 430c6b2865abf24a9585bd44017cb06562a4d5df[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:10:28 2019 +0000
+
+    m.next not m.next +=
+
+[33mcommit 6315df2ddb2771be3ab41bbf6d943df087851241[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:10:07 2019 +0000
+
+    whoops, self.width not self.m_width
+
+[33mcommit 268fcd9d5ea8cd741d6078a54f99c01d78fd850f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 21:04:29 2019 +0000
+
+    add corner case unit test function
+
+[33mcommit ec4eb0b3ffee9239d043e1ad2f8c34475670abcb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:22:50 2019 +0000
+
+    diff on div and mul shows corrections stage missed out
+
+[33mcommit db2140abde0b7cb784f5435f21498902fecbb661[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:20:51 2019 +0000
+
+    use get_op functions, easier to do
+
+[33mcommit 924c3fee2f21440de0fb11b30068c85a5db80a9a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:18:48 2019 +0000
+
+    product in multiply, not tot (was from add)
+
+[33mcommit b2b09924d249294b3a5523aa3f0105aae4d0f3bd[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:12:24 2019 +0000
+
+    corrections in whitespace due to use of tabs
+
+[33mcommit 59953a0d29ab7ab1dc4e293e51378c21797f5f50[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:08:14 2019 +0000
+
+    mul needs FPNum mantissa to be 24-bit on a and b, set 2nd arg False
+
+[33mcommit ba5101dcf4cb0b553685a262476dced55b67ea51[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:06:51 2019 +0000
+
+    add requirements (dependencies)
+
+[33mcommit 7f67c091fe045b9e6f304a718486b8c936235aaf[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 18:05:38 2019 +0000
+
+    quite a lot of corrections to div special cases
+
+[33mcommit a9441a2d5af3bfbf135d46c2d95cd0129bcc3e4a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:43:13 2019 +0000
+
+    add regression test on div
+
+[33mcommit ad762e2e795b32191b5fce237771a209e0373d88[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:42:59 2019 +0000
+
+    remove zeroing bugfix correction, not needed any more
+
+[33mcommit 0a011e052efcd87791dcdc5e99cac9122f68418c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:37:52 2019 +0000
+
+    split out edge cases from unit tests into common files
+
+[33mcommit 927778d06a1b86539512186ee66bf44ac6485203[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:30:25 2019 +0000
+
+    add operator argument to unit tests
+
+[33mcommit 4388bc894114ed31ad1f3bf671a02ce7768c82e8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:22:07 2019 +0000
+
+    add div unit tests
+
+[33mcommit d806377a3656d69c3497c2ab9ff69e6c0e7bc5f4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:17:19 2019 +0000
+
+    split out common double-precision unit test code
+
+[33mcommit 34bd8c71bd35df7e2c35e1ee0fcafeefb92cb67c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:16:21 2019 +0000
+
+    split out common double-precision unit test code
+
+[33mcommit 89263ca04fdbda2bc30a8476eb6e3b119551da87[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:15:33 2019 +0000
+
+    split out common unit test code
+
+[33mcommit 1ebd806f70134eb4c96d6334c01d3691b6f4e014[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:13:07 2019 +0000
+
+    split out unit test common code
+
+[33mcommit 2ed303b3a16a1a7f23c3105c41ffae680119cde7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 17:12:44 2019 +0000
+
+    whoops wrong gitignore path
+
+[33mcommit fb29a5a984339759f4490447dab079a5f10e7b8f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 14:45:48 2019 +0000
+
+    add jon dawson add64 unit tests
+
+[33mcommit 4d0c20ae40360f5b4d0215d459a24e64d580cdf2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 12:20:29 2019 +0000
+
+    add comment for random number tests
+
+[33mcommit e41ed2689503aece121121c78171f696294bdd37[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 12:08:55 2019 +0000
+
+    test case fail, 2 numbers exceeded -INF but +ve INF was returned
+
+[33mcommit d30d28fd7c323582d79cf949fcd865d187fb9b9d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 12:05:26 2019 +0000
+
+    whoops set mantissa = -127 instead of exponent... oops...
+
+[33mcommit 308221724c16d6413ffd674eaeb92347d503b5c3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 11:56:18 2019 +0000
+
+    fix unit test use of xrange, replace with range
+
+[33mcommit 40e7f99d07484253630d09a339547f2db1ddd4ce[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 11:55:33 2019 +0000
+
+    fix a - b = zero by adding special case
+
+[33mcommit 4c62da6b74c69264380985d3041f5a81d52e562b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 11:27:03 2019 +0000
+
+    add unit tests
+
+[33mcommit 859050716c15df1981067e8ac0568ac860660d41[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 07:00:56 2019 +0000
+
+    use straight << and >> operator instead of multi-level Mux
+
+[33mcommit 791fa8e2e604d862a83ae18100f09b0f52bf01e7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 18 05:24:49 2019 +0000
+
+    add .gitignore
+
+[33mcommit f24963b0d3a0a9b7efd937258d0e95ee2011a8a0[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 19:05:41 2019 +0100
+
+    Finished the module states and added __main__
+
+[33mcommit e1db3d985344622c4782ec9c4f126995e2b795de[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 18:43:24 2019 +0100
+
+    Add more special cases to the module
+
+[33mcommit ee15ea9d3218838e9c2fd932317838118d42a883[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 16:40:24 2019 +0100
+
+    Added comment to explain a case
+
+[33mcommit e82a1942a48def173f8d3e3d4cdf67195482ecef[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 16:36:51 2019 +0100
+
+    Translated more of the special cases to nmigen
+
+[33mcommit ad64a2b559a9290aa97693c3f0391acfaf865a87[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 16:27:52 2019 +0100
+
+    Translated some of the special cases to nmigen
+
+[33mcommit 84e7d8bd75b84dba580973be2da5d527e4b148d3[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 16:11:08 2019 +0100
+
+    Started to build module using functions instead plain translation from verilog to nmigen
+
+[33mcommit c832b3bb72c5855b2c413ee3abef910a4e6eca45[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 16:00:29 2019 +0100
+
+    Started to translate special cases
+
+[33mcommit 04421658bac4d2443b6b226726841132730c6806[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sun Feb 17 15:42:22 2019 +0100
+
+    Done unpack in nmigen
+
+[33mcommit 0f8a559a09d8f5133e0eec3303fccb7ea5361bd7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 14:08:58 2019 +0000
+
+    add unit tests that push the mantissa to zero or close to zero
+
+[33mcommit 20efd9f948e67d17b3718bb4c4a6b9175ab8aadb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 14:07:33 2019 +0000
+
+    add TODO comment
+
+[33mcommit 9ed736e718dfd511f0c68896d3e3dc1c78402cb6[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 14:03:29 2019 +0000
+
+    test single-cycle align phase on 64-bit add
+
+[33mcommit dd27268b20a9d64caa5e3bc07f702982dc8d63c7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 13:09:55 2019 +0000
+
+    add single-cycle version of alignment process in fadd
+
+[33mcommit 0b07ec425f1742ce338e977652db4fecc6f8f191[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 13:07:06 2019 +0000
+
+    add a variable-length single-cycle shift_down of mantissa, and unit test
+
+[33mcommit c151716c38ad3a8a545f8e4193cdbc2c9d5e35ee[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 10:03:51 2019 +0000
+
+    add a MultiShift class for generating single-cycle bit-shifters
+
+[33mcommit 688f4f6f6ce0737c05cda16bcaab6cf7d8ee72cb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 08:22:03 2019 +0000
+
+    add extra comments
+
+[33mcommit aa66b492fd25d9750ad331eb9ffdc6f80ae342ee[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 07:42:23 2019 +0000
+
+    add double-width divide as well, and preliminary unit test
+
+[33mcommit f68605ababcf961defbcf83005dff4699f83d373[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 07:16:22 2019 +0000
+
+    add beginning unit tests for 64-bit add
+
+[33mcommit 258b33ecb3853122ea29ec4c66936f19f5943138[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sun Feb 17 06:42:21 2019 +0000
+
+    convert to more general base classes, start support for FP64
+
+[33mcommit d6b8036d20ce202d94ae862ecacaa20b306057fe[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 17:19:28 2019 +0000
+
+    add extra random div unit test cases
+
+[33mcommit 06bf724fefa6abc3e76fac77ebd095a1fe13294b[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:29:24 2019 +0000
+
+    add another random div test
+
+[33mcommit d85cc8830fe155ca83b2e81b95d3e4379da94baf[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:25:36 2019 +0000
+
+    comment divisor stages
+
+[33mcommit d9a754109b2902e62868038e460713e103b5c3cf[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:22:12 2019 +0000
+
+    rename (shorten) divisor variable names (and comment them)
+
+[33mcommit 60861482dcda7f752cc17477e993df063d9f2c79[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:14:21 2019 +0000
+
+    add extra arbitrary div unit test
+
+[33mcommit 2b07cf40c9d3de3b48e10d07b04615307bdf332c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:13:06 2019 +0000
+
+    correct comments
+
+[33mcommit 8d492f5eec29ba2910f4d250dca70fa08f4170df[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 12:10:49 2019 +0000
+
+    first initial success with div algorithm
+
+[33mcommit 11688f2114181c0ced5e041cb6841fd8419a6a5a[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sat Feb 16 12:34:59 2019 +0100
+
+    Fixed typo in get_b state
+
+[33mcommit 06a93cddd0ae1af04538d471f66136c8d9c50062[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sat Feb 16 12:34:17 2019 +0100
+
+    Did get_b state in nmigen
+
+[33mcommit 495d64c21b1e949b544b1d0eb3f7412e7ab23109[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sat Feb 16 12:27:29 2019 +0100
+
+    Did get_a state in nmigen
+
+[33mcommit f4edcebbd1b2ac9ecdc55e53ccd7e80c369db23e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 11:25:15 2019 +0000
+
+    remove some test cases from div
+
+[33mcommit 0611568bd02236421ea892e81cddd857e38a2978[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 11:24:12 2019 +0000
+
+    add div experiment
+
+[33mcommit a731173a2bae14fbf339aea511b066ddf58aa8a0[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Sat Feb 16 12:11:41 2019 +0100
+
+    Made a file and started to do porting from verilog to nmigen
+
+[33mcommit f2df35e4b4d6476d929389fa4dbeaed986deedf5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 11:03:28 2019 +0000
+
+    op_normalise does not need overflow class arg
+
+[33mcommit 91fa69f581e94e0b62f1fb69a158f824ee06299e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 10:51:06 2019 +0000
+
+    split out base classes into separate fpbase module
+
+[33mcommit b5819d705aa1b840221ccd7a8045a614a694947f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 10:48:47 2019 +0000
+
+    add op_normalise function
+
+[33mcommit aeb0c772885d60535ed20f09449092ae837c42ee[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 10:45:41 2019 +0000
+
+    pad with zeros if needed in decode
+
+[33mcommit b6803d366abaab2533647de4b0f569bea2c6750f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:47:55 2019 +0000
+
+    separate common functions into FPBase class
+
+[33mcommit 69e3e86a50ca7295268a0fa9bc97216cabe1896c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:45:25 2019 +0000
+
+    move denormalisation to function
+
+[33mcommit ae85fc94757455bb8cf44a8ecd410dfba35ec64e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:41:49 2019 +0000
+
+    add comment on special operations
+
+[33mcommit c4294073c4b379bfe406a36e91fc264aad6f4b32[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:39:49 2019 +0000
+
+    whitespace cleanup and more comments
+
+[33mcommit 0c7bb8e4e82b58d122229c2344eb8ff923ae4784[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:32:26 2019 +0000
+
+    get rid of unpack phase by making it part of the get_op
+
+[33mcommit 5e8129603bfdcaab465c76dc23f1a9f939977b43[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:27:54 2019 +0000
+
+    comment functions
+
+[33mcommit 60a2a4dbf9dc2a50ed54884127177fae1e53637f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:15:47 2019 +0000
+
+    rename round function to roundz (round is a keyword)
+
+[33mcommit 4f73a467f1f3a9bd23a393ab783ca95b5b30ef3e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:14:26 2019 +0000
+
+    create put_z function
+
+[33mcommit f907216922d0880430f5a5435a9b86144dfe2a32[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:12:22 2019 +0000
+
+    create pack function
+
+[33mcommit 5107bbe121ee49a600b48f6467502a69a29d1df4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:12:14 2019 +0000
+
+    create pack function
+
+[33mcommit 20a9b26e19454870baec6db9fb9e82d0987df560[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:07:13 2019 +0000
+
+    move round to function
+
+[33mcommit e9ef7709bf7955693ab4c9ed74e87f81f4f45632[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:05:53 2019 +0000
+
+    move normalise_2 to function
+
+[33mcommit 85434e97dd06b23decca617612c77d75d10bb7ed[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:04:44 2019 +0000
+
+    use normalize_1 function
+
+[33mcommit 2476c8fc80e8007d643fdbd75536d5d5048ce8c9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:03:33 2019 +0000
+
+    move round, guard and sticky to separate clas
+
+[33mcommit bb86ad410e26c25ab9101a5ba4d4a0004d1cddf5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 09:01:43 2019 +0000
+
+    add normalise_1 function
+
+[33mcommit dc7ec4300aa575b56412a6da68974a27245b8eec[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 08:55:09 2019 +0000
+
+    use get_op for get_b state too
+
+[33mcommit bc07e0680fb8dad61471ffe5b8a66a1d83688747[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 08:54:33 2019 +0000
+
+    create get_op function
+
+[33mcommit d9b1bf93a9a18746f103210ace6fa592cd8c3fde[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 08:48:21 2019 +0000
+
+    move value, ack and stb to separate convenience class
+
+[33mcommit b81949f4a5b04a66565b1fdc7a1125216702ca58[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 08:39:25 2019 +0000
+
+    use slice magic constants
+
+[33mcommit b6ff4584535f0c74ac29cba23c175271075a7806[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 08:36:41 2019 +0000
+
+    re-enable commented-out tests
+
+[33mcommit f72c2afee9e4fd69ef63124bb5ce44e72eff4664[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 07:54:04 2019 +0000
+
+    update README
+
+[33mcommit 0262bcdb0dd867807f133605a4910f223cffbfb8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 07:40:16 2019 +0000
+
+    remove unneeded import
+
+[33mcommit 07e16a2fcaa862cef2f01889e2c93493226e3ae9[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 07:37:27 2019 +0000
+
+    whitespace
+
+[33mcommit c2c01f96fcde637744e0490648f2f17956f82655[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 07:35:51 2019 +0000
+
+    no real point adding reset for internal pipeline variables
+
+[33mcommit 48dd87dd2ec6c5f6f6ef16a86bbe39a2f66496da[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Sat Feb 16 07:02:06 2019 +0000
+
+    add pipeline class and example
+
+[33mcommit 064541e8f20feb40216043bcdd211ffe192c6750[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 15:47:02 2019 +0000
+
+    more arbitrary unit tests
+
+[33mcommit 2356710243dd4361af2c2c17edc609eacf82ed61[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 13:19:16 2019 +0000
+
+    use constant P128 instead of 128
+
+[33mcommit ae1dc08c3e03c5f333c5d8af726ff59757454d48[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 13:19:03 2019 +0000
+
+    add extra unit tests (infinity / NaN)
+
+[33mcommit b82a84091dc232a5cfa675e7489978ac0a66d2f0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 12:58:29 2019 +0000
+
+    add extra unit tests
+
+[33mcommit 1789c5892cb4ad8f4641bba426e857fcfe663854[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 12:51:42 2019 +0000
+
+    add extra unit tests
+
+[33mcommit 72f0c122d8fc7f0fc535deebd2d6d076b3a4f2e1[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 11:55:12 2019 +0000
+
+    corrections to shift_down and is_overflow, test "1.0 + 2.0 == 3.0" works
+
+[33mcommit dadb08c6930ec215f774062aee63ec9521819ce2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 11:15:01 2019 +0000
+
+    lots and lots of debugging corrections...
+
+[33mcommit 2716ffa5e594d7a993218ab45aa9534df3cac201[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 09:28:29 2019 +0000
+
+    improve assertion output for unit test
+
+[33mcommit e5c82b7a6b4802ea22bddd2d9d26e04f9ba7aafa[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 09:26:24 2019 +0000
+
+    add simulation test code
+
+[33mcommit 74bab3d18c99001537fdbcbe44a3dbf45027cd66[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Feb 15 09:26:07 2019 +0000
+
+    corrections from running simulation
+
+[33mcommit a710a0d7956529e200ec9198314ef71ca1522b12[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 15:13:13 2019 +0000
+
+    add verilog conversion (commented out)
+
+[33mcommit 30392515cf6c026ffaeb6f00f4bc8773d354cbc8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 15:10:44 2019 +0000
+
+    corrections
+
+[33mcommit 83486d7e84c2f9c97c1567c6524ff9e1890f67de[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:59:14 2019 +0000
+
+    remove verilog
+
+[33mcommit 9f0aa878789ad928e8b531fceb6aba606cc72c1a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:49:17 2019 +0000
+
+    corrections, out_z_* and friends are members of class
+
+[33mcommit 6b64076c86bc57550688ec1c74f59c29de6f3a97[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:46:19 2019 +0000
+
+    add in a "corrections" stage, small rework, split pack stage
+
+[33mcommit 0afb5e8aee35febe485ae89eddea2292c79685a1[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 15:37:57 2019 +0100
+
+    Translate put_z verilog case into nmigen
+
+[33mcommit 5113de1faa5b5d80f321dea5736b9fcc5806b3be[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:26:11 2019 +0000
+
+    add and use is_overflowed function
+
+[33mcommit a3ce022d1326033d2d0b6322481c0777af6c71eb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:09:19 2019 +0000
+
+    cleanup
+
+[33mcommit 80580ea474b77c136f7e588e8dc673407e56a99d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 14:06:31 2019 +0000
+
+    document guard/round/sticky and tot
+
+[33mcommit d7b21357824af961b0965076851bffe2474921ec[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 15:03:08 2019 +0100
+
+    Translate case from verilog to nmigen
+
+[33mcommit 99d1c6b9ff455df4c4888de0259db4956809ee8e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 12:52:48 2019 +0000
+
+    add code comments
+
+[33mcommit 486d6745fad6f8e16fd9e418847f8ca82a8ea453[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 12:47:12 2019 +0000
+
+    add set-to-zero function
+
+[33mcommit 7a596346d426eb2dac0110759e5d1842ec76340f[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 12:47:01 2019 +0000
+
+    fix bug in nan/inf, exp-bias needed subtracting
+
+[33mcommit 82de8d38c838bcffb494b06336533d1e795cb453[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 12:46:03 2019 +0000
+
+    add FPNum comment
+
+[33mcommit 05601351b3e542d91d4f6805810d1e4d53cd7deb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 11:35:06 2019 +0000
+
+    add comments for aleksander
+
+[33mcommit bfe16ca26c3a341fec771f634eee82eabbed5437[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 11:34:24 2019 +0000
+
+    add comments for aleksander
+
+[33mcommit a68eacb51223b30fe9f0513204a165ba6b12bff7[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 11:22:46 2019 +0000
+
+    use negative slice (now works)
+
+[33mcommit ec792e6838b139c3f479b3a3ede151cabd8ba519[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 11:09:59 2019 +0000
+
+    remove a_s/b_s/z_s
+
+[33mcommit 82a1f010c5c500a8c9215cba5dc7971bd92da118[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 11:09:43 2019 +0000
+
+    move align down-shift to separate function
+
+[33mcommit c98a9a9dcbfc94c6fe6262580432f74d89dd1ad2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:53:14 2019 +0000
+
+    move +127 for exponent bias into FPNum.create
+
+[33mcommit 6949ffef0414a8cff2d9e14857f627a91e449319[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:51:45 2019 +0000
+
+    remove unneeded code
+
+[33mcommit 487c5fac81adb9eb8d616295a6facdbc459f135e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:51:28 2019 +0000
+
+    comments
+
+[33mcommit f4ba4287e22046c8366b6138ee8a9bf9cecb07d4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:48:07 2019 +0000
+
+    add zero, nan and inf checks
+
+[33mcommit 5e1a88814def18d3d7f3241363f335d2a82d20f2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:43:01 2019 +0000
+
+    create and use decode function
+
+[33mcommit 4cacba615bf4ec046fb3b87b2b190e40df65a28d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:37:43 2019 +0000
+
+    move create, inf and nan to FPNum class
+
+[33mcommit 11c9a7a4197619acd67405c51a098704bc51c6bf[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 10:35:13 2019 +0000
+
+    create FPNum class
+
+[33mcommit 6ca7b00bf57ffb3cb96b8b3c290057db009cd752[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:48:40 2019 +0000
+
+    add rounding stage
+
+[33mcommit dbb871d5dc6073145aa724c86cd584b63242a7eb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:42:00 2019 +0000
+
+    add comments
+
+[33mcommit 3c50fb77c68d277ebc9592f448051bdd20beb469[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:38:09 2019 +0000
+
+    add normalise_1 stage
+
+[33mcommit d6b562fb042766004cf32088104211c55208554a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:22:04 2019 +0000
+
+    add NaN and INF functions
+
+[33mcommit 963a0c629d8558e447c2428f793b7b2937901a53[m
+Merge: 362b54b 52e421e
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 10:17:13 2019 +0100
+
+    Merge branch 'master' of ssh://libre-riscv.org:922/ieee754fpu
+
+[33mcommit 362b54b6e73894ccca070f53cee4b5817cf3b47f[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 10:16:54 2019 +0100
+
+    Turned the normalise_2 verilog state into nmigen
+
+[33mcommit 52e421e91ba1734cd95674c0bbf38dde638a510d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:15:47 2019 +0000
+
+    use function "create_z" which... well... creates a result from (s,e,m)
+
+[33mcommit 4884f6fae51c126c07eb49300b61ea0ef8fec15d[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 09:05:21 2019 +0000
+
+    add in comments on add 2nd stage
+
+[33mcommit 0d03803dd8fa042b2aa5d5cf412f8ae41c9ae261[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:56:39 2019 +0000
+
+    off-by-one in slices
+
+[33mcommit 32f9b3a0ea183ee193f804c946a8ef56c0d97eba[m
+Merge: 9d3ef49 83d0325
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 09:53:36 2019 +0100
+
+    Merge branch 'master' of ssh://libre-riscv.org:922/ieee754fpu
+
+[33mcommit 9d3ef49cdd08c4ffb9c82063857bc918a2add954[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 09:53:21 2019 +0100
+
+    Turned the add_1 verilog state into nmigen
+
+[33mcommit 83d0325f6318204db17f7a3edae5429cc588e8d3[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:51:18 2019 +0000
+
+    corrections on compile
+
+[33mcommit 0cb5bcb2f90da200924108bbe2b2ba0e598a1248[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:49:48 2019 +0000
+
+    add align phase
+
+[33mcommit 749109f2e5caf92367a70587f54555ef5913e454[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:38:57 2019 +0000
+
+    whoops accidentally indented too far
+
+[33mcommit 4d34c747aad8cff48a6f0ef0ef4c6380d08bcae4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:36:46 2019 +0000
+
+    add code comments
+
+[33mcommit b122b5740d630b5348ab2c63c911e840b6053807[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 08:32:13 2019 +0000
+
+    reformat / indent add_0 stage
+
+[33mcommit 27144dd663214de35c5f97f8cca3396401d470d0[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Thu Feb 14 09:23:17 2019 +0100
+
+    Turned the add_0 verilog state into nmigen
+
+[33mcommit 3bdb8bf118d526d896fe72708c739fbb6212cbb2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:52:28 2019 +0000
+
+    add zero and denormalised checks
+
+[33mcommit e47b0a419e9640695c3d3c5923ab51e6f1b63942[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:40:29 2019 +0000
+
+    add special case, b when a is zero
+
+[33mcommit 541f086f5ba7e8d1084f1eae66a18bc5f4233bef[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:26:25 2019 +0000
+
+    add b inf special case
+
+[33mcommit 29cbeef4ef6b9a289a8a192cc735778e2ec11c3c[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:24:12 2019 +0000
+
+    cleanup and comments
+
+[33mcommit 0f623094c1018cbaf0945bafa043af3f6e67bc00[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:20:23 2019 +0000
+
+    add inf special case
+
+[33mcommit efae2c37edf8dd8670b382b3802a323c72517e71[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:13:15 2019 +0000
+
+    whitespace (indent)
+
+[33mcommit e5987629000197e645730a39ac1f51bc24e88cfd[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 06:12:44 2019 +0000
+
+    add first of special_cases
+
+[33mcommit 4ccb4d59bd50c5d5bff9008dac0ca034fc2d8e9a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 04:32:09 2019 +0000
+
+    invert Cat order, use 3 zeros (3 bits)
+
+[33mcommit 7fe4616cc217cc2b8bf5243f931498d51965ad44[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 04:16:14 2019 +0000
+
+    spelling correction
+
+[33mcommit 357cf56e4ba03e2a0a1d54eb302678217e08d6f2[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Feb 14 04:14:40 2019 +0000
+
+    corrected syntax for unpack block
+
+[33mcommit 5ee0dbbcec0a4c9c00d59362c5839926c3b933b7[m
+Author: Aleksandar Kostovic <alexandar.kostovic@gmail.com>
+Date:   Wed Feb 13 17:20:49 2019 +0100
+
+    Replicated unpack part of always block into nmigen
+
+[33mcommit 9afc4398daac6380186715fe902512f661558c63[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Wed Feb 13 11:26:22 2019 +0000
+
+    add experiment
+
+[33mcommit 03d20ef6c3a8a178118ab29e14e21bc9fbec89c5[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 4 00:28:04 2019 +0000
+
+    add git submodule init to Makefile
+
+[33mcommit 5248a092891e80c5699fb5a54ef0f95595fbf784[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Mon Feb 4 00:20:55 2019 +0000
+
+    added berkeley softfloat library submodule

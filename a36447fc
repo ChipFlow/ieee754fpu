@@ -1,0 +1,743 @@
+[33mcommit f02c6f4bbf463472d3d68e52bd5ededd3c937f58[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 12:37:14 2019 +0000
+
+    add parallel InputGroup unit test
+
+[33mcommit b13c8a7a5368a53bedc71e5b8969c721103144c4[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 10:59:44 2019 +0000
+
+    rename BufPipe example to ExampleBufPipe
+
+[33mcommit a36447fcd4d4f049b7127e1fc02dc1390d05fa75[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:59:07 2019 +0000
+
+    instantiate 2 FPGetOp instances and use them.  a little awkwardly.
+
+[33mcommit 092d2d78fa19a5c73863cb89c5d680cbd2afe027[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:33:44 2019 +0000
+
+    update comments
+
+[33mcommit 8989cd3452869d43a8a3655acffd3eb3288f5d9a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 09:22:58 2019 +0000
+
+    remove unnecessary code
+
+[33mcommit b90c533476affe63a34292bfe54dde62a105bed8[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:47:21 2019 +0000
+
+    add extra comment block explaining pipe stage example
+
+[33mcommit 28a8ede4a797a76e83410fb42a9aaa02b44fb2ef[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:37:18 2019 +0000
+
+    inverted busy signal and named it "ready"
+
+[33mcommit 0ebc09c0a7b74e4807ccdb60ca0a10cbb605666a[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:29:56 2019 +0000
+
+    rename stb to "valid"
+
+[33mcommit 0bfbc8ff919f0cd9c7f01b4c711b1b91a53ad480[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 08:28:18 2019 +0000
+
+    create classes for STB/BUSY, split in from out
+
+[33mcommit ca218a65dc9af73965a5c4f105a780ed04b588e0[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Fri Mar 15 00:31:30 2019 +0000
+
+    add use of FPState, not being used yet
+
+[33mcommit ce7a1d5c48e987cbfb40236f13b17ffcea55b585[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 13:32:06 2019 +0000
+
+    split pipeline test into 2 functions, one send, one receive
+
+[33mcommit 481d00c37b31e7908e624235e6e9c93b12baeebb[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 06:33:10 2019 +0000
+
+    got fpdiv up and running again
+
+[33mcommit 286fdefc4bbe8c7b4bb34ae33b513e8bb81b3d7e[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:41:02 2019 +0000
+
+    forgot to add submodules
+
+[33mcommit 43c53078d577aa33d28ba0eb2af782b7d348a517[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 05:09:36 2019 +0000
+
+    got rounding working again for fmul
+
+[33mcommit 892d640f8224e6a52907c6899ab6ab671f5f53af[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:42:53 2019 +0000
+
+    remove extra arg from old roundz function
+
+[33mcommit ccd4d65a7bd2985edb5547daf7df623cda5ab9da[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:33:01 2019 +0000
+
+    make a bit of a mess of the unit tests, getting mul up and running again
+    taking a copy (sigh) of the old version of check_case and get_case
+
+[33mcommit 9b9732e1c96d085bc9c7b696e7c86dd0c4a4ae49[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:17:28 2019 +0000
+
+    get roundz working again, needed for mul stage
+
+[33mcommit 38452d7fb64752a897b26e1da96a27d3a5979a76[m
+Author: Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Date:   Thu Mar 14 04:16:28 2019 +0000
+
+    add new FPNormaliseSingleMod, not tested
+[1mdiff --git a/src/add/example_buf_pipe.py b/src/add/example_buf_pipe.py[m
+[1mindex 6678a67..00eecc3 100644[m
+[1m--- a/src/add/example_buf_pipe.py[m
+[1m+++ b/src/add/example_buf_pipe.py[m
+[36m@@ -12,12 +12,12 @@[m
+     where data will flow on *every* clock when the conditions are right.[m
+ [m
+     input acceptance conditions are when:[m
+[31m-        * incoming previous-stage strobe (i_p_stb) is HIGH[m
+[31m-        * outgoing previous-stage busy   (o_p_busy) is LOW[m
+[32m+[m[32m        * incoming previous-stage strobe (i.p_valid) is HIGH[m
+[32m+[m[32m        * outgoing previous-stage ready   (o.p_ready) is LOW[m
+ [m
+     output transmission conditions are when:[m
+[31m-        * outgoing next-stage strobe (o_n_stb) is HIGH[m
+[31m-        * outgoing next-stage busy   (i_n_busy) is LOW[m
+[32m+[m[32m        * outgoing next-stage strobe (o.n_valid) is HIGH[m
+[32m+[m[32m        * outgoing next-stage ready   (i.n_ready) is LOW[m
+ [m
+     the tricky bit is when the input has valid data and the output is not[m
+     ready to accept it.  if it wasn't for the clock synchronisation, it[m
+[36m@@ -33,7 +33,7 @@[m
+     we now effectively have *two* possible pieces of data to "choose" from:[m
+     the buffered data, and the incoming data.  the decision as to which[m
+     to process and output is based on whether we are in "stall" or not.[m
+[31m-    i.e. when the next stage is no longer busy, the output comes from[m
+[32m+[m[32m    i.e. when the next stage is no longer ready, the output comes from[m
+     the buffer if a stall had previously occurred, otherwise it comes[m
+     direct from processing the input.[m
+ [m
+[36m@@ -69,7 +69,17 @@[m [mclass ExampleStage:[m
+ [m
+     def __init__(self):[m
+         """ i_data can be a DIFFERENT type from everything else[m
+[31m-            o_data, r_data and result must be of the same type[m
+[32m+[m[32m            o_data, r_data and result are best of the same type.[m
+[32m+[m[32m            however this is not strictly necessary.  an intermediate[m
+[32m+[m[32m            transformation process could hypothetically be applied, however[m
+[32m+[m[32m            it is result and r_data that definitively need to be of the same[m
+[32m+[m[32m            (intermediary) type, as it is both result and r_data that[m
+[32m+[m[32m            are transferred into o_data:[m
+[32m+[m
+[32m+[m[32m            i_data -> process() -> result --> o_data[m
+[32m+[m[32m                                     |           ^[m
+[32m+[m[32m                                     |           |[m
+[32m+[m[32m                                     +-> r_data -+[m
+         """[m
+         self.i_data = Signal(16)[m
+         self.r_data = Signal(16)[m
+[36m@@ -83,7 +93,9 @@[m [mclass ExampleStage:[m
+         return self.result.eq(self.i_data + 1)[m
+ [m
+     def update_buffer(self):[m
+[31m-        """ copies the result into the intermediate register r_data[m
+[32m+[m[32m        """ copies the result into the intermediate register r_data,[m
+[32m+[m[32m            which will need to be outputted on a subsequent cycle[m
+[32m+[m[32m            prior to allowing "normal" operation.[m
+         """[m
+         return self.r_data.eq(self.result)[m
+ [m
+[36m@@ -100,88 +112,98 @@[m [mclass ExampleStage:[m
+     def ports(self):[m
+         return [self.i_data, self.o_data][m
+ [m
+[32m+[m[32mclass IOAckIn:[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.p_valid = Signal() # >>in - comes in from PREVIOUS stage[m
+[32m+[m[32m        self.n_ready = Signal() # in<< - comes in from the NEXT stage[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass IOAckOut:[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.n_valid = Signal() # out>> - goes out to the NEXT stage[m
+[32m+[m[32m        self.p_ready = Signal() # <<out - goes out to the PREVIOUS stage[m
+[32m+[m
+ [m
+ class BufferedPipeline:[m
+     """ buffered pipeline stage[m
+ [m
+[31m-        stage-1   i_p_stb  >>in   stage   o_n_stb  out>>   stage+1[m
+[31m-        stage-1   o_p_busy <<out  stage   i_n_busy <<in    stage+1[m
+[31m-        stage-1   i_data   >>in   stage   o_data   out>>   stage+1[m
+[32m+[m[32m        stage-1   i.p_valid >>in   stage   o.n_valid out>>   stage+1[m
+[32m+[m[32m        stage-1   o.p_ready <<out  stage   i.n_ready <<in    stage+1[m
+[32m+[m[32m        stage-1   i_data    >>in   stage   o_data    out>>   stage+1[m
+                               |             |[m
+                               +------->  process[m
+                               |             |[m
+                               +-- r_data ---+[m
+     """[m
+     def __init__(self):[m
+[31m-        # input: strobe comes in from previous stage, busy comes in from next[m
+[31m-        #self.i_p_rst = Signal()    # >>in - comes in from PREVIOUS stage[m
+[31m-        self.i_p_stb = Signal()    # >>in - comes in from PREVIOUS stage[m
+[31m-        self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage[m
+[32m+[m[32m        # input: strobe comes in from previous stage, ready comes in from next[m
+[32m+[m[32m        self.i = IOAckIn()[m
+[32m+[m[32m        #self.i.p_valid = Signal()    # >>in - comes in from PREVIOUS stage[m
+[32m+[m[32m        #self.i.n_ready = Signal()   # in<< - comes in from the NEXT stage[m
+ [m
+[31m-        # output: strobe goes out to next stage, busy comes in from previous[m
+[31m-        self.o_n_stb = Signal()    # out>> - goes out to the NEXT stage[m
+[31m-        self.o_p_busy = Signal()   # <<out - goes out to the PREVIOUS stage[m
+[32m+[m[32m        # output: strobe goes out to next stage, ready comes in from previous[m
+[32m+[m[32m        self.o = IOAckOut()[m
+[32m+[m[32m        #self.o.n_valid = Signal()    # out>> - goes out to the NEXT stage[m
+[32m+[m[32m        #self.o.p_ready = Signal()   # <<out - goes out to the PREVIOUS stage[m
+ [m
+     def elaborate(self, platform):[m
+         m = Module()[m
+ [m
+         # establish some combinatorial temporaries[m
+[31m-        o_p_busyn = Signal(reset_less=True)[m
+[31m-        o_n_stbn = Signal(reset_less=True)[m
+[31m-        i_n_busyn = Signal(reset_less=True)[m
+[31m-        i_p_stb_o_p_busyn = Signal(reset_less=True)[m
+[31m-        m.d.comb += [i_n_busyn.eq(~self.i_n_busy),[m
+[31m-                     o_n_stbn.eq(~self.o_n_stb),[m
+[31m-                     o_p_busyn.eq(~self.o_p_busy),[m
+[31m-                     i_p_stb_o_p_busyn.eq(self.i_p_stb & o_p_busyn),[m
+[32m+[m[32m        o_n_validn = Signal(reset_less=True)[m
+[32m+[m[32m        i_p_valid_o_p_ready = Signal(reset_less=True)[m
+[32m+[m[32m        m.d.comb += [o_n_validn.eq(~self.o.n_valid),[m
+[32m+[m[32m                     i_p_valid_o_p_ready.eq(self.i.p_valid & self.o.p_ready),[m
+         ][m
+ [m
+         # store result of processing in combinatorial temporary[m
+[31m-        with m.If(self.i_p_stb): # input is valid: process it[m
+[32m+[m[32m        with m.If(self.i.p_valid): # input is valid: process it[m
+             m.d.comb += self.stage.process()[m
+         # if not in stall condition, update the temporary register[m
+[31m-        with m.If(o_p_busyn): # not stalled[m
+[32m+[m[32m        with m.If(self.o.p_ready): # not stalled[m
+             m.d.sync += self.stage.update_buffer()[m
+ [m
+[31m-        #with m.If(self.i_p_rst): # reset[m
+[31m-        #    m.d.sync += self.o_n_stb.eq(0)[m
+[31m-        #    m.d.sync += self.o_p_busy.eq(0)[m
+[31m-        with m.If(i_n_busyn): # next stage is not busy[m
+[31m-            with m.If(o_p_busyn): # not stalled[m
+[32m+[m[32m        #with m.If(self.i.p_rst): # reset[m
+[32m+[m[32m        #    m.d.sync += self.o.n_valid.eq(0)[m
+[32m+[m[32m        #    m.d.sync += self.o.p_ready.eq(0)[m
+[32m+[m[32m        with m.If(self.i.n_ready): # next stage is ready[m
+[32m+[m[32m            with m.If(self.o.p_ready): # not stalled[m
+                 # nothing in buffer: send (processed) input direct to output[m
+[31m-                m.d.sync += [self.o_n_stb.eq(self.i_p_stb),[m
+[32m+[m[32m                m.d.sync += [self.o.n_valid.eq(self.i.p_valid),[m
+                              self.stage.update_output(),[m
+                             ][m
+[31m-            with m.Else(): # o_p_busy is true, and something is in our buffer.[m
+[32m+[m[32m            with m.Else(): # o.p_ready is false, and something is in buffer.[m
+                 # Flush the [already processed] buffer to the output port.[m
+[31m-                m.d.sync += [self.o_n_stb.eq(1),[m
+[32m+[m[32m                m.d.sync += [self.o.n_valid.eq(1),[m
+                              self.stage.flush_buffer(),[m
+                              # clear stall condition, declare register empty.[m
+[31m-                             self.o_p_busy.eq(0),[m
+[32m+[m[32m                             self.o.p_ready.eq(1),[m
+                             ][m
+[31m-                # ignore input, since o_p_busy is also true.[m
+[32m+[m[32m                # ignore input, since o.p_ready is also false.[m
+ [m
+[31m-        # (i_n_busy) is true here: next stage is busy[m
+[31m-        with m.Elif(o_n_stbn): # next stage being told "not busy"[m
+[31m-            m.d.sync += [self.o_n_stb.eq(self.i_p_stb),[m
+[31m-                         self.o_p_busy.eq(0), # Keep the buffer empty[m
+[32m+[m[32m        # (i.n_ready) is false here: next stage is ready[m
+[32m+[m[32m        with m.Elif(o_n_validn): # next stage being told "ready"[m
+[32m+[m[32m            m.d.sync += [self.o.n_valid.eq(self.i.p_valid),[m
+[32m+[m[32m                         self.o.p_ready.eq(1), # Keep the buffer empty[m
+                          # set the output data (from comb result)[m
+                          self.stage.update_output(),[m
+                         ][m
+[31m-        # (i_n_busy) and (o_n_stb) both true:[m
+[31m-        with m.Elif(i_p_stb_o_p_busyn):[m
+[31m-            # If next stage *is* busy, and not stalled yet, accept input[m
+[31m-            m.d.sync += self.o_p_busy.eq(self.i_p_stb & self.o_n_stb)[m
+[32m+[m[32m        # (i.n_ready) false and (o.n_valid) true:[m
+[32m+[m[32m        with m.Elif(i_p_valid_o_p_ready):[m
+[32m+[m[32m            # If next stage *is* ready, and not stalled yet, accept input[m
+[32m+[m[32m            m.d.sync += self.o.p_ready.eq(~(self.i.p_valid & self.o.n_valid))[m
+ [m
+         return m[m
+ [m
+     def ports(self):[m
+[31m-        return [self.i_p_stb, self.i_n_busy,[m
+[31m-                self.o_n_stb, self.o_p_busy,[m
+[32m+[m[32m        return [self.i.p_valid, self.i.n_ready,[m
+[32m+[m[32m                self.o.n_valid, self.o.p_ready,[m
+                ][m
+ [m
+ [m
+[31m-class BufPipe(BufferedPipeline):[m
+[32m+[m[32mclass ExampleBufPipe(BufferedPipeline):[m
+ [m
+     def __init__(self):[m
+         BufferedPipeline.__init__(self)[m
+[1mdiff --git a/src/add/fmul.py b/src/add/fmul.py[m
+[1mindex 130d49e..5b6da94 100644[m
+[1m--- a/src/add/fmul.py[m
+[1m+++ b/src/add/fmul.py[m
+[36m@@ -2,7 +2,8 @@[m [mfrom nmigen import Module, Signal, Cat, Mux, Array, Const[m
+ from nmigen.cli import main, verilog[m
+ [m
+ from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase[m
+[31m-from nmigen_add_experiment import FPState[m
+[32m+[m[32m+from nmigen_add_experiment import FPState, FPGetOp[m
+[32m+[m
+ [m
+ class FPMUL(FPBase):[m
+ [m
+[1mdiff --git a/src/add/nmigen_div_experiment.py b/src/add/nmigen_div_experiment.py[m
+[1mindex ff4c966..e074c5c 100644[m
+[1m--- a/src/add/nmigen_div_experiment.py[m
+[1m+++ b/src/add/nmigen_div_experiment.py[m
+[36m@@ -6,6 +6,7 @@[m [mfrom nmigen import Module, Signal, Const, Cat[m
+ from nmigen.cli import main, verilog[m
+ [m
+ from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase[m
+[32m+[m[32mfrom nmigen_add_experiment import FPState, FPGetOp[m
+ [m
+ class Div:[m
+     def __init__(self, width):[m
+[36m@@ -36,6 +37,12 @@[m [mclass FPDIV(FPBase):[m
+         self.in_b  = FPOp(width)[m
+         self.out_z = FPOp(width)[m
+ [m
+[32m+[m[32m        self.states = [][m
+[32m+[m
+[32m+[m[32m    def add_state(self, state):[m
+[32m+[m[32m        self.states.append(state)[m
+[32m+[m[32m        return state[m
+[32m+[m
+     def get_fragment(self, platform=None):[m
+         """ creates the HDL code-fragment for FPDiv[m
+         """[m
+[36m@@ -59,14 +66,26 @@[m [mclass FPDIV(FPBase):[m
+             # ******[m
+             # gets operand a[m
+ [m
+[32m+[m[32m            geta = FPGetOp("get_a", "get_b", self.in_a, self.width)[m
+[32m+[m[32m            geta.setup(m, self.in_a)[m
+[32m+[m
+             with m.State("get_a"):[m
+[31m-                self.get_op(m, self.in_a, a, "get_b")[m
+[32m+[m[32m                geta.action(m)[m
+[32m+[m[32m                with m.If(geta.out_decode):[m
+[32m+[m[32m                    m.d.sync += a.decode(self.in_a.v)[m
+[32m+[m[32m                #self.get_op(m, self.in_a, a, "get_b")[m
+ [m
+             # ******[m
+             # gets operand b[m
+ [m
+[32m+[m[32m            getb = FPGetOp("get_b", "special_cases", self.in_b, self.width)[m
+[32m+[m[32m            getb.setup(m, self.in_b)[m
+[32m+[m
+             with m.State("get_b"):[m
+[31m-                self.get_op(m, self.in_b, b, "special_cases")[m
+[32m+[m[32m                getb.action(m)[m
+[32m+[m[32m                with m.If(getb.out_decode):[m
+[32m+[m[32m                    m.d.sync += b.decode(self.in_b.v)[m
+[32m+[m[32m                #self.get_op(m, self.in_b, b, "special_cases")[m
+ [m
+             # ******[m
+             # special cases: NaNs, infs, zeros, denormalised[m
+[1mdiff --git a/src/add/test_buf_pipe.py b/src/add/test_buf_pipe.py[m
+[1mindex 8590cca..fa23eac 100644[m
+[1m--- a/src/add/test_buf_pipe.py[m
+[1m+++ b/src/add/test_buf_pipe.py[m
+[36m@@ -1,86 +1,90 @@[m
+ from nmigen import Module, Signal[m
+ from nmigen.compat.sim import run_simulation[m
+[31m-from example_buf_pipe import BufPipe[m
+[32m+[m[32mfrom example_buf_pipe import ExampleBufPipe[m
+ from random import randint[m
+ [m
+ [m
+[31m-def check_o_n_stb(dut, val):[m
+[31m-    o_n_stb = yield dut.o_n_stb[m
+[31m-    assert o_n_stb == val[m
+[32m+[m[32mdef check_o_n_valid(dut, val):[m
+[32m+[m[32m    o_n_valid = yield dut.o.n_valid[m
+[32m+[m[32m    assert o_n_valid == val[m
+[32m+[m
+[32m+[m[32mdef check_o_n_valid2(dut, val):[m
+[32m+[m[32m    o_n_valid = yield dut.o_n_valid[m
+[32m+[m[32m    assert o_n_valid == val[m
+ [m
+ [m
+ def testbench(dut):[m
+     #yield dut.i_p_rst.eq(1)[m
+[31m-    yield dut.i_n_busy.eq(1)[m
+[31m-    yield dut.o_p_busy.eq(1)[m
+[32m+[m[32m    yield dut.i.n_ready.eq(0)[m
+[32m+[m[32m    yield dut.o.p_ready.eq(0)[m
+     yield[m
+     yield[m
+     #yield dut.i_p_rst.eq(0)[m
+[31m-    yield dut.i_n_busy.eq(0)[m
+[32m+[m[32m    yield dut.i.n_ready.eq(1)[m
+     yield dut.stage.i_data.eq(5)[m
+[31m-    yield dut.i_p_stb.eq(1)[m
+[32m+[m[32m    yield dut.i.p_valid.eq(1)[m
+     yield[m
+ [m
+     yield dut.stage.i_data.eq(7)[m
+[31m-    yield from check_o_n_stb(dut, 0) # effects of i_p_stb delayed[m
+[32m+[m[32m    yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # ok *now* i_p_stb effect is felt[m
+[32m+[m[32m    yield from check_o_n_valid(dut, 1) # ok *now* i_p_valid effect is felt[m
+ [m
+     yield dut.stage.i_data.eq(2)[m
+     yield[m
+[31m-    yield dut.i_n_busy.eq(1) # begin going into "stall" (next stage says busy)[m
+[32m+[m[32m    yield dut.i.n_ready.eq(0) # begin going into "stall" (next stage says ready)[m
+     yield dut.stage.i_data.eq(9)[m
+     yield[m
+[31m-    yield dut.i_p_stb.eq(0)[m
+[32m+[m[32m    yield dut.i.p_valid.eq(0)[m
+     yield dut.stage.i_data.eq(12)[m
+     yield[m
+     yield dut.stage.i_data.eq(32)[m
+[31m-    yield dut.i_n_busy.eq(0)[m
+[32m+[m[32m    yield dut.i.n_ready.eq(1)[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # buffer still needs to output[m
+[32m+[m[32m    yield from check_o_n_valid(dut, 1) # buffer still needs to output[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # buffer still needs to output[m
+[32m+[m[32m    yield from check_o_n_valid(dut, 1) # buffer still needs to output[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 0) # buffer outputted, *now* we're done.[m
+[32m+[m[32m    yield from check_o_n_valid(dut, 0) # buffer outputted, *now* we're done.[m
+     yield[m
+ [m
+ [m
+ def testbench2(dut):[m
+[31m-    #yield dut.i_p_rst.eq(1)[m
+[31m-    yield dut.i_n_busy.eq(1)[m
+[31m-    #yield dut.o_p_busy.eq(1)[m
+[32m+[m[32m    #yield dut.i.p_rst.eq(1)[m
+[32m+[m[32m    yield dut.i_n_ready.eq(0)[m
+[32m+[m[32m    #yield dut.o.p_ready.eq(0)[m
+     yield[m
+     yield[m
+[31m-    #yield dut.i_p_rst.eq(0)[m
+[31m-    yield dut.i_n_busy.eq(0)[m
+[32m+[m[32m    #yield dut.i.p_rst.eq(0)[m
+[32m+[m[32m    yield dut.i_n_ready.eq(1)[m
+     yield dut.i_data.eq(5)[m
+[31m-    yield dut.i_p_stb.eq(1)[m
+[32m+[m[32m    yield dut.i_p_valid.eq(1)[m
+     yield[m
+ [m
+     yield dut.i_data.eq(7)[m
+[31m-    yield from check_o_n_stb(dut, 0) # effects of i_p_stb delayed 2 clocks[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 0) # effects of i_p_stb delayed 2 clocks[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks[m
+ [m
+     yield dut.i_data.eq(2)[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # ok *now* i_p_stb effect is felt[m
+[31m-    yield dut.i_n_busy.eq(1) # begin going into "stall" (next stage says busy)[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 1) # ok *now* i_p_valid effect is felt[m
+[32m+[m[32m    yield dut.i_n_ready.eq(0) # begin going into "stall" (next stage says ready)[m
+     yield dut.i_data.eq(9)[m
+     yield[m
+[31m-    yield dut.i_p_stb.eq(0)[m
+[32m+[m[32m    yield dut.i_p_valid.eq(0)[m
+     yield dut.i_data.eq(12)[m
+     yield[m
+     yield dut.i_data.eq(32)[m
+[31m-    yield dut.i_n_busy.eq(0)[m
+[32m+[m[32m    yield dut.i_n_ready.eq(1)[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # buffer still needs to output[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 1) # buffer still needs to output[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # buffer still needs to output[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 1) # buffer still needs to output[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 1) # buffer still needs to output[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 1) # buffer still needs to output[m
+     yield[m
+[31m-    yield from check_o_n_stb(dut, 0) # buffer outputted, *now* we're done.[m
+[32m+[m[32m    yield from check_o_n_valid2(dut, 0) # buffer outputted, *now* we're done.[m
+     yield[m
+     yield[m
+     yield[m
+[36m@@ -104,28 +108,28 @@[m [mclass Test3:[m
+                     send = True[m
+                 else:[m
+                     send = randint(0, send_range) != 0[m
+[31m-                o_p_busy = yield self.dut.o_p_busy[m
+[31m-                if o_p_busy:[m
+[32m+[m[32m                o_p_ready = yield self.dut.o.p_ready[m
+[32m+[m[32m                if not o_p_ready:[m
+                     yield[m
+                     continue[m
+                 if send and self.i != len(self.data):[m
+[31m-                    yield self.dut.i_p_stb.eq(1)[m
+[32m+[m[32m                    yield self.dut.i.p_valid.eq(1)[m
+                     yield self.dut.stage.i_data.eq(self.data[self.i])[m
+                     self.i += 1[m
+                 else:[m
+[31m-                    yield self.dut.i_p_stb.eq(0)[m
+[32m+[m[32m                    yield self.dut.i.p_valid.eq(0)[m
+                 yield[m
+ [m
+     def rcv(self):[m
+         while self.o != len(self.data):[m
+             stall_range = randint(0, 3)[m
+             for j in range(randint(1,10)):[m
+[31m-                stall = randint(0, stall_range) == 0[m
+[31m-                yield self.dut.i_n_busy.eq(stall)[m
+[32m+[m[32m                stall = randint(0, stall_range) != 0[m
+[32m+[m[32m                yield self.dut.i.n_ready.eq(stall)[m
+                 yield[m
+[31m-                o_n_stb = yield self.dut.o_n_stb[m
+[31m-                i_n_busy = yield self.dut.i_n_busy[m
+[31m-                if not o_n_stb or i_n_busy:[m
+[32m+[m[32m                o_n_valid = yield self.dut.o.n_valid[m
+[32m+[m[32m                i_n_ready = yield self.dut.i.n_ready[m
+[32m+[m[32m                if not o_n_valid or not i_n_ready:[m
+                     continue[m
+                 o_data = yield self.dut.stage.o_data[m
+                 assert o_data == self.data[self.o] + 1, \[m
+[36m@@ -144,21 +148,21 @@[m [mdef testbench4(dut):[m
+     i = 0[m
+     o = 0[m
+     while True:[m
+[31m-        stall = randint(0, 3) == 0[m
+[32m+[m[32m        stall = randint(0, 3) != 0[m
+         send = randint(0, 5) != 0[m
+[31m-        yield dut.i_n_busy.eq(stall)[m
+[31m-        o_p_busy = yield dut.o_p_busy[m
+[31m-        if not o_p_busy:[m
+[32m+[m[32m        yield dut.i_n_ready.eq(stall)[m
+[32m+[m[32m        o_p_ready = yield dut.o_p_ready[m
+[32m+[m[32m        if o_p_ready:[m
+             if send and i != len(data):[m
+[31m-                yield dut.i_p_stb.eq(1)[m
+[32m+[m[32m                yield dut.i_p_valid.eq(1)[m
+                 yield dut.i_data.eq(data[i])[m
+                 i += 1[m
+             else:[m
+[31m-                yield dut.i_p_stb.eq(0)[m
+[32m+[m[32m                yield dut.i_p_valid.eq(0)[m
+         yield[m
+[31m-        o_n_stb = yield dut.o_n_stb[m
+[31m-        i_n_busy = yield dut.i_n_busy[m
+[31m-        if o_n_stb and not i_n_busy:[m
+[32m+[m[32m        o_n_valid = yield dut.o_n_valid[m
+[32m+[m[32m        i_n_ready = yield dut.i_n_ready[m
+[32m+[m[32m        if o_n_valid and i_n_ready:[m
+             o_data = yield dut.o_data[m
+             assert o_data == data[o] + 2, "%d-%d data %x not match %x\n" \[m
+                                         % (i, o, o_data, data[o])[m
+[36m@@ -167,26 +171,26 @@[m [mdef testbench4(dut):[m
+                 break[m
+ [m
+ [m
+[31m-class BufPipe2:[m
+[32m+[m[32mclass ExampleBufPipe2:[m
+     """[m
+         connect these:  ------|---------------|[m
+                               v               v[m
+[31m-        i_p_stb  >>in  pipe1 o_n_stb  out>> i_p_stb  >>in  pipe2[m
+[31m-        o_p_busy <<out pipe1 i_n_busy <<in  o_p_busy <<out pipe2[m
+[32m+[m[32m        i_p_valid  >>in  pipe1 o_n_valid  out>> i_p_valid  >>in  pipe2[m
+[32m+[m[32m        o_p_ready <<out pipe1 i_n_ready <<in  o_p_ready <<out pipe2[m
+         stage.i_data   >>in  pipe1 o_data   out>> stage.i_data   >>in  pipe2[m
+     """[m
+     def __init__(self):[m
+[31m-        self.pipe1 = BufPipe()[m
+[31m-        self.pipe2 = BufPipe()[m
+[32m+[m[32m        self.pipe1 = ExampleBufPipe()[m
+[32m+[m[32m        self.pipe2 = ExampleBufPipe()[m
+ [m
+         # input[m
+[31m-        self.i_p_stb = Signal()    # >>in - comes in from PREVIOUS stage[m
+[31m-        self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage[m
+[32m+[m[32m        self.i_p_valid = Signal()    # >>in - comes in from PREVIOUS stage[m
+[32m+[m[32m        self.i_n_ready = Signal()   # in<< - comes in from the NEXT stage[m
+         self.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage[m
+ [m
+         # output[m
+[31m-        self.o_n_stb = Signal()    # out>> - goes out to the NEXT stage[m
+[31m-        self.o_p_busy = Signal()   # <<out - goes out to the PREVIOUS stage[m
+[32m+[m[32m        self.o_n_valid = Signal()    # out>> - goes out to the NEXT stage[m
+[32m+[m[32m        self.o_p_ready = Signal()   # <<out - goes out to the PREVIOUS stage[m
+         self.o_data = Signal(32) # out>> - goes out to the NEXT stage[m
+ [m
+     def elaborate(self, platform):[m
+[36m@@ -194,37 +198,37 @@[m [mclass BufPipe2:[m
+         m.submodules.pipe1 = self.pipe1[m
+         m.submodules.pipe2 = self.pipe2[m
+ [m
+[31m-        # connect inter-pipe input/output stb/busy/data[m
+[31m-        m.d.comb += self.pipe2.i_p_stb.eq(self.pipe1.o_n_stb)[m
+[31m-        m.d.comb += self.pipe1.i_n_busy.eq(self.pipe2.o_p_busy)[m
+[32m+[m[32m        # connect inter-pipe input/output valid/ready/data[m
+[32m+[m[32m        m.d.comb += self.pipe2.i.p_valid.eq(self.pipe1.o.n_valid)[m
+[32m+[m[32m        m.d.comb += self.pipe1.i.n_ready.eq(self.pipe2.o.p_ready)[m
+         m.d.comb += self.pipe2.stage.i_data.eq(self.pipe1.stage.o_data)[m
+ [m
+         # inputs/outputs to the module: pipe1 connections here (LHS)[m
+[31m-        m.d.comb += self.pipe1.i_p_stb.eq(self.i_p_stb)[m
+[31m-        m.d.comb += self.o_p_busy.eq(self.pipe1.o_p_busy)[m
+[32m+[m[32m        m.d.comb += self.pipe1.i.p_valid.eq(self.i_p_valid)[m
+[32m+[m[32m        m.d.comb += self.o_p_ready.eq(self.pipe1.o.p_ready)[m
+         m.d.comb += self.pipe1.stage.i_data.eq(self.i_data)[m
+ [m
+         # now pipe2 connections (RHS)[m
+[31m-        m.d.comb += self.o_n_stb.eq(self.pipe2.o_n_stb)[m
+[31m-        m.d.comb += self.pipe2.i_n_busy.eq(self.i_n_busy)[m
+[32m+[m[32m        m.d.comb += self.o_n_valid.eq(self.pipe2.o.n_valid)[m
+[32m+[m[32m        m.d.comb += self.pipe2.i.n_ready.eq(self.i_n_ready)[m
+         m.d.comb += self.o_data.eq(self.pipe2.stage.o_data)[m
+ [m
+         return m[m
+ [m
+ if __name__ == '__main__':[m
+     print ("test 1")[m
+[31m-    dut = BufPipe()[m
+[32m+[m[32m    dut = ExampleBufPipe()[m
+     run_simulation(dut, testbench(dut), vcd_name="test_bufpipe.vcd")[m
+ [m
+     print ("test 2")[m
+[31m-    dut = BufPipe2()[m
+[32m+[m[32m    dut = ExampleBufPipe2()[m
+     run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe2.vcd")[m
+ [m
+     print ("test 3")[m
+[31m-    dut = BufPipe()[m
+[32m+[m[32m    dut = ExampleBufPipe()[m
+     test = Test3(dut)[m
+     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")[m
+ [m
+     print ("test 4")[m
+[31m-    dut = BufPipe2()[m
+[32m+[m[32m    dut = ExampleBufPipe2()[m
+     run_simulation(dut, testbench4(dut), vcd_name="test_bufpipe4.vcd")[m
+[1mdiff --git a/src/add/test_inputgroup.py b/src/add/test_inputgroup.py[m
+[1mindex ca8523d..bb68861 100644[m
+[1m--- a/src/add/test_inputgroup.py[m
+[1m+++ b/src/add/test_inputgroup.py[m
+[36m@@ -99,9 +99,81 @@[m [mdef testbench(dut):[m
+     assert out_mid == 3, "out mid %d" % out_mid[m
+ [m
+ [m
+[32m+[m[32mclass InputTest:[m
+[32m+[m[32m    def __init__(self, dut):[m
+[32m+[m[32m        self.dut = dut[m
+[32m+[m[32m        self.di = {}[m
+[32m+[m[32m        self.do = {}[m
+[32m+[m[32m        self.tlen = 10[m
+[32m+[m[32m        for mid in range(dut.num_rows):[m
+[32m+[m[32m            self.di[mid] = {}[m
+[32m+[m[32m            self.do[mid] = {}[m
+[32m+[m[32m            for i in range(self.tlen):[m
+[32m+[m[32m                self.di[mid][i] = randint(0, 100)[m
+[32m+[m[32m                self.do[mid][i] = self.di[mid][i][m
+[32m+[m
+[32m+[m[32m    def send(self, mid):[m
+[32m+[m[32m        for i in range(self.tlen):[m
+[32m+[m[32m            op2 = self.di[mid][i][m
+[32m+[m[32m            rs = dut.rs[mid][m
+[32m+[m[32m            ack = yield rs.ack[m
+[32m+[m[32m            while not ack:[m
+[32m+[m[32m                yield[m
+[32m+[m[32m                ack = yield rs.ack[m
+[32m+[m[32m            yield rs.in_op[0].eq(i)[m
+[32m+[m[32m            yield rs.in_op[1].eq(op2)[m
+[32m+[m[32m            yield rs.stb.eq(0b11) # strobe indicate 1st op ready[m
+[32m+[m[32m            ack = yield rs.ack[m
+[32m+[m[32m            while ack:[m
+[32m+[m[32m                yield[m
+[32m+[m[32m                ack = yield rs.ack[m
+[32m+[m[32m            yield rs.stb.eq(0)[m
+[32m+[m
+[32m+[m[32m            # wait random period of time before queueing another value[m
+[32m+[m[32m            for i in range(randint(0, 12)):[m
+[32m+[m[32m                yield[m
+[32m+[m
+[32m+[m[32m    def recv(self):[m
+[32m+[m[32m        while True:[m
+[32m+[m[32m            stb = yield dut.out_op.stb[m
+[32m+[m[32m            yield dut.out_op.ack.eq(0)[m
+[32m+[m[32m            while not stb:[m
+[32m+[m[32m                yield[m
+[32m+[m[32m                stb = yield dut.out_op.stb[m
+[32m+[m
+[32m+[m[32m            yield dut.out_op.ack.eq(1)[m
+[32m+[m[32m            stb = yield dut.out_op.stb[m
+[32m+[m[32m            while stb:[m
+[32m+[m[32m                yield[m
+[32m+[m[32m                stb = yield dut.out_op.stb[m
+[32m+[m[32m            mid = yield dut.mid[m
+[32m+[m[32m            out_i = yield dut.out_op.v[0][m
+[32m+[m[32m            out_v = yield dut.out_op.v[1][m
+[32m+[m
+[32m+[m[32m            # see if this output has occurred already, delete it if it has[m
+[32m+[m[32m            assert out_i in self.do[mid][m
+[32m+[m[32m            assert self.do[mid][out_i] == out_v[m
+[32m+[m[32m            del self.do[mid][out_i][m
+[32m+[m
+[32m+[m[32m            # check if there's any more outputs[m
+[32m+[m[32m            zerolen = True[m
+[32m+[m[32m            for (k, v) in self.do.items():[m
+[32m+[m[32m                if v:[m
+[32m+[m[32m                    zerolen = False[m
+[32m+[m[32m            if zerolen:[m
+[32m+[m[32m                break[m
+[32m+[m
+ if __name__ == '__main__':[m
+     dut = InputGroup(width=32)[m
+     vl = rtlil.convert(dut, ports=dut.ports())[m
+     with open("test_inputgroup.il", "w") as f:[m
+         f.write(vl)[m
+     run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")[m
+[32m+[m
+[32m+[m[32m    dut = InputGroup(width=16)[m
+[32m+[m[32m    test = InputTest(dut)[m
+[32m+[m[32m    run_simulation(dut, [test.send(3), test.send(2),[m
+[32m+[m[32m                         test.send(1), test.send(0),[m
+[32m+[m[32m                         test.recv()],[m
+[32m+[m[32m                   vcd_name="test_inputgroup_parallel.vcd")[m
+[41m+[m
