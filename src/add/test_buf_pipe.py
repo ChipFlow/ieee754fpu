@@ -15,12 +15,12 @@ def check_o_n_valid2(dut, val):
 
 def testbench(dut):
     #yield dut.i_p_rst.eq(1)
-    yield dut.i.n_busy.eq(1)
-    yield dut.o.p_busy.eq(1)
+    yield dut.i.n_ready.eq(0)
+    yield dut.o.p_ready.eq(0)
     yield
     yield
     #yield dut.i_p_rst.eq(0)
-    yield dut.i.n_busy.eq(0)
+    yield dut.i.n_ready.eq(1)
     yield dut.stage.i_data.eq(5)
     yield dut.i.p_valid.eq(1)
     yield
@@ -32,14 +32,14 @@ def testbench(dut):
 
     yield dut.stage.i_data.eq(2)
     yield
-    yield dut.i.n_busy.eq(1) # begin going into "stall" (next stage says busy)
+    yield dut.i.n_ready.eq(0) # begin going into "stall" (next stage says ready)
     yield dut.stage.i_data.eq(9)
     yield
     yield dut.i.p_valid.eq(0)
     yield dut.stage.i_data.eq(12)
     yield
     yield dut.stage.i_data.eq(32)
-    yield dut.i.n_busy.eq(0)
+    yield dut.i.n_ready.eq(1)
     yield
     yield from check_o_n_valid(dut, 1) # buffer still needs to output
     yield
@@ -51,12 +51,12 @@ def testbench(dut):
 
 def testbench2(dut):
     #yield dut.i.p_rst.eq(1)
-    yield dut.i_n_busy.eq(1)
-    #yield dut.o.p_busy.eq(1)
+    yield dut.i_n_ready.eq(0)
+    #yield dut.o.p_ready.eq(0)
     yield
     yield
     #yield dut.i.p_rst.eq(0)
-    yield dut.i_n_busy.eq(0)
+    yield dut.i_n_ready.eq(1)
     yield dut.i_data.eq(5)
     yield dut.i_p_valid.eq(1)
     yield
@@ -69,14 +69,14 @@ def testbench2(dut):
     yield dut.i_data.eq(2)
     yield
     yield from check_o_n_valid2(dut, 1) # ok *now* i_p_valid effect is felt
-    yield dut.i_n_busy.eq(1) # begin going into "stall" (next stage says busy)
+    yield dut.i_n_ready.eq(0) # begin going into "stall" (next stage says ready)
     yield dut.i_data.eq(9)
     yield
     yield dut.i_p_valid.eq(0)
     yield dut.i_data.eq(12)
     yield
     yield dut.i_data.eq(32)
-    yield dut.i_n_busy.eq(0)
+    yield dut.i_n_ready.eq(1)
     yield
     yield from check_o_n_valid2(dut, 1) # buffer still needs to output
     yield
@@ -108,8 +108,8 @@ class Test3:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                o_p_busy = yield self.dut.o.p_busy
-                if o_p_busy:
+                o_p_ready = yield self.dut.o.p_ready
+                if not o_p_ready:
                     yield
                     continue
                 if send and self.i != len(self.data):
@@ -124,12 +124,12 @@ class Test3:
         while self.o != len(self.data):
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
-                stall = randint(0, stall_range) == 0
-                yield self.dut.i.n_busy.eq(stall)
+                stall = randint(0, stall_range) != 0
+                yield self.dut.i.n_ready.eq(stall)
                 yield
                 o_n_valid = yield self.dut.o.n_valid
-                i_n_busy = yield self.dut.i.n_busy
-                if not o_n_valid or i_n_busy:
+                i_n_ready = yield self.dut.i.n_ready
+                if not o_n_valid or not i_n_ready:
                     continue
                 o_data = yield self.dut.stage.o_data
                 assert o_data == self.data[self.o] + 1, \
@@ -148,11 +148,11 @@ def testbench4(dut):
     i = 0
     o = 0
     while True:
-        stall = randint(0, 3) == 0
+        stall = randint(0, 3) != 0
         send = randint(0, 5) != 0
-        yield dut.i_n_busy.eq(stall)
-        o_p_busy = yield dut.o_p_busy
-        if not o_p_busy:
+        yield dut.i_n_ready.eq(stall)
+        o_p_ready = yield dut.o_p_ready
+        if o_p_ready:
             if send and i != len(data):
                 yield dut.i_p_valid.eq(1)
                 yield dut.i_data.eq(data[i])
@@ -161,8 +161,8 @@ def testbench4(dut):
                 yield dut.i_p_valid.eq(0)
         yield
         o_n_valid = yield dut.o_n_valid
-        i_n_busy = yield dut.i_n_busy
-        if o_n_valid and not i_n_busy:
+        i_n_ready = yield dut.i_n_ready
+        if o_n_valid and i_n_ready:
             o_data = yield dut.o_data
             assert o_data == data[o] + 2, "%d-%d data %x not match %x\n" \
                                         % (i, o, o_data, data[o])
@@ -176,7 +176,7 @@ class BufPipe2:
         connect these:  ------|---------------|
                               v               v
         i_p_valid  >>in  pipe1 o_n_valid  out>> i_p_valid  >>in  pipe2
-        o_p_busy <<out pipe1 i_n_busy <<in  o_p_busy <<out pipe2
+        o_p_ready <<out pipe1 i_n_ready <<in  o_p_ready <<out pipe2
         stage.i_data   >>in  pipe1 o_data   out>> stage.i_data   >>in  pipe2
     """
     def __init__(self):
@@ -185,12 +185,12 @@ class BufPipe2:
 
         # input
         self.i_p_valid = Signal()    # >>in - comes in from PREVIOUS stage
-        self.i_n_busy = Signal()   # in<< - comes in from the NEXT stage
+        self.i_n_ready = Signal()   # in<< - comes in from the NEXT stage
         self.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
 
         # output
         self.o_n_valid = Signal()    # out>> - goes out to the NEXT stage
-        self.o_p_busy = Signal()   # <<out - goes out to the PREVIOUS stage
+        self.o_p_ready = Signal()   # <<out - goes out to the PREVIOUS stage
         self.o_data = Signal(32) # out>> - goes out to the NEXT stage
 
     def elaborate(self, platform):
@@ -198,19 +198,19 @@ class BufPipe2:
         m.submodules.pipe1 = self.pipe1
         m.submodules.pipe2 = self.pipe2
 
-        # connect inter-pipe input/output valid/busy/data
+        # connect inter-pipe input/output valid/ready/data
         m.d.comb += self.pipe2.i.p_valid.eq(self.pipe1.o.n_valid)
-        m.d.comb += self.pipe1.i.n_busy.eq(self.pipe2.o.p_busy)
+        m.d.comb += self.pipe1.i.n_ready.eq(self.pipe2.o.p_ready)
         m.d.comb += self.pipe2.stage.i_data.eq(self.pipe1.stage.o_data)
 
         # inputs/outputs to the module: pipe1 connections here (LHS)
         m.d.comb += self.pipe1.i.p_valid.eq(self.i_p_valid)
-        m.d.comb += self.o_p_busy.eq(self.pipe1.o.p_busy)
+        m.d.comb += self.o_p_ready.eq(self.pipe1.o.p_ready)
         m.d.comb += self.pipe1.stage.i_data.eq(self.i_data)
 
         # now pipe2 connections (RHS)
         m.d.comb += self.o_n_valid.eq(self.pipe2.o.n_valid)
-        m.d.comb += self.pipe2.i.n_busy.eq(self.i_n_busy)
+        m.d.comb += self.pipe2.i.n_ready.eq(self.i_n_ready)
         m.d.comb += self.o_data.eq(self.pipe2.stage.o_data)
 
         return m

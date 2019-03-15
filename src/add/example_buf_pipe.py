@@ -13,11 +13,11 @@
 
     input acceptance conditions are when:
         * incoming previous-stage strobe (i.p_valid) is HIGH
-        * outgoing previous-stage busy   (o.p_busy) is LOW
+        * outgoing previous-stage ready   (o.p_ready) is LOW
 
     output transmission conditions are when:
         * outgoing next-stage strobe (o.n_valid) is HIGH
-        * outgoing next-stage busy   (i.n_busy) is LOW
+        * outgoing next-stage ready   (i.n_ready) is LOW
 
     the tricky bit is when the input has valid data and the output is not
     ready to accept it.  if it wasn't for the clock synchronisation, it
@@ -33,7 +33,7 @@
     we now effectively have *two* possible pieces of data to "choose" from:
     the buffered data, and the incoming data.  the decision as to which
     to process and output is based on whether we are in "stall" or not.
-    i.e. when the next stage is no longer busy, the output comes from
+    i.e. when the next stage is no longer ready, the output comes from
     the buffer if a stall had previously occurred, otherwise it comes
     direct from processing the input.
 
@@ -104,21 +104,21 @@ class IOAckIn:
 
     def __init__(self):
         self.p_valid = Signal()  # >>in - comes in from PREVIOUS stage
-        self.n_busy = Signal() # in<< - comes in from the NEXT stage
+        self.n_ready = Signal() # in<< - comes in from the NEXT stage
 
 
 class IOAckOut:
 
     def __init__(self):
         self.n_valid = Signal()  # out>> - goes out to the NEXT stage
-        self.p_busy = Signal() # <<out - goes out to the PREVIOUS stage
+        self.p_ready = Signal() # <<out - goes out to the PREVIOUS stage
 
 
 class BufferedPipeline:
     """ buffered pipeline stage
 
         stage-1   i.p_valid  >>in   stage   o.n_valid  out>>   stage+1
-        stage-1   o.p_busy <<out  stage   i.n_busy <<in    stage+1
+        stage-1   o.p_ready <<out  stage   i.n_ready <<in    stage+1
         stage-1   i_data   >>in   stage   o_data   out>>   stage+1
                               |             |
                               +------->  process
@@ -126,72 +126,72 @@ class BufferedPipeline:
                               +-- r_data ---+
     """
     def __init__(self):
-        # input: strobe comes in from previous stage, busy comes in from next
+        # input: strobe comes in from previous stage, ready comes in from next
         self.i = IOAckIn()
         #self.i.p_valid = Signal()    # >>in - comes in from PREVIOUS stage
-        #self.i.n_busy = Signal()   # in<< - comes in from the NEXT stage
+        #self.i.n_ready = Signal()   # in<< - comes in from the NEXT stage
 
-        # output: strobe goes out to next stage, busy comes in from previous
+        # output: strobe goes out to next stage, ready comes in from previous
         self.o = IOAckOut()
         #self.o.n_valid = Signal()    # out>> - goes out to the NEXT stage
-        #self.o.p_busy = Signal()   # <<out - goes out to the PREVIOUS stage
+        #self.o.p_ready = Signal()   # <<out - goes out to the PREVIOUS stage
 
     def elaborate(self, platform):
         m = Module()
 
         # establish some combinatorial temporaries
-        o_p_busyn = Signal(reset_less=True)
+        o_p_readyn = Signal(reset_less=True)
         o_n_validn = Signal(reset_less=True)
-        i_n_busyn = Signal(reset_less=True)
-        i_p_valid_o_p_busyn = Signal(reset_less=True)
-        m.d.comb += [i_n_busyn.eq(~self.i.n_busy),
+        i_n_readyn = Signal(reset_less=True)
+        i_p_valid_o_p_ready = Signal(reset_less=True)
+        m.d.comb += [i_n_readyn.eq(~self.i.n_ready),
                      o_n_validn.eq(~self.o.n_valid),
-                     o_p_busyn.eq(~self.o.p_busy),
-                     i_p_valid_o_p_busyn.eq(self.i.p_valid & o_p_busyn),
+                     o_p_readyn.eq(~self.o.p_ready),
+                     i_p_valid_o_p_ready.eq(self.i.p_valid & self.o.p_ready),
         ]
 
         # store result of processing in combinatorial temporary
         with m.If(self.i.p_valid): # input is valid: process it
             m.d.comb += self.stage.process()
         # if not in stall condition, update the temporary register
-        with m.If(o_p_busyn): # not stalled
+        with m.If(self.o.p_ready): # not stalled
             m.d.sync += self.stage.update_buffer()
 
         #with m.If(self.i.p_rst): # reset
         #    m.d.sync += self.o.n_valid.eq(0)
-        #    m.d.sync += self.o.p_busy.eq(0)
-        with m.If(i_n_busyn): # next stage is not busy
-            with m.If(o_p_busyn): # not stalled
+        #    m.d.sync += self.o.p_ready.eq(0)
+        with m.If(self.i.n_ready): # next stage is ready
+            with m.If(self.o.p_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
                              self.stage.update_output(),
                             ]
-            with m.Else(): # o.p_busy is true, and something is in our buffer.
+            with m.Else(): # o.p_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.o.n_valid.eq(1),
                              self.stage.flush_buffer(),
                              # clear stall condition, declare register empty.
-                             self.o.p_busy.eq(0),
+                             self.o.p_ready.eq(1),
                             ]
-                # ignore input, since o.p_busy is also true.
+                # ignore input, since o.p_ready is also false.
 
-        # (i.n_busy) is true here: next stage is busy
-        with m.Elif(o_n_validn): # next stage being told "not busy"
+        # (i.n_ready) is false here: next stage is ready
+        with m.Elif(o_n_validn): # next stage being told "ready"
             m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
-                         self.o.p_busy.eq(0), # Keep the buffer empty
+                         self.o.p_ready.eq(1), # Keep the buffer empty
                          # set the output data (from comb result)
                          self.stage.update_output(),
                         ]
-        # (i.n_busy) and (o.n_valid) both true:
-        with m.Elif(i_p_valid_o_p_busyn):
-            # If next stage *is* busy, and not stalled yet, accept input
-            m.d.sync += self.o.p_busy.eq(self.i.p_valid & self.o.n_valid)
+        # (i.n_ready) false and (o.n_valid) true:
+        with m.Elif(i_p_valid_o_p_ready):
+            # If next stage *is* ready, and not stalled yet, accept input
+            m.d.sync += self.o.p_ready.eq(~(self.i.p_valid & self.o.n_valid))
 
         return m
 
     def ports(self):
-        return [self.i.p_valid, self.i.n_busy,
-                self.o.n_valid, self.o.p_busy,
+        return [self.i.p_valid, self.i.n_ready,
+                self.o.n_valid, self.o.p_ready,
                ]
 
 
