@@ -127,7 +127,35 @@ class BufferedPipeline:
         self.o.data = stage.ospec()
         self.stage = stage
 
+    def connect_next(self, nxt):
+        """ helper function to connect the next stage data/valid/ready
+        """
+        return [nxt.i.p_valid.eq(self.o.n_valid),
+                self.i.n_ready.eq(nxt.o.p_ready),
+                eq(nxt.i.data, self.o.data),
+               ]
+
+    def connect_in(self, prev):
+        """ helper function to connect stage to an input source.  do not
+            use to connect stage-to-stage!
+        """
+        return [self.i.p_valid.eq(prev.i.p_valid),
+                prev.o.p_ready.eq(self.o.p_ready),
+                eq(self.i.data, prev.i.data),
+               ]
+
+    def connect_out(self, nxt):
+        """ helper function to connect stage to an output source.  do not
+            use to connect stage-to-stage!
+        """
+        return [nxt.o.n_valid.eq(self.o.n_valid),
+                self.i.n_ready.eq(nxt.i.n_ready),
+                eq(nxt.o.data, self.o.data),
+               ]
+
     def set_input(self, i):
+        """ helper function to set the input data
+        """
         return eq(self.i.data, i)
 
     def update_buffer(self):
