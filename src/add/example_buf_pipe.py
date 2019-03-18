@@ -45,72 +45,8 @@
 
 from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.cli import verilog, rtlil
+from collections.abc import Sequence
 
-
-class ExampleStage:
-    """ an example of how to use the buffered pipeline.  actual names of
-        variables (i_data, r_data, o_data, result) below do not matter:
-        the functions however do.
-
-        input data i_data is read (only), is processed and goes into an
-        intermediate result store [process()].  this is updated combinatorially.
-
-        in a non-stall condition, the intermediate result will go into the
-        output (update_output).  however if ever there is a stall, it goes
-        into r_data instead [update_buffer()].
-
-        when the non-stall condition is released, r_data is the first
-        to be transferred to the output [flush_buffer()], and the stall
-        condition cleared.
-
-        on the next cycle (as long as stall is not raised again) the
-        input may begin to be processed and transferred directly to output.
-    """
-
-    def __init__(self):
-        """ i_data can be a DIFFERENT type from everything else
-            o_data, r_data and result are best of the same type.
-            however this is not strictly necessary.  an intermediate
-            transformation process could hypothetically be applied, however
-            it is result and r_data that definitively need to be of the same
-            (intermediary) type, as it is both result and r_data that
-            are transferred into o_data:
-
-            i_data -> process() -> result --> o_data
-                                     |           ^
-                                     |           |
-                                     +-> r_data -+
-        """
-        self.i_data = Signal(16)
-        self.r_data = Signal(16)
-        self.o_data = Signal(16)
-        self.result = Signal(16)
-
-    def process(self):
-        """ process the input data and store it in result.
-            (not needed to be known: result is combinatorial)
-        """
-        return self.result.eq(self.i_data + 1)
-
-    def update_buffer(self):
-        """ copies the result into the intermediate register r_data,
-            which will need to be outputted on a subsequent cycle
-            prior to allowing "normal" operation.
-        """
-        return self.r_data.eq(self.result)
-
-    def update_output(self):
-        """ copies the (combinatorial) result into the output
-        """
-        return self.o_data.eq(self.result)
-
-    def flush_buffer(self):
-        """ copies the *intermediate* register r_data into the output
-        """
-        return self.o_data.eq(self.r_data)
-
-    def ports(self):
-        return [self.i_data, self.o_data]
 
 class IOAckIn:
 
@@ -126,18 +62,54 @@ class IOAckOut:
         self.p_ready = Signal() # <<out - goes out to the PREVIOUS stage
 
 
+def eq(o, i):
+    if not isinstance(o, Sequence):
+        o, i = [o], [i]
+    res = []
+    for (ao, ai) in zip(o, i):
+        res.append(ao.eq(ai))
+    return res
+
+
 class BufferedPipeline:
-    """ buffered pipeline stage
+    """ buffered pipeline stage.  data and strobe signals travel in sync.
+        if ever the input is ready and the output is not, processed data
+        is stored in a temporary register.
 
         stage-1   i.p_valid >>in   stage   o.n_valid out>>   stage+1
         stage-1   o.p_ready <<out  stage   i.n_ready <<in    stage+1
-        stage-1   i_data    >>in   stage   o_data    out>>   stage+1
+        stage-1   i.data    >>in   stage   o.data    out>>   stage+1
                               |             |
-                              +------->  process
+                            process --->----^
                               |             |
-                              +-- r_data ---+
+                              +-- r_data ->-+
+
+        input data i_data is read (only), is processed and goes into an
+        intermediate result store [process()].  this is updated combinatorially.
+
+        in a non-stall condition, the intermediate result will go into the
+        output (update_output).  however if ever there is a stall, it goes
+        into r_data instead [update_buffer()].
+
+        when the non-stall condition is released, r_data is the first
+        to be transferred to the output [flush_buffer()], and the stall
+        condition cleared.
+
+        on the next cycle (as long as stall is not raised again) the
+        input may begin to be processed and transferred directly to output.
     """
-    def __init__(self):
+    def __init__(self, stage):
+        """ pass in a "stage" which may be either a static class or a class
+            instance, which has three functions:
+            * ispec: returns input signals according to the input specification
+            * ispec: returns output signals to the output specification
+            * process: takes an input instance and returns processed data
+
+            i_data -> process() -> result --> o.data
+                                     |           ^
+                                     |           |
+                                     +-> r_data -+
+        """
         # input: strobe comes in from previous stage, ready comes in from next
         self.i = IOAckIn()
         #self.i.p_valid = Signal()    # >>in - comes in from PREVIOUS stage
@@ -147,6 +119,36 @@ class BufferedPipeline:
         self.o = IOAckOut()
         #self.o.n_valid = Signal()    # out>> - goes out to the NEXT stage
         #self.o.p_ready = Signal()   # <<out - goes out to the PREVIOUS stage
+
+        # set up the input and output data
+        self.i.data = stage.ispec() # input type
+        self.r_data = stage.ospec() # all these are output type
+        self.result = stage.ospec()
+        self.o.data = stage.ospec()
+        self.stage = stage
+
+    def set_input(self, i):
+        return eq(self.i.data, i)
+
+    def update_buffer(self):
+        """ copies the result into the intermediate register r_data,
+            which will need to be outputted on a subsequent cycle
+            prior to allowing "normal" operation.
+        """
+        return eq(self.r_data, self.result)
+
+    def update_output(self):
+        """ copies the (combinatorial) result into the output
+        """
+        return eq(self.o.data, self.result)
+
+    def flush_buffer(self):
+        """ copies the *intermediate* register r_data into the output
+        """
+        return eq(self.o.data, self.r_data)
+
+    def ports(self):
+        return [self.i.data, self.o.data]
 
     def elaborate(self, platform):
         m = Module()
@@ -160,10 +162,10 @@ class BufferedPipeline:
 
         # store result of processing in combinatorial temporary
         with m.If(self.i.p_valid): # input is valid: process it
-            m.d.comb += self.stage.process()
+            m.d.comb += eq(self.result, self.stage.process(self.i.data))
         # if not in stall condition, update the temporary register
         with m.If(self.o.p_ready): # not stalled
-            m.d.sync += self.stage.update_buffer()
+            m.d.sync += self.update_buffer()
 
         #with m.If(self.i.p_rst): # reset
         #    m.d.sync += self.o.n_valid.eq(0)
@@ -172,12 +174,12 @@ class BufferedPipeline:
             with m.If(self.o.p_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
-                             self.stage.update_output(),
+                             self.update_output(),
                             ]
             with m.Else(): # o.p_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.o.n_valid.eq(1),
-                             self.stage.flush_buffer(),
+                             self.flush_buffer(),
                              # clear stall condition, declare register empty.
                              self.o.p_ready.eq(1),
                             ]
@@ -188,7 +190,7 @@ class BufferedPipeline:
             m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
                          self.o.p_ready.eq(1), # Keep the buffer empty
                          # set the output data (from comb result)
-                         self.stage.update_output(),
+                         self.update_output(),
                         ]
         # (i.n_ready) false and (o.n_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
@@ -203,18 +205,63 @@ class BufferedPipeline:
                ]
 
 
-class ExampleBufPipe(BufferedPipeline):
+class ExampleAddStage:
+    """ an example of how to use the buffered pipeline, as a class instance
+    """
+
+    def ispec(self):
+        """ returns a tuple of input signals which will be the incoming data
+        """
+        return (Signal(16), Signal(16))
+
+    def ospec(self):
+        """ returns an output signal which will happen to contain the sum
+            of the two inputs
+        """
+        return Signal(16)
+
+    def process(self, i):
+        """ process the input data (sums the values in the tuple) and returns it
+        """
+        return i[0] + i[1]
+
+
+class ExampleBufPipeAdd(BufferedPipeline):
+    """ an example of how to use the buffered pipeline, using a class instance
+    """
 
     def __init__(self):
-        BufferedPipeline.__init__(self)
-        self.stage = ExampleStage()
+        addstage = ExampleAddStage()
+        BufferedPipeline.__init__(self, addstage)
 
-    def ports(self):
-        return self.stage.ports() + BufferedPipeline.ports(self)
+
+class ExampleStage:
+    """ an example of how to use the buffered pipeline, in a static class
+        fashion
+    """
+
+    def ispec():
+        return Signal(16)
+
+    def ospec():
+        return Signal(16)
+
+    def process(i):
+        """ process the input data and returns it (adds 1)
+        """
+        return i + 1
+
+
+class ExampleBufPipe(BufferedPipeline):
+    """ an example of how to use the buffered pipeline.
+    """
+
+    def __init__(self):
+        BufferedPipeline.__init__(self, ExampleStage)
 
 
 if __name__ == '__main__':
-    dut = BufPipe()
+    dut = ExampleBufPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_bufpipe.il", "w") as f:
         f.write(vl)
