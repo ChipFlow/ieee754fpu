@@ -1,6 +1,7 @@
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
+from example_buf_pipe import ExampleCombPipe
 from example_buf_pipe import IOAckIn, IOAckOut
 from random import randint
 
@@ -270,6 +271,11 @@ if __name__ == '__main__':
     dut = ExampleBufPipe()
     test = Test3(dut)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
+
+    print ("test 3.5")
+    dut = ExampleCombPipe()
+    test = Test3(dut)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_combpipe3.vcd")
 
     print ("test 4")
     dut = ExampleBufPipe2()

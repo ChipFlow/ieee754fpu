@@ -284,8 +284,78 @@ class ExampleBufPipe(BufferedPipeline):
         BufferedPipeline.__init__(self, ExampleStage)
 
 
+class CombPipe:
+    """A simple pipeline stage containing combinational logic that can execute
+    completely in one clock cycle.
+
+    Parameters:
+    -----------
+    input_shape : int or tuple or None
+        the shape of ``input.data`` and ``comb_input``
+    output_shape : int or tuple or None
+        the shape of ``output.data`` and ``comb_output``
+    name : str
+        the name
+
+    Attributes:
+    -----------
+    input : StageInput
+        The pipeline input
+    output : StageOutput
+        The pipeline output
+    comb_input : Signal, input_shape
+        The input to the combinatorial logic
+    comb_output: Signal, output_shape
+        The output of the combinatorial logic
+    """
+
+    def __init__(self, stage):
+        self.stage = stage
+        self._data_valid = Signal()
+        # set up input and output IO ACK (prev/next ready/valid)
+        self.i = IOAckIn()
+        self.o = IOAckOut()
+
+        # set up the input and output data
+        self.i.data = stage.ispec() # input type
+        self.r_data = stage.ispec() # input type
+        self.i.comb = stage.ispec() # input type
+        self.o.comb = stage.ospec() # output data
+        self.o.data = stage.ospec() # output type
+        self.o.data.name = "outdata"
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += eq(self.o.comb, self.stage.process(self.i.comb))
+        m.d.comb += self.o.n_valid.eq(self._data_valid)
+        m.d.comb += self.o.p_ready.eq(~self._data_valid | self.i.n_ready)
+        m.d.sync += self._data_valid.eq(self.i.p_valid | \
+                                        (~self.i.n_ready & self._data_valid))
+        with m.If(self.i.p_valid & self.o.p_ready):
+            m.d.sync += eq(self.r_data, self.i.data)
+        m.d.comb += eq(self.i.comb, self.r_data)
+        m.d.comb += eq(self.o.data, self.o.comb)
+        return m
+
+    def ports(self):
+        return [self.i.data, self.o.data]
+
+
+class ExampleCombPipe(CombPipe):
+    """ an example of how to use the combinatorial pipeline.
+    """
+
+    def __init__(self):
+        CombPipe.__init__(self, ExampleStage)
+
+
 if __name__ == '__main__':
     dut = ExampleBufPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_bufpipe.il", "w") as f:
+        f.write(vl)
+
+    dut = ExampleCombPipe()
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_combpipe.il", "w") as f:
         f.write(vl)
