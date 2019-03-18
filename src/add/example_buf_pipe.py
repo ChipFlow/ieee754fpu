@@ -319,22 +319,20 @@ class CombPipe:
         # set up the input and output data
         self.i.data = stage.ispec() # input type
         self.r_data = stage.ispec() # input type
-        self.i.comb = stage.ispec() # input type
-        self.o.comb = stage.ospec() # output data
+        self.o_comb = stage.ospec() # output data
         self.o.data = stage.ospec() # output type
         self.o.data.name = "outdata"
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += eq(self.o.comb, self.stage.process(self.i.comb))
+        m.d.comb += eq(self.o_comb, self.stage.process(self.r_data))
         m.d.comb += self.o.n_valid.eq(self._data_valid)
         m.d.comb += self.o.p_ready.eq(~self._data_valid | self.i.n_ready)
         m.d.sync += self._data_valid.eq(self.i.p_valid | \
                                         (~self.i.n_ready & self._data_valid))
         with m.If(self.i.p_valid & self.o.p_ready):
             m.d.sync += eq(self.r_data, self.i.data)
-        m.d.comb += eq(self.i.comb, self.r_data)
-        m.d.comb += eq(self.o.data, self.o.comb)
+        m.d.comb += eq(self.o.data, self.o_comb)
         return m
 
     def ports(self):
