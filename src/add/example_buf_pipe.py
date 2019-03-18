@@ -176,6 +176,8 @@ class BufferedPipeline:
 
     def elaborate(self, platform):
         m = Module()
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.i.data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
@@ -323,8 +325,15 @@ class CombPipe:
         self.o.data = stage.ospec() # output type
         self.o.data.name = "outdata"
 
+    def set_input(self, i):
+        """ helper function to set the input data
+        """
+        return eq(self.i.data, i)
+
     def elaborate(self, platform):
         m = Module()
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.r_data)
         m.d.comb += eq(self.result, self.stage.process(self.r_data))
         m.d.comb += self.o.n_valid.eq(self._data_valid)
         m.d.comb += self.o.p_ready.eq(~self._data_valid | self.i.n_ready)

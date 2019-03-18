@@ -1,7 +1,7 @@
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Mux
 from nmigen.compat.sim import run_simulation
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
-from example_buf_pipe import ExampleCombPipe
+from example_buf_pipe import ExampleCombPipe, CombPipe
 from example_buf_pipe import IOAckIn, IOAckOut
 from random import randint
 
@@ -89,8 +89,9 @@ def testbench2(dut):
 
 
 class Test3:
-    def __init__(self, dut):
+    def __init__(self, dut, resultfn):
         self.dut = dut
+        self.resultfn = resultfn
         self.data = []
         for i in range(num_tests):
             #data.append(randint(0, 1<<16-1))
@@ -130,20 +131,23 @@ class Test3:
                 if not o_n_valid or not i_n_ready:
                     continue
                 o_data = yield self.dut.o.data
-                assert o_data == self.data[self.o] + 1, \
-                            "%d-%d data %x not match %x\n" \
-                            % (self.i, self.o, o_data, self.data[self.o])
+                self.resultfn(o_data, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
                     break
 
+def test3_resultfn(o_data, expected, i, o):
+    assert o_data == expected + 1, \
+                "%d-%d data %x not match %x\n" \
+                % (i, o, o_data, expected)
 
 class Test5:
-    def __init__(self, dut):
+    def __init__(self, dut, resultfn):
         self.dut = dut
+        self.resultfn = resultfn
         self.data = []
         for i in range(num_tests):
-            self.data.append((randint(0, 1<<14), randint(0, 1<<14)))
+            self.data.append((randint(0, 1<<16-1), randint(0, 1<<16-1)))
         self.i = 0
         self.o = 0
 
@@ -180,14 +184,16 @@ class Test5:
                 if not o_n_valid or not i_n_ready:
                     continue
                 o_data = yield self.dut.o.data
-                res = self.data[self.o][0] + self.data[self.o][1]
-                assert o_data == res, \
-                            "%d-%d data %x not match %s\n" \
-                            % (self.i, self.o, o_data, repr(self.data[self.o]))
+                self.resultfn(o_data, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
                     break
 
+def test5_resultfn(o_data, expected, i, o):
+    res = expected[0] + expected[1]
+    assert o_data == res, \
+                "%d-%d data %x not match %s\n" \
+                % (i, o, o_data, repr(expected))
 
 def testbench4(dut):
     data = []
@@ -256,6 +262,55 @@ class ExampleBufPipe2:
 
         return m
 
+class SetLessThan:
+    def __init__(self, width, signed):
+        self.src1 = Signal((width, signed))
+        self.src2 = Signal((width, signed))
+        self.output = Signal(width)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.output.eq(Mux(self.src1 < self.src2, 1, 0))
+        return m
+
+
+class LTStage:
+    def __init__(self):
+        self.slt = SetLessThan(16, True)
+
+    def ispec(self):
+        return (Signal(16), Signal(16))
+
+    def ospec(self):
+        return Signal(16)
+
+    def setup(self, m, i):
+        self.o = Signal(16)
+        m.submodules.slt = self.slt
+        m.d.comb += self.slt.src1.eq(i[0])
+        m.d.comb += self.slt.src2.eq(i[1])
+        m.d.comb += self.o.eq(self.slt.output)
+
+    def process(self, i):
+        return self.o
+
+
+class ExampleLTCombPipe(CombPipe):
+    """ an example of how to use the combinatorial pipeline.
+    """
+
+    def __init__(self):
+        stage = LTStage()
+        CombPipe.__init__(self, stage)
+
+
+def test6_resultfn(o_data, expected, i, o):
+    res = 1 if expected[0] < expected[1] else 0
+    assert o_data == res, \
+                "%d-%d data %x not match %s\n" \
+                % (i, o, o_data, repr(expected))
+
+
 num_tests = 1000
 
 if __name__ == '__main__':
@@ -269,12 +324,12 @@ if __name__ == '__main__':
 
     print ("test 3")
     dut = ExampleBufPipe()
-    test = Test3(dut)
+    test = Test3(dut, test3_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
 
     print ("test 3.5")
     dut = ExampleCombPipe()
-    test = Test3(dut)
+    test = Test3(dut, test3_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_combpipe3.vcd")
 
     print ("test 4")
@@ -283,6 +338,11 @@ if __name__ == '__main__':
 
     print ("test 5")
     dut = ExampleBufPipeAdd()
-    test = Test5(dut)
+    test = Test5(dut, test5_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe5.vcd")
+
+    print ("test 6")
+    dut = ExampleLTCombPipe()
+    test = Test5(dut, test6_resultfn)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
 
