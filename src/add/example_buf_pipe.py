@@ -110,25 +110,21 @@ class BufferedPipeline:
                                      |           |
                                      +-> r_data -+
         """
-        # input: strobe comes in from previous stage, ready comes in from next
-        self.i = IOAckIn()
-        #self.i.p_valid = Signal()    # >>in - comes in from PREVIOUS stage
-        #self.i.n_ready = Signal()   # in<< - comes in from the NEXT stage
+        self.stage = stage
 
-        # output: strobe goes out to next stage, ready comes in from previous
+        # set up input and output IO ACK (prev/next ready/valid)
+        self.i = IOAckIn()
         self.o = IOAckOut()
-        #self.o.n_valid = Signal()    # out>> - goes out to the NEXT stage
-        #self.o.p_ready = Signal()   # <<out - goes out to the PREVIOUS stage
 
         # set up the input and output data
         self.i.data = stage.ispec() # input type
         self.r_data = stage.ospec() # all these are output type
         self.result = stage.ospec()
         self.o.data = stage.ospec()
-        self.stage = stage
 
     def connect_next(self, nxt):
-        """ helper function to connect the next stage data/valid/ready
+        """ helper function to connect to the next stage data/valid/ready.
+            data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
         """
         return [nxt.i.p_valid.eq(self.o.n_valid),
                 self.i.n_ready.eq(nxt.o.p_ready),
