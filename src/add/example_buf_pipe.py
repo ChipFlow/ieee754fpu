@@ -192,29 +192,13 @@ class BufferedPipeline(PipelineBase):
 
         # set up the input and output data
         self.p.i_data = stage.ispec() # input type
-        self.r_data   = stage.ospec() # all these are output type
-        self.result   = stage.ospec()
         self.n.o_data = stage.ospec()
-
-    def update_buffer(self):
-        """ copies the result into the intermediate register r_data,
-            which will need to be outputted on a subsequent cycle
-            prior to allowing "normal" operation.
-        """
-        return eq(self.r_data, self.result)
-
-    def update_output(self):
-        """ copies the (combinatorial) result into the output
-        """
-        return eq(self.n.o_data, self.result)
-
-    def flush_buffer(self):
-        """ copies the *intermediate* register r_data into the output
-        """
-        return eq(self.n.o_data, self.r_data)
 
     def elaborate(self, platform):
         m = Module()
+
+        result = self.stage.ospec()
+        r_data = self.stage.ospec()
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, self.p.i_data)
 
@@ -227,10 +211,10 @@ class BufferedPipeline(PipelineBase):
 
         # store result of processing in combinatorial temporary
         with m.If(self.p.i_valid): # input is valid: process it
-            m.d.comb += eq(self.result, self.stage.process(self.p.i_data))
+            m.d.comb += eq(result, self.stage.process(self.p.i_data))
         # if not in stall condition, update the temporary register
         with m.If(self.p.o_ready): # not stalled
-            m.d.sync += self.update_buffer()
+            m.d.sync += eq(r_data, result) # update buffer
 
         #with m.If(self.p.i_rst): # reset
         #    m.d.sync += self.n.o_valid.eq(0)
@@ -239,12 +223,12 @@ class BufferedPipeline(PipelineBase):
             with m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
-                             self.update_output(),
+                             eq(self.n.o_data, result), # update output
                             ]
             with m.Else(): # p.o_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.n.o_valid.eq(1),
-                             self.flush_buffer(),
+                             eq(self.n.o_data, r_data), # flush buffer
                              # clear stall condition, declare register empty.
                              self.p.o_ready.eq(1),
                             ]
@@ -255,7 +239,7 @@ class BufferedPipeline(PipelineBase):
             m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
                          self.p.o_ready.eq(1), # Keep the buffer empty
                          # set the output data (from comb result)
-                         self.update_output(),
+                         eq(self.n.o_data, result),
                         ]
         # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
@@ -355,6 +339,7 @@ class CombPipe(PipelineBase):
 
     def elaborate(self, platform):
         m = Module()
+
         r_data = self.stage.ispec() # input type
         result = self.stage.ospec() # output data
         if hasattr(self.stage, "setup"):
