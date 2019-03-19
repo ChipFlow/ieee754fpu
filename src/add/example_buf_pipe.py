@@ -210,8 +210,8 @@ class BufferedPipeline(PipelineBase):
         ]
 
         # store result of processing in combinatorial temporary
-        with m.If(self.p.i_valid): # input is valid: process it
-            m.d.comb += eq(result, self.stage.process(self.p.i_data))
+        #with m.If(self.p.i_valid): # input is valid: process it
+        m.d.comb += eq(result, self.stage.process(self.p.i_data))
         # if not in stall condition, update the temporary register
         with m.If(self.p.o_ready): # not stalled
             m.d.sync += eq(r_data, result) # update buffer
