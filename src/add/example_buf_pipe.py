@@ -137,10 +137,11 @@ class PipelineBase:
     """
     def __init__(self, stage):
         """ pass in a "stage" which may be either a static class or a class
-            instance, which has three functions:
+            instance, which has four functions (one optional):
             * ispec: returns input signals according to the input specification
             * ispec: returns output signals to the output specification
             * process: takes an input instance and returns processed data
+            * setup: performs any module linkage if the stage uses one.
 
             User must also:
             * add i_data member to PrevControl and
@@ -329,24 +330,15 @@ class CombPipe(PipelineBase):
     """A simple pipeline stage containing combinational logic that can execute
     completely in one clock cycle.
 
-    Parameters:
-    -----------
-    input_shape : int or tuple or None
-        the shape of ``input.data`` and ``comb_input``
-    output_shape : int or tuple or None
-        the shape of ``output.data`` and ``comb_output``
-    name : str
-        the name
-
     Attributes:
     -----------
     input : StageInput
         The pipeline input
     output : StageOutput
         The pipeline output
-    comb_input : Signal, input_shape
-        The input to the combinatorial logic
-    comb_output: Signal, output_shape
+    r_data : Signal, input_shape
+        A temporary (buffered) copy of a prior (valid) input
+    result: Signal, output_shape
         The output of the combinatorial logic
     """
 
