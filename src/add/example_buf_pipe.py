@@ -156,7 +156,7 @@ class PipelineBase:
     def ports(self):
         return [self.p.i_valid, self.n.i_ready,
                 self.n.o_valid, self.p.o_ready,
-                self.p.i_data, self.n.o_data
+                self.p.i_data, self.n.o_data   # XXX need flattening!
                ]
 
 
