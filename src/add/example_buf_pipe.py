@@ -45,6 +45,8 @@
 
 from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.cli import verilog, rtlil
+from nmigen.hdl.rec import Record, Layout
+
 from collections.abc import Sequence
 
 
@@ -102,12 +104,26 @@ def eq(o, i):
     """ makes signals equal: a helper routine which identifies if it is being
         passsed a list (or tuple) of objects, and calls the objects' eq
         function.
+
+        Record is a special (unusual, recursive) case, where the input
+        is specified as a dictionary (which may contain further dictionaries,
+        recursively), where the field names of the dictionary must match
+        the Record's field spec.
     """
     if not isinstance(o, Sequence):
         o, i = [o], [i]
     res = []
     for (ao, ai) in zip(o, i):
-        res.append(ao.eq(ai))
+        #print ("eq", ao, ai)
+        if isinstance(ao, Record):
+            for idx, (field_name, field_shape, _) in enumerate(ao.layout):
+                if isinstance(field_shape, Layout):
+                    rres = eq(ao.fields[field_name], ai.fields[field_name])
+                else:
+                    rres = eq(ao.fields[field_name], ai[field_name])
+                res += rres
+        else:
+            res.append(ao.eq(ai))
     return res
 
 

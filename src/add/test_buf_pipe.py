@@ -1,4 +1,5 @@
 from nmigen import Module, Signal, Mux
+from nmigen.hdl.rec import Record
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
@@ -143,13 +144,24 @@ def test3_resultfn(o_data, expected, i, o):
                 "%d-%d data %x not match %x\n" \
                 % (i, o, o_data, expected)
 
+def data_dict():
+        data = []
+        for i in range(num_tests):
+            data.append({'src1': randint(0, 1<<16-1),
+                         'src2': randint(0, 1<<16-1)})
+        return data
+
+
 class Test5:
-    def __init__(self, dut, resultfn):
+    def __init__(self, dut, resultfn, data=None):
         self.dut = dut
         self.resultfn = resultfn
-        self.data = []
-        for i in range(num_tests):
-            self.data.append((randint(0, 1<<16-1), randint(0, 1<<16-1)))
+        if data:
+            self.data = data
+        else:
+            self.data = []
+            for i in range(num_tests):
+                self.data.append((randint(0, 1<<16-1), randint(0, 1<<16-1)))
         self.i = 0
         self.o = 0
 
@@ -185,7 +197,13 @@ class Test5:
                 i_n_ready = yield self.dut.n.i_ready
                 if not o_n_valid or not i_n_ready:
                     continue
-                o_data = yield self.dut.n.o_data
+                if isinstance(self.dut.n.o_data, Record):
+                    o_data = {}
+                    dod = self.dut.n.o_data
+                    for k, v in dod.fields.items():
+                        o_data[k] = yield v
+                else:
+                    o_data = yield self.dut.n.o_data
                 self.resultfn(o_data, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
@@ -313,7 +331,43 @@ def test6_resultfn(o_data, expected, i, o):
                 % (i, o, o_data, repr(expected))
 
 
-num_tests = 1000
+class ExampleAddRecordStage:
+    """ example use of a Record
+    """
+
+    record_spec = [('src1', 16), ('src2', 16)]
+    def ispec(self):
+        """ returns a tuple of input signals which will be the incoming data
+        """
+        return Record(self.record_spec)
+
+    def ospec(self):
+        return Record(self.record_spec)
+
+    def process(self, i):
+        """ process the input data (sums the values in the tuple) and returns it
+        """
+        return {'src1': i.src1 + 1,
+                'src2': i.src2 + 1}
+
+
+class ExampleAddRecordPipe(CombPipe):
+    """ an example of how to use the combinatorial pipeline.
+    """
+
+    def __init__(self):
+        stage = ExampleAddRecordStage()
+        CombPipe.__init__(self, stage)
+
+
+def test7_resultfn(o_data, expected, i, o):
+    res = (expected['src1'] + 1, expected['src2'] + 1)
+    assert o_data['src1'] == res[0] and o_data['src2'] == res[1], \
+                "%d-%d data %s not match %s\n" \
+                % (i, o, repr(o_data), repr(expected))
+
+
+num_tests = 100
 
 if __name__ == '__main__':
     print ("test 1")
@@ -353,5 +407,19 @@ if __name__ == '__main__':
              list(dut.p.i_data) + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltcomb_pipe.il", "w") as f:
+        f.write(vl)
+
+    print ("test 7")
+    dut = ExampleAddRecordPipe()
+    data=data_dict()
+    test = Test5(dut, test7_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
+
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready,
+             dut.p.i_data.src1, dut.p.i_data.src2,
+             dut.n.o_data.src1, dut.n.o_data.src2]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
 
