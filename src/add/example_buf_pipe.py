@@ -105,6 +105,11 @@ def eq(o, i):
         passsed a list (or tuple) of objects, and calls the objects' eq
         function.
 
+        complex objects (classes) can be used: they must follow the
+        convention of having an eq member function, which takes the
+        responsibility of further calling eq and returning a list of
+        eq assignments
+
         Record is a special (unusual, recursive) case, where the input
         is specified as a dictionary (which may contain further dictionaries,
         recursively), where the field names of the dictionary must match
