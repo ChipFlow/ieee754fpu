@@ -99,6 +99,10 @@ class NextControl:
 
 
 def eq(o, i):
+    """ makes signals equal: a helper routine which identifies if it is being
+        passsed a list (or tuple) of objects, and calls the objects' eq
+        function.
+    """
     if not isinstance(o, Sequence):
         o, i = [o], [i]
     res = []
