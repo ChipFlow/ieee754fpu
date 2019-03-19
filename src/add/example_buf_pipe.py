@@ -65,7 +65,7 @@ class PrevControl:
         """
         return [self.i_valid.eq(prev.i_valid),
                 prev.o_ready.eq(self.o_ready),
-                eq(self.data, prev.data),
+                eq(self.i_data, prev.i_data),
                ]
 
 
@@ -85,7 +85,7 @@ class NextControl:
         """
         return [nxt.i_valid.eq(self.o_valid),
                 self.i_ready.eq(nxt.o_ready),
-                eq(nxt.data, self.data),
+                eq(nxt.i_data, self.o_data),
                ]
 
     def connect_out(self, nxt):
@@ -94,7 +94,7 @@ class NextControl:
         """
         return [nxt.o_valid.eq(self.o_valid),
                 self.i_ready.eq(nxt.i_ready),
-                eq(nxt.data, self.data),
+                eq(nxt.o_data, self.o_data),
                ]
 
 
@@ -114,13 +114,13 @@ class BufferedPipeline:
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
-        stage-1   p.data    >>in   stage   n.data    out>>   stage+1
+        stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
                             process --->----^
                               |             |
                               +-- r_data ->-+
 
-        input data p.data is read (only), is processed and goes into an
+        input data p.i_data is read (only), is processed and goes into an
         intermediate result store [process()].  this is updated combinatorially.
 
         in a non-stall condition, the intermediate result will go into the
@@ -141,10 +141,10 @@ class BufferedPipeline:
             * ispec: returns output signals to the output specification
             * process: takes an input instance and returns processed data
 
-            p.data -> process() -> result --> n.data
-                                     |           ^
-                                     |           |
-                                     +-> r_data -+
+            p.i_data -> process() -> result --> n.o_data
+                                       |           ^
+                                       |           |
+                                       +-> r_data -+
         """
         self.stage = stage
 
@@ -153,10 +153,10 @@ class BufferedPipeline:
         self.n = NextControl()
 
         # set up the input and output data
-        self.p.data = stage.ispec() # input type
-        self.r_data = stage.ospec() # all these are output type
-        self.result = stage.ospec()
-        self.n.data = stage.ospec()
+        self.p.i_data = stage.ispec() # input type
+        self.r_data   = stage.ospec() # all these are output type
+        self.result   = stage.ospec()
+        self.n.o_data = stage.ospec()
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -178,7 +178,7 @@ class BufferedPipeline:
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p.data, i)
+        return eq(self.p.i_data, i)
 
     def update_buffer(self):
         """ copies the result into the intermediate register r_data,
@@ -190,20 +190,20 @@ class BufferedPipeline:
     def update_output(self):
         """ copies the (combinatorial) result into the output
         """
-        return eq(self.n.data, self.result)
+        return eq(self.n.o_data, self.result)
 
     def flush_buffer(self):
         """ copies the *intermediate* register r_data into the output
         """
-        return eq(self.n.data, self.r_data)
+        return eq(self.n.o_data, self.r_data)
 
     def ports(self):
-        return [self.p.data, self.n.data]
+        return [self.p.i_data, self.n.o_data]
 
     def elaborate(self, platform):
         m = Module()
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.data)
+            self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
@@ -214,7 +214,7 @@ class BufferedPipeline:
 
         # store result of processing in combinatorial temporary
         with m.If(self.p.i_valid): # input is valid: process it
-            m.d.comb += eq(self.result, self.stage.process(self.p.data))
+            m.d.comb += eq(self.result, self.stage.process(self.p.i_data))
         # if not in stall condition, update the temporary register
         with m.If(self.p.o_ready): # not stalled
             m.d.sync += self.update_buffer()
@@ -345,16 +345,16 @@ class CombPipe:
         self.n = NextControl()
 
         # set up the input and output data
-        self.p.data = stage.ispec() # input type
+        self.p.i_data = stage.ispec() # input type
         self.r_data = stage.ispec() # input type
         self.result = stage.ospec() # output data
-        self.n.data = stage.ospec() # output type
-        self.n.data.name = "outdata"
+        self.n.o_data = stage.ospec() # output type
+        self.n.o_data.name = "outdata"
 
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p.data, i)
+        return eq(self.p.i_data, i)
 
     def elaborate(self, platform):
         m = Module()
@@ -366,12 +366,12 @@ class CombPipe:
         m.d.sync += self._data_valid.eq(self.p.i_valid | \
                                         (~self.n.i_ready & self._data_valid))
         with m.If(self.p.i_valid & self.p.o_ready):
-            m.d.sync += eq(self.r_data, self.p.data)
-        m.d.comb += eq(self.n.data, self.result)
+            m.d.sync += eq(self.r_data, self.p.i_data)
+        m.d.comb += eq(self.n.o_data, self.result)
         return m
 
     def ports(self):
-        return [self.p.data, self.n.data]
+        return [self.p.i_data, self.n.o_data]
 
 
 class ExampleCombPipe(CombPipe):
