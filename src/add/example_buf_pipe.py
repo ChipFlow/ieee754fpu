@@ -59,6 +59,15 @@ class PrevControl:
         self.i_valid = Signal(name="p_i_valid") # >>in
         self.o_ready = Signal(name="p_o_ready") # <<out
 
+    def connect_in(self, prev):
+        """ helper function to connect stage to an input source.  do not
+            use to connect stage-to-stage!
+        """
+        return [self.i_valid.eq(prev.i_valid),
+                prev.o_ready.eq(self.o_ready),
+                eq(self.data, prev.data),
+               ]
+
 
 class NextControl:
     """ contains the signals that go *to* the next stage (both in and out)
@@ -150,10 +159,7 @@ class BufferedPipeline:
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
-        return [self.p.i_valid.eq(prev.p.i_valid),
-                prev.p.o_ready.eq(self.p.o_ready),
-                eq(self.p.data, prev.p.data),
-               ]
+        return self.p.connect_in(prev.p)
 
     def connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
