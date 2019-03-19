@@ -1,5 +1,7 @@
 from nmigen import Module, Signal, Mux
 from nmigen.compat.sim import run_simulation
+from nmigen.cli import verilog, rtlil
+
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
 from example_buf_pipe import ExampleCombPipe, CombPipe
 from example_buf_pipe import PrevControl, NextControl
@@ -345,4 +347,11 @@ if __name__ == '__main__':
     dut = ExampleLTCombPipe()
     test = Test5(dut, test6_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
+
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             list(dut.p.i_data) + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_ltcomb_pipe.il", "w") as f:
+        f.write(vl)
 
