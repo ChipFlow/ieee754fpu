@@ -49,6 +49,11 @@ from collections.abc import Sequence
 
 
 class PrevControl:
+    """ contains signals that come *from* the previous stage (both in and out)
+        * i_valid: input from previous stage indicating incoming data is valid
+        * o_ready: output to next stage indicating readiness to accept data
+        * i_data : an input - added by the user of this class
+    """
 
     def __init__(self):
         self.i_valid = Signal(name="p_i_valid") # >>in
@@ -56,10 +61,23 @@ class PrevControl:
 
 
 class NextControl:
-
+    """ contains the signals that go *to* the next stage (both in and out)
+        * o_valid: output indicating to next stage that data is valid
+        * i_ready: input from next stage indicating that it can accept data
+        * o_data : an output - added by the user of this class
+    """
     def __init__(self):
         self.o_valid = Signal(name="n_o_valid") # out>>
         self.i_ready = Signal(name="n_i_ready") # <<in
+
+    def connect_to_next(self, nxt):
+        """ helper function to connect to the next stage data/valid/ready.
+            data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
+        """
+        return [nxt.i_valid.eq(self.o_valid),
+                self.i_ready.eq(nxt.o_ready),
+                eq(nxt.data, self.data),
+               ]
 
 
 def eq(o, i):
@@ -122,14 +140,11 @@ class BufferedPipeline:
         self.result = stage.ospec()
         self.n.data = stage.ospec()
 
-    def connect_next(self, nxt):
+    def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
         """
-        return [nxt.p.i_valid.eq(self.n.o_valid),
-                self.n.i_ready.eq(nxt.p.o_ready),
-                eq(nxt.p.data, self.n.data),
-               ]
+        return self.n.connect_to_next(nxt.p)
 
     def connect_in(self, prev):
         """ helper function to connect stage to an input source.  do not

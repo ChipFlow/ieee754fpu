@@ -252,7 +252,7 @@ class ExampleBufPipe2:
         m.submodules.pipe2 = self.pipe2
 
         # connect inter-pipe input/output valid/ready/data
-        m.d.comb += self.pipe1.connect_next(self.pipe2)
+        m.d.comb += self.pipe1.connect_to_next(self.pipe2)
 
         # inputs/outputs to the module: pipe1 connections here (LHS)
         m.d.comb += self.pipe1.connect_in(self)
