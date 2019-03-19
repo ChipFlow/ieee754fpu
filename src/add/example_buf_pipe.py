@@ -351,23 +351,23 @@ class CombPipe(PipelineBase):
 
         # set up the input and output data
         self.p.i_data = stage.ispec() # input type
-        self.r_data = stage.ispec() # input type
-        self.result = stage.ospec() # output data
         self.n.o_data = stage.ospec() # output type
-        self.n.o_data.name = "outdata"
 
     def elaborate(self, platform):
         m = Module()
+        r_data = self.stage.ispec() # input type
+        result = self.stage.ospec() # output data
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.r_data)
-        m.d.comb += eq(self.result, self.stage.process(self.r_data))
+            self.stage.setup(m, r_data)
+
+        m.d.comb += eq(result, self.stage.process(r_data))
         m.d.comb += self.n.o_valid.eq(self._data_valid)
         m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
         m.d.sync += self._data_valid.eq(self.p.i_valid | \
                                         (~self.n.i_ready & self._data_valid))
         with m.If(self.p.i_valid & self.p.o_ready):
-            m.d.sync += eq(self.r_data, self.p.i_data)
-        m.d.comb += eq(self.n.o_data, self.result)
+            m.d.sync += eq(r_data, self.p.i_data)
+        m.d.comb += eq(self.n.o_data, result)
         return m
 
 
