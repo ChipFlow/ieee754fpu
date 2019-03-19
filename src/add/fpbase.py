@@ -139,7 +139,7 @@ class FPNumBase:
     def _is_denormalised(self):
         return (self.exp_n126) & (self.m_msbzero)
 
-    def copy(self, inp):
+    def eq(self, inp):
         return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
 
 
@@ -401,7 +401,7 @@ class Trigger:
         m.d.comb += self.trigger.eq(self.stb & self.ack)
         return m
 
-    def copy(self, inp):
+    def eq(self, inp):
         return [self.stb.eq(inp.stb),
                 self.ack.eq(inp.ack)
                ]
@@ -435,7 +435,7 @@ class FPOp(Trigger):
                 in_op.ack.eq(self.ack), # send ACK
                ]
 
-    def copy(self, inp):
+    def eq(self, inp):
         return [self.v.eq(inp.v),
                 self.stb.eq(inp.stb),
                 self.ack.eq(inp.ack)
@@ -454,7 +454,7 @@ class Overflow:
 
         self.roundz = Signal(reset_less=True)
 
-    def copy(self, inp):
+    def eq(self, inp):
         return [self.guard.eq(inp.guard),
                 self.round_bit.eq(inp.round_bit),
                 self.sticky.eq(inp.sticky),

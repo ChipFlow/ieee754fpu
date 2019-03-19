@@ -169,7 +169,7 @@ class FPGetOp(FPState):
         """ links module to inputs and outputs
         """
         setattr(m.submodules, self.state_from, self.mod)
-        m.d.comb += self.mod.in_op.copy(in_op)
+        m.d.comb += self.mod.in_op.eq(in_op)
         #m.d.comb += self.out_op.eq(self.mod.out_op)
         m.d.comb += self.out_decode.eq(self.mod.out_decode)
 
@@ -239,8 +239,8 @@ class FPGet2Op(FPState):
                 self.mod.ack.eq(0),
                 #self.out_op1.v.eq(self.mod.out_op1.v),
                 #self.out_op2.v.eq(self.mod.out_op2.v),
-                self.out_op1.copy(self.mod.out_op1),
-                self.out_op2.copy(self.mod.out_op2)
+                self.out_op1.eq(self.mod.out_op1),
+                self.out_op2.eq(self.mod.out_op2)
             ]
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
@@ -262,8 +262,8 @@ class FPAddSpecialCasesMod:
         """ links module to inputs and outputs
         """
         m.submodules.specialcases = self
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += self.in_a.eq(in_a)
+        m.d.comb += self.in_b.eq(in_b)
         m.d.comb += out_do_z.eq(self.out_do_z)
 
     def elaborate(self, platform):
@@ -427,8 +427,8 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
             m.next = "put_z"
         with m.Else():
             m.next = "align"
-            m.d.sync += self.out_a.copy(self.dmod.out_a)
-            m.d.sync += self.out_b.copy(self.dmod.out_b)
+            m.d.sync += self.out_a.eq(self.dmod.out_a)
+            m.d.sync += self.out_b.eq(self.dmod.out_b)
 
 
 class FPAddDeNormMod(FPState):
@@ -443,8 +443,8 @@ class FPAddDeNormMod(FPState):
         """ links module to inputs and outputs
         """
         m.submodules.denormalise = self
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += self.in_a.eq(in_a)
+        m.d.comb += self.in_b.eq(in_b)
 
     def elaborate(self, platform):
         m = Module()
@@ -453,13 +453,13 @@ class FPAddDeNormMod(FPState):
         m.submodules.denorm_out_a = self.out_a
         m.submodules.denorm_out_b = self.out_b
         # hmmm, don't like repeating identical code
-        m.d.comb += self.out_a.copy(self.in_a)
+        m.d.comb += self.out_a.eq(self.in_a)
         with m.If(self.in_a.exp_n127):
             m.d.comb += self.out_a.e.eq(self.in_a.N126) # limit a exponent
         with m.Else():
             m.d.comb += self.out_a.m[-1].eq(1) # set top mantissa bit
 
-        m.d.comb += self.out_b.copy(self.in_b)
+        m.d.comb += self.out_b.eq(self.in_b)
         with m.If(self.in_b.exp_n127):
             m.d.comb += self.out_b.e.eq(self.in_b.N126) # limit a exponent
         with m.Else():
@@ -488,8 +488,8 @@ class FPAddDeNorm(FPState, FPID):
         self.idsync(m)
         # Denormalised Number checks
         m.next = "align"
-        m.d.sync += self.out_a.copy(self.mod.out_a)
-        m.d.sync += self.out_b.copy(self.mod.out_b)
+        m.d.sync += self.out_a.eq(self.mod.out_a)
+        m.d.sync += self.out_b.eq(self.mod.out_b)
 
 
 class FPAddAlignMultiMod(FPState):
@@ -517,8 +517,8 @@ class FPAddAlignMultiMod(FPState):
 
         # exponent of a greater than b: shift b down
         m.d.comb += self.exp_eq.eq(0)
-        m.d.comb += self.out_a.copy(self.in_a)
-        m.d.comb += self.out_b.copy(self.in_b)
+        m.d.comb += self.out_a.eq(self.in_a)
+        m.d.comb += self.out_b.eq(self.in_b)
         agtb = Signal(reset_less=True)
         altb = Signal(reset_less=True)
         m.d.comb += agtb.eq(self.in_a.e > self.in_b.e)
@@ -548,18 +548,18 @@ class FPAddAlignMulti(FPState, FPID):
         """ links module to inputs and outputs
         """
         m.submodules.align = self.mod
-        m.d.comb += self.mod.in_a.copy(in_a)
-        m.d.comb += self.mod.in_b.copy(in_b)
-        #m.d.comb += self.out_a.copy(self.mod.out_a)
-        #m.d.comb += self.out_b.copy(self.mod.out_b)
+        m.d.comb += self.mod.in_a.eq(in_a)
+        m.d.comb += self.mod.in_b.eq(in_b)
+        #m.d.comb += self.out_a.eq(self.mod.out_a)
+        #m.d.comb += self.out_b.eq(self.mod.out_b)
         m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_a.copy(self.mod.out_a)
-        m.d.sync += self.out_b.copy(self.mod.out_b)
+        m.d.sync += self.out_a.eq(self.mod.out_a)
+        m.d.sync += self.out_b.eq(self.mod.out_b)
         with m.If(self.exp_eq):
             m.next = "add_0"
 
@@ -577,8 +577,8 @@ class FPAddAlignSingleMod:
         """ links module to inputs and outputs
         """
         m.submodules.align = self
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += self.in_a.eq(in_a)
+        m.d.comb += self.in_b.eq(in_b)
 
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the
@@ -624,22 +624,22 @@ class FPAddAlignSingleMod:
         m.d.comb += egz.eq(self.in_a.e > self.in_b.e)
 
         # default: A-exp == B-exp, A and B untouched (fall through)
-        m.d.comb += self.out_a.copy(self.in_a)
-        m.d.comb += self.out_b.copy(self.in_b)
+        m.d.comb += self.out_a.eq(self.in_a)
+        m.d.comb += self.out_b.eq(self.in_b)
         # only one shifter (muxed)
         #m.d.comb += t_out.shift_down_multi(tdiff, t_inp)
         # exponent of a greater than b: shift b down
         with m.If(egz):
-            m.d.comb += [t_inp.copy(self.in_b),
+            m.d.comb += [t_inp.eq(self.in_b),
                          tdiff.eq(ediff),
-                         self.out_b.copy(t_out),
+                         self.out_b.eq(t_out),
                          self.out_b.s.eq(self.in_b.s), # whoops forgot sign
                         ]
         # exponent of b greater than a: shift a down
         with m.Elif(elz):
-            m.d.comb += [t_inp.copy(self.in_a),
+            m.d.comb += [t_inp.eq(self.in_a),
                          tdiff.eq(ediffr),
-                         self.out_a.copy(t_out),
+                         self.out_a.eq(t_out),
                          self.out_a.s.eq(self.in_a.s), # whoops forgot sign
                         ]
         return m
@@ -664,8 +664,8 @@ class FPAddAlignSingle(FPState, FPID):
     def action(self, m):
         self.idsync(m)
         # NOTE: could be done as comb
-        m.d.sync += self.out_a.copy(self.mod.out_a)
-        m.d.sync += self.out_b.copy(self.mod.out_b)
+        m.d.sync += self.out_a.eq(self.mod.out_a)
+        m.d.sync += self.out_b.eq(self.mod.out_b)
         m.next = "add_0"
 
 
@@ -691,11 +691,11 @@ class FPAddAlignSingleAdd(FPState, FPID):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_a, in_b)
-        m.d.comb += self.out_a.copy(self.mod.out_a)
-        m.d.comb += self.out_b.copy(self.mod.out_b)
+        m.d.comb += self.out_a.eq(self.mod.out_a)
+        m.d.comb += self.out_b.eq(self.mod.out_b)
 
         self.a0mod.setup(m, self.out_a, self.out_b)
-        m.d.comb += self.a0_out_z.copy(self.a0mod.out_z)
+        m.d.comb += self.a0_out_z.eq(self.a0mod.out_z)
         m.d.comb += self.out_tot.eq(self.a0mod.out_tot)
 
         self.a1mod.setup(m, self.out_tot, self.a0_out_z)
@@ -705,8 +705,8 @@ class FPAddAlignSingleAdd(FPState, FPID):
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_of.copy(self.a1mod.out_of)
-        m.d.sync += self.out_z.copy(self.a1mod.out_z)
+        m.d.sync += self.out_of.eq(self.a1mod.out_of)
+        m.d.sync += self.out_z.eq(self.a1mod.out_z)
         m.next = "normalise_1"
 
 
@@ -723,8 +723,8 @@ class FPAddStage0Mod:
         """ links module to inputs and outputs
         """
         m.submodules.add0 = self
-        m.d.comb += self.in_a.copy(in_a)
-        m.d.comb += self.in_b.copy(in_b)
+        m.d.comb += self.in_a.eq(in_a)
+        m.d.comb += self.in_b.eq(in_b)
 
     def elaborate(self, platform):
         m = Module()
@@ -788,7 +788,7 @@ class FPAddStage0(FPState, FPID):
     def action(self, m):
         self.idsync(m)
         # NOTE: these could be done as combinatorial (merge add0+add1)
-        m.d.sync += self.out_z.copy(self.mod.out_z)
+        m.d.sync += self.out_z.eq(self.mod.out_z)
         m.d.sync += self.out_tot.eq(self.mod.out_tot)
         m.next = "add_1"
 
@@ -811,7 +811,7 @@ class FPAddStage1Mod(FPState):
         m.submodules.add1 = self
         m.submodules.add1_out_overflow = self.out_of
 
-        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_z.eq(in_z)
         m.d.comb += self.in_tot.eq(in_tot)
 
     def elaborate(self, platform):
@@ -820,7 +820,7 @@ class FPAddStage1Mod(FPState):
         #m.submodules.norm1_out_overflow = self.out_of
         #m.submodules.norm1_in_z = self.in_z
         #m.submodules.norm1_out_z = self.out_z
-        m.d.comb += self.out_z.copy(self.in_z)
+        m.d.comb += self.out_z.eq(self.in_z)
         # tot[-1] (MSB) gets set when the sum overflows. shift result down
         with m.If(self.in_tot[-1]):
             m.d.comb += [
@@ -865,8 +865,8 @@ class FPAddStage1(FPState, FPID):
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_of.copy(self.mod.out_of)
-        m.d.sync += self.out_z.copy(self.mod.out_z)
+        m.d.sync += self.out_of.eq(self.mod.out_of)
+        m.d.sync += self.out_z.eq(self.mod.out_z)
         m.d.sync += self.norm_stb.eq(1)
         m.next = "normalise_1"
 
@@ -882,8 +882,8 @@ class FPNormaliseModSingle:
         """ links module to inputs and outputs
         """
         m.submodules.normalise = self
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += self.in_z.eq(in_z)
+        m.d.comb += out_z.eq(self.out_z)
 
     def elaborate(self, platform):
         m = Module()
@@ -905,11 +905,11 @@ class FPNormaliseModSingle:
         msr = MultiShiftRMerge(mwid, espec)
         m.submodules.multishift_r = msr
 
-        m.d.comb += in_z.copy(self.in_z)
-        m.d.comb += in_of.copy(self.in_of)
+        m.d.comb += in_z.eq(self.in_z)
+        m.d.comb += in_of.eq(self.in_of)
         # initialise out from in (overridden below)
-        m.d.comb += self.out_z.copy(in_z)
-        m.d.comb += self.out_of.copy(in_of)
+        m.d.comb += self.out_z.eq(in_z)
+        m.d.comb += self.out_of.eq(in_of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         m.d.comb += decrease.eq(in_z.m_msbzero)
@@ -949,10 +949,10 @@ class FPNorm1ModSingle:
         """
         m.submodules.normalise_1 = self
 
-        m.d.comb += self.in_z.copy(in_z)
-        m.d.comb += self.in_of.copy(in_of)
+        m.d.comb += self.in_z.eq(in_z)
+        m.d.comb += self.in_of.eq(in_of)
 
-        m.d.comb += out_z.copy(self.out_z)
+        m.d.comb += out_z.eq(self.out_z)
 
     def elaborate(self, platform):
         m = Module()
@@ -976,11 +976,11 @@ class FPNorm1ModSingle:
         msr = MultiShiftRMerge(mwid, espec)
         m.submodules.multishift_r = msr
 
-        m.d.comb += in_z.copy(self.in_z)
-        m.d.comb += in_of.copy(self.in_of)
+        m.d.comb += in_z.eq(self.in_z)
+        m.d.comb += in_of.eq(self.in_of)
         # initialise out from in (overridden below)
-        m.d.comb += self.out_z.copy(in_z)
-        m.d.comb += self.out_of.copy(in_of)
+        m.d.comb += self.out_z.eq(in_z)
+        m.d.comb += self.out_of.eq(in_of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
@@ -1063,14 +1063,14 @@ class FPNorm1ModMulti:
 
         # select which of temp or in z/of to use
         with m.If(self.in_select):
-            m.d.comb += in_z.copy(self.in_z)
-            m.d.comb += in_of.copy(self.in_of)
+            m.d.comb += in_z.eq(self.in_z)
+            m.d.comb += in_of.eq(self.in_of)
         with m.Else():
-            m.d.comb += in_z.copy(self.temp_z)
-            m.d.comb += in_of.copy(self.temp_of)
+            m.d.comb += in_z.eq(self.temp_z)
+            m.d.comb += in_of.eq(self.temp_of)
         # initialise out from in (overridden below)
-        m.d.comb += self.out_z.copy(in_z)
-        m.d.comb += self.out_of.copy(in_of)
+        m.d.comb += self.out_z.eq(in_z)
+        m.d.comb += self.out_of.eq(in_of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
@@ -1156,8 +1156,8 @@ class FPNorm1Multi(FPState, FPID):
     def action(self, m):
         self.idsync(m)
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
-        m.d.sync += self.temp_of.copy(self.mod.out_of)
-        m.d.sync += self.temp_z.copy(self.out_z)
+        m.d.sync += self.temp_of.eq(self.mod.out_of)
+        m.d.sync += self.temp_z.eq(self.out_z)
         with m.If(self.out_norm):
             with m.If(self.in_accept):
                 m.d.sync += [
@@ -1194,13 +1194,13 @@ class FPNormToPack(FPState, FPID):
         r_out_z = FPNumBase(self.width)
         rmod.setup(m, n_out_z, n_out_roundz)
         m.d.comb += n_out_roundz.eq(nmod.out_of.roundz)
-        m.d.comb += r_out_z.copy(rmod.out_z)
+        m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
         cmod = FPCorrectionsMod(self.width)
         c_out_z = FPNumBase(self.width)
         cmod.setup(m, r_out_z)
-        m.d.comb += c_out_z.copy(cmod.out_z)
+        m.d.comb += c_out_z.eq(cmod.out_z)
 
         # Pack (chained to corrections)
         self.pmod = FPPackMod(self.width)
@@ -1227,12 +1227,12 @@ class FPRoundMod:
     def setup(self, m, in_z, roundz):
         m.submodules.roundz = self
 
-        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_z.eq(in_z)
         m.d.comb += self.in_roundz.eq(roundz)
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_z.copy(self.in_z)
+        m.d.comb += self.out_z.eq(self.in_z)
         with m.If(self.in_roundz):
             m.d.comb += self.out_z.m.eq(self.in_z.m + 1) # mantissa rounds up
             with m.If(self.in_z.m == self.in_z.m1s): # all 1s
@@ -1258,7 +1258,7 @@ class FPRound(FPState, FPID):
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_z.copy(self.mod.out_z)
+        m.d.sync += self.out_z.eq(self.mod.out_z)
         m.next = "corrections"
 
 
@@ -1272,13 +1272,13 @@ class FPCorrectionsMod:
         """ links module to inputs and outputs
         """
         m.submodules.corrections = self
-        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_z.eq(in_z)
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.corr_in_z = self.in_z
         m.submodules.corr_out_z = self.out_z
-        m.d.comb += self.out_z.copy(self.in_z)
+        m.d.comb += self.out_z.eq(self.in_z)
         with m.If(self.in_z.is_denormalised):
             m.d.comb += self.out_z.e.eq(self.in_z.N127)
         return m
@@ -1301,7 +1301,7 @@ class FPCorrections(FPState, FPID):
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_z.copy(self.mod.out_z)
+        m.d.sync += self.out_z.eq(self.mod.out_z)
         m.next = "pack"
 
 
@@ -1315,7 +1315,7 @@ class FPPackMod:
         """ links module to inputs and outputs
         """
         m.submodules.pack = self
-        m.d.comb += self.in_z.copy(in_z)
+        m.d.comb += self.in_z.eq(in_z)
 
     def elaborate(self, platform):
         m = Module()
@@ -1624,7 +1624,7 @@ class ResArray:
         self.in_mid = Signal(self.id_wid, reset_less=True)
 
     def setup(self, m, in_z, in_mid):
-        m.d.comb += [self.in_z.copy(in_z),
+        m.d.comb += [self.in_z.eq(in_z),
                      self.in_mid.eq(in_mid)]
 
     def get_fragment(self, platform=None):
