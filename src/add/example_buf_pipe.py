@@ -88,6 +88,15 @@ class NextControl:
                 eq(nxt.data, self.data),
                ]
 
+    def connect_out(self, nxt):
+        """ helper function to connect stage to an output source.  do not
+            use to connect stage-to-stage!
+        """
+        return [nxt.o_valid.eq(self.o_valid),
+                self.i_ready.eq(nxt.i_ready),
+                eq(nxt.data, self.data),
+               ]
+
 
 def eq(o, i):
     if not isinstance(o, Sequence):
@@ -151,7 +160,6 @@ class BufferedPipeline:
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
-            data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
         """
         return self.n.connect_to_next(nxt.p)
 
@@ -165,10 +173,7 @@ class BufferedPipeline:
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
-        return [nxt.n.o_valid.eq(self.n.o_valid),
-                self.n.i_ready.eq(nxt.n.i_ready),
-                eq(nxt.n.data, self.n.data),
-               ]
+        return self.n.connect_out(nxt.n)
 
     def set_input(self, i):
         """ helper function to set the input data
