@@ -12,12 +12,12 @@
     where data will flow on *every* clock when the conditions are right.
 
     input acceptance conditions are when:
-        * incoming previous-stage strobe (i.p_valid) is HIGH
-        * outgoing previous-stage ready   (o.p_ready) is LOW
+        * incoming previous-stage strobe (p.i_valid) is HIGH
+        * outgoing previous-stage ready   (p.o_ready) is LOW
 
     output transmission conditions are when:
-        * outgoing next-stage strobe (o.n_valid) is HIGH
-        * outgoing next-stage ready   (i.n_ready) is LOW
+        * outgoing next-stage strobe (n.o_valid) is HIGH
+        * outgoing next-stage ready   (n.i_ready) is LOW
 
     the tricky bit is when the input has valid data and the output is not
     ready to accept it.  if it wasn't for the clock synchronisation, it
@@ -48,18 +48,18 @@ from nmigen.cli import verilog, rtlil
 from collections.abc import Sequence
 
 
-class IOAckIn:
+class PrevControl:
 
     def __init__(self):
-        self.p_valid = Signal() # >>in - comes in from PREVIOUS stage
-        self.n_ready = Signal() # in<< - comes in from the NEXT stage
+        self.i_valid = Signal(name="p_i_valid") # >>in
+        self.o_ready = Signal(name="p_o_ready") # <<out
 
 
-class IOAckOut:
+class NextControl:
 
     def __init__(self):
-        self.n_valid = Signal() # out>> - goes out to the NEXT stage
-        self.p_ready = Signal() # <<out - goes out to the PREVIOUS stage
+        self.o_valid = Signal(name="n_o_valid") # out>>
+        self.i_ready = Signal(name="n_i_ready") # <<in
 
 
 def eq(o, i):
@@ -76,15 +76,15 @@ class BufferedPipeline:
         if ever the input is ready and the output is not, processed data
         is stored in a temporary register.
 
-        stage-1   i.p_valid >>in   stage   o.n_valid out>>   stage+1
-        stage-1   o.p_ready <<out  stage   i.n_ready <<in    stage+1
-        stage-1   i.data    >>in   stage   o.data    out>>   stage+1
+        stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
+        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.data    >>in   stage   n.data    out>>   stage+1
                               |             |
                             process --->----^
                               |             |
                               +-- r_data ->-+
 
-        input data i_data is read (only), is processed and goes into an
+        input data p.data is read (only), is processed and goes into an
         intermediate result store [process()].  this is updated combinatorially.
 
         in a non-stall condition, the intermediate result will go into the
@@ -105,7 +105,7 @@ class BufferedPipeline:
             * ispec: returns output signals to the output specification
             * process: takes an input instance and returns processed data
 
-            i_data -> process() -> result --> o.data
+            p.data -> process() -> result --> n.data
                                      |           ^
                                      |           |
                                      +-> r_data -+
@@ -113,46 +113,46 @@ class BufferedPipeline:
         self.stage = stage
 
         # set up input and output IO ACK (prev/next ready/valid)
-        self.i = IOAckIn()
-        self.o = IOAckOut()
+        self.p = PrevControl()
+        self.n = NextControl()
 
         # set up the input and output data
-        self.i.data = stage.ispec() # input type
+        self.p.data = stage.ispec() # input type
         self.r_data = stage.ospec() # all these are output type
         self.result = stage.ospec()
-        self.o.data = stage.ospec()
+        self.n.data = stage.ospec()
 
     def connect_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
         """
-        return [nxt.i.p_valid.eq(self.o.n_valid),
-                self.i.n_ready.eq(nxt.o.p_ready),
-                eq(nxt.i.data, self.o.data),
+        return [nxt.p.i_valid.eq(self.n.o_valid),
+                self.n.i_ready.eq(nxt.p.o_ready),
+                eq(nxt.p.data, self.n.data),
                ]
 
     def connect_in(self, prev):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
-        return [self.i.p_valid.eq(prev.i.p_valid),
-                prev.o.p_ready.eq(self.o.p_ready),
-                eq(self.i.data, prev.i.data),
+        return [self.p.i_valid.eq(prev.p.i_valid),
+                prev.p.o_ready.eq(self.p.o_ready),
+                eq(self.p.data, prev.p.data),
                ]
 
     def connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
-        return [nxt.o.n_valid.eq(self.o.n_valid),
-                self.i.n_ready.eq(nxt.i.n_ready),
-                eq(nxt.o.data, self.o.data),
+        return [nxt.n.o_valid.eq(self.n.o_valid),
+                self.n.i_ready.eq(nxt.n.i_ready),
+                eq(nxt.n.data, self.n.data),
                ]
 
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.i.data, i)
+        return eq(self.p.data, i)
 
     def update_buffer(self):
         """ copies the result into the intermediate register r_data,
@@ -164,70 +164,70 @@ class BufferedPipeline:
     def update_output(self):
         """ copies the (combinatorial) result into the output
         """
-        return eq(self.o.data, self.result)
+        return eq(self.n.data, self.result)
 
     def flush_buffer(self):
         """ copies the *intermediate* register r_data into the output
         """
-        return eq(self.o.data, self.r_data)
+        return eq(self.n.data, self.r_data)
 
     def ports(self):
-        return [self.i.data, self.o.data]
+        return [self.p.data, self.n.data]
 
     def elaborate(self, platform):
         m = Module()
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.i.data)
+            self.stage.setup(m, self.p.data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
-        m.d.comb += [o_n_validn.eq(~self.o.n_valid),
-                     i_p_valid_o_p_ready.eq(self.i.p_valid & self.o.p_ready),
+        m.d.comb += [o_n_validn.eq(~self.n.o_valid),
+                     i_p_valid_o_p_ready.eq(self.p.i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
-        with m.If(self.i.p_valid): # input is valid: process it
-            m.d.comb += eq(self.result, self.stage.process(self.i.data))
+        with m.If(self.p.i_valid): # input is valid: process it
+            m.d.comb += eq(self.result, self.stage.process(self.p.data))
         # if not in stall condition, update the temporary register
-        with m.If(self.o.p_ready): # not stalled
+        with m.If(self.p.o_ready): # not stalled
             m.d.sync += self.update_buffer()
 
-        #with m.If(self.i.p_rst): # reset
-        #    m.d.sync += self.o.n_valid.eq(0)
-        #    m.d.sync += self.o.p_ready.eq(0)
-        with m.If(self.i.n_ready): # next stage is ready
-            with m.If(self.o.p_ready): # not stalled
+        #with m.If(self.p.i_rst): # reset
+        #    m.d.sync += self.n.o_valid.eq(0)
+        #    m.d.sync += self.p.o_ready.eq(0)
+        with m.If(self.n.i_ready): # next stage is ready
+            with m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
-                m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
+                m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
                              self.update_output(),
                             ]
-            with m.Else(): # o.p_ready is false, and something is in buffer.
+            with m.Else(): # p.o_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
-                m.d.sync += [self.o.n_valid.eq(1),
+                m.d.sync += [self.n.o_valid.eq(1),
                              self.flush_buffer(),
                              # clear stall condition, declare register empty.
-                             self.o.p_ready.eq(1),
+                             self.p.o_ready.eq(1),
                             ]
-                # ignore input, since o.p_ready is also false.
+                # ignore input, since p.o_ready is also false.
 
-        # (i.n_ready) is false here: next stage is ready
+        # (n.i_ready) is false here: next stage is ready
         with m.Elif(o_n_validn): # next stage being told "ready"
-            m.d.sync += [self.o.n_valid.eq(self.i.p_valid),
-                         self.o.p_ready.eq(1), # Keep the buffer empty
+            m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
+                         self.p.o_ready.eq(1), # Keep the buffer empty
                          # set the output data (from comb result)
                          self.update_output(),
                         ]
-        # (i.n_ready) false and (o.n_valid) true:
+        # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
-            m.d.sync += self.o.p_ready.eq(~(self.i.p_valid & self.o.n_valid))
+            m.d.sync += self.p.o_ready.eq(~(self.p.i_valid & self.n.o_valid))
 
         return m
 
     def ports(self):
-        return [self.i.p_valid, self.i.n_ready,
-                self.o.n_valid, self.o.p_ready,
+        return [self.p.i_valid, self.n.i_ready,
+                self.n.o_valid, self.p.o_ready,
                ]
 
 
@@ -315,37 +315,37 @@ class CombPipe:
         self.stage = stage
         self._data_valid = Signal()
         # set up input and output IO ACK (prev/next ready/valid)
-        self.i = IOAckIn()
-        self.o = IOAckOut()
+        self.p = PrevControl()
+        self.n = NextControl()
 
         # set up the input and output data
-        self.i.data = stage.ispec() # input type
+        self.p.data = stage.ispec() # input type
         self.r_data = stage.ispec() # input type
         self.result = stage.ospec() # output data
-        self.o.data = stage.ospec() # output type
-        self.o.data.name = "outdata"
+        self.n.data = stage.ospec() # output type
+        self.n.data.name = "outdata"
 
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.i.data, i)
+        return eq(self.p.data, i)
 
     def elaborate(self, platform):
         m = Module()
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, self.r_data)
         m.d.comb += eq(self.result, self.stage.process(self.r_data))
-        m.d.comb += self.o.n_valid.eq(self._data_valid)
-        m.d.comb += self.o.p_ready.eq(~self._data_valid | self.i.n_ready)
-        m.d.sync += self._data_valid.eq(self.i.p_valid | \
-                                        (~self.i.n_ready & self._data_valid))
-        with m.If(self.i.p_valid & self.o.p_ready):
-            m.d.sync += eq(self.r_data, self.i.data)
-        m.d.comb += eq(self.o.data, self.result)
+        m.d.comb += self.n.o_valid.eq(self._data_valid)
+        m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
+        m.d.sync += self._data_valid.eq(self.p.i_valid | \
+                                        (~self.n.i_ready & self._data_valid))
+        with m.If(self.p.i_valid & self.p.o_ready):
+            m.d.sync += eq(self.r_data, self.p.data)
+        m.d.comb += eq(self.n.data, self.result)
         return m
 
     def ports(self):
-        return [self.i.data, self.o.data]
+        return [self.p.data, self.n.data]
 
 
 class ExampleCombPipe(CombPipe):
