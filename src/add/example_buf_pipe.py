@@ -282,15 +282,12 @@ class BufferedPipeline(PipelineBase):
         ]
 
         # store result of processing in combinatorial temporary
-        #with m.If(self.p.i_valid): # input is valid: process it
         m.d.comb += eq(result, self.stage.process(self.p.i_data))
+
         # if not in stall condition, update the temporary register
         with m.If(self.p.o_ready): # not stalled
             m.d.sync += eq(r_data, result) # update buffer
 
-        #with m.If(self.p.i_rst): # reset
-        #    m.d.sync += self.n.o_valid.eq(0)
-        #    m.d.sync += self.p.o_ready.eq(0)
         with m.If(self.n.i_ready): # next stage is ready
             with m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
@@ -299,10 +296,9 @@ class BufferedPipeline(PipelineBase):
                             ]
             with m.Else(): # p.o_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
-                m.d.sync += [self.n.o_valid.eq(1),
+                m.d.sync += [self.n.o_valid.eq(1),      # declare reg empty
                              eq(self.n.o_data, r_data), # flush buffer
-                             # clear stall condition, declare register empty.
-                             self.p.o_ready.eq(1),
+                             self.p.o_ready.eq(1),      # clear stall condition
                             ]
                 # ignore input, since p.o_ready is also false.
 
@@ -310,9 +306,9 @@ class BufferedPipeline(PipelineBase):
         with m.Elif(o_n_validn): # next stage being told "ready"
             m.d.sync += [self.n.o_valid.eq(p_i_valid),
                          self.p.o_ready.eq(1), # Keep the buffer empty
-                         # set the output data (from comb result)
-                         eq(self.n.o_data, result),
+                         eq(self.n.o_data, result), # set output data
                         ]
+
         # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
