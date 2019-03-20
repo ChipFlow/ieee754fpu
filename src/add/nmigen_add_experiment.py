@@ -1388,8 +1388,15 @@ class FPCorrections(FPState, FPID):
 class FPPackMod:
 
     def __init__(self, width):
-        self.in_z = FPNumOut(width, False)
-        self.out_z = FPNumOut(width, False)
+        self.width = width
+        self.in_z = self.ispec()
+        self.out_z = self.ospec()
+
+    def ispec(self):
+        return FPNumOut(self.width, False)
+
+    def ospec(self):
+        return FPNumOut(self.width, False)
 
     def setup(self, m, in_z):
         """ links module to inputs and outputs
@@ -1413,7 +1420,7 @@ class FPPack(FPState, FPID):
         FPState.__init__(self, "pack")
         FPID.__init__(self, id_wid)
         self.mod = FPPackMod(width)
-        self.out_z = FPNumOut(width, False)
+        self.out_z = self.mod.ospec()
 
     def setup(self, m, in_z, in_mid):
         """ links module to inputs and outputs
