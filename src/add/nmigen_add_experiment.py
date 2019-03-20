@@ -997,53 +997,54 @@ class FPNorm1ModSingle:
 
     def __init__(self, width):
         self.width = width
-        self.in_z = FPNumBase(width, False)
-        self.in_of = Overflow()
-        self.out_z = FPNumBase(width, False)
-        self.out_of = Overflow()
+        self.i = self.ispec()
+        self.o = self.ispec()
+
+    def ispec(self):
+        return FPAddStage1Data(self.width)
+
+    def ospec(self):
+        return FPAddStage1Data(self.width)
 
     def setup(self, m, in_z, in_of, out_z):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self
 
-        m.d.comb += self.in_z.eq(in_z)
-        m.d.comb += self.in_of.eq(in_of)
+        m.d.comb += self.i.z.eq(in_z)
+        m.d.comb += self.i.of.eq(in_of)
 
-        m.d.comb += out_z.eq(self.out_z)
+        m.d.comb += out_z.eq(self.o.z)
 
     def elaborate(self, platform):
         m = Module()
 
-        mwid = self.out_z.m_width+2
+        mwid = self.o.z.m_width+2
         pe = PriorityEncoder(mwid)
         m.submodules.norm_pe = pe
 
-        m.submodules.norm1_out_z = self.out_z
-        m.submodules.norm1_out_overflow = self.out_of
-        m.submodules.norm1_in_z = self.in_z
-        m.submodules.norm1_in_overflow = self.in_of
+        m.submodules.norm1_out_z = self.o.z
+        m.submodules.norm1_out_overflow = self.o.of
+        m.submodules.norm1_in_z = self.i.z
+        m.submodules.norm1_in_overflow = self.i.of
 
-        in_z = FPNumBase(self.width, False)
-        in_of = Overflow()
-        m.submodules.norm1_insel_z = in_z
-        m.submodules.norm1_insel_overflow = in_of
+        i = self.ispec()
+        m.submodules.norm1_insel_z = i.z
+        m.submodules.norm1_insel_overflow = i.of
 
-        espec = (len(in_z.e), True)
+        espec = (len(i.z.e), True)
         ediff_n126 = Signal(espec, reset_less=True)
         msr = MultiShiftRMerge(mwid, espec)
         m.submodules.multishift_r = msr
 
-        m.d.comb += in_z.eq(self.in_z)
-        m.d.comb += in_of.eq(self.in_of)
+        m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
-        m.d.comb += self.out_z.eq(in_z)
-        m.d.comb += self.out_of.eq(in_of)
+        m.d.comb += self.o.eq(i)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
-        m.d.comb += decrease.eq(in_z.m_msbzero & in_z.exp_gt_n126)
-        m.d.comb += increase.eq(in_z.exp_lt_n126)
+        m.d.comb += decrease.eq(i.z.m_msbzero & i.z.exp_gt_n126)
+        m.d.comb += increase.eq(i.z.exp_lt_n126)
         # decrease exponent
         with m.If(decrease):
             # *sigh* not entirely obvious: count leading zeros (clz)
@@ -1051,41 +1052,41 @@ class FPNorm1ModSingle:
             # we reverse the order of the bits.
             temp_m = Signal(mwid, reset_less=True)
             temp_s = Signal(mwid+1, reset_less=True)
-            clz = Signal((len(in_z.e), True), reset_less=True)
+            clz = Signal((len(i.z.e), True), reset_less=True)
             # make sure that the amount to decrease by does NOT
             # go below the minimum non-INF/NaN exponent
-            limclz = Mux(in_z.exp_sub_n126 > pe.o, pe.o,
-                         in_z.exp_sub_n126)
+            limclz = Mux(i.z.exp_sub_n126 > pe.o, pe.o,
+                         i.z.exp_sub_n126)
             m.d.comb += [
                 # cat round and guard bits back into the mantissa
-                temp_m.eq(Cat(in_of.round_bit, in_of.guard, in_z.m)),
+                temp_m.eq(Cat(i.of.round_bit, i.of.guard, i.z.m)),
                 pe.i.eq(temp_m[::-1]),          # inverted
                 clz.eq(limclz),                 # count zeros from MSB down
                 temp_s.eq(temp_m << clz),       # shift mantissa UP
-                self.out_z.e.eq(in_z.e - clz),  # DECREASE exponent
-                self.out_z.m.eq(temp_s[2:]),    # exclude bits 0&1
-                self.out_of.m0.eq(temp_s[2]),   # copy of mantissa[0]
+                self.o.z.e.eq(i.z.e - clz),  # DECREASE exponent
+                self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
+                self.o.of.m0.eq(temp_s[2]),   # copy of mantissa[0]
                 # overflow in bits 0..1: got shifted too (leave sticky)
-                self.out_of.guard.eq(temp_s[1]),     # guard
-                self.out_of.round_bit.eq(temp_s[0]), # round
+                self.o.of.guard.eq(temp_s[1]),     # guard
+                self.o.of.round_bit.eq(temp_s[0]), # round
             ]
         # increase exponent
         with m.Elif(increase):
             temp_m = Signal(mwid+1, reset_less=True)
             m.d.comb += [
-                temp_m.eq(Cat(in_of.sticky, in_of.round_bit, in_of.guard,
-                              in_z.m)),
-                ediff_n126.eq(in_z.N126 - in_z.e),
+                temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
+                              i.z.m)),
+                ediff_n126.eq(i.z.N126 - i.z.e),
                 # connect multi-shifter to inp/out mantissa (and ediff)
                 msr.inp.eq(temp_m),
                 msr.diff.eq(ediff_n126),
-                self.out_z.m.eq(msr.m[3:]),
-                self.out_of.m0.eq(temp_s[3]),   # copy of mantissa[0]
+                self.o.z.m.eq(msr.m[3:]),
+                self.o.of.m0.eq(temp_s[3]),   # copy of mantissa[0]
                 # overflow in bits 0..1: got shifted too (leave sticky)
-                self.out_of.guard.eq(temp_s[2]),     # guard
-                self.out_of.round_bit.eq(temp_s[1]), # round
-                self.out_of.sticky.eq(temp_s[0]), # sticky
-                self.out_z.e.eq(in_z.e + ediff_n126),
+                self.o.of.guard.eq(temp_s[2]),     # guard
+                self.o.of.round_bit.eq(temp_s[1]), # round
+                self.o.of.sticky.eq(temp_s[0]), # sticky
+                self.o.z.e.eq(i.z.e + ediff_n126),
             ]
 
         return m
@@ -1250,7 +1251,7 @@ class FPNormToPack(FPState, FPID):
         rmod = FPRoundMod(self.width)
         r_out_z = FPNumBase(self.width)
         rmod.setup(m, n_out_z, n_out_roundz)
-        m.d.comb += n_out_roundz.eq(nmod.out_of.roundz)
+        m.d.comb += n_out_roundz.eq(nmod.o.of.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
