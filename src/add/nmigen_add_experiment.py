@@ -1256,15 +1256,14 @@ class FPNormToPack(FPState, FPID):
 
         # Normalisation (chained to input in_z+in_of)
         nmod = FPNorm1ModSingle(self.width)
-        n_out_z = FPNumBase(self.width)
-        n_out_roundz = Signal(reset_less=True)
-        nmod.setup(m, in_z, in_of, n_out_z)
+        n_out = nmod.ospec()
+        nmod.setup(m, in_z, in_of, n_out.z)
+        m.d.comb += n_out.roundz.eq(nmod.o.roundz)
 
         # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width)
         r_out_z = rmod.ospec()
-        rmod.setup(m, n_out_z, n_out_roundz)
-        m.d.comb += n_out_roundz.eq(nmod.o.roundz)
+        rmod.setup(m, n_out.z, n_out.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
