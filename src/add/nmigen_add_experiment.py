@@ -820,8 +820,7 @@ class FPAddStage0(FPState, FPID):
         FPState.__init__(self, "add_0")
         FPID.__init__(self, id_wid)
         self.mod = FPAddStage0Mod(width)
-        self.out_z = FPNumBase(width, False)
-        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+        self.o = self.mod.ospec()
 
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
@@ -833,8 +832,7 @@ class FPAddStage0(FPState, FPID):
     def action(self, m):
         self.idsync(m)
         # NOTE: these could be done as combinatorial (merge add0+add1)
-        m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.out_tot.eq(self.mod.out_tot)
+        m.d.sync += self.o.eq(self.mod.o)
         m.next = "add_1"
 
 
