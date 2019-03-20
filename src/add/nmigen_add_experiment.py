@@ -746,7 +746,6 @@ class FPAddStage0Mod:
     def __init__(self, width):
         self.in_a = FPNumBase(width)
         self.in_b = FPNumBase(width)
-        self.in_z = FPNumBase(width, False)
         self.out_z = FPNumBase(width, False)
         self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
 
