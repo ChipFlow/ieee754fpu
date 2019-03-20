@@ -247,9 +247,9 @@ class FPGet2Op(FPState):
 
 class FPNumBase2Ops:
 
-    def __init__(self, width):
-        self.a = FPNumBase(width)
-        self.b = FPNumBase(width)
+    def __init__(self, width, m_extra=True):
+        self.a = FPNumBase(width, m_extra)
+        self.b = FPNumBase(width, m_extra)
 
     def eq(self, i):
         return [self.a.eq(i.a), self.a.eq(i.b)]
@@ -420,7 +420,7 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
         FPState.__init__(self, "special_cases")
         FPID.__init__(self, id_wid)
         self.smod = FPAddSpecialCasesMod(width)
-        self.out_z = FPNumOut(width, False)
+        self.out_z = self.smod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
         self.dmod = FPAddDeNormMod(width)
@@ -442,43 +442,48 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
             m.next = "put_z"
         with m.Else():
             m.next = "align"
-            m.d.sync += self.out_a.eq(self.dmod.out_a)
-            m.d.sync += self.out_b.eq(self.dmod.out_b)
+            m.d.sync += self.out_a.eq(self.dmod.o.a)
+            m.d.sync += self.out_b.eq(self.dmod.o.b)
 
 
 class FPAddDeNormMod(FPState):
 
     def __init__(self, width):
-        self.in_a = FPNumBase(width)
-        self.in_b = FPNumBase(width)
-        self.out_a = FPNumBase(width)
-        self.out_b = FPNumBase(width)
+        self.width = width
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPNumBase2Ops(self.width)
+
+    def ospec(self):
+        return FPNumBase2Ops(self.width)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
         """
         m.submodules.denormalise = self
-        m.d.comb += self.in_a.eq(in_a)
-        m.d.comb += self.in_b.eq(in_b)
+        m.d.comb += self.i.a.eq(in_a)
+        m.d.comb += self.i.b.eq(in_b)
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.denorm_in_a = self.in_a
-        m.submodules.denorm_in_b = self.in_b
-        m.submodules.denorm_out_a = self.out_a
-        m.submodules.denorm_out_b = self.out_b
+        m.submodules.denorm_in_a = self.i.a
+        m.submodules.denorm_in_b = self.i.b
+        m.submodules.denorm_out_a = self.o.a
+        m.submodules.denorm_out_b = self.o.b
         # hmmm, don't like repeating identical code
-        m.d.comb += self.out_a.eq(self.in_a)
-        with m.If(self.in_a.exp_n127):
-            m.d.comb += self.out_a.e.eq(self.in_a.N126) # limit a exponent
+        m.d.comb += self.o.a.eq(self.i.a)
+        with m.If(self.i.a.exp_n127):
+            m.d.comb += self.o.a.e.eq(self.i.a.N126) # limit a exponent
         with m.Else():
-            m.d.comb += self.out_a.m[-1].eq(1) # set top mantissa bit
+            m.d.comb += self.o.a.m[-1].eq(1) # set top mantissa bit
 
-        m.d.comb += self.out_b.eq(self.in_b)
-        with m.If(self.in_b.exp_n127):
-            m.d.comb += self.out_b.e.eq(self.in_b.N126) # limit a exponent
+        m.d.comb += self.o.b.eq(self.i.b)
+        with m.If(self.i.b.exp_n127):
+            m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
         with m.Else():
-            m.d.comb += self.out_b.m[-1].eq(1) # set top mantissa bit
+            m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
 
         return m
 
