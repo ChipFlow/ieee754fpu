@@ -264,11 +264,14 @@ class FPAddSpecialCasesMod:
     def __init__(self, width):
         self.width = width
         self.i = self.ispec()
-        self.out_z = FPNumOut(width, False)
+        self.out_z = self.ospec()
         self.out_do_z = Signal(reset_less=True)
 
     def ispec(self):
         return FPNumBase2Ops(self.width)
+
+    def ospec(self):
+        return FPNumOut(self.width, False)
 
     def setup(self, m, in_a, in_b, out_do_z):
         """ links module to inputs and outputs
