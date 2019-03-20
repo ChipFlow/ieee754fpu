@@ -322,10 +322,10 @@ class ExampleStage:
     """
 
     def ispec():
-        return Signal(16)
+        return Signal(16, name="example_input_signal")
 
     def ospec():
-        return Signal(16)
+        return Signal(16, name="example_output_signal")
 
     def process(i):
         """ process the input data and returns it (adds 1)
