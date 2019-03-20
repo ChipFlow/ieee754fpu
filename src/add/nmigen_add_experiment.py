@@ -391,7 +391,7 @@ class FPAddSpecialCases(FPState, FPID):
         FPState.__init__(self, "special_cases")
         FPID.__init__(self, id_wid)
         self.mod = FPAddSpecialCasesMod(width)
-        self.out_z = FPNumOut(width, False)
+        self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
     def setup(self, m, in_a, in_b, in_mid):
