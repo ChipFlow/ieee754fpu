@@ -928,8 +928,14 @@ class FPNormaliseModSingle:
 
     def __init__(self, width):
         self.width = width
-        self.in_z = FPNumBase(width, False)
-        self.out_z = FPNumBase(width, False)
+        self.in_z = self.ispec()
+        self.out_z = self.ospec()
+
+    def ispec(self):
+        return FPNumBase(self.width, False)
+
+    def ospec(self):
+        return FPNumBase(self.width, False)
 
     def setup(self, m, in_z, out_z, modname):
         """ links module to inputs and outputs
@@ -963,7 +969,7 @@ class FPNormaliseModSingle:
         # initialise out from in (overridden below)
         m.d.comb += self.out_z.eq(in_z)
         m.d.comb += self.out_of.eq(in_of)
-        # normalisation increase/decrease conditions
+        # normalisation decrease condition
         decrease = Signal(reset_less=True)
         m.d.comb += decrease.eq(in_z.m_msbzero)
         # decrease exponent
