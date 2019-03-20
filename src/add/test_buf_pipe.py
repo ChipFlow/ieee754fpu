@@ -4,8 +4,10 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
-from example_buf_pipe import ExampleCombPipe, CombPipe
+from example_buf_pipe import ExampleCombPipe, CombPipe, ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
+from example_buf_pipe import StageChain
+
 from random import randint
 
 
@@ -282,6 +284,31 @@ class ExampleBufPipe2:
 
         return m
 
+
+class ExampleBufPipeChain2(BufferedPipeline):
+    """ connects two stages together as a *single* combinatorial stage.
+    """
+    def __init__(self):
+        stage1 = ExampleStageCls()
+        stage2 = ExampleStageCls()
+        combined = StageChain([stage1, stage2])
+        BufferedPipeline.__init__(self, combined)
+
+
+def data_chain2():
+        data = []
+        for i in range(num_tests):
+            data.append(randint(0, 1<<16-2))
+        return data
+
+
+def test9_resultfn(o_data, expected, i, o):
+    res = expected + 2
+    assert o_data == res, \
+                "%d-%d data %x not match %s\n" \
+                % (i, o, o_data, repr(expected))
+
+
 class SetLessThan:
     def __init__(self, width, signed):
         self.src1 = Signal((width, signed))
@@ -411,13 +438,18 @@ class ExampleBufPipeAddClass(BufferedPipeline):
 
 
 class TestInputAdd:
+    """ the eq function, called by set_input, needs an incoming object
+        that conforms to the Example2OpClass.eq function requirements
+        easiest way to do that is to create a class that has the exact
+        same member layout (self.op1, self.op2) as Example2OpClass
+    """
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
 
 
 def test8_resultfn(o_data, expected, i, o):
-    res = expected.op1 + expected.op2
+    res = expected.op1 + expected.op2 # these are a TestInputAdd instance
     assert o_data == res, \
                 "%d-%d data %x not match %s\n" \
                 % (i, o, o_data, repr(expected))
@@ -490,4 +522,18 @@ if __name__ == '__main__':
     data=data_2op()
     test = Test5(dut, test8_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe8.vcd")
+
+    print ("test 9")
+    dut = ExampleBufPipeChain2()
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipechain2.il", "w") as f:
+        f.write(vl)
+
+    data = data_chain2()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv],
+                        vcd_name="test_bufpipechain2.vcd")
 

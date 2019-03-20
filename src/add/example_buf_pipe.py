@@ -171,8 +171,10 @@ class StageChain:
             o = self.chain[idx].ospec()     # only the last assignment survives
             m.d.comb += eq(o, c.process(i)) # process input into "o"
             if idx != len(self.chain)-1:
-                i = self.chain[idx+1]       # becomes new input on next loop
-        self.o = o                          # last loop is the output
+                ni = self.chain[idx+1].ispec() # becomes new input on next loop
+                m.d.comb += eq(ni, o)          # assign output to next input
+                i = ni
+        self.o = o                             # last loop is the output
 
     def process(self, i):
         return self.o
@@ -361,6 +363,23 @@ class ExampleStage:
         return Signal(16, name="example_output_signal")
 
     def process(i):
+        """ process the input data and returns it (adds 1)
+        """
+        return i + 1
+
+
+class ExampleStageCls:
+    """ an example of how to use the buffered pipeline, in a static class
+        fashion
+    """
+
+    def ispec(self):
+        return Signal(16, name="example_input_signal")
+
+    def ospec(self):
+        return Signal(16, name="example_output_signal")
+
+    def process(self, i):
         """ process the input data and returns it (adds 1)
         """
         return i + 1
