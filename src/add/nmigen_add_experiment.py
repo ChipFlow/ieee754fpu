@@ -992,6 +992,16 @@ class FPNormaliseModSingle:
 
         return m
 
+class FPNorm1Data:
+
+    def __init__(self, width):
+
+        self.roundz = Signal(reset_less=True)
+        self.z = FPNumBase(width, False)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.roundz.eq(i.roundz)]
+
 
 class FPNorm1ModSingle:
 
@@ -1004,7 +1014,7 @@ class FPNorm1ModSingle:
         return FPAddStage1Data(self.width)
 
     def ospec(self):
-        return FPAddStage1Data(self.width)
+        return FPAddStage1Data(self.width) # XXX TODO: FPNorm1Data
 
     def setup(self, m, in_z, in_of, out_z):
         """ links module to inputs and outputs
