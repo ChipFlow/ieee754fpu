@@ -1287,23 +1287,29 @@ class FPNormToPack(FPState, FPID):
 class FPRoundMod:
 
     def __init__(self, width):
-        self.in_roundz = Signal(reset_less=True)
-        self.in_z = FPNumBase(width, False)
-        self.out_z = FPNumBase(width, False)
+        self.width = width
+        self.i = self.ispec()
+        self.out_z = self.ospec()
+
+    def ispec(self):
+        return FPNorm1Data(self.width)
+
+    def ospec(self):
+        return FPNumBase(self.width, False)
 
     def setup(self, m, in_z, roundz):
         m.submodules.roundz = self
 
-        m.d.comb += self.in_z.eq(in_z)
-        m.d.comb += self.in_roundz.eq(roundz)
+        m.d.comb += self.i.z.eq(in_z)
+        m.d.comb += self.i.roundz.eq(roundz)
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_z.eq(self.in_z)
-        with m.If(self.in_roundz):
-            m.d.comb += self.out_z.m.eq(self.in_z.m + 1) # mantissa rounds up
-            with m.If(self.in_z.m == self.in_z.m1s): # all 1s
-                m.d.comb += self.out_z.e.eq(self.in_z.e + 1) # exponent up
+        m.d.comb += self.out_z.eq(self.i.z)
+        with m.If(self.i.roundz):
+            m.d.comb += self.out_z.m.eq(self.i.z.m + 1) # mantissa rounds up
+            with m.If(self.i.z.m == self.i.z.m1s): # all 1s
+                m.d.comb += self.out_z.e.eq(self.i.z.e + 1) # exponent up
         return m
 
 
