@@ -72,6 +72,14 @@ class PrevControl:
                 eq(self.i_data, prev.i_data),
                ]
 
+    def i_valid_logic(self):
+        vlen = len(self.i_valid)
+        if vlen > 1: # multi-bit case: valid only when i_valid is all 1s
+            all1s = Const(-1, (len(self.i_valid), False))
+            return self.i_valid == all1s
+        # single-bit i_valid case
+        return self.i_valid
+
 
 class NextControl:
     """ contains the signals that go *to* the next stage (both in and out)
@@ -227,16 +235,11 @@ class BufferedPipeline(PipelineBase):
             self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
-        p_i_valid = Signal(reset_less=True)
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
-        vlen = len(self.p.i_valid)
-        if vlen > 1: # multi-bit case: valid only when i_valid is all 1s
-            all1s = Const(-1, (len(self.p.i_valid), False))
-            m.d.comb += p_i_valid.eq(self.p.i_valid == all1s)
-        else: # single-bit i_valid case
-            m.d.comb += p_i_valid.eq(self.p.i_valid)
-        m.d.comb += [ o_n_validn.eq(~self.n.o_valid),
+        p_i_valid = Signal(reset_less=True)
+        m.d.comb += [p_i_valid.eq(self.p.i_valid_logic()),
+                     o_n_validn.eq(~self.n.o_valid),
                      i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
@@ -367,10 +370,12 @@ class CombPipe(PipelineBase):
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
+        p_i_valid = Signal(reset_less=True)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
         m.d.comb += eq(result, self.stage.process(r_data))
         m.d.comb += self.n.o_valid.eq(self._data_valid)
         m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
-        m.d.sync += self._data_valid.eq(self.p.i_valid | \
+        m.d.sync += self._data_valid.eq(p_i_valid | \
                                         (~self.n.i_ready & self._data_valid))
         with m.If(self.p.i_valid & self.p.o_ready):
             m.d.sync += eq(r_data, self.p.i_data)
