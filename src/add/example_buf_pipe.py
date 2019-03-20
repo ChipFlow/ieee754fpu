@@ -145,6 +145,39 @@ def eq(o, i):
     return res
 
 
+class StageChain:
+    """ pass in a list of stages, and they will automatically be
+        chained together via their input and output specs into a
+        combinatorial chain.
+
+        * input to this class will be the input of the first stage
+        * output of first stage goes into input of second
+        * output of second goes into input into third (etc. etc.)
+        * the output of this class will be the output of the last stage
+    """
+    def __init__(self, chain):
+        self.chain = chain
+
+    def ispec(self):
+        return self.chain[0].ispec()
+
+    def ospec(self):
+        return self.chain[-1].ospec()
+
+    def setup(self, m, i):
+        for (idx, c) in enumerate(self.chain):
+            if hasattr(c, "setup"):
+                c.setup(m, i)               # stage may have some module stuff
+            o = self.chain[idx].ospec()     # only the last assignment survives
+            m.d.comb += eq(o, c.process(i)) # process input into "o"
+            if idx != len(self.chain)-1:
+                i = self.chain[idx+1]       # becomes new input on next loop
+        self.o = o                          # last loop is the output
+
+    def process(self, i):
+        return self.o
+
+
 class PipelineBase:
     """ Common functions for Pipeline API
     """
