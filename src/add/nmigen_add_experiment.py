@@ -1175,7 +1175,7 @@ class FPNorm1Single(FPState, FPID):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.mod = FPNorm1ModSingle(width)
-        self.out_z = FPNumBase(width)
+        self.out_z = FPNumBase(width, False)
         self.out_roundz = Signal(reset_less=True)
 
     def setup(self, m, in_z, in_of, in_mid):
