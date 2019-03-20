@@ -1008,13 +1008,13 @@ class FPNorm1ModSingle:
     def __init__(self, width):
         self.width = width
         self.i = self.ispec()
-        self.o = self.ispec()
+        self.o = self.ospec()
 
     def ispec(self):
         return FPAddStage1Data(self.width)
 
     def ospec(self):
-        return FPAddStage1Data(self.width) # XXX TODO: FPNorm1Data
+        return FPNorm1Data(self.width)
 
     def setup(self, m, in_z, in_of, out_z):
         """ links module to inputs and outputs
@@ -1033,8 +1033,11 @@ class FPNorm1ModSingle:
         pe = PriorityEncoder(mwid)
         m.submodules.norm_pe = pe
 
+        of = Overflow()
+        m.d.comb += self.o.roundz.eq(of.roundz)
+
         m.submodules.norm1_out_z = self.o.z
-        m.submodules.norm1_out_overflow = self.o.of
+        m.submodules.norm1_out_overflow = of
         m.submodules.norm1_in_z = self.i.z
         m.submodules.norm1_in_overflow = self.i.of
 
@@ -1049,7 +1052,8 @@ class FPNorm1ModSingle:
 
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
-        m.d.comb += self.o.eq(i)
+        m.d.comb += self.o.z.eq(i.z)
+        m.d.comb += of.eq(i.of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
@@ -1075,10 +1079,10 @@ class FPNorm1ModSingle:
                 temp_s.eq(temp_m << clz),       # shift mantissa UP
                 self.o.z.e.eq(i.z.e - clz),  # DECREASE exponent
                 self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
-                self.o.of.m0.eq(temp_s[2]),   # copy of mantissa[0]
+                of.m0.eq(temp_s[2]),          # copy of mantissa[0]
                 # overflow in bits 0..1: got shifted too (leave sticky)
-                self.o.of.guard.eq(temp_s[1]),     # guard
-                self.o.of.round_bit.eq(temp_s[0]), # round
+                of.guard.eq(temp_s[1]),       # guard
+                of.round_bit.eq(temp_s[0]),   # round
             ]
         # increase exponent
         with m.Elif(increase):
@@ -1091,11 +1095,11 @@ class FPNorm1ModSingle:
                 msr.inp.eq(temp_m),
                 msr.diff.eq(ediff_n126),
                 self.o.z.m.eq(msr.m[3:]),
-                self.o.of.m0.eq(temp_s[3]),   # copy of mantissa[0]
+                of.m0.eq(temp_s[3]),   # copy of mantissa[0]
                 # overflow in bits 0..1: got shifted too (leave sticky)
-                self.o.of.guard.eq(temp_s[2]),     # guard
-                self.o.of.round_bit.eq(temp_s[1]), # round
-                self.o.of.sticky.eq(temp_s[0]), # sticky
+                of.guard.eq(temp_s[2]),     # guard
+                of.round_bit.eq(temp_s[1]), # round
+                of.sticky.eq(temp_s[0]),    # sticky
                 self.o.z.e.eq(i.z.e + ediff_n126),
             ]
 
@@ -1260,7 +1264,7 @@ class FPNormToPack(FPState, FPID):
         rmod = FPRoundMod(self.width)
         r_out_z = rmod.ospec()
         rmod.setup(m, n_out_z, n_out_roundz)
-        m.d.comb += n_out_roundz.eq(nmod.o.of.roundz)
+        m.d.comb += n_out_roundz.eq(nmod.o.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
