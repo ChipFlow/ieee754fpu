@@ -716,8 +716,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.a0_out_z = FPNumBase(width, False)
 
         self.a1mod = FPAddStage1Mod(width)
-        self.out_z = FPNumBase(width, False)
-        self.out_of = Overflow()
+        self.a1o = self.a1mod.ospec()
 
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
@@ -736,8 +735,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.out_of.eq(self.a1mod.o.of)
-        m.d.sync += self.out_z.eq(self.a1mod.o.z)
+        m.d.sync += self.a1o.eq(self.a1mod.o)
         m.next = "normalise_1"
 
 
@@ -1566,7 +1564,7 @@ class FPADDBaseMod(FPID):
         alm.setup(m, sc.o.a, sc.o.b, sc.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, alm.out_z, alm.out_of, alm.in_mid)
+        n1.setup(m, alm.a1o.z, alm.a1o.of, alm.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z, self.out_z,
                                     n1.in_mid, self.out_mid))
