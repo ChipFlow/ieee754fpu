@@ -424,8 +424,7 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
         self.out_do_z = Signal(reset_less=True)
 
         self.dmod = FPAddDeNormMod(width)
-        self.out_a = FPNumBase(width)
-        self.out_b = FPNumBase(width)
+        self.o = self.dmod.ospec()
 
     def setup(self, m, in_a, in_b, in_mid):
         """ links module to inputs and outputs
@@ -442,8 +441,8 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
             m.next = "put_z"
         with m.Else():
             m.next = "align"
-            m.d.sync += self.out_a.eq(self.dmod.o.a)
-            m.d.sync += self.out_b.eq(self.dmod.o.b)
+            m.d.sync += self.o.a.eq(self.dmod.o.a)
+            m.d.sync += self.o.b.eq(self.dmod.o.b)
 
 
 class FPAddDeNormMod(FPState):
@@ -1526,7 +1525,7 @@ class FPADDBaseMod(FPID):
         sc.setup(m, a, b, self.in_mid)
 
         alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
-        alm.setup(m, sc.out_a, sc.out_b, sc.in_mid)
+        alm.setup(m, sc.o.a, sc.o.b, sc.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, alm.out_z, alm.out_of, alm.in_mid)
