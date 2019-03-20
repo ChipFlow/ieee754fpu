@@ -112,8 +112,8 @@ class NextControl:
 
 def eq(o, i):
     """ makes signals equal: a helper routine which identifies if it is being
-        passsed a list (or tuple) of objects, and calls the objects' eq
-        function.
+        passed a list (or tuple) of objects, or signals, or Records, and calls
+        the objects' eq function.
 
         complex objects (classes) can be used: they must follow the
         convention of having an eq member function, which takes the
@@ -138,7 +138,10 @@ def eq(o, i):
                     rres = eq(ao.fields[field_name], ai[field_name])
                 res += rres
         else:
-            res.append(ao.eq(ai))
+            rres = ao.eq(ai)
+            if not isinstance(rres, Sequence):
+                rres = [rres]
+            res += rres
     return res
 
 

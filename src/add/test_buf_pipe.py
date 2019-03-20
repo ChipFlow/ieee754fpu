@@ -5,7 +5,7 @@ from nmigen.cli import verilog, rtlil
 
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
 from example_buf_pipe import ExampleCombPipe, CombPipe
-from example_buf_pipe import PrevControl, NextControl
+from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from random import randint
 
 
@@ -367,6 +367,68 @@ def test7_resultfn(o_data, expected, i, o):
                 % (i, o, repr(o_data), repr(expected))
 
 
+class Example2OpClass:
+    """ an example of a class used to store 2 operands.
+        requires an eq function, to conform with the pipeline stage API
+    """
+
+    def __init__(self):
+        self.op1 = Signal(16)
+        self.op2 = Signal(16)
+
+    def eq(self, i):
+        return [self.op1.eq(i.op1), self.op2.eq(i.op2)]
+
+
+class ExampleAddClassStage:
+    """ an example of how to use the buffered pipeline, as a class instance
+    """
+
+    def ispec(self):
+        """ returns an instance of an Example2OpClass.
+        """
+        return Example2OpClass()
+
+    def ospec(self):
+        """ returns an output signal which will happen to contain the sum
+            of the two inputs
+        """
+        return Signal(16)
+
+    def process(self, i):
+        """ process the input data (sums the values in the tuple) and returns it
+        """
+        return i.op1 + i.op2
+
+
+class ExampleBufPipeAddClass(BufferedPipeline):
+    """ an example of how to use the buffered pipeline, using a class instance
+    """
+
+    def __init__(self):
+        addstage = ExampleAddClassStage()
+        BufferedPipeline.__init__(self, addstage)
+
+
+class TestInputAdd:
+    def __init__(self, op1, op2):
+        self.op1 = op1
+        self.op2 = op2
+
+
+def test8_resultfn(o_data, expected, i, o):
+    res = expected.op1 + expected.op2
+    assert o_data == res, \
+                "%d-%d data %x not match %s\n" \
+                % (i, o, o_data, repr(expected))
+
+def data_2op():
+        data = []
+        for i in range(num_tests):
+            data.append(TestInputAdd(randint(0, 1<<16-1), randint(0, 1<<16-1)))
+        return data
+
+
 num_tests = 100
 
 if __name__ == '__main__':
@@ -422,4 +484,10 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=ports)
     with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
+
+    print ("test 8")
+    dut = ExampleBufPipeAddClass()
+    data=data_2op()
+    test = Test5(dut, test8_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe8.vcd")
 
