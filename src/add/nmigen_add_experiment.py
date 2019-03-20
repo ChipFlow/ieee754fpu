@@ -583,21 +583,35 @@ class FPAddAlignMulti(FPState, FPID):
             m.next = "add_0"
 
 
+class FPNumIn2Ops:
+
+    def __init__(self, width):
+        self.a = FPNumIn(None, width)
+        self.b = FPNumIn(None, width)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.a.eq(i.b)]
+
+
 class FPAddAlignSingleMod:
 
     def __init__(self, width):
         self.width = width
-        self.in_a = FPNumBase(width)
-        self.in_b = FPNumBase(width)
-        self.out_a = FPNumIn(None, width)
-        self.out_b = FPNumIn(None, width)
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPNumBase2Ops(self.width)
+
+    def ospec(self):
+        return FPNumIn2Ops(self.width)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
         """
         m.submodules.align = self
-        m.d.comb += self.in_a.eq(in_a)
-        m.d.comb += self.in_b.eq(in_b)
+        m.d.comb += self.i.a.eq(in_a)
+        m.d.comb += self.i.b.eq(in_b)
 
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the
@@ -610,16 +624,16 @@ class FPAddAlignSingleMod:
         """
         m = Module()
 
-        m.submodules.align_in_a = self.in_a
-        m.submodules.align_in_b = self.in_b
-        m.submodules.align_out_a = self.out_a
-        m.submodules.align_out_b = self.out_b
+        m.submodules.align_in_a = self.i.a
+        m.submodules.align_in_b = self.i.b
+        m.submodules.align_out_a = self.o.a
+        m.submodules.align_out_b = self.o.b
 
         # temporary (muxed) input and output to be shifted
         t_inp = FPNumBase(self.width)
         t_out = FPNumIn(None, self.width)
-        espec = (len(self.in_a.e), True)
-        msr = MultiShiftRMerge(self.in_a.m_width, espec)
+        espec = (len(self.i.a.e), True)
+        msr = MultiShiftRMerge(self.i.a.m_width, espec)
         m.submodules.align_t_in = t_inp
         m.submodules.align_t_out = t_out
         m.submodules.multishift_r = msr
@@ -637,29 +651,29 @@ class FPAddAlignSingleMod:
         m.d.comb += t_out.e.eq(t_inp.e + tdiff)
         m.d.comb += t_out.s.eq(t_inp.s)
 
-        m.d.comb += ediff.eq(self.in_a.e - self.in_b.e)
-        m.d.comb += ediffr.eq(self.in_b.e - self.in_a.e)
-        m.d.comb += elz.eq(self.in_a.e < self.in_b.e)
-        m.d.comb += egz.eq(self.in_a.e > self.in_b.e)
+        m.d.comb += ediff.eq(self.i.a.e - self.i.b.e)
+        m.d.comb += ediffr.eq(self.i.b.e - self.i.a.e)
+        m.d.comb += elz.eq(self.i.a.e < self.i.b.e)
+        m.d.comb += egz.eq(self.i.a.e > self.i.b.e)
 
         # default: A-exp == B-exp, A and B untouched (fall through)
-        m.d.comb += self.out_a.eq(self.in_a)
-        m.d.comb += self.out_b.eq(self.in_b)
+        m.d.comb += self.o.a.eq(self.i.a)
+        m.d.comb += self.o.b.eq(self.i.b)
         # only one shifter (muxed)
         #m.d.comb += t_out.shift_down_multi(tdiff, t_inp)
         # exponent of a greater than b: shift b down
         with m.If(egz):
-            m.d.comb += [t_inp.eq(self.in_b),
+            m.d.comb += [t_inp.eq(self.i.b),
                          tdiff.eq(ediff),
-                         self.out_b.eq(t_out),
-                         self.out_b.s.eq(self.in_b.s), # whoops forgot sign
+                         self.o.b.eq(t_out),
+                         self.o.b.s.eq(self.i.b.s), # whoops forgot sign
                         ]
         # exponent of b greater than a: shift a down
         with m.Elif(elz):
-            m.d.comb += [t_inp.eq(self.in_a),
+            m.d.comb += [t_inp.eq(self.i.a),
                          tdiff.eq(ediffr),
-                         self.out_a.eq(t_out),
-                         self.out_a.s.eq(self.in_a.s), # whoops forgot sign
+                         self.o.a.eq(t_out),
+                         self.o.a.s.eq(self.i.a.s), # whoops forgot sign
                         ]
         return m
 
@@ -710,8 +724,8 @@ class FPAddAlignSingleAdd(FPState, FPID):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_a, in_b)
-        m.d.comb += self.out_a.eq(self.mod.out_a)
-        m.d.comb += self.out_b.eq(self.mod.out_b)
+        m.d.comb += self.out_a.eq(self.mod.o.a)
+        m.d.comb += self.out_b.eq(self.mod.o.b)
 
         self.a0mod.setup(m, self.out_a, self.out_b)
         m.d.comb += self.a0_out_z.eq(self.a0mod.out_z)
