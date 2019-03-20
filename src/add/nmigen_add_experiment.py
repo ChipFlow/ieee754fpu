@@ -726,8 +726,8 @@ class FPAddAlignSingleAdd(FPState, FPID):
         m.d.comb += self.o.eq(self.mod.o)
 
         self.a0mod.setup(m, self.o.a, self.o.b)
-        m.d.comb += self.a0_out_z.eq(self.a0mod.out_z)
-        m.d.comb += self.out_tot.eq(self.a0mod.out_tot)
+        m.d.comb += self.a0_out_z.eq(self.a0mod.o.z)
+        m.d.comb += self.out_tot.eq(self.a0mod.o.tot)
 
         self.a1mod.setup(m, self.out_tot, self.a0_out_z)
 
@@ -741,14 +741,14 @@ class FPAddAlignSingleAdd(FPState, FPID):
         m.next = "normalise_1"
 
 
-class FPAddStage0:
+class FPAddStage0Data:
 
     def __init__(self, width):
-        self.out_z = FPNumBase(width, False)
-        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+        self.z = FPNumBase(width, False)
+        self.tot = Signal(self.z.m_width + 4, reset_less=True)
 
     def eq(self, i):
-        return [self.out_z.eq(i.out_z), self.out_tot.eq(i.out_tot)]
+        return [self.z.eq(i.z), self.tot.eq(i.tot)]
 
 
 class FPAddStage0Mod:
@@ -756,11 +756,13 @@ class FPAddStage0Mod:
     def __init__(self, width):
         self.width = width
         self.i = self.ispec()
-        self.out_z = FPNumBase(width, False)
-        self.out_tot = Signal(self.out_z.m_width + 4, reset_less=True)
+        self.o = self.ospec()
 
     def ispec(self):
         return FPNumBase2Ops(self.width)
+
+    def ospec(self):
+        return FPAddStage0Data(self.width)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
@@ -773,9 +775,9 @@ class FPAddStage0Mod:
         m = Module()
         m.submodules.add0_in_a = self.i.a
         m.submodules.add0_in_b = self.i.b
-        m.submodules.add0_out_z = self.out_z
+        m.submodules.add0_out_z = self.o.z
 
-        m.d.comb += self.out_z.e.eq(self.i.a.e)
+        m.d.comb += self.o.z.e.eq(self.i.a.e)
 
         # store intermediate tests (and zero-extended mantissas)
         seq = Signal(reset_less=True)
@@ -790,20 +792,20 @@ class FPAddStage0Mod:
         # same-sign (both negative or both positive) add mantissas
         with m.If(seq):
             m.d.comb += [
-                self.out_tot.eq(am0 + bm0),
-                self.out_z.s.eq(self.i.a.s)
+                self.o.tot.eq(am0 + bm0),
+                self.o.z.s.eq(self.i.a.s)
             ]
         # a mantissa greater than b, use a
         with m.Elif(mge):
             m.d.comb += [
-                self.out_tot.eq(am0 - bm0),
-                self.out_z.s.eq(self.i.a.s)
+                self.o.tot.eq(am0 - bm0),
+                self.o.z.s.eq(self.i.a.s)
             ]
         # b mantissa greater than a, use b
         with m.Else():
             m.d.comb += [
-                self.out_tot.eq(bm0 - am0),
-                self.out_z.s.eq(self.i.b.s)
+                self.o.tot.eq(bm0 - am0),
+                self.o.z.s.eq(self.i.b.s)
         ]
         return m
 
