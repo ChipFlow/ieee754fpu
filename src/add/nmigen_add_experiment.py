@@ -1096,7 +1096,6 @@ class FPNorm1ModMulti:
     def __init__(self, width, single_cycle=True):
         self.width = width
         self.in_select = Signal(reset_less=True)
-        self.out_norm = Signal(reset_less=True)
         self.in_z = FPNumBase(width, False)
         self.in_of = Overflow()
         self.temp_z = FPNumBase(width, False)
