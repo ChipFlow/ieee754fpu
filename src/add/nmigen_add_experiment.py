@@ -1319,7 +1319,7 @@ class FPRound(FPState, FPID):
         FPState.__init__(self, "round")
         FPID.__init__(self, id_wid)
         self.mod = FPRoundMod(width)
-        self.out_z = FPNumBase(width)
+        self.out_z = self.mod.ospec()
 
     def setup(self, m, in_z, roundz, in_mid):
         """ links module to inputs and outputs
