@@ -711,9 +711,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.o = self.mod.ospec()
 
         self.a0mod = FPAddStage0Mod(width)
-        self.a0_out_z = FPNumBase(width, False)
-        self.out_tot = Signal(self.a0_out_z.m_width + 4, reset_less=True)
-        self.a0_out_z = FPNumBase(width, False)
+        self.a0o = self.a0mod.ospec()
 
         self.a1mod = FPAddStage1Mod(width)
         self.a1o = self.a1mod.ospec()
@@ -725,10 +723,9 @@ class FPAddAlignSingleAdd(FPState, FPID):
         m.d.comb += self.o.eq(self.mod.o)
 
         self.a0mod.setup(m, self.o.a, self.o.b)
-        m.d.comb += self.a0_out_z.eq(self.a0mod.o.z)
-        m.d.comb += self.out_tot.eq(self.a0mod.o.tot)
+        m.d.comb += self.a0o.eq(self.a0mod.o)
 
-        self.a1mod.setup(m, self.out_tot, self.a0_out_z)
+        self.a1mod.setup(m, self.a0o.tot, self.a0o.z)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
