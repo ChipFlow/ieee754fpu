@@ -252,7 +252,7 @@ class FPNumBase2Ops:
         self.b = FPNumBase(width, m_extra)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.a.eq(i.b)]
+        return [self.a.eq(i.a), self.b.eq(i.b)]
 
 
 class FPAddSpecialCasesMod:
@@ -590,7 +590,7 @@ class FPNumIn2Ops:
         self.b = FPNumIn(None, width)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.a.eq(i.b)]
+        return [self.a.eq(i.a), self.b.eq(i.b)]
 
 
 class FPAddAlignSingleMod:
@@ -708,8 +708,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         FPState.__init__(self, "align")
         FPID.__init__(self, id_wid)
         self.mod = FPAddAlignSingleMod(width)
-        self.out_a = FPNumIn(None, width)
-        self.out_b = FPNumIn(None, width)
+        self.o = self.mod.ospec()
 
         self.a0mod = FPAddStage0Mod(width)
         self.a0_out_z = FPNumBase(width, False)
@@ -724,10 +723,9 @@ class FPAddAlignSingleAdd(FPState, FPID):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_a, in_b)
-        m.d.comb += self.out_a.eq(self.mod.o.a)
-        m.d.comb += self.out_b.eq(self.mod.o.b)
+        m.d.comb += self.o.eq(self.mod.o)
 
-        self.a0mod.setup(m, self.out_a, self.out_b)
+        self.a0mod.setup(m, self.o.a, self.o.b)
         m.d.comb += self.a0_out_z.eq(self.a0mod.out_z)
         m.d.comb += self.out_tot.eq(self.a0mod.out_tot)
 
