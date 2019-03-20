@@ -1258,20 +1258,20 @@ class FPNormToPack(FPState, FPID):
 
         # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width)
-        r_out_z = FPNumBase(self.width)
+        r_out_z = rmod.ospec()
         rmod.setup(m, n_out_z, n_out_roundz)
         m.d.comb += n_out_roundz.eq(nmod.o.of.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
         cmod = FPCorrectionsMod(self.width)
-        c_out_z = FPNumBase(self.width)
+        c_out_z = cmod.ospec()
         cmod.setup(m, r_out_z)
         m.d.comb += c_out_z.eq(cmod.out_z)
 
         # Pack (chained to corrections)
         self.pmod = FPPackMod(self.width)
-        self.out_z = FPNumBase(self.width)
+        self.out_z = self.pmod.ospec()
         self.pmod.setup(m, c_out_z)
 
         # Multiplex ID
