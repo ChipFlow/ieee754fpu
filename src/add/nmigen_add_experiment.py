@@ -997,7 +997,6 @@ class FPNorm1ModSingle:
 
     def __init__(self, width):
         self.width = width
-        self.out_norm = Signal(reset_less=True)
         self.in_z = FPNumBase(width, False)
         self.in_of = Overflow()
         self.out_z = FPNumBase(width, False)
