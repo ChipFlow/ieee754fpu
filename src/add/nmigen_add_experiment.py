@@ -937,7 +937,7 @@ class FPNormaliseModSingle:
     def ospec(self):
         return FPNumBase(self.width, False)
 
-    def setup(self, m, in_z, out_z, modname):
+    def setup(self, m, in_z, out_z):
         """ links module to inputs and outputs
         """
         m.submodules.normalise = self
