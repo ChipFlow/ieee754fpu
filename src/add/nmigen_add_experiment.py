@@ -245,6 +245,15 @@ class FPGet2Op(FPState):
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
 
+class FPNumBase2Ops:
+
+    def __init__(self, width):
+        self.a = FPNumBase(width)
+        self.b = FPNumBase(width)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.a.eq(i.b)]
+
 
 class FPAddSpecialCasesMod:
     """ special cases: NaNs, infs, zeros, denormalised
@@ -253,34 +262,37 @@ class FPAddSpecialCasesMod:
     """
 
     def __init__(self, width):
-        self.in_a = FPNumBase(width)
-        self.in_b = FPNumBase(width)
+        self.width = width
+        self.i = self.ispec()
         self.out_z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
+
+    def ispec(self):
+        return FPNumBase2Ops(self.width)
 
     def setup(self, m, in_a, in_b, out_do_z):
         """ links module to inputs and outputs
         """
         m.submodules.specialcases = self
-        m.d.comb += self.in_a.eq(in_a)
-        m.d.comb += self.in_b.eq(in_b)
+        m.d.comb += self.i.a.eq(in_a)
+        m.d.comb += self.i.b.eq(in_b)
         m.d.comb += out_do_z.eq(self.out_do_z)
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.sc_in_a = self.in_a
-        m.submodules.sc_in_b = self.in_b
+        m.submodules.sc_in_a = self.i.a
+        m.submodules.sc_in_b = self.i.b
         m.submodules.sc_out_z = self.out_z
 
         s_nomatch = Signal()
-        m.d.comb += s_nomatch.eq(self.in_a.s != self.in_b.s)
+        m.d.comb += s_nomatch.eq(self.i.a.s != self.i.b.s)
 
         m_match = Signal()
-        m.d.comb += m_match.eq(self.in_a.m == self.in_b.m)
+        m.d.comb += m_match.eq(self.i.a.m == self.i.b.m)
 
         # if a is NaN or b is NaN return NaN
-        with m.If(self.in_a.is_nan | self.in_b.is_nan):
+        with m.If(self.i.a.is_nan | self.i.b.is_nan):
             m.d.comb += self.out_do_z.eq(1)
             m.d.comb += self.out_z.nan(0)
 
@@ -308,39 +320,39 @@ class FPAddSpecialCasesMod:
         #    m.d.comb += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
         # if a is inf return inf (or NaN)
-        with m.Elif(self.in_a.is_inf):
+        with m.Elif(self.i.a.is_inf):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.inf(self.in_a.s)
+            m.d.comb += self.out_z.inf(self.i.a.s)
             # if a is inf and signs don't match return NaN
-            with m.If(self.in_b.exp_128 & s_nomatch):
+            with m.If(self.i.b.exp_128 & s_nomatch):
                 m.d.comb += self.out_z.nan(0)
 
         # if b is inf return inf
-        with m.Elif(self.in_b.is_inf):
+        with m.Elif(self.i.b.is_inf):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.inf(self.in_b.s)
+            m.d.comb += self.out_z.inf(self.i.b.s)
 
         # if a is zero and b zero return signed-a/b
-        with m.Elif(self.in_a.is_zero & self.in_b.is_zero):
+        with m.Elif(self.i.a.is_zero & self.i.b.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.in_a.s & self.in_b.s,
-                                          self.in_b.e,
-                                          self.in_b.m[3:-1])
+            m.d.comb += self.out_z.create(self.i.a.s & self.i.b.s,
+                                          self.i.b.e,
+                                          self.i.b.m[3:-1])
 
         # if a is zero return b
-        with m.Elif(self.in_a.is_zero):
+        with m.Elif(self.i.a.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.in_b.s, self.in_b.e,
-                                      self.in_b.m[3:-1])
+            m.d.comb += self.out_z.create(self.i.b.s, self.i.b.e,
+                                      self.i.b.m[3:-1])
 
         # if b is zero return a
-        with m.Elif(self.in_b.is_zero):
+        with m.Elif(self.i.b.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.in_a.s, self.in_a.e,
-                                      self.in_a.m[3:-1])
+            m.d.comb += self.out_z.create(self.i.a.s, self.i.a.e,
+                                      self.i.a.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
-        with m.Elif(s_nomatch & m_match & (self.in_a.e == self.in_b.e)):
+        with m.Elif(s_nomatch & m_match & (self.i.a.e == self.i.b.e)):
             m.d.comb += self.out_do_z.eq(1)
             m.d.comb += self.out_z.zero(0)
 
