@@ -52,13 +52,15 @@ from collections.abc import Sequence
 
 class PrevControl:
     """ contains signals that come *from* the previous stage (both in and out)
-        * i_valid: input from previous stage indicating incoming data is valid
+        * i_valid: previous stage indicating all incoming data is valid.
+                   may be a multi-bit signal, where all bits are required
+                   to be asserted to indicate "valid".
         * o_ready: output to next stage indicating readiness to accept data
         * i_data : an input - added by the user of this class
     """
 
-    def __init__(self):
-        self.i_valid = Signal(name="p_i_valid") # prev   >>in  self
+    def __init__(self, i_width=1):
+        self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
         self.o_ready = Signal(name="p_o_ready") # prev   <<out self
 
     def connect_in(self, prev):
@@ -135,7 +137,7 @@ def eq(o, i):
 class PipelineBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, stage):
+    def __init__(self, stage, in_multi=None):
         """ pass in a "stage" which may be either a static class or a class
             instance, which has four functions (one optional):
             * ispec: returns input signals according to the input specification
@@ -150,7 +152,7 @@ class PipelineBase:
         self.stage = stage
 
         # set up input and output IO ACK (prev/next ready/valid)
-        self.p = PrevControl()
+        self.p = PrevControl(in_multi)
         self.n = NextControl()
 
     def connect_to_next(self, nxt):
@@ -225,10 +227,17 @@ class BufferedPipeline(PipelineBase):
             self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
+        p_i_valid = Signal(reset_less=True)
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
-        m.d.comb += [o_n_validn.eq(~self.n.o_valid),
-                     i_p_valid_o_p_ready.eq(self.p.i_valid & self.p.o_ready),
+        vlen = len(self.p.i_valid)
+        if vlen > 1: # multi-bit case: valid only when i_valid is all 1s
+            all1s = Const(-1, (len(self.p.i_valid), False))
+            m.d.comb += p_i_valid.eq(self.p.i_valid == all1s)
+        else: # single-bit i_valid case
+            m.d.comb += p_i_valid.eq(self.p.i_valid)
+        m.d.comb += [ o_n_validn.eq(~self.n.o_valid),
+                     i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
@@ -244,7 +253,7 @@ class BufferedPipeline(PipelineBase):
         with m.If(self.n.i_ready): # next stage is ready
             with m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
-                m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
+                m.d.sync += [self.n.o_valid.eq(p_i_valid),
                              eq(self.n.o_data, result), # update output
                             ]
             with m.Else(): # p.o_ready is false, and something is in buffer.
@@ -258,7 +267,7 @@ class BufferedPipeline(PipelineBase):
 
         # (n.i_ready) is false here: next stage is ready
         with m.Elif(o_n_validn): # next stage being told "ready"
-            m.d.sync += [self.n.o_valid.eq(self.p.i_valid),
+            m.d.sync += [self.n.o_valid.eq(p_i_valid),
                          self.p.o_ready.eq(1), # Keep the buffer empty
                          # set the output data (from comb result)
                          eq(self.n.o_data, result),
@@ -266,7 +275,7 @@ class BufferedPipeline(PipelineBase):
         # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
-            m.d.sync += self.p.o_ready.eq(~(self.p.i_valid & self.n.o_valid))
+            m.d.sync += self.p.o_ready.eq(~(p_i_valid & self.n.o_valid))
 
         return m
 
