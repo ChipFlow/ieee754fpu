@@ -1165,7 +1165,6 @@ class FPNorm1Single(FPState, FPID):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.mod = FPNorm1ModSingle(width)
-        self.out_norm = Signal(reset_less=True)
         self.out_z = FPNumBase(width)
         self.out_roundz = Signal(reset_less=True)
 
