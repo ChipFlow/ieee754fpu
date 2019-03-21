@@ -1537,6 +1537,18 @@ class FPPutZIdx(FPState):
         with m.Else():
             m.d.sync += self.out_zs[self.in_mid].stb.eq(1)
 
+class FPADDBaseData:
+
+    def __init__(self, width, id_wid):
+        self.width = width
+        self.id_wid = id_wid
+        self.a  = Signal(width)
+        self.b  = Signal(width)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
 
 class FPADDBaseMod(FPID):
 
@@ -1550,15 +1562,18 @@ class FPADDBaseMod(FPID):
         """
         FPID.__init__(self, id_wid)
         self.width = width
+        self.id_wid = id_wid
         self.single_cycle = single_cycle
         self.compact = compact
 
         self.in_t = Trigger()
-        self.in_a  = Signal(width)
-        self.in_b  = Signal(width)
+        self.i = self.ispec()
         self.out_z = FPOp(width)
 
         self.states = []
+
+    def ispec(self):
+        return FPADDBaseData(self.width, self.id_wid)
 
     def add_state(self, state):
         self.states.append(state)
@@ -1635,9 +1650,9 @@ class FPADDBaseMod(FPID):
     def get_compact_fragment(self, m, platform=None):
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
-                                      self.in_a, self.in_b,
+                                      self.i.a, self.i.b,
                                       self.width, self.id_wid))
-        get.setup(m, self.in_a, self.in_b, self.in_t.stb, self.in_t.ack)
+        get.setup(m, self.i.a, self.i.b, self.in_t.stb, self.in_t.ack)
         a = get.o.a
         b = get.o.b
 
@@ -1687,8 +1702,8 @@ class FPADDBase(FPState, FPID):
         self.out_mid = out_mid
         m.d.comb += [self.in_a.eq(a),
                      self.in_b.eq(b),
-                     self.mod.in_a.eq(self.in_a),
-                     self.mod.in_b.eq(self.in_b),
+                     self.mod.i.a.eq(self.in_a),
+                     self.mod.i.b.eq(self.in_b),
                      self.in_mid.eq(in_mid),
                      self.mod.in_mid.eq(self.in_mid),
                      self.z_done.eq(self.mod.out_z.trigger),
