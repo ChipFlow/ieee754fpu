@@ -1501,13 +1501,13 @@ class FPPutZ(FPState):
         if self.in_mid is not None:
             m.d.sync += self.out_mid.eq(self.in_mid)
         m.d.sync += [
-          self.out_z.v.eq(self.in_z.v)
+          self.out_z.z.v.eq(self.in_z.v)
         ]
-        with m.If(self.out_z.stb & self.out_z.ack):
-            m.d.sync += self.out_z.stb.eq(0)
+        with m.If(self.out_z.z.stb & self.out_z.z.ack):
+            m.d.sync += self.out_z.z.stb.eq(0)
             m.next = self.to_state
         with m.Else():
-            m.d.sync += self.out_z.stb.eq(1)
+            m.d.sync += self.out_z.z.stb.eq(1)
 
 
 class FPPutZIdx(FPState):
@@ -1549,6 +1549,15 @@ class FPADDBaseData:
         return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
+class FPOpData:
+    def __init__(self, width, id_wid):
+        self.z = FPOp(width)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+
 class FPADDBaseMod(FPID):
 
     def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
@@ -1575,7 +1584,7 @@ class FPADDBaseMod(FPID):
         return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPOp(self.width)
+        return FPOpData(self.width, self.id_wid)
 
     def add_state(self, state):
         self.states.append(state)
@@ -1585,7 +1594,7 @@ class FPADDBaseMod(FPID):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
-        m.submodules.out_z = self.out_z
+        m.submodules.out_z = self.out_z.z
         m.submodules.in_t = self.in_t
         if self.compact:
             self.get_compact_fragment(m, platform)
@@ -1707,14 +1716,14 @@ class FPADDBase(FPState, FPID):
                      self.mod.i.eq(self.i),
                      self.in_mid.eq(in_mid),
                      self.mod.in_mid.eq(self.in_mid),
-                     self.z_done.eq(self.mod.out_z.trigger),
+                     self.z_done.eq(self.mod.out_z.z.trigger),
                      #self.add_stb.eq(add_stb),
                      self.mod.in_t.stb.eq(self.in_t.stb),
                      self.in_t.ack.eq(self.mod.in_t.ack),
                      self.out_mid.eq(self.mod.out_mid),
-                     self.out_z.v.eq(self.mod.out_z.v),
-                     self.out_z.stb.eq(self.mod.out_z.stb),
-                     self.mod.out_z.ack.eq(self.out_z.ack),
+                     self.out_z.v.eq(self.mod.out_z.z.v),
+                     self.out_z.stb.eq(self.mod.out_z.z.stb),
+                     self.mod.out_z.z.ack.eq(self.out_z.ack),
                     ]
 
         m.d.sync += self.add_stb.eq(add_stb)
