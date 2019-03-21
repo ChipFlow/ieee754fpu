@@ -1388,7 +1388,13 @@ class FPCorrections(FPState, FPID):
         FPState.__init__(self, "corrections")
         FPID.__init__(self, id_wid)
         self.mod = FPCorrectionsMod(width)
-        self.out_z = self.mod.ospec()
+        self.out_z = self.ospec()
+
+    def ispec(self):
+        return self.mod.ispec()
+
+    def ospec(self):
+        return self.mod.ospec()
 
     def setup(self, m, in_z, in_mid):
         """ links module to inputs and outputs
