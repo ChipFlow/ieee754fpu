@@ -588,12 +588,13 @@ class FPAddAlignMulti(FPState, FPID):
 
 class FPNumIn2Ops:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.a = FPNumIn(None, width)
         self.b = FPNumIn(None, width)
+        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b)]
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
 class FPAddAlignSingleMod:
@@ -608,7 +609,7 @@ class FPAddAlignSingleMod:
         return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumIn2Ops(self.width)
+        return FPNumIn2Ops(self.width, self.id_wid)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
@@ -687,7 +688,7 @@ class FPAddAlignSingle(FPState, FPID):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
         FPID.__init__(self, id_wid)
-        self.mod = FPAddAlignSingleMod(width)
+        self.mod = FPAddAlignSingleMod(width, id_wid)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 
