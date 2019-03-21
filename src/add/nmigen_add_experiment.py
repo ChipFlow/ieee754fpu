@@ -1003,13 +1003,13 @@ class FPNormaliseModSingle:
 
 class FPNorm1Data:
 
-    def __init__(self, width):
-
+    def __init__(self, width, id_wid):
         self.roundz = Signal(reset_less=True)
         self.z = FPNumBase(width, False)
+        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.roundz.eq(i.roundz)]
+        return [self.z.eq(i.z), self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
 
 
 class FPNorm1ModSingle:
@@ -1024,7 +1024,7 @@ class FPNorm1ModSingle:
         return FPAddStage1Data(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNorm1Data(self.width)
+        return FPNorm1Data(self.width, self.id_wid)
 
     def setup(self, m, in_z, in_of, out_z):
         """ links module to inputs and outputs
@@ -1271,7 +1271,7 @@ class FPNormToPack(FPState, FPID):
         m.d.comb += n_out.roundz.eq(nmod.o.roundz)
 
         # Rounding (chained to normalisation)
-        rmod = FPRoundMod(self.width)
+        rmod = FPRoundMod(self.width, self.id_wid)
         r_out_z = rmod.ospec()
         rmod.setup(m, n_out.z, n_out.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
@@ -1299,13 +1299,14 @@ class FPNormToPack(FPState, FPID):
 
 class FPRoundMod:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNorm1Data(self.width)
+        return FPNorm1Data(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumBase(self.width, False)
