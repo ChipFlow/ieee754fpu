@@ -1567,12 +1567,15 @@ class FPADDBaseMod(FPID):
 
         self.in_t = Trigger()
         self.i = self.ispec()
-        self.out_z = FPOp(width)
+        self.out_z = self.ospec()
 
         self.states = []
 
     def ispec(self):
         return FPADDBaseData(self.width, self.id_wid)
+
+    def ospec(self):
+        return FPOp(self.width)
 
     def add_state(self, state):
         self.states.append(state)
@@ -1693,6 +1696,9 @@ class FPADDBase(FPState, FPID):
 
     def ispec(self):
         return self.mod.ispec()
+
+    def ospec(self):
+        return self.mod.ospec()
 
     def setup(self, m, i, add_stb, in_mid, out_z, out_mid):
         self.out_z = out_z
