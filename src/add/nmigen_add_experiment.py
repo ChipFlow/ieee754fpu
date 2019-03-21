@@ -1283,7 +1283,7 @@ class FPNormToPack(FPState, FPID):
         m.d.comb += c_out_z.eq(cmod.out_z)
 
         # Pack (chained to corrections)
-        self.pmod = FPPackMod(self.width)
+        self.pmod = FPPackMod(self.width, self.id_wid)
         self.out_z = self.pmod.ospec()
         self.pmod.setup(m, c_out_z)
 
@@ -1371,7 +1371,7 @@ class FPCorrectionsMod:
         return FPRoundData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumOut(self.width, False)
+        return FPRoundData(self.width, self.id_wid)
 
     def setup(self, m, in_z):
         """ links module to inputs and outputs
@@ -1382,10 +1382,10 @@ class FPCorrectionsMod:
     def elaborate(self, platform):
         m = Module()
         m.submodules.corr_in_z = self.in_z.z
-        m.submodules.corr_out_z = self.out_z
-        m.d.comb += self.out_z.eq(self.in_z.z)
+        m.submodules.corr_out_z = self.out_z.z
+        m.d.comb += self.out_z.eq(self.in_z)
         with m.If(self.in_z.z.is_denormalised):
-            m.d.comb += self.out_z.e.eq(self.in_z.z.N127)
+            m.d.comb += self.out_z.z.e.eq(self.in_z.z.N127)
         return m
 
 
@@ -1412,13 +1412,14 @@ class FPCorrections(FPState, FPID):
 
 class FPPackMod:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.in_z = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNumOut(self.width, False)
+        return FPRoundData(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumOut(self.width, False)
@@ -1431,11 +1432,11 @@ class FPPackMod:
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.pack_in_z = self.in_z
-        with m.If(self.in_z.is_overflowed):
-            m.d.comb += self.out_z.inf(self.in_z.s)
+        m.submodules.pack_in_z = self.in_z.z
+        with m.If(self.in_z.z.is_overflowed):
+            m.d.comb += self.out_z.inf(self.in_z.z.s)
         with m.Else():
-            m.d.comb += self.out_z.create(self.in_z.s, self.in_z.e, self.in_z.m)
+            m.d.comb += self.out_z.create(self.in_z.z.s, self.in_z.z.e, self.in_z.z.m)
         return m
 
 
