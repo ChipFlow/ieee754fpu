@@ -1869,9 +1869,7 @@ class FPADD(FPID):
         in_a = self.rs[0][0]
         in_b = self.rs[0][1]
 
-        out_z = FPOp(self.width)
-        out_mid = Signal(self.id_wid, reset_less=True)
-        m.submodules.out_z = out_z
+        o = FPOpData(self.width, self.id_wid)
 
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       in_a, self.width))
@@ -1888,10 +1886,10 @@ class FPADD(FPID):
         abd = ab.ispec() # create an input spec object for FPADDBase
         m.d.sync += [abd.a.eq(a), abd.b.eq(b), abd.mid.eq(self.ids.in_mid)]
         ab.setup(m, abd, getb.out_decode, self.ids.in_mid,
-                 out_z, out_mid)
+                 o.z, o.mid)
 
         pz = self.add_state(FPPutZIdx("put_z", ab.out_z, self.res,
-                                    out_mid, "get_a"))
+                                    o.mid, "get_a"))
 
         with m.FSM() as fsm:
 
