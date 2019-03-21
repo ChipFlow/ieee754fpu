@@ -717,7 +717,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.a0mod = FPAddStage0Mod(width, id_wid)
         self.a0o = self.a0mod.ospec()
 
-        self.a1mod = FPAddStage1Mod(width)
+        self.a1mod = FPAddStage1Mod(width, id_wid)
         self.a1o = self.a1mod.ospec()
 
     def setup(self, m, in_a, in_b, in_mid):
@@ -742,12 +742,13 @@ class FPAddAlignSingleAdd(FPState, FPID):
 
 class FPAddStage0Data:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
+        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.tot.eq(i.tot)]
+        return [self.z.eq(i.z), self.tot.eq(i.tot), self.mid.eq(i.mid)]
 
 
 class FPAddStage0Mod:
@@ -762,7 +763,7 @@ class FPAddStage0Mod:
         return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
-        return FPAddStage0Data(self.width)
+        return FPAddStage0Data(self.width, self.id_wid)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
@@ -852,13 +853,14 @@ class FPAddStage1Mod(FPState):
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage0Data(self.width)
+        return FPAddStage0Data(self.width, self.id_wid)
 
     def ospec(self):
         return FPAddStage1Data(self.width)
