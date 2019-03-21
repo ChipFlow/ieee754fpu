@@ -713,31 +713,37 @@ class FPAddAlignSingleAdd(FPState, FPID):
         FPID.__init__(self, id_wid)
         self.width = width
         self.id_wid = id_wid
-        self.mod = FPAddAlignSingleMod(width, id_wid)
-        self.o = self.mod.ospec()
+        self.o = self.ispec()
+        self.a1o = self.ospec()
 
-        self.a1mod = FPAddStage1Mod(width, id_wid)
-        self.a1o = self.a1mod.ospec()
+    def ispec(self):
+        return FPNumBase2Ops(self.width, self.id_wid) # AlignSingle ispec
+
+    def ospec(self):
+        return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
 
     def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, i)
-        m.d.comb += self.o.eq(self.mod.o)
+        mod = FPAddAlignSingleMod(self.width, self.id_wid)
+        mod.setup(m, i)
+        m.d.comb += self.o.eq(mod.o)
 
         a0mod = FPAddStage0Mod(self.width, self.id_wid)
         a0mod.setup(m, self.o)
         a0o = a0mod.ospec()
         m.d.comb += a0o.eq(a0mod.o)
 
-        self.a1mod.setup(m, a0o)
+        a1mod = FPAddStage1Mod(self.width, self.id_wid)
+        a1mod.setup(m, a0o)
+        self.a1modo = a1mod.o
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
     def action(self, m):
         self.idsync(m)
-        m.d.sync += self.a1o.eq(self.a1mod.o)
+        m.d.sync += self.a1o.eq(self.a1modo)
         m.next = "normalise_1"
 
 
