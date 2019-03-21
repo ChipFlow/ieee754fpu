@@ -244,12 +244,11 @@ class FPGet2Op(FPState):
             m.next = self.out_state
             m.d.sync += [
                 self.mod.ack.eq(0),
-                #self.out_op1.v.eq(self.mod.out_op1.v),
-                #self.out_op2.v.eq(self.mod.out_op2.v),
                 self.o.eq(self.mod.o),
             ]
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
+
 
 class FPNumBase2Ops:
 
