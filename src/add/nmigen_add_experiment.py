@@ -230,12 +230,11 @@ class FPGet2Op(FPState):
         self.out_ack = Signal(reset_less=True)
         self.out_decode = Signal(reset_less=True)
 
-    def setup(self, m, in_op1, in_op2, in_stb, in_ack):
+    def setup(self, m, i, in_stb, in_ack):
         """ links module to inputs and outputs
         """
         m.submodules.get_ops = self.mod
-        m.d.comb += self.mod.i.a.eq(in_op1)
-        m.d.comb += self.mod.i.b.eq(in_op2)
+        m.d.comb += self.mod.i.eq(i)
         m.d.comb += self.mod.stb.eq(in_stb)
         m.d.comb += self.out_ack.eq(self.mod.ack)
         m.d.comb += self.out_decode.eq(self.mod.trigger)
@@ -1654,7 +1653,7 @@ class FPADDBaseMod(FPID):
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
                                       self.i.a, self.i.b,
                                       self.width, self.id_wid))
-        get.setup(m, self.i.a, self.i.b, self.in_t.stb, self.in_t.ack)
+        get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
         a = get.o.a
         b = get.o.b
 
