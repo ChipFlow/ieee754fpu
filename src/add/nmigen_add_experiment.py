@@ -1027,13 +1027,12 @@ class FPNorm1ModSingle:
     def ospec(self):
         return FPNorm1Data(self.width, self.id_wid)
 
-    def setup(self, m, in_z, in_of, out_z):
+    def setup(self, m, i, out_z):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self
 
-        m.d.comb += self.i.z.eq(in_z)
-        m.d.comb += self.i.of.eq(in_of)
+        m.d.comb += self.i.eq(i)
 
         m.d.comb += out_z.eq(self.o.z)
 
@@ -1261,14 +1260,14 @@ class FPNormToPack(FPState, FPID):
         FPState.__init__(self, "normalise_1")
         self.width = width
 
-    def setup(self, m, in_z, in_of, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
 
         # Normalisation (chained to input in_z+in_of)
         nmod = FPNorm1ModSingle(self.width, self.id_wid)
         n_out = nmod.ospec()
-        nmod.setup(m, in_z, in_of, n_out.z)
+        nmod.setup(m, i, n_out.z)
         m.d.comb += n_out.roundz.eq(nmod.o.roundz)
 
         # Rounding (chained to normalisation)
@@ -1649,7 +1648,7 @@ class FPADDBaseMod(FPID):
         alm.setup(m, sc.o, sc.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, alm.a1o.z, alm.a1o.of, alm.in_mid)
+        n1.setup(m, alm.a1o, alm.in_mid)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.out_z,
                                     n1.in_mid, self.out_mid))
