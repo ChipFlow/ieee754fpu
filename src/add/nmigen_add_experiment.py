@@ -1274,14 +1274,14 @@ class FPNormToPack(FPState, FPID):
 
         # Corrections (chained to rounding)
         cmod = FPCorrectionsMod(self.width, self.id_wid)
-        c_out_z = cmod.ospec()
         cmod.setup(m, r_out_z)
+        c_out_z = cmod.ospec()
         m.d.comb += c_out_z.eq(cmod.out_z)
 
         # Pack (chained to corrections)
         self.pmod = FPPackMod(self.width, self.id_wid)
-        self.out_z = self.pmod.ospec()
         self.pmod.setup(m, c_out_z)
+        self.out_z = self.pmod.ospec()
 
         # Multiplex ID
         if self.in_mid is not None:
