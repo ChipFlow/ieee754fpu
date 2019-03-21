@@ -1187,10 +1187,10 @@ class FPNorm1Single(FPState, FPID):
         self.out_z = FPNumBase(width, False)
         self.out_roundz = Signal(reset_less=True)
 
-    def setup(self, m, in_z, in_of, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_z, in_of, self.out_z)
+        self.mod.setup(m, i, self.out_z)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
