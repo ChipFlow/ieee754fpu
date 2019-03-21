@@ -189,9 +189,11 @@ class FPGet2OpMod(Trigger):
         Trigger.__init__(self)
         self.width = width
         self.id_wid = id_wid
-        self.in_op1 = Signal(width, reset_less=True)
-        self.in_op2 = Signal(width, reset_less=True)
-        self.o = FPNumBase2Ops(width, id_wid)
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumBase2Ops(self.width, self.id_wid)
@@ -205,8 +207,8 @@ class FPGet2OpMod(Trigger):
         out_op2 = FPNumIn(None, self.width)
         with m.If(self.trigger):
             m.d.comb += [
-                out_op1.decode(self.in_op1),
-                out_op2.decode(self.in_op2),
+                out_op1.decode(self.i.a),
+                out_op2.decode(self.i.b),
                 self.o.a.eq(out_op1),
                 self.o.b.eq(out_op2),
             ]
@@ -232,8 +234,8 @@ class FPGet2Op(FPState):
         """ links module to inputs and outputs
         """
         m.submodules.get_ops = self.mod
-        m.d.comb += self.mod.in_op1.eq(in_op1)
-        m.d.comb += self.mod.in_op2.eq(in_op2)
+        m.d.comb += self.mod.i.a.eq(in_op1)
+        m.d.comb += self.mod.i.b.eq(in_op2)
         m.d.comb += self.mod.stb.eq(in_stb)
         m.d.comb += self.out_ack.eq(self.mod.ack)
         m.d.comb += self.out_decode.eq(self.mod.trigger)
