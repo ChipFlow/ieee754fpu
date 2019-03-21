@@ -1651,8 +1651,6 @@ class FPADDBaseMod(FPID):
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
                                       self.width, self.id_wid))
         get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
-        a = get.o.a
-        b = get.o.b
 
         sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
         sc.setup(m, get.o, self.in_mid)
