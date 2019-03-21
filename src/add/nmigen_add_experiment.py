@@ -1338,10 +1338,10 @@ class FPRound(FPState, FPID):
         self.mod = FPRoundMod(width)
         self.out_z = self.mod.ospec()
 
-    def setup(self, m, in_z, roundz, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_z, roundz)
+        self.mod.setup(m, i)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
