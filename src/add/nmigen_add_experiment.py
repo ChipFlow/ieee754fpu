@@ -1293,7 +1293,7 @@ class FPNormToPack(FPState, FPID):
 
     def action(self, m):
         self.idsync(m) # copies incoming ID to outgoing
-        m.d.sync += self.out_z.v.eq(self.pmod.o.v) # outputs packed result
+        m.d.sync += self.out_z.z.v.eq(self.pmod.o.z.v) # outputs packed result
         m.next = "pack_put_z"
 
 
@@ -1410,6 +1410,16 @@ class FPCorrections(FPState, FPID):
         m.next = "pack"
 
 
+class FPPackData:
+
+    def __init__(self, width, id_wid):
+        self.z = FPNumOut(width, False)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+
 class FPPackMod:
 
     def __init__(self, width, id_wid):
@@ -1422,7 +1432,7 @@ class FPPackMod:
         return FPRoundData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumOut(self.width, False)
+        return FPPackData(self.width, self.id_wid)
 
     def setup(self, m, in_z):
         """ links module to inputs and outputs
@@ -1434,9 +1444,9 @@ class FPPackMod:
         m = Module()
         m.submodules.pack_in_z = self.i.z
         with m.If(self.i.z.is_overflowed):
-            m.d.comb += self.o.inf(self.i.z.s)
+            m.d.comb += self.o.z.inf(self.i.z.s)
         with m.Else():
-            m.d.comb += self.o.create(self.i.z.s, self.i.z.e, self.i.z.m)
+            m.d.comb += self.o.z.create(self.i.z.s, self.i.z.e, self.i.z.m)
         return m
 
 
@@ -1639,7 +1649,7 @@ class FPADDBaseMod(FPID):
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, alm.a1o.z, alm.a1o.of, alm.in_mid)
 
-        ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z, self.out_z,
+        ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.out_z,
                                     n1.in_mid, self.out_mid))
 
         pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
