@@ -1694,6 +1694,7 @@ class FPADDBase(FPState, FPID):
         self.width = width
         self.single_cycle = single_cycle
         self.mod = FPADDBaseMod(width, id_wid, single_cycle)
+        self.o = self.ospec()
 
         self.in_t = Trigger()
         self.i = self.ispec()
@@ -1709,9 +1710,7 @@ class FPADDBase(FPState, FPID):
     def ospec(self):
         return self.mod.ospec()
 
-    def setup(self, m, i, add_stb, in_mid, out_z, out_mid):
-        self.out_z = out_z
-        self.out_mid = out_mid
+    def setup(self, m, i, add_stb, in_mid):
         m.d.comb += [self.i.eq(i),
                      self.mod.i.eq(self.i),
                      self.in_mid.eq(in_mid),
@@ -1720,15 +1719,15 @@ class FPADDBase(FPState, FPID):
                      #self.add_stb.eq(add_stb),
                      self.mod.in_t.stb.eq(self.in_t.stb),
                      self.in_t.ack.eq(self.mod.in_t.ack),
-                     self.out_mid.eq(self.mod.out_mid),
-                     self.out_z.v.eq(self.mod.out_z.z.v),
-                     self.out_z.stb.eq(self.mod.out_z.z.stb),
-                     self.mod.out_z.z.ack.eq(self.out_z.ack),
+                     self.o.mid.eq(self.mod.out_z.mid),
+                     self.o.z.v.eq(self.mod.out_z.z.v),
+                     self.o.z.stb.eq(self.mod.out_z.z.stb),
+                     self.mod.out_z.z.ack.eq(self.o.z.ack),
                     ]
 
         m.d.sync += self.add_stb.eq(add_stb)
         m.d.sync += self.add_ack.eq(0) # sets to zero when not in active state
-        m.d.sync += self.out_z.ack.eq(0) # likewise
+        m.d.sync += self.o.z.ack.eq(0) # likewise
         #m.d.sync += self.in_t.stb.eq(0)
 
         m.submodules.fpadd = self.mod
@@ -1750,7 +1749,7 @@ class FPADDBase(FPState, FPID):
             with m.Else():
                 m.d.sync += [self.add_ack.eq(0),
                              self.in_t.stb.eq(0),
-                             self.out_z.ack.eq(1),
+                             self.o.z.ack.eq(1),
                             ]
         with m.Else():
             # done: acknowledge, and write out id and value
@@ -1869,8 +1868,6 @@ class FPADD(FPID):
         in_a = self.rs[0][0]
         in_b = self.rs[0][1]
 
-        o = FPOpData(self.width, self.id_wid)
-
         geta = self.add_state(FPGetOp("get_a", "get_b",
                                       in_a, self.width))
         geta.setup(m, in_a)
@@ -1885,10 +1882,10 @@ class FPADD(FPID):
         ab = self.add_state(ab)
         abd = ab.ispec() # create an input spec object for FPADDBase
         m.d.sync += [abd.a.eq(a), abd.b.eq(b), abd.mid.eq(self.ids.in_mid)]
-        ab.setup(m, abd, getb.out_decode, self.ids.in_mid,
-                 o.z, o.mid)
+        ab.setup(m, abd, getb.out_decode, self.ids.in_mid)
+        o = ab.o
 
-        pz = self.add_state(FPPutZIdx("put_z", ab.out_z, self.res,
+        pz = self.add_state(FPPutZIdx("put_z", o.z, self.res,
                                     o.mid, "get_a"))
 
         with m.FSM() as fsm:
