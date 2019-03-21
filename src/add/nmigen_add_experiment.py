@@ -1684,22 +1684,21 @@ class FPADDBase(FPState, FPID):
         self.mod = FPADDBaseMod(width, id_wid, single_cycle)
 
         self.in_t = Trigger()
-        self.in_a  = Signal(width)
-        self.in_b  = Signal(width)
-        #self.out_z = FPOp(width)
+        self.i = self.ispec()
 
         self.z_done = Signal(reset_less=True) # connects to out_z Strobe
         self.in_accept = Signal(reset_less=True)
         self.add_stb = Signal(reset_less=True)
         self.add_ack = Signal(reset=0, reset_less=True)
 
-    def setup(self, m, a, b, add_stb, in_mid, out_z, out_mid):
+    def ispec(self):
+        return self.mod.ispec()
+
+    def setup(self, m, i, add_stb, in_mid, out_z, out_mid):
         self.out_z = out_z
         self.out_mid = out_mid
-        m.d.comb += [self.in_a.eq(a),
-                     self.in_b.eq(b),
-                     self.mod.i.a.eq(self.in_a),
-                     self.mod.i.b.eq(self.in_b),
+        m.d.comb += [self.i.eq(i),
+                     self.mod.i.eq(self.i),
                      self.in_mid.eq(in_mid),
                      self.mod.in_mid.eq(self.in_mid),
                      self.z_done.eq(self.mod.out_z.trigger),
@@ -1871,7 +1870,9 @@ class FPADD(FPID):
 
         ab = FPADDBase(self.width, self.id_wid, self.single_cycle)
         ab = self.add_state(ab)
-        ab.setup(m, a, b, getb.out_decode, self.ids.in_mid,
+        abd = ab.ispec() # create an input spec object for FPADDBase
+        m.d.sync += [abd.a.eq(a), abd.b.eq(b), abd.mid.eq(self.ids.in_mid)]
+        ab.setup(m, abd, getb.out_decode, self.ids.in_mid,
                  out_z, out_mid)
 
         pz = self.add_state(FPPutZIdx("put_z", ab.out_z, self.res,
