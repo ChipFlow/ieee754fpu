@@ -1026,14 +1026,11 @@ class FPNorm1ModSingle:
     def ospec(self):
         return FPNorm1Data(self.width, self.id_wid)
 
-    def setup(self, m, i, out_z):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.normalise_1 = self
-
         m.d.comb += self.i.eq(i)
-
-        m.d.comb += out_z.eq(self.o.z)
 
     def elaborate(self, platform):
         m = Module()
@@ -1265,9 +1262,9 @@ class FPNormToPack(FPState, FPID):
 
         # Normalisation (chained to input in_z+in_of)
         nmod = FPNorm1ModSingle(self.width, self.id_wid)
+        nmod.setup(m, i)
         n_out = nmod.ospec()
-        nmod.setup(m, i, n_out.z)
-        m.d.comb += n_out.roundz.eq(nmod.o.roundz)
+        m.d.comb += n_out.eq(nmod.o)
 
         # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width, self.id_wid)
