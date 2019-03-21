@@ -1576,7 +1576,7 @@ class FPADDBaseMod(FPID):
 
         self.in_t = Trigger()
         self.i = self.ispec()
-        self.out_z = self.ospec()
+        self.o = self.ospec()
 
         self.states = []
 
@@ -1594,7 +1594,7 @@ class FPADDBaseMod(FPID):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
-        m.submodules.out_z = self.out_z.z
+        m.submodules.out_z = self.o.z
         m.submodules.in_t = self.in_t
         if self.compact:
             self.get_compact_fragment(m, platform)
@@ -1673,10 +1673,10 @@ class FPADDBaseMod(FPID):
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, alm.a1o, alm.in_mid)
 
-        ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.out_z,
+        ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.o,
                                     n1.in_mid, self.out_mid))
 
-        pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.out_z,
+        pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.o,
                                     sc.in_mid, self.out_mid))
 
 
@@ -1715,14 +1715,14 @@ class FPADDBase(FPState, FPID):
                      self.mod.i.eq(self.i),
                      self.in_mid.eq(in_mid),
                      self.mod.in_mid.eq(self.in_mid),
-                     self.z_done.eq(self.mod.out_z.z.trigger),
+                     self.z_done.eq(self.mod.o.z.trigger),
                      #self.add_stb.eq(add_stb),
                      self.mod.in_t.stb.eq(self.in_t.stb),
                      self.in_t.ack.eq(self.mod.in_t.ack),
-                     self.o.mid.eq(self.mod.out_z.mid),
-                     self.o.z.v.eq(self.mod.out_z.z.v),
-                     self.o.z.stb.eq(self.mod.out_z.z.stb),
-                     self.mod.out_z.z.ack.eq(self.o.z.ack),
+                     self.o.mid.eq(self.mod.o.mid),
+                     self.o.z.v.eq(self.mod.o.z.v),
+                     self.o.z.stb.eq(self.mod.o.z.stb),
+                     self.mod.o.z.ack.eq(self.o.z.ack),
                     ]
 
         m.d.sync += self.add_stb.eq(add_stb)
