@@ -170,7 +170,6 @@ class FPGetOp(FPState):
         """
         setattr(m.submodules, self.state_from, self.mod)
         m.d.comb += self.mod.in_op.eq(in_op)
-        #m.d.comb += self.out_op.eq(self.mod.out_op)
         m.d.comb += self.out_decode.eq(self.mod.out_decode)
 
     def action(self, m):
@@ -200,7 +199,6 @@ class FPGet2OpMod(Trigger):
 
     def elaborate(self, platform):
         m = Trigger.elaborate(self, platform)
-        #m.submodules.get_op_in = self.in_op
         m.submodules.get_op1_out = self.o.a
         m.submodules.get_op2_out = self.o.b
         out_op1 = FPNumIn(None, self.width)
@@ -1772,6 +1770,7 @@ class FPADDBase(FPState, FPID):
                 m.next = "put_z"
             with m.Else():
                 m.d.sync += self.out_z.stb.eq(1)
+
 
 class ResArray:
     def __init__(self, width, id_wid):
