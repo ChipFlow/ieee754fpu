@@ -946,12 +946,11 @@ class FPNormaliseModSingle:
     def ospec(self):
         return FPNumBase(self.width, False)
 
-    def setup(self, m, in_z, out_z):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.normalise = self
-        m.d.comb += self.in_z.eq(in_z)
-        m.d.comb += out_z.eq(self.out_z)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
