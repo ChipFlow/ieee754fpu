@@ -741,9 +741,10 @@ class FPAddAlignSingleAdd(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
-        self.idsync(m)
         m.d.sync += self.a1o.eq(self.a1modo)
+        self.idsync(m)
+
+    def action(self, m):
         m.next = "normalise_1"
 
 
@@ -836,10 +837,11 @@ class FPAddStage0(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         # NOTE: these could be done as combinatorial (merge add0+add1)
         m.d.sync += self.o.eq(self.mod.o)
+
+    def action(self, m):
         m.next = "add_1"
 
 
@@ -929,11 +931,12 @@ class FPAddStage1(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_of.eq(self.mod.out_of)
         m.d.sync += self.out_z.eq(self.mod.out_z)
         m.d.sync += self.norm_stb.eq(1)
+
+    def action(self, m):
         m.next = "normalise_1"
 
 
@@ -1199,9 +1202,10 @@ class FPNorm1Single(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
+
+    def action(self, m):
         m.next = "round"
 
 
@@ -1297,9 +1301,10 @@ class FPNormToPack(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m) # copies incoming ID to outgoing
         m.d.sync += self.out_z.z.v.eq(self.pmod.o.z.v) # outputs packed result
+
+    def action(self, m):
         m.next = "pack_put_z"
 
 
@@ -1363,9 +1368,10 @@ class FPRound(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
+
+    def action(self, m):
         m.next = "corrections"
 
 
@@ -1420,9 +1426,10 @@ class FPCorrections(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
+
+    def action(self, m):
         m.next = "pack"
 
 
@@ -1496,9 +1503,10 @@ class FPPack(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v)
+
+    def action(self, m):
         m.next = "pack_put_z"
 
 
