@@ -1268,8 +1268,8 @@ class FPNormToPack(FPState, FPID):
 
         # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width, self.id_wid)
+        rmod.setup(m, n_out)
         r_out_z = rmod.ospec()
-        rmod.setup(m, n_out.z, n_out.roundz)
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
@@ -1317,11 +1317,9 @@ class FPRoundMod:
     def ospec(self):
         return FPRoundData(self.width, self.id_wid)
 
-    def setup(self, m, in_z, roundz):
+    def setup(self, m, i):
         m.submodules.roundz = self
-
-        m.d.comb += self.i.z.eq(in_z)
-        m.d.comb += self.i.roundz.eq(roundz)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
