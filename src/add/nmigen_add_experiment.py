@@ -247,12 +247,13 @@ class FPGet2Op(FPState):
 
 class FPNumBase2Ops:
 
-    def __init__(self, width, m_extra=True):
+    def __init__(self, width, id_wid, m_extra=True):
         self.a = FPNumBase(width, m_extra)
         self.b = FPNumBase(width, m_extra)
+        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b)]
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
 class FPAddSpecialCasesMod:
@@ -261,14 +262,15 @@ class FPAddSpecialCasesMod:
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.out_z = self.ospec()
         self.out_do_z = Signal(reset_less=True)
 
     def ispec(self):
-        return FPNumBase2Ops(self.width)
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumOut(self.width, False)
@@ -419,11 +421,11 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
         FPID.__init__(self, id_wid)
-        self.smod = FPAddSpecialCasesMod(width)
+        self.smod = FPAddSpecialCasesMod(width, id_wid)
         self.out_z = self.smod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
-        self.dmod = FPAddDeNormMod(width)
+        self.dmod = FPAddDeNormMod(width, id_wid)
         self.o = self.dmod.ospec()
 
     def setup(self, m, in_a, in_b, in_mid):
@@ -447,16 +449,17 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
 
 class FPAddDeNormMod(FPState):
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width)
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumBase2Ops(self.width)
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
@@ -595,13 +598,14 @@ class FPNumIn2Ops:
 
 class FPAddAlignSingleMod:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width)
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumIn2Ops(self.width)
@@ -707,10 +711,10 @@ class FPAddAlignSingleAdd(FPState, FPID):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
         FPID.__init__(self, id_wid)
-        self.mod = FPAddAlignSingleMod(width)
+        self.mod = FPAddAlignSingleMod(width, id_wid)
         self.o = self.mod.ospec()
 
-        self.a0mod = FPAddStage0Mod(width)
+        self.a0mod = FPAddStage0Mod(width, id_wid)
         self.a0o = self.a0mod.ospec()
 
         self.a1mod = FPAddStage1Mod(width)
@@ -748,13 +752,14 @@ class FPAddStage0Data:
 
 class FPAddStage0Mod:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width)
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
         return FPAddStage0Data(self.width)
