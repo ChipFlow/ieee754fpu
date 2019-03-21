@@ -825,10 +825,10 @@ class FPAddStage0(FPState, FPID):
         self.mod = FPAddStage0Mod(width)
         self.o = self.mod.ospec()
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_a, in_b)
+        self.mod.setup(m, i)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
