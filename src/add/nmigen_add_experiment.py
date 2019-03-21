@@ -1417,6 +1417,15 @@ class FPPackMod:
         return m
 
 
+class FPPackData:
+    def __init__(self, width, id_wid):
+        self.z = FPNumOut(width, False)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+
 class FPPack(FPState, FPID):
 
     def __init__(self, width, id_wid):
