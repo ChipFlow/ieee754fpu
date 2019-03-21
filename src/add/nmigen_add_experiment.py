@@ -219,12 +219,10 @@ class FPGet2Op(FPState):
     """ gets operands
     """
 
-    def __init__(self, in_state, out_state, in_op1, in_op2, width, id_wid):
+    def __init__(self, in_state, out_state, width, id_wid):
         FPState.__init__(self, in_state)
         self.out_state = out_state
         self.mod = FPGet2OpMod(width, id_wid)
-        self.in_op1 = in_op1
-        self.in_op2 = in_op2
         self.o = self.mod.ospec()
         self.in_stb = Signal(reset_less=True)
         self.out_ack = Signal(reset_less=True)
@@ -1602,7 +1600,7 @@ class FPADDBaseMod(FPID):
     def get_longer_fragment(self, m, platform=None):
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
-                                      self.in_a, self.in_b, self.width))
+                                      self.width))
         get.setup(m, self.in_a, self.in_b, self.in_t.stb, self.in_t.ack)
         a = get.out_op1
         b = get.out_op2
@@ -1651,7 +1649,6 @@ class FPADDBaseMod(FPID):
     def get_compact_fragment(self, m, platform=None):
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
-                                      self.i.a, self.i.b,
                                       self.width, self.id_wid))
         get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
         a = get.o.a
