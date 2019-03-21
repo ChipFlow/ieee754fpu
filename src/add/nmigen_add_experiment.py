@@ -280,12 +280,11 @@ class FPAddSpecialCasesMod:
     def ospec(self):
         return FPPackData(self.width, self.id_wid)
 
-    def setup(self, m, in_a, in_b, out_do_z):
+    def setup(self, m, i, out_do_z):
         """ links module to inputs and outputs
         """
         m.submodules.specialcases = self
-        m.d.comb += self.i.a.eq(in_a)
-        m.d.comb += self.i.b.eq(in_b)
+        m.d.comb += self.i.eq(i)
         m.d.comb += out_do_z.eq(self.out_do_z)
 
     def elaborate(self, platform):
@@ -433,11 +432,11 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
         self.dmod = FPAddDeNormMod(width, id_wid)
         self.o = self.dmod.ospec()
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.smod.setup(m, in_a, in_b, self.out_do_z)
-        self.dmod.setup(m, in_a, in_b)
+        self.smod.setup(m, i, self.out_do_z)
+        self.dmod.setup(m, i)
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
@@ -466,12 +465,11 @@ class FPAddDeNormMod(FPState):
     def ospec(self):
         return FPNumBase2Ops(self.width, self.id_wid)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.denormalise = self
-        m.d.comb += self.i.a.eq(in_a)
-        m.d.comb += self.i.b.eq(in_b)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
@@ -616,12 +614,11 @@ class FPAddAlignSingleMod:
     def ospec(self):
         return FPNumIn2Ops(self.width, self.id_wid)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.align = self
-        m.d.comb += self.i.a.eq(in_a)
-        m.d.comb += self.i.b.eq(in_b)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the
@@ -726,13 +723,13 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.a1mod = FPAddStage1Mod(width, id_wid)
         self.a1o = self.a1mod.ospec()
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_a, in_b)
+        self.mod.setup(m, i)
         m.d.comb += self.o.eq(self.mod.o)
 
-        self.a0mod.setup(m, self.o.a, self.o.b)
+        self.a0mod.setup(m, self.o)
         m.d.comb += self.a0o.eq(self.a0mod.o)
 
         self.a1mod.setup(m, self.a0o.tot, self.a0o.z)
@@ -771,12 +768,11 @@ class FPAddStage0Mod:
     def ospec(self):
         return FPAddStage0Data(self.width, self.id_wid)
 
-    def setup(self, m, in_a, in_b):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.add0 = self
-        m.d.comb += self.i.a.eq(in_a)
-        m.d.comb += self.i.b.eq(in_b)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
@@ -1647,10 +1643,10 @@ class FPADDBaseMod(FPID):
         b = get.o.b
 
         sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
-        sc.setup(m, a, b, self.in_mid)
+        sc.setup(m, get.o, self.in_mid)
 
         alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
-        alm.setup(m, sc.o.a, sc.o.b, sc.in_mid)
+        alm.setup(m, sc.o, sc.in_mid)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, alm.a1o.z, alm.a1o.of, alm.in_mid)
