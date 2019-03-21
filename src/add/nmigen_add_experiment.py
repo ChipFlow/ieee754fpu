@@ -713,7 +713,6 @@ class FPAddAlignSingleAdd(FPState, FPID):
         FPID.__init__(self, id_wid)
         self.width = width
         self.id_wid = id_wid
-        self.o = self.ispec()
         self.a1o = self.ospec()
 
     def ispec(self):
@@ -727,10 +726,11 @@ class FPAddAlignSingleAdd(FPState, FPID):
         """
         mod = FPAddAlignSingleMod(self.width, self.id_wid)
         mod.setup(m, i)
-        m.d.comb += self.o.eq(mod.o)
+        o = mod.ospec()
+        m.d.comb += o.eq(mod.o)
 
         a0mod = FPAddStage0Mod(self.width, self.id_wid)
-        a0mod.setup(m, self.o)
+        a0mod.setup(m, o)
         a0o = a0mod.ospec()
         m.d.comb += a0o.eq(a0mod.o)
 
