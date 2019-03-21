@@ -731,7 +731,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         self.a0mod.setup(m, self.o)
         m.d.comb += self.a0o.eq(self.a0mod.o)
 
-        self.a1mod.setup(m, self.a0o.tot, self.a0o.z)
+        self.a1mod.setup(m, self.a0o)
 
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
@@ -867,14 +867,13 @@ class FPAddStage1Mod(FPState):
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid)
 
-    def setup(self, m, in_tot, in_z):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.add1 = self
         m.submodules.add1_out_overflow = self.o.of
 
-        m.d.comb += self.i.z.eq(in_z)
-        m.d.comb += self.i.tot.eq(in_tot)
+        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
