@@ -915,10 +915,10 @@ class FPAddStage1(FPState, FPID):
         self.out_of = Overflow()
         self.norm_stb = Signal()
 
-    def setup(self, m, in_tot, in_z, in_mid):
+    def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_tot, in_z)
+        self.mod.setup(m, i)
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in add1 state
 
