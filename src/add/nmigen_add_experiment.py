@@ -1251,7 +1251,14 @@ class FPNormToPack(FPState, FPID):
     def __init__(self, width, id_wid):
         FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
+        self.id_wid = id_wid
         self.width = width
+
+    def ispec(self):
+        return FPAddStage1Data(self.width, self.id_wid) # Norm1ModSingle ispec
+
+    def ospec(self):
+        return FPPackData(self.width, self.id_wid) # FPPackMod ospec
 
     def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
@@ -1334,7 +1341,13 @@ class FPRound(FPState, FPID):
         FPState.__init__(self, "round")
         FPID.__init__(self, id_wid)
         self.mod = FPRoundMod(width)
-        self.out_z = self.mod.ospec()
+        self.out_z = self.ospec()
+
+    def ispec(self):
+        return self.mod.ispec()
+
+    def ospec(self):
+        return self.mod.ospec()
 
     def setup(self, m, i, in_mid):
         """ links module to inputs and outputs
