@@ -266,14 +266,14 @@ class FPAddSpecialCasesMod:
         self.width = width
         self.id_wid = id_wid
         self.i = self.ispec()
-        self.out_z = self.ospec()
+        self.o = self.ospec()
         self.out_do_z = Signal(reset_less=True)
 
     def ispec(self):
         return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumOut(self.width, False)
+        return FPPackData(self.width, self.id_wid)
 
     def setup(self, m, in_a, in_b, out_do_z):
         """ links module to inputs and outputs
@@ -288,7 +288,7 @@ class FPAddSpecialCasesMod:
 
         m.submodules.sc_in_a = self.i.a
         m.submodules.sc_in_b = self.i.b
-        m.submodules.sc_out_z = self.out_z
+        m.submodules.sc_out_z = self.o.z
 
         s_nomatch = Signal()
         m.d.comb += s_nomatch.eq(self.i.a.s != self.i.b.s)
@@ -299,7 +299,7 @@ class FPAddSpecialCasesMod:
         # if a is NaN or b is NaN return NaN
         with m.If(self.i.a.is_nan | self.i.b.is_nan):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.nan(0)
+            m.d.comb += self.o.z.nan(0)
 
         # XXX WEIRDNESS for FP16 non-canonical NaN handling
         # under review
@@ -327,39 +327,39 @@ class FPAddSpecialCasesMod:
         # if a is inf return inf (or NaN)
         with m.Elif(self.i.a.is_inf):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.inf(self.i.a.s)
+            m.d.comb += self.o.z.inf(self.i.a.s)
             # if a is inf and signs don't match return NaN
             with m.If(self.i.b.exp_128 & s_nomatch):
-                m.d.comb += self.out_z.nan(0)
+                m.d.comb += self.o.z.nan(0)
 
         # if b is inf return inf
         with m.Elif(self.i.b.is_inf):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.inf(self.i.b.s)
+            m.d.comb += self.o.z.inf(self.i.b.s)
 
         # if a is zero and b zero return signed-a/b
         with m.Elif(self.i.a.is_zero & self.i.b.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.i.a.s & self.i.b.s,
+            m.d.comb += self.o.z.create(self.i.a.s & self.i.b.s,
                                           self.i.b.e,
                                           self.i.b.m[3:-1])
 
         # if a is zero return b
         with m.Elif(self.i.a.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.i.b.s, self.i.b.e,
+            m.d.comb += self.o.z.create(self.i.b.s, self.i.b.e,
                                       self.i.b.m[3:-1])
 
         # if b is zero return a
         with m.Elif(self.i.b.is_zero):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.create(self.i.a.s, self.i.a.e,
+            m.d.comb += self.o.z.create(self.i.a.s, self.i.a.e,
                                       self.i.a.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
         with m.Elif(s_nomatch & m_match & (self.i.a.e == self.i.b.e)):
             m.d.comb += self.out_do_z.eq(1)
-            m.d.comb += self.out_z.zero(0)
+            m.d.comb += self.o.z.zero(0)
 
         # Denormalised Number checks
         with m.Else():
@@ -439,7 +439,7 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
     def action(self, m):
         self.idsync(m)
         with m.If(self.out_do_z):
-            m.d.sync += self.out_z.v.eq(self.smod.out_z.v) # only take output
+            m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
             m.next = "put_z"
         with m.Else():
             m.next = "align"
@@ -1652,7 +1652,7 @@ class FPADDBaseMod(FPID):
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.out_z,
                                     n1.in_mid, self.out_mid))
 
-        pz = self.add_state(FPPutZ("put_z", sc.out_z, self.out_z,
+        pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.out_z,
                                     sc.in_mid, self.out_mid))
 
 
