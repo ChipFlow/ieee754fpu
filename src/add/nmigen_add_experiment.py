@@ -185,22 +185,30 @@ class FPGetOp(FPState):
 
 
 class FPGet2OpMod(Trigger):
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         Trigger.__init__(self)
+        self.width = width
+        self.id_wid = id_wid
         self.in_op1 = Signal(width, reset_less=True)
         self.in_op2 = Signal(width, reset_less=True)
-        self.out_op1 = FPNumIn(None, width)
-        self.out_op2 = FPNumIn(None, width)
+        self.o = FPNumBase2Ops(width, id_wid)
+
+    def ospec(self):
+        return FPNumBase2Ops(self.width, self.id_wid)
 
     def elaborate(self, platform):
         m = Trigger.elaborate(self, platform)
         #m.submodules.get_op_in = self.in_op
         m.submodules.get_op1_out = self.out_op1
         m.submodules.get_op2_out = self.out_op2
+        out_op1 = FPNumIn(None, width)
+        out_op2 = FPNumIn(None, width)
         with m.If(self.trigger):
             m.d.comb += [
-                self.out_op1.decode(self.in_op1),
-                self.out_op2.decode(self.in_op2),
+                out_op1.decode(self.in_op1),
+                out_op2.decode(self.in_op2),
+                self.o.a.eq(out_op1),
+                self.o.b.eq(out_op2),
             ]
         return m
 
@@ -209,10 +217,10 @@ class FPGet2Op(FPState):
     """ gets operands
     """
 
-    def __init__(self, in_state, out_state, in_op1, in_op2, width):
+    def __init__(self, in_state, out_state, in_op1, in_op2, width, id_wid):
         FPState.__init__(self, in_state)
         self.out_state = out_state
-        self.mod = FPGet2OpMod(width)
+        self.mod = FPGet2OpMod(width, id_wid)
         self.in_op1 = in_op1
         self.in_op2 = in_op2
         self.out_op1 = FPNumIn(None, width)
