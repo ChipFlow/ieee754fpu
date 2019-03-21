@@ -199,10 +199,10 @@ class FPGet2OpMod(Trigger):
     def elaborate(self, platform):
         m = Trigger.elaborate(self, platform)
         #m.submodules.get_op_in = self.in_op
-        m.submodules.get_op1_out = self.out_op1
-        m.submodules.get_op2_out = self.out_op2
-        out_op1 = FPNumIn(None, width)
-        out_op2 = FPNumIn(None, width)
+        m.submodules.get_op1_out = self.o.a
+        m.submodules.get_op2_out = self.o.b
+        out_op1 = FPNumIn(None, self.width)
+        out_op2 = FPNumIn(None, self.width)
         with m.If(self.trigger):
             m.d.comb += [
                 out_op1.decode(self.in_op1),
@@ -247,8 +247,8 @@ class FPGet2Op(FPState):
                 self.mod.ack.eq(0),
                 #self.out_op1.v.eq(self.mod.out_op1.v),
                 #self.out_op2.v.eq(self.mod.out_op2.v),
-                self.out_op1.eq(self.mod.out_op1),
-                self.out_op2.eq(self.mod.out_op2)
+                self.out_op1.eq(self.mod.o.a),
+                self.out_op2.eq(self.mod.o.b)
             ]
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
@@ -1643,7 +1643,8 @@ class FPADDBaseMod(FPID):
     def get_compact_fragment(self, m, platform=None):
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
-                                      self.in_a, self.in_b, self.width))
+                                      self.in_a, self.in_b,
+                                      self.width, self.id_wid))
         get.setup(m, self.in_a, self.in_b, self.in_t.stb, self.in_t.ack)
         a = get.out_op1
         b = get.out_op2
