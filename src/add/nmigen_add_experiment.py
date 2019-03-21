@@ -223,8 +223,7 @@ class FPGet2Op(FPState):
         self.mod = FPGet2OpMod(width, id_wid)
         self.in_op1 = in_op1
         self.in_op2 = in_op2
-        self.out_op1 = FPNumIn(None, width)
-        self.out_op2 = FPNumIn(None, width)
+        self.o = self.mod.ospec()
         self.in_stb = Signal(reset_less=True)
         self.out_ack = Signal(reset_less=True)
         self.out_decode = Signal(reset_less=True)
@@ -247,8 +246,7 @@ class FPGet2Op(FPState):
                 self.mod.ack.eq(0),
                 #self.out_op1.v.eq(self.mod.out_op1.v),
                 #self.out_op2.v.eq(self.mod.out_op2.v),
-                self.out_op1.eq(self.mod.o.a),
-                self.out_op2.eq(self.mod.o.b)
+                self.o.eq(self.mod.o),
             ]
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
@@ -1646,8 +1644,8 @@ class FPADDBaseMod(FPID):
                                       self.in_a, self.in_b,
                                       self.width, self.id_wid))
         get.setup(m, self.in_a, self.in_b, self.in_t.stb, self.in_t.ack)
-        a = get.out_op1
-        b = get.out_op2
+        a = get.o.a
+        b = get.o.b
 
         sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
