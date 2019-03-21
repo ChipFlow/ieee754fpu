@@ -1277,7 +1277,7 @@ class FPNormToPack(FPState, FPID):
         m.d.comb += r_out_z.eq(rmod.out_z)
 
         # Corrections (chained to rounding)
-        cmod = FPCorrectionsMod(self.width)
+        cmod = FPCorrectionsMod(self.width, self.id_wid)
         c_out_z = cmod.ospec()
         cmod.setup(m, r_out_z)
         m.d.comb += c_out_z.eq(cmod.out_z)
@@ -1297,6 +1297,16 @@ class FPNormToPack(FPState, FPID):
         m.next = "pack_put_z"
 
 
+class FPRoundData:
+
+    def __init__(self, width, id_wid):
+        self.z = FPNumBase(width, False)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+
 class FPRoundMod:
 
     def __init__(self, width, id_wid):
@@ -1309,7 +1319,7 @@ class FPRoundMod:
         return FPNorm1Data(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumBase(self.width, False)
+        return FPRoundData(self.width, self.id_wid)
 
     def setup(self, m, in_z, roundz):
         m.submodules.roundz = self
@@ -1319,11 +1329,11 @@ class FPRoundMod:
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_z.eq(self.i.z)
+        m.d.comb += self.out_z.eq(self.i)
         with m.If(self.i.roundz):
-            m.d.comb += self.out_z.m.eq(self.i.z.m + 1) # mantissa rounds up
+            m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1) # mantissa rounds up
             with m.If(self.i.z.m == self.i.z.m1s): # all 1s
-                m.d.comb += self.out_z.e.eq(self.i.z.e + 1) # exponent up
+                m.d.comb += self.out_z.z.e.eq(self.i.z.e + 1) # exponent up
         return m
 
 
@@ -1351,13 +1361,14 @@ class FPRound(FPState, FPID):
 
 class FPCorrectionsMod:
 
-    def __init__(self, width):
+    def __init__(self, width, id_wid):
         self.width = width
+        self.id_wid = id_wid
         self.in_z = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNumOut(self.width, False)
+        return FPRoundData(self.width, self.id_wid)
 
     def ospec(self):
         return FPNumOut(self.width, False)
@@ -1370,11 +1381,11 @@ class FPCorrectionsMod:
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.corr_in_z = self.in_z
+        m.submodules.corr_in_z = self.in_z.z
         m.submodules.corr_out_z = self.out_z
-        m.d.comb += self.out_z.eq(self.in_z)
-        with m.If(self.in_z.is_denormalised):
-            m.d.comb += self.out_z.e.eq(self.in_z.N127)
+        m.d.comb += self.out_z.eq(self.in_z.z)
+        with m.If(self.in_z.z.is_denormalised):
+            m.d.comb += self.out_z.e.eq(self.in_z.z.N127)
         return m
 
 
