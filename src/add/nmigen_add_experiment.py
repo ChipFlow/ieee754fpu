@@ -209,6 +209,7 @@ class FPGet2OpMod(Trigger):
                 out_op2.decode(self.i.b),
                 self.o.a.eq(out_op1),
                 self.o.b.eq(out_op2),
+                self.o.mid.eq(self.i.mid)
             ]
         return m
 
@@ -366,6 +367,8 @@ class FPAddSpecialCasesMod:
         with m.Else():
             m.d.comb += self.out_do_z.eq(0)
 
+        m.d.comb += self.o.mid.eq(self.i.mid)
+
         return m
 
 
@@ -401,7 +404,7 @@ class FPAddSpecialCases(FPState):
         """
         self.mod.setup(m, i, self.out_do_z)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
-        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid)  # (and mid)
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)  # (and mid)
 
     def action(self, m):
         self.idsync(m)
@@ -483,6 +486,8 @@ class FPAddDeNormMod(FPState):
             m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
         with m.Else():
             m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
+
+        m.d.comb += self.o.mid.eq(self.i.mid)
 
         return m
 
@@ -669,6 +674,9 @@ class FPAddAlignSingleMod:
                          self.o.a.eq(t_out),
                          self.o.a.s.eq(self.i.a.s), # whoops forgot sign
                         ]
+
+        m.d.comb += self.o.mid.eq(self.i.mid)
+
         return m
 
 
@@ -767,6 +775,7 @@ class FPAddStage0Mod:
         m.submodules.add0_in_b = self.i.b
         m.submodules.add0_out_z = self.o.z
 
+        m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += self.o.z.e.eq(self.i.a.e)
 
         # store intermediate tests (and zero-extended mantissas)
@@ -867,6 +876,7 @@ class FPAddStage1Mod(FPState):
         #m.submodules.norm1_in_z = self.in_z
         #m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.o.z.eq(self.i.z)
+        m.d.comb += self.o.mid.eq(self.i.mid)
         # tot[-1] (MSB) gets set when the sum overflows. shift result down
         with m.If(self.i.tot[-1]):
             m.d.comb += [
