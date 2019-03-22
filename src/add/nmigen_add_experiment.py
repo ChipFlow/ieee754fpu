@@ -607,6 +607,9 @@ class FPAddAlignSingleMod:
     def ospec(self):
         return FPNumIn2Ops(self.width, self.id_wid)
 
+    def process(self, i):
+        return self.o
+
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
@@ -719,19 +722,15 @@ class FPAddAlignSingleAdd(FPState):
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
+
+        # chain AddAlignSingle, AddStage0 and AddStage1
         mod = FPAddAlignSingleMod(self.width, self.id_wid)
-        mod.setup(m, i)
-        o = mod.ospec()
-        m.d.comb += o.eq(mod.o)
-
         a0mod = FPAddStage0Mod(self.width, self.id_wid)
-        a0mod.setup(m, o)
-        a0o = a0mod.ospec()
-        m.d.comb += a0o.eq(a0mod.o)
-
         a1mod = FPAddStage1Mod(self.width, self.id_wid)
-        a1mod.setup(m, a0o)
         self.a1modo = a1mod.o
+
+        chain = StageChain([mod, a0mod, a1mod])
+        chain.setup(m, i)
 
         m.d.sync += self.a1o.eq(self.a1modo)
 
@@ -763,6 +762,9 @@ class FPAddStage0Mod:
 
     def ospec(self):
         return FPAddStage0Data(self.width, self.id_wid)
+
+    def process(self, i):
+        return self.o
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -861,6 +863,9 @@ class FPAddStage1Mod(FPState):
 
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid)
+
+    def process(self, i):
+        return self.o
 
     def setup(self, m, i):
         """ links module to inputs and outputs
