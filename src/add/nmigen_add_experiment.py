@@ -404,10 +404,11 @@ class FPAddSpecialCases(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
+
     def action(self, m):
         self.idsync(m)
         with m.If(self.out_do_z):
-            m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
             m.next = "put_z"
         with m.Else():
             m.next = "denormalise"
@@ -437,15 +438,17 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
+        # out_do_z=True
+        m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
+        # out_do_z=False
+        m.d.sync += self.o.eq(self.dmod.o)
+
     def action(self, m):
         self.idsync(m)
         with m.If(self.out_do_z):
-            m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
             m.next = "put_z"
         with m.Else():
             m.next = "align"
-            m.d.sync += self.o.a.eq(self.dmod.o.a)
-            m.d.sync += self.o.b.eq(self.dmod.o.b)
 
 
 class FPAddDeNormMod(FPState):
@@ -506,12 +509,13 @@ class FPAddDeNorm(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
-        # Denormalised Number checks
-        m.next = "align"
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
+
+    def action(self, m):
+        # Denormalised Number checks
+        m.next = "align"
 
 
 class FPAddAlignMultiMod(FPState):
@@ -578,10 +582,11 @@ class FPAddAlignMulti(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
+
+    def action(self, m):
         with m.If(self.exp_eq):
             m.next = "add_0"
 
@@ -698,11 +703,12 @@ class FPAddAlignSingle(FPState, FPID):
         if self.in_mid is not None:
             m.d.comb += self.in_mid.eq(in_mid)
 
-    def action(self, m):
         self.idsync(m)
         # NOTE: could be done as comb
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
+
+    def action(self, m):
         m.next = "add_0"
 
 
