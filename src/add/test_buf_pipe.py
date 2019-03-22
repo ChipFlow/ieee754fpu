@@ -4,7 +4,7 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
-from example_buf_pipe import ExampleCombPipe, CombPipe, ExampleStageCls
+from example_buf_pipe import ExamplePipeline, Pipeline, ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain
 
@@ -362,13 +362,13 @@ class LTStageDerived(SetLessThan):
         return self.output
 
 
-class ExampleLTCombPipe(CombPipe):
+class ExampleLTPipeline(Pipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = LTStage()
-        CombPipe.__init__(self, stage)
+        Pipeline.__init__(self, stage)
 
 
 class ExampleLTBufferedPipeDerived(BufferedPipeline):
@@ -407,13 +407,13 @@ class ExampleAddRecordStage:
                 'src2': i.src2 + 1}
 
 
-class ExampleAddRecordPipe(CombPipe):
+class ExampleAddRecordPipe(Pipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = ExampleAddRecordStage()
-        CombPipe.__init__(self, stage)
+        Pipeline.__init__(self, stage)
 
 
 def test7_resultfn(o_data, expected, i, o):
@@ -507,7 +507,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
 
     print ("test 3.5")
-    dut = ExampleCombPipe()
+    dut = ExamplePipeline()
     test = Test3(dut, test3_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_combpipe3.vcd")
 
@@ -521,7 +521,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe5.vcd")
 
     print ("test 6")
-    dut = ExampleLTCombPipe()
+    dut = ExampleLTPipeline()
     test = Test5(dut, test6_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
 

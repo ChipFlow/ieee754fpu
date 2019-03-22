@@ -389,7 +389,7 @@ class ExampleBufPipe(BufferedPipeline):
         BufferedPipeline.__init__(self, ExampleStage)
 
 
-class CombPipe(PipelineBase):
+class Pipeline(PipelineBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.  The stage
         requires a combinatorial block.
@@ -459,12 +459,12 @@ class CombPipe(PipelineBase):
         return m
 
 
-class ExampleCombPipe(CombPipe):
+class ExamplePipeline(Pipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
-        CombPipe.__init__(self, ExampleStage)
+        Pipeline.__init__(self, ExampleStage)
 
 
 if __name__ == '__main__':
@@ -473,7 +473,7 @@ if __name__ == '__main__':
     with open("test_bufpipe.il", "w") as f:
         f.write(vl)
 
-    dut = ExampleCombPipe()
+    dut = ExamplePipeline()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_combpipe.il", "w") as f:
         f.write(vl)
