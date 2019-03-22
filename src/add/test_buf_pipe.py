@@ -354,14 +354,12 @@ class LTStageDerived(SetLessThan):
         return Signal(16)
 
     def setup(self, m, i):
-        self.o = Signal(16)
         m.submodules.slt = self
         m.d.comb += self.src1.eq(i[0])
         m.d.comb += self.src2.eq(i[1])
-        m.d.comb += self.o.eq(self.output)
 
     def process(self, i):
-        return self.o
+        return self.output
 
 
 class ExampleLTCombPipe(CombPipe):
