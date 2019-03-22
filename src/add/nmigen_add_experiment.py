@@ -1021,6 +1021,9 @@ class FPNorm1ModSingle:
         m.submodules.normalise_1 = self
         m.d.comb += self.i.eq(i)
 
+    def process(self, i):
+        return self.o
+
     def elaborate(self, platform):
         m = Module()
 
@@ -1306,6 +1309,9 @@ class FPRoundMod:
     def ospec(self):
         return FPRoundData(self.width, self.id_wid)
 
+    def process(self, i):
+        return self.out_z
+
     def setup(self, m, i):
         m.submodules.roundz = self
         m.d.comb += self.i.eq(i)
@@ -1359,6 +1365,9 @@ class FPCorrectionsMod:
 
     def ospec(self):
         return FPRoundData(self.width, self.id_wid)
+
+    def process(self, i):
+        return self.out_z
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -1424,6 +1433,9 @@ class FPPackMod:
 
     def ospec(self):
         return FPPackData(self.width, self.id_wid)
+
+    def process(self, i):
+        return self.o
 
     def setup(self, m, in_z):
         """ links module to inputs and outputs
