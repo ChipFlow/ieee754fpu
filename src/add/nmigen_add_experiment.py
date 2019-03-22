@@ -9,6 +9,7 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
+from example_buf_pipe import StageChain
 #from fpbase import FPNumShiftMultiRight
 
 
@@ -1255,31 +1256,17 @@ class FPNormToPack(FPState):
         """ links module to inputs and outputs
         """
 
-        # Normalisation (chained to input in_z+in_of)
+        # Normalisation, Rounding Corrections, Pack - in a chain
         nmod = FPNorm1ModSingle(self.width, self.id_wid)
-        nmod.setup(m, i)
-        n_out = nmod.ospec()
-        m.d.comb += n_out.eq(nmod.o)
-
-        # Rounding (chained to normalisation)
         rmod = FPRoundMod(self.width, self.id_wid)
-        rmod.setup(m, n_out)
-        r_out_z = rmod.ospec()
-        m.d.comb += r_out_z.eq(rmod.out_z)
-
-        # Corrections (chained to rounding)
         cmod = FPCorrectionsMod(self.width, self.id_wid)
-        cmod.setup(m, r_out_z)
-        c_out_z = cmod.ospec()
-        m.d.comb += c_out_z.eq(cmod.out_z)
+        pmod = FPPackMod(self.width, self.id_wid)
+        chain = StageChain([nmod, rmod, cmod, pmod])
+        chain.setup(m, i)
+        self.out_z = pmod.ospec()
 
-        # Pack (chained to corrections)
-        self.pmod = FPPackMod(self.width, self.id_wid)
-        self.pmod.setup(m, c_out_z)
-        self.out_z = self.pmod.ospec()
-
-        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid)
-        m.d.sync += self.out_z.z.v.eq(self.pmod.o.z.v) # outputs packed result
+        m.d.sync += self.out_z.mid.eq(pmod.o.mid)
+        m.d.sync += self.out_z.z.v.eq(pmod.o.z.v) # outputs packed result
 
     def action(self, m):
         m.next = "pack_put_z"
