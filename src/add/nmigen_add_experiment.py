@@ -1174,15 +1174,20 @@ class FPNorm1Single(FPState):
     def __init__(self, width, id_wid, single_cycle=True):
         FPState.__init__(self, "normalise_1")
         self.mod = FPNorm1ModSingle(width)
+        self.o = self.ospec()
         self.out_z = FPNumBase(width, False)
         self.out_roundz = Signal(reset_less=True)
+
+    def ispec(self):
+        return self.mod.ispec()
+
+    def ospec(self):
+        return self.mod.ospec()
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, i, self.out_z)
-
-        m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
+        self.mod.setup(m, i)
 
     def action(self, m):
         m.next = "round"
