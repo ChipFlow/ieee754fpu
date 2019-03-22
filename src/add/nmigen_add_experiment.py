@@ -1038,6 +1038,7 @@ class FPNorm1ModSingle:
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
         m.d.comb += self.o.z.eq(i.z)
+        m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += of.eq(i.of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
