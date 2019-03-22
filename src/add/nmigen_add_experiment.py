@@ -1419,6 +1419,7 @@ class FPPackMod:
     def elaborate(self, platform):
         m = Module()
         m.submodules.pack_in_z = self.i.z
+        m.d.comb += self.o.mid.eq(self.i.mid)
         with m.If(self.i.z.is_overflowed):
             m.d.comb += self.o.z.inf(self.i.z.s)
         with m.Else():
