@@ -4,7 +4,8 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
-from example_buf_pipe import ExamplePipeline, Pipeline, ExampleStageCls
+from example_buf_pipe import ExamplePipeline, UnbufferedPipeline
+from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain
 
@@ -362,13 +363,13 @@ class LTStageDerived(SetLessThan):
         return self.output
 
 
-class ExampleLTPipeline(Pipeline):
+class ExampleLTPipeline(UnbufferedPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = LTStage()
-        Pipeline.__init__(self, stage)
+        UnbufferedPipeline.__init__(self, stage)
 
 
 class ExampleLTBufferedPipeDerived(BufferedPipeline):
@@ -407,13 +408,13 @@ class ExampleAddRecordStage:
                 'src2': i.src2 + 1}
 
 
-class ExampleAddRecordPipe(Pipeline):
+class ExampleAddRecordPipe(UnbufferedPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = ExampleAddRecordStage()
-        Pipeline.__init__(self, stage)
+        UnbufferedPipeline.__init__(self, stage)
 
 
 def test7_resultfn(o_data, expected, i, o):

@@ -39,8 +39,8 @@
     A useful combinatorial wrapper around stages that chains them together
     and then presents a Stage-API-conformant interface.
 
-    Pipeline:
-    --------
+    UnbufferedPipeline:
+    ------------------
 
     A simple stalling clock-synchronised pipeline that has no buffering
     (unlike BufferedPipeline).  A stall anywhere along the line will
@@ -446,7 +446,7 @@ class ExampleBufPipe(BufferedPipeline):
         BufferedPipeline.__init__(self, ExampleStage)
 
 
-class Pipeline(PipelineBase):
+class UnbufferedPipeline(PipelineBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.
 
@@ -512,12 +512,12 @@ class Pipeline(PipelineBase):
         return m
 
 
-class ExamplePipeline(Pipeline):
+class ExamplePipeline(UnbufferedPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
-        Pipeline.__init__(self, ExampleStage)
+        UnbufferedPipeline.__init__(self, ExampleStage)
 
 
 if __name__ == '__main__':
