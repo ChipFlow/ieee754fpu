@@ -384,7 +384,7 @@ class FPID:
             m.d.sync += self.out_mid.eq(self.in_mid)
 
 
-class FPAddSpecialCases(FPState, FPID):
+class FPAddSpecialCases(FPState):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -392,19 +392,16 @@ class FPAddSpecialCases(FPState, FPID):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
-        FPID.__init__(self, id_wid)
         self.mod = FPAddSpecialCasesMod(width)
         self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_a, in_b, self.out_do_z)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
+        self.mod.setup(m, i, self.out_do_z)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
+        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid)  # (and mid)
 
     def action(self, m):
         self.idsync(m)
@@ -414,7 +411,7 @@ class FPAddSpecialCases(FPState, FPID):
             m.next = "denormalise"
 
 
-class FPAddSpecialCasesDeNorm(FPState, FPID):
+class FPAddSpecialCasesDeNorm(FPState):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -422,7 +419,6 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
-        FPID.__init__(self, id_wid)
         self.smod = FPAddSpecialCasesMod(width, id_wid)
         self.out_z = self.smod.ospec()
         self.out_do_z = Signal(reset_less=True)
@@ -430,21 +426,19 @@ class FPAddSpecialCasesDeNorm(FPState, FPID):
         self.dmod = FPAddDeNormMod(width, id_wid)
         self.o = self.dmod.ospec()
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         self.smod.setup(m, i, self.out_do_z)
         self.dmod.setup(m, i)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
 
         # out_do_z=True
         m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
+        m.d.sync += self.out_z.mid.eq(self.smod.o.mid)  # (and mid)
         # out_do_z=False
         m.d.sync += self.o.eq(self.dmod.o)
 
     def action(self, m):
-        self.idsync(m)
         with m.If(self.out_do_z):
             m.next = "put_z"
         with m.Else():
@@ -493,23 +487,19 @@ class FPAddDeNormMod(FPState):
         return m
 
 
-class FPAddDeNorm(FPState, FPID):
+class FPAddDeNorm(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "denormalise")
-        FPID.__init__(self, id_wid)
         self.mod = FPAddDeNormMod(width)
         self.out_a = FPNumBase(width)
         self.out_b = FPNumBase(width)
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_a, in_b)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
+        self.mod.setup(m, i)
 
-        self.idsync(m)
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
 
@@ -560,17 +550,16 @@ class FPAddAlignMultiMod(FPState):
         return m
 
 
-class FPAddAlignMulti(FPState, FPID):
+class FPAddAlignMulti(FPState):
 
     def __init__(self, width, id_wid):
-        FPID.__init__(self, id_wid)
         FPState.__init__(self, "align")
         self.mod = FPAddAlignMultiMod(width)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
         self.exp_eq = Signal(reset_less=True)
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, in_a, in_b):
         """ links module to inputs and outputs
         """
         m.submodules.align = self.mod
@@ -579,10 +568,6 @@ class FPAddAlignMulti(FPState, FPID):
         #m.d.comb += self.out_a.eq(self.mod.out_a)
         #m.d.comb += self.out_b.eq(self.mod.out_b)
         m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
-        self.idsync(m)
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
 
@@ -687,23 +672,19 @@ class FPAddAlignSingleMod:
         return m
 
 
-class FPAddAlignSingle(FPState, FPID):
+class FPAddAlignSingle(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
-        FPID.__init__(self, id_wid)
         self.mod = FPAddAlignSingleMod(width, id_wid)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 
-    def setup(self, m, in_a, in_b, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        self.mod.setup(m, in_a, in_b)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
+        self.mod.setup(m, i)
 
-        self.idsync(m)
         # NOTE: could be done as comb
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
@@ -712,11 +693,10 @@ class FPAddAlignSingle(FPState, FPID):
         m.next = "add_0"
 
 
-class FPAddAlignSingleAdd(FPState, FPID):
+class FPAddAlignSingleAdd(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
-        FPID.__init__(self, id_wid)
         self.width = width
         self.id_wid = id_wid
         self.a1o = self.ospec()
@@ -727,7 +707,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         mod = FPAddAlignSingleMod(self.width, self.id_wid)
@@ -744,11 +724,7 @@ class FPAddAlignSingleAdd(FPState, FPID):
         a1mod.setup(m, a0o)
         self.a1modo = a1mod.o
 
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
         m.d.sync += self.a1o.eq(self.a1modo)
-        self.idsync(m)
 
     def action(self, m):
         m.next = "normalise_1"
@@ -824,7 +800,7 @@ class FPAddStage0Mod:
         return m
 
 
-class FPAddStage0(FPState, FPID):
+class FPAddStage0(FPState):
     """ First stage of add.  covers same-sign (add) and subtract
         special-casing when mantissas are greater or equal, to
         give greatest accuracy.
@@ -832,18 +808,14 @@ class FPAddStage0(FPState, FPID):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "add_0")
-        FPID.__init__(self, id_wid)
         self.mod = FPAddStage0Mod(width)
         self.o = self.mod.ospec()
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
 
-        self.idsync(m)
         # NOTE: these could be done as combinatorial (merge add0+add1)
         m.d.sync += self.o.eq(self.mod.o)
 
@@ -917,27 +889,22 @@ class FPAddStage1Mod(FPState):
         return m
 
 
-class FPAddStage1(FPState, FPID):
+class FPAddStage1(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "add_1")
-        FPID.__init__(self, id_wid)
         self.mod = FPAddStage1Mod(width)
         self.out_z = FPNumBase(width, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i)
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in add1 state
 
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
-        self.idsync(m)
         m.d.sync += self.out_of.eq(self.mod.out_of)
         m.d.sync += self.out_z.eq(self.mod.out_z)
         m.d.sync += self.norm_stb.eq(1)
@@ -1191,34 +1158,28 @@ class FPNorm1ModMulti:
         return m
 
 
-class FPNorm1Single(FPState, FPID):
+class FPNorm1Single(FPState):
 
     def __init__(self, width, id_wid, single_cycle=True):
-        FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.mod = FPNorm1ModSingle(width)
         self.out_z = FPNumBase(width, False)
         self.out_roundz = Signal(reset_less=True)
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i, self.out_z)
 
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
-        self.idsync(m)
         m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
 
     def action(self, m):
         m.next = "round"
 
 
-class FPNorm1Multi(FPState, FPID):
+class FPNorm1Multi(FPState):
 
     def __init__(self, width, id_wid):
-        FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.mod = FPNorm1ModMulti(width)
         self.stb = Signal(reset_less=True)
@@ -1230,7 +1191,7 @@ class FPNorm1Multi(FPState, FPID):
         self.out_z = FPNumBase(width)
         self.out_roundz = Signal(reset_less=True)
 
-    def setup(self, m, in_z, in_of, norm_stb, in_mid):
+    def setup(self, m, in_z, in_of, norm_stb):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_z, in_of, norm_stb,
@@ -1240,11 +1201,7 @@ class FPNorm1Multi(FPState, FPID):
         m.d.comb += self.stb.eq(norm_stb)
         m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
 
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
     def action(self, m):
-        self.idsync(m)
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
         m.d.sync += self.temp_of.eq(self.mod.out_of)
         m.d.sync += self.temp_z.eq(self.out_z)
@@ -1262,10 +1219,9 @@ class FPNorm1Multi(FPState, FPID):
             m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
 
 
-class FPNormToPack(FPState, FPID):
+class FPNormToPack(FPState):
 
     def __init__(self, width, id_wid):
-        FPID.__init__(self, id_wid)
         FPState.__init__(self, "normalise_1")
         self.id_wid = id_wid
         self.width = width
@@ -1276,7 +1232,7 @@ class FPNormToPack(FPState, FPID):
     def ospec(self):
         return FPPackData(self.width, self.id_wid) # FPPackMod ospec
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
 
@@ -1303,11 +1259,7 @@ class FPNormToPack(FPState, FPID):
         self.pmod.setup(m, c_out_z)
         self.out_z = self.pmod.ospec()
 
-        # Multiplex ID
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
-        self.idsync(m) # copies incoming ID to outgoing
+        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid) 
         m.d.sync += self.out_z.z.v.eq(self.pmod.o.z.v) # outputs packed result
 
     def action(self, m):
@@ -1352,11 +1304,10 @@ class FPRoundMod:
         return m
 
 
-class FPRound(FPState, FPID):
+class FPRound(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "round")
-        FPID.__init__(self, id_wid)
         self.mod = FPRoundMod(width)
         self.out_z = self.ospec()
 
@@ -1366,16 +1317,14 @@ class FPRound(FPState, FPID):
     def ospec(self):
         return self.mod.ospec()
 
-    def setup(self, m, i, in_mid):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i)
 
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
-
         self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
 
     def action(self, m):
         m.next = "corrections"
@@ -1411,11 +1360,10 @@ class FPCorrectionsMod:
         return m
 
 
-class FPCorrections(FPState, FPID):
+class FPCorrections(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "corrections")
-        FPID.__init__(self, id_wid)
         self.mod = FPCorrectionsMod(width)
         self.out_z = self.ospec()
 
@@ -1425,15 +1373,13 @@ class FPCorrections(FPState, FPID):
     def ospec(self):
         return self.mod.ospec()
 
-    def setup(self, m, in_z, in_mid):
+    def setup(self, m, in_z):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_z)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
 
-        self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
 
     def action(self, m):
         m.next = "pack"
@@ -1488,11 +1434,10 @@ class FPPackData:
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
 
 
-class FPPack(FPState, FPID):
+class FPPack(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "pack")
-        FPID.__init__(self, id_wid)
         self.mod = FPPackMod(width)
         self.out_z = self.ospec()
 
@@ -1502,15 +1447,13 @@ class FPPack(FPState, FPID):
     def ospec(self):
         return self.mod.ospec()
 
-    def setup(self, m, in_z, in_mid):
+    def setup(self, m, in_z):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, in_z)
-        if self.in_mid is not None:
-            m.d.comb += self.in_mid.eq(in_mid)
 
-        self.idsync(m)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v)
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
 
     def action(self, m):
         m.next = "pack_put_z"
@@ -1589,7 +1532,7 @@ class FPOpData:
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
 
 
-class FPADDBaseMod(FPID):
+class FPADDBaseMod:
 
     def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
         """ IEEE754 FP Add
@@ -1599,7 +1542,6 @@ class FPADDBaseMod(FPID):
             * single_cycle: True indicates each stage to complete in 1 clock
             * compact: True indicates a reduced number of stages
         """
-        FPID.__init__(self, id_wid)
         self.width = width
         self.id_wid = id_wid
         self.single_cycle = single_cycle
@@ -1696,22 +1638,22 @@ class FPADDBaseMod(FPID):
         get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
 
         sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
-        sc.setup(m, get.o, self.in_mid)
+        sc.setup(m, get.o)
 
         alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
-        alm.setup(m, sc.o, sc.in_mid)
+        alm.setup(m, sc.o)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, alm.a1o, alm.in_mid)
+        n1.setup(m, alm.a1o)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.o,
-                                    n1.in_mid, self.out_mid))
+                                    n1.out_z.mid, self.o.mid))
 
         pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.o,
-                                    sc.in_mid, self.out_mid))
+                                    sc.o.mid, self.o.mid))
 
 
-class FPADDBase(FPState, FPID):
+class FPADDBase(FPState):
 
     def __init__(self, width, id_wid=None, single_cycle=False):
         """ IEEE754 FP Add
@@ -1720,7 +1662,6 @@ class FPADDBase(FPState, FPID):
             * id_wid: an identifier that is sync-connected to the input
             * single_cycle: True indicates each stage to complete in 1 clock
         """
-        FPID.__init__(self, id_wid)
         FPState.__init__(self, "fpadd")
         self.width = width
         self.single_cycle = single_cycle
@@ -1744,8 +1685,6 @@ class FPADDBase(FPState, FPID):
     def setup(self, m, i, add_stb, in_mid):
         m.d.comb += [self.i.eq(i),
                      self.mod.i.eq(self.i),
-                     self.in_mid.eq(in_mid),
-                     self.mod.in_mid.eq(self.in_mid),
                      self.z_done.eq(self.mod.o.z.trigger),
                      #self.add_stb.eq(add_stb),
                      self.mod.in_t.stb.eq(self.in_t.stb),
