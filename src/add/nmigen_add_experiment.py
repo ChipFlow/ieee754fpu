@@ -1259,7 +1259,7 @@ class FPNormToPack(FPState):
         self.pmod.setup(m, c_out_z)
         self.out_z = self.pmod.ospec()
 
-        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid) 
+        m.d.sync += self.out_z.mid.eq(self.pmod.o.mid)
         m.d.sync += self.out_z.z.v.eq(self.pmod.o.z.v) # outputs packed result
 
     def action(self, m):
@@ -1324,7 +1324,7 @@ class FPRound(FPState):
 
         self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)
 
     def action(self, m):
         m.next = "corrections"
@@ -1379,7 +1379,7 @@ class FPCorrections(FPState):
         self.mod.setup(m, in_z)
 
         m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)
 
     def action(self, m):
         m.next = "pack"
@@ -1453,7 +1453,7 @@ class FPPack(FPState):
         self.mod.setup(m, in_z)
 
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v)
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid) 
+        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)
 
     def action(self, m):
         m.next = "pack_put_z"
