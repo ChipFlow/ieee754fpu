@@ -727,12 +727,11 @@ class FPAddAlignSingleAdd(FPState):
         mod = FPAddAlignSingleMod(self.width, self.id_wid)
         a0mod = FPAddStage0Mod(self.width, self.id_wid)
         a1mod = FPAddStage1Mod(self.width, self.id_wid)
-        self.a1modo = a1mod.o
 
         chain = StageChain([mod, a0mod, a1mod])
         chain.setup(m, i)
 
-        m.d.sync += self.a1o.eq(self.a1modo)
+        m.d.sync += self.a1o.eq(a1mod.o)
 
     def action(self, m):
         m.next = "normalise_1"
