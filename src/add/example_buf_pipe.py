@@ -448,14 +448,25 @@ class ExampleBufPipe(BufferedPipeline):
 
 class Pipeline(PipelineBase):
     """ A simple pipeline stage with single-clock synchronisation
-        and two-way valid/ready synchronised signalling.  Note that
-        a stall in one stage will result in the entire pipeline chain
-        stalling.
+        and two-way valid/ready synchronised signalling.
 
-        Also that the valid/ready signalling does NOT travel with the
-        data: a long pipeline chain will lengthen propagation delays.
+        Note that a stall in one stage will result in the entire pipeline
+        chain stalling.
+
+        Also that unlike BufferedPipeline, the valid/ready signalling does NOT
+        travel synchronously with the data: the valid/ready signalling
+        combines in a *combinatorial* fashion.  Therefore, a long pipeline
+        chain will lengthen propagation delays.
 
         Argument: stage.  see Stage API, above
+
+        stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
+        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
+                              |             |
+                            r_data        result
+                              |             |
+                              +--process ->-+
 
         Attributes:
         -----------
@@ -464,9 +475,12 @@ class Pipeline(PipelineBase):
         p.o_data : StageOutput, shaped according to ospec
             The pipeline output
         r_data : input_shape according to ispec
-            A temporary (buffered) copy of a prior (valid) input
+            A temporary (buffered) copy of a prior (valid) input.
+            This is HELD if the output is not ready.  It is updated
+            SYNCHRONOUSLY.
         result: output_shape according to ospec
-            The output of the combinatorial logic
+            The output of the combinatorial logic.  it is updated
+            COMBINATORIALLY (no clock dependence).
     """
 
     def __init__(self, stage):
