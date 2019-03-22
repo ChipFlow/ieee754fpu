@@ -572,4 +572,8 @@ if __name__ == '__main__':
     dut = ExampleLTBufferedPipeDerived()
     test = Test5(dut, test6_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltbufpipe10.vcd")
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_ltbufpipe10.il", "w") as f:
+        f.write(vl)
+
 
