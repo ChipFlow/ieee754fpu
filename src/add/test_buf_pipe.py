@@ -371,13 +371,13 @@ class ExampleLTCombPipe(CombPipe):
         CombPipe.__init__(self, stage)
 
 
-class ExampleLTBufferedPipeDerived(CombPipe):
+class ExampleLTBufferedPipeDerived(BufferedPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = LTStageDerived()
-        CombPipe.__init__(self, stage)
+        BufferedPipeline.__init__(self, stage)
 
 
 def test6_resultfn(o_data, expected, i, o):
