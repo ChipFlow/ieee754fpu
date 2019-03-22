@@ -1,4 +1,58 @@
-""" nmigen implementation of buffered pipeline stage, based on zipcpu:
+""" Pipeline and BufferedPipeline implementation, conforming to the same API.
+
+    eq:
+    --
+
+    a strategically very important function that is identical in function
+    to nmigen's Signal.eq function, except it may take objects, or a list
+    of objects, or a tuple of objects, and where objects may also be
+    Records.
+
+    Stage API:
+    ---------
+
+    stage requires compliance with a strict API that may be
+    implemented in several means, including as a static class.
+    the methods of a stage instance must be as follows:
+
+    * ispec() - Input data format specification
+                returns an object or a list or tuple of objects, or
+                a Record, each object having an "eq" function which
+                takes responsibility for copying by assignment all
+                sub-objects
+    * ospec() - Output data format specification
+                requirements as for ospec
+    * process(m, i) - Processes an ispec-formatted object
+                returns a combinatorial block of a result that
+                may be assigned to the output, by way of the "eq"
+                function
+    * setup(m, i) - Optional function for setting up submodules
+                may be used for more complex stages, to link
+                the input (i) to submodules.  must take responsibility
+                for adding those submodules to the module (m).
+                the submodules must be combinatorial blocks and
+                must have their inputs and output linked combinatorially.
+
+    StageChain:
+    ----------
+
+    A useful combinatorial wrapper around stages that chains them together
+    and then presents a Stage-API-conformant interface.
+
+    Pipeline:
+    --------
+
+    A simple stalling clock-synchronised pipeline that has no buffering
+    (unlike BufferedPipeline).  A stall anywhere along the line will
+    result in a stall back-propagating down the entire chain.
+
+    The BufferedPipeline by contrast will buffer incoming data, allowing
+    previous stages one clock cycle's grace before also having to stall.
+
+    BufferedPipeline:
+    ----------------
+
+    nmigen implementation of buffered pipeline stage, based on zipcpu:
     https://zipcpu.com/blog/2017/08/14/strategies-for-pipelining.html
 
     this module requires quite a bit of thought to understand how it works
@@ -235,6 +289,8 @@ class BufferedPipeline(PipelineBase):
         if ever the input is ready and the output is not, processed data
         is stored in a temporary register.
 
+        Argument: stage.  see Stage API above
+
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
@@ -256,6 +312,7 @@ class BufferedPipeline(PipelineBase):
 
         on the next cycle (as long as stall is not raised again) the
         input may begin to be processed and transferred directly to output.
+
     """
     def __init__(self, stage):
         PipelineBase.__init__(self, stage)
@@ -391,32 +448,14 @@ class ExampleBufPipe(BufferedPipeline):
 
 class Pipeline(PipelineBase):
     """ A simple pipeline stage with single-clock synchronisation
-        and two-way valid/ready synchronised signalling.  The stage
-        requires a combinatorial block.
+        and two-way valid/ready synchronised signalling.  Note that
+        a stall in one stage will result in the entire pipeline chain
+        stalling.
 
-        Argument: stage.
+        Also that the valid/ready signalling does NOT travel with the
+        data: a long pipeline chain will lengthen propagation delays.
 
-        stage requires compliance with a strict API that may be
-        implemented in several means, including as a static class.
-        the methods of a stage instance must be as follows:
-
-        * ispec() - Input data format specification
-                    returns an object or a list or tuple of objects, or
-                    a Record, each object having an "eq" function which
-                    takes responsibility for copying by assignment all
-                    sub-objects
-        * ospec() - Output data format specification
-                    requirements as for ospec
-        * process(m, i) - Processes an ispec-formatted object
-                    returns a combinatorial block of a result that
-                    may be assigned to the output, by way of the "eq"
-                    function
-        * setup(m, i) - Optional function for setting up submodules
-                    may be used for more complex stages, to link
-                    the input (i) to submodules.  must take responsibility
-                    for adding those submodules to the module (m).
-                    the submodules must be combinatorial blocks and
-                    must have their inputs and output linked combinatorially.
+        Argument: stage.  see Stage API, above
 
         Attributes:
         -----------
