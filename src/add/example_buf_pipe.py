@@ -390,19 +390,44 @@ class ExampleBufPipe(BufferedPipeline):
 
 
 class CombPipe(PipelineBase):
-    """A simple pipeline stage containing combinational logic that can execute
-    completely in one clock cycle.
+    """ A simple pipeline stage with single-clock synchronisation
+        and two-way valid/ready synchronised signalling.  The stage
+        requires a combinatorial block.
 
-    Attributes:
-    -----------
-    input : StageInput
-        The pipeline input
-    output : StageOutput
-        The pipeline output
-    r_data : Signal, input_shape
-        A temporary (buffered) copy of a prior (valid) input
-    result: Signal, output_shape
-        The output of the combinatorial logic
+        Argument: stage.
+
+        stage requires compliance with a strict API that may be
+        implemented in several means, including as a static class.
+        the methods of a stage instance must be as follows:
+
+        * ispec() - Input data format specification
+                    returns an object or a list or tuple of objects, or
+                    a Record, each object having an "eq" function which
+                    takes responsibility for copying by assignment all
+                    sub-objects
+        * ospec() - Output data format specification
+                    requirements as for ospec
+        * process(m, i) - Processes an ispec-formatted object
+                    returns a combinatorial block of a result that
+                    may be assigned to the output, by way of the "eq"
+                    function
+        * setup(m, i) - Optional function for setting up submodules
+                    may be used for more complex stages, to link
+                    the input (i) to submodules.  must take responsibility
+                    for adding those submodules to the module (m).
+                    the submodules must be combinatorial blocks and
+                    must have their inputs and output linked combinatorially.
+
+        Attributes:
+        -----------
+        p.i_data : StageInput, shaped according to ispec
+            The pipeline input
+        p.o_data : StageOutput, shaped according to ospec
+            The pipeline output
+        r_data : input_shape according to ispec
+            A temporary (buffered) copy of a prior (valid) input
+        result: output_shape according to ospec
+            The output of the combinatorial logic
     """
 
     def __init__(self, stage):
