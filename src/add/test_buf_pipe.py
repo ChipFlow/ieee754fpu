@@ -342,12 +342,43 @@ class LTStage:
         return self.o
 
 
+class LTStageDerived(SetLessThan):
+
+    def __init__(self):
+        SetLessThan.__init__(self, 16, True)
+
+    def ispec(self):
+        return (Signal(16), Signal(16))
+
+    def ospec(self):
+        return Signal(16)
+
+    def setup(self, m, i):
+        self.o = Signal(16)
+        m.submodules.slt = self
+        m.d.comb += self.src1.eq(i[0])
+        m.d.comb += self.src2.eq(i[1])
+        m.d.comb += self.o.eq(self.output)
+
+    def process(self, i):
+        return self.o
+
+
 class ExampleLTCombPipe(CombPipe):
     """ an example of how to use the combinatorial pipeline.
     """
 
     def __init__(self):
         stage = LTStage()
+        CombPipe.__init__(self, stage)
+
+
+class ExampleLTBufferedPipeDerived(CombPipe):
+    """ an example of how to use the combinatorial pipeline.
+    """
+
+    def __init__(self):
+        stage = LTStageDerived()
         CombPipe.__init__(self, stage)
 
 
@@ -536,4 +567,9 @@ if __name__ == '__main__':
     test = Test5(dut, test9_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv],
                         vcd_name="test_bufpipechain2.vcd")
+
+    print ("test 10")
+    dut = ExampleLTBufferedPipeDerived()
+    test = Test5(dut, test6_resultfn)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltbufpipe10.vcd")
 
