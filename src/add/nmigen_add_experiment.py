@@ -260,6 +260,19 @@ class FPNumBase2Ops:
         return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
+class FPSCData:
+
+    def __init__(self, width, id_wid):
+        self.out_do_z = Signal(reset_less=True)
+        self.a = FPNumBase(width, True)
+        self.b = FPNumBase(width, True)
+        self.z = FPNumOut(width, False)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
 class FPAddSpecialCasesMod:
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
@@ -271,20 +284,18 @@ class FPAddSpecialCasesMod:
         self.id_wid = id_wid
         self.i = self.ispec()
         self.o = self.ospec()
-        self.out_do_z = Signal(reset_less=True)
 
     def ispec(self):
         return FPNumBase2Ops(self.width, self.id_wid)
 
     def ospec(self):
-        return FPPackData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid)
 
-    def setup(self, m, i, out_do_z):
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.specialcases = self
         m.d.comb += self.i.eq(i)
-        m.d.comb += out_do_z.eq(self.out_do_z)
 
     def elaborate(self, platform):
         m = Module()
@@ -301,7 +312,7 @@ class FPAddSpecialCasesMod:
 
         # if a is NaN or b is NaN return NaN
         with m.If(self.i.a.is_nan | self.i.b.is_nan):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.nan(0)
 
         # XXX WEIRDNESS for FP16 non-canonical NaN handling
@@ -309,27 +320,27 @@ class FPAddSpecialCasesMod:
 
         ## if a is zero and b is NaN return -b
         #with m.If(a.is_zero & (a.s==0) & b.is_nan):
-        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += self.o.out_do_z.eq(1)
         #    m.d.comb += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
 
         ## if b is zero and a is NaN return -a
         #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
-        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += self.o.out_do_z.eq(1)
         #    m.d.comb += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
 
         ## if a is -zero and b is NaN return -b
         #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
-        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += self.o.out_do_z.eq(1)
         #    m.d.comb += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
 
         ## if b is -zero and a is NaN return -a
         #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
-        #    m.d.comb += self.out_do_z.eq(1)
+        #    m.d.comb += self.o.out_do_z.eq(1)
         #    m.d.comb += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
         # if a is inf return inf (or NaN)
         with m.Elif(self.i.a.is_inf):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.inf(self.i.a.s)
             # if a is inf and signs don't match return NaN
             with m.If(self.i.b.exp_128 & s_nomatch):
@@ -337,36 +348,36 @@ class FPAddSpecialCasesMod:
 
         # if b is inf return inf
         with m.Elif(self.i.b.is_inf):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.inf(self.i.b.s)
 
         # if a is zero and b zero return signed-a/b
         with m.Elif(self.i.a.is_zero & self.i.b.is_zero):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(self.i.a.s & self.i.b.s,
                                           self.i.b.e,
                                           self.i.b.m[3:-1])
 
         # if a is zero return b
         with m.Elif(self.i.a.is_zero):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(self.i.b.s, self.i.b.e,
                                       self.i.b.m[3:-1])
 
         # if b is zero return a
         with m.Elif(self.i.b.is_zero):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(self.i.a.s, self.i.a.e,
                                       self.i.a.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
         with m.Elif(s_nomatch & m_match & (self.i.a.e == self.i.b.e)):
-            m.d.comb += self.out_do_z.eq(1)
+            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
         # Denormalised Number checks
         with m.Else():
-            m.d.comb += self.out_do_z.eq(0)
+            m.d.comb += self.o.out_do_z.eq(0)
 
         m.d.comb += self.o.mid.eq(self.i.mid)
 
@@ -433,8 +444,9 @@ class FPAddSpecialCasesDeNorm(FPState):
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        self.smod.setup(m, i, self.out_do_z)
+        self.smod.setup(m, i)
         self.dmod.setup(m, i)
+        m.d.comb += self.out_do_z.eq(self.smod.o.out_do_z)
 
         # out_do_z=True
         m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
