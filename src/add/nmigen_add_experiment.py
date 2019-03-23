@@ -266,11 +266,12 @@ class FPSCData:
         self.a = FPNumBase(width, True)
         self.b = FPNumBase(width, True)
         self.z = FPNumOut(width, False)
+        self.oz = Signal(width, reset_less=True)
         self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
@@ -382,6 +383,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.a.eq(self.i.a)
             m.d.comb += self.o.b.eq(self.i.b)
 
+        m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.mid.eq(self.i.mid)
 
         return m
@@ -508,6 +510,7 @@ class FPAddDeNormMod(FPState):
         m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.oz.eq(self.i.oz)
 
         return m
 
@@ -706,7 +709,7 @@ class FPAddAlignSingleMod:
         m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.oz.eq(self.i.z.v)
+        m.d.comb += self.o.oz.eq(self.i.oz)
 
         return m
 
