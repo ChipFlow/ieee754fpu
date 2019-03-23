@@ -766,11 +766,13 @@ class FPAddStage0Data:
 
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.tot.eq(i.tot), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.tot.eq(i.tot), self.mid.eq(i.mid)]
 
 
 class FPAddStage0Mod:
@@ -782,7 +784,7 @@ class FPAddStage0Mod:
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid)
 
     def ospec(self):
         return FPAddStage0Data(self.width, self.id_wid)
@@ -802,9 +804,6 @@ class FPAddStage0Mod:
         m.submodules.add0_in_b = self.i.b
         m.submodules.add0_out_z = self.o.z
 
-        m.d.comb += self.o.mid.eq(self.i.mid)
-        m.d.comb += self.o.z.e.eq(self.i.a.e)
-
         # store intermediate tests (and zero-extended mantissas)
         seq = Signal(reset_less=True)
         mge = Signal(reset_less=True)
@@ -816,23 +815,30 @@ class FPAddStage0Mod:
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]
         # same-sign (both negative or both positive) add mantissas
-        with m.If(seq):
-            m.d.comb += [
-                self.o.tot.eq(am0 + bm0),
-                self.o.z.s.eq(self.i.a.s)
+        with m.If(~self.i.out_do_z):
+            m.d.comb += self.o.z.e.eq(self.i.a.e)
+            with m.If(seq):
+                m.d.comb += [
+                    self.o.tot.eq(am0 + bm0),
+                    self.o.z.s.eq(self.i.a.s)
+                ]
+            # a mantissa greater than b, use a
+            with m.Elif(mge):
+                m.d.comb += [
+                    self.o.tot.eq(am0 - bm0),
+                    self.o.z.s.eq(self.i.a.s)
+                ]
+            # b mantissa greater than a, use b
+            with m.Else():
+                m.d.comb += [
+                    self.o.tot.eq(bm0 - am0),
+                    self.o.z.s.eq(self.i.b.s)
             ]
-        # a mantissa greater than b, use a
-        with m.Elif(mge):
-            m.d.comb += [
-                self.o.tot.eq(am0 - bm0),
-                self.o.z.s.eq(self.i.a.s)
-            ]
-        # b mantissa greater than a, use b
         with m.Else():
-            m.d.comb += [
-                self.o.tot.eq(bm0 - am0),
-                self.o.z.s.eq(self.i.b.s)
-        ]
+            m.d.comb += self.o.z.eq(self.i.z)
+
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.mid.eq(self.i.mid)
         return m
 
 
