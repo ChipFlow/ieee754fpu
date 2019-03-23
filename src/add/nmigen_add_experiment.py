@@ -1330,10 +1330,11 @@ class FPRoundData:
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
         self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.mid.eq(i.mid)]
 
 
@@ -1498,7 +1499,7 @@ class FPPackMod:
             with m.Else():
                 m.d.comb += self.o.z.create(self.i.z.s, self.i.z.e, self.i.z.m)
         with m.Else():
-            m.d.comb += self.o.z.eq(self.i.z)
+            m.d.comb += self.o.z.v.eq(self.i.oz)
         return m
 
 
