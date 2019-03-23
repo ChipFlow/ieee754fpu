@@ -1037,10 +1037,12 @@ class FPNorm1Data:
     def __init__(self, width, id_wid):
         self.roundz = Signal(reset_less=True)
         self.z = FPNumBase(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
 
 
 class FPNorm1ModSingle:
@@ -1093,7 +1095,6 @@ class FPNorm1ModSingle:
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
         m.d.comb += self.o.z.eq(i.z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += of.eq(i.of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
@@ -1101,48 +1102,52 @@ class FPNorm1ModSingle:
         m.d.comb += decrease.eq(i.z.m_msbzero & i.z.exp_gt_n126)
         m.d.comb += increase.eq(i.z.exp_lt_n126)
         # decrease exponent
-        with m.If(decrease):
-            # *sigh* not entirely obvious: count leading zeros (clz)
-            # with a PriorityEncoder: to find from the MSB
-            # we reverse the order of the bits.
-            temp_m = Signal(mwid, reset_less=True)
-            temp_s = Signal(mwid+1, reset_less=True)
-            clz = Signal((len(i.z.e), True), reset_less=True)
-            # make sure that the amount to decrease by does NOT
-            # go below the minimum non-INF/NaN exponent
-            limclz = Mux(i.z.exp_sub_n126 > pe.o, pe.o,
-                         i.z.exp_sub_n126)
-            m.d.comb += [
-                # cat round and guard bits back into the mantissa
-                temp_m.eq(Cat(i.of.round_bit, i.of.guard, i.z.m)),
-                pe.i.eq(temp_m[::-1]),          # inverted
-                clz.eq(limclz),                 # count zeros from MSB down
-                temp_s.eq(temp_m << clz),       # shift mantissa UP
-                self.o.z.e.eq(i.z.e - clz),  # DECREASE exponent
-                self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
-                of.m0.eq(temp_s[2]),          # copy of mantissa[0]
-                # overflow in bits 0..1: got shifted too (leave sticky)
-                of.guard.eq(temp_s[1]),       # guard
-                of.round_bit.eq(temp_s[0]),   # round
-            ]
-        # increase exponent
-        with m.Elif(increase):
-            temp_m = Signal(mwid+1, reset_less=True)
-            m.d.comb += [
-                temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
-                              i.z.m)),
-                ediff_n126.eq(i.z.N126 - i.z.e),
-                # connect multi-shifter to inp/out mantissa (and ediff)
-                msr.inp.eq(temp_m),
-                msr.diff.eq(ediff_n126),
-                self.o.z.m.eq(msr.m[3:]),
-                of.m0.eq(temp_s[3]),   # copy of mantissa[0]
-                # overflow in bits 0..1: got shifted too (leave sticky)
-                of.guard.eq(temp_s[2]),     # guard
-                of.round_bit.eq(temp_s[1]), # round
-                of.sticky.eq(temp_s[0]),    # sticky
-                self.o.z.e.eq(i.z.e + ediff_n126),
-            ]
+        with m.If(~self.i.out_do_z):
+            with m.If(decrease):
+                # *sigh* not entirely obvious: count leading zeros (clz)
+                # with a PriorityEncoder: to find from the MSB
+                # we reverse the order of the bits.
+                temp_m = Signal(mwid, reset_less=True)
+                temp_s = Signal(mwid+1, reset_less=True)
+                clz = Signal((len(i.z.e), True), reset_less=True)
+                # make sure that the amount to decrease by does NOT
+                # go below the minimum non-INF/NaN exponent
+                limclz = Mux(i.z.exp_sub_n126 > pe.o, pe.o,
+                             i.z.exp_sub_n126)
+                m.d.comb += [
+                    # cat round and guard bits back into the mantissa
+                    temp_m.eq(Cat(i.of.round_bit, i.of.guard, i.z.m)),
+                    pe.i.eq(temp_m[::-1]),          # inverted
+                    clz.eq(limclz),                 # count zeros from MSB down
+                    temp_s.eq(temp_m << clz),       # shift mantissa UP
+                    self.o.z.e.eq(i.z.e - clz),  # DECREASE exponent
+                    self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
+                    of.m0.eq(temp_s[2]),          # copy of mantissa[0]
+                    # overflow in bits 0..1: got shifted too (leave sticky)
+                    of.guard.eq(temp_s[1]),       # guard
+                    of.round_bit.eq(temp_s[0]),   # round
+                ]
+            # increase exponent
+            with m.Elif(increase):
+                temp_m = Signal(mwid+1, reset_less=True)
+                m.d.comb += [
+                    temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
+                                  i.z.m)),
+                    ediff_n126.eq(i.z.N126 - i.z.e),
+                    # connect multi-shifter to inp/out mantissa (and ediff)
+                    msr.inp.eq(temp_m),
+                    msr.diff.eq(ediff_n126),
+                    self.o.z.m.eq(msr.m[3:]),
+                    of.m0.eq(temp_s[3]),   # copy of mantissa[0]
+                    # overflow in bits 0..1: got shifted too (leave sticky)
+                    of.guard.eq(temp_s[2]),     # guard
+                    of.round_bit.eq(temp_s[1]), # round
+                    of.sticky.eq(temp_s[0]),    # sticky
+                    self.o.z.e.eq(i.z.e + ediff_n126),
+                ]
+
+        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
 
         return m
 
