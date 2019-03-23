@@ -608,10 +608,11 @@ class FPNumIn2Ops:
         self.b = FPNumIn(None, width)
         self.z = FPNumOut(width, False)
         self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
@@ -705,6 +706,7 @@ class FPAddAlignSingleMod:
         m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.oz.eq(self.i.z.v)
 
         return m
 
@@ -767,11 +769,12 @@ class FPAddStage0Data:
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
         self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.tot.eq(i.tot), self.mid.eq(i.mid)]
 
 
@@ -835,7 +838,7 @@ class FPAddStage0Mod:
                     self.o.z.s.eq(self.i.b.s)
             ]
         with m.Else():
-            m.d.comb += self.o.z.eq(self.i.z)
+            m.d.comb += self.o.oz.eq(self.i.z.v)
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.mid.eq(self.i.mid)
@@ -870,11 +873,12 @@ class FPAddStage1Data:
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
         self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.of.eq(i.of), self.mid.eq(i.mid)]
 
 
@@ -936,6 +940,7 @@ class FPAddStage1Mod(FPState):
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.mid.eq(self.i.mid)
 
         return m
@@ -1038,10 +1043,11 @@ class FPNorm1Data:
         self.roundz = Signal(reset_less=True)
         self.z = FPNumBase(width, False)
         self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
 
 
@@ -1148,6 +1154,7 @@ class FPNorm1ModSingle:
 
         m.d.comb += self.o.mid.eq(self.i.mid)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.oz.eq(self.i.oz)
 
         return m
 
