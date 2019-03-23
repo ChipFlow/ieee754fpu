@@ -1485,20 +1485,14 @@ class FPPackMod:
         m = Module()
         m.submodules.pack_in_z = self.i.z
         m.d.comb += self.o.mid.eq(self.i.mid)
-        with m.If(self.i.z.is_overflowed):
-            m.d.comb += self.o.z.inf(self.i.z.s)
+        with m.If(~self.i.out_do_z):
+            with m.If(self.i.z.is_overflowed):
+                m.d.comb += self.o.z.inf(self.i.z.s)
+            with m.Else():
+                m.d.comb += self.o.z.create(self.i.z.s, self.i.z.e, self.i.z.m)
         with m.Else():
-            m.d.comb += self.o.z.create(self.i.z.s, self.i.z.e, self.i.z.m)
+            m.d.comb += self.o.z.eq(self.i.z)
         return m
-
-
-class FPPackData:
-    def __init__(self, width, id_wid):
-        self.z = FPNumOut(width, False)
-        self.mid = Signal(id_wid, reset_less=True)
-
-    def eq(self, i):
-        return [self.z.eq(i.z), self.mid.eq(i.mid)]
 
 
 class FPPack(FPState):
