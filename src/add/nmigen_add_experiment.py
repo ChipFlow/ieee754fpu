@@ -375,9 +375,11 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
-        # Denormalised Number checks
+        # Denormalised Number checks next, so pass a/b data through
         with m.Else():
             m.d.comb += self.o.out_do_z.eq(0)
+            m.d.comb += self.o.a.eq(self.i.a)
+            m.d.comb += self.o.b.eq(self.i.b)
 
         m.d.comb += self.o.mid.eq(self.i.mid)
 
@@ -445,7 +447,7 @@ class FPAddSpecialCasesDeNorm(FPState):
         """ links module to inputs and outputs
         """
         self.smod.setup(m, i)
-        self.dmod.setup(m, i)
+        self.dmod.setup(m, self.smod.o)
         m.d.comb += self.out_do_z.eq(self.smod.o.out_do_z)
 
         # out_do_z=True
