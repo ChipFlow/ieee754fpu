@@ -869,11 +869,13 @@ class FPAddStage1Data:
 
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.of = Overflow()
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.of.eq(i.of), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.of.eq(i.of), self.mid.eq(i.mid)]
 
 
 
@@ -912,26 +914,30 @@ class FPAddStage1Mod(FPState):
         #m.submodules.norm1_in_z = self.in_z
         #m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.o.z.eq(self.i.z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
         # tot[-1] (MSB) gets set when the sum overflows. shift result down
-        with m.If(self.i.tot[-1]):
-            m.d.comb += [
-                self.o.z.m.eq(self.i.tot[4:]),
-                self.o.of.m0.eq(self.i.tot[4]),
-                self.o.of.guard.eq(self.i.tot[3]),
-                self.o.of.round_bit.eq(self.i.tot[2]),
-                self.o.of.sticky.eq(self.i.tot[1] | self.i.tot[0]),
-                self.o.z.e.eq(self.i.z.e + 1)
-        ]
-        # tot[-1] (MSB) zero case
-        with m.Else():
-            m.d.comb += [
-                self.o.z.m.eq(self.i.tot[3:]),
-                self.o.of.m0.eq(self.i.tot[3]),
-                self.o.of.guard.eq(self.i.tot[2]),
-                self.o.of.round_bit.eq(self.i.tot[1]),
-                self.o.of.sticky.eq(self.i.tot[0])
-        ]
+        with m.If(~self.i.out_do_z):
+            with m.If(self.i.tot[-1]):
+                m.d.comb += [
+                    self.o.z.m.eq(self.i.tot[4:]),
+                    self.o.of.m0.eq(self.i.tot[4]),
+                    self.o.of.guard.eq(self.i.tot[3]),
+                    self.o.of.round_bit.eq(self.i.tot[2]),
+                    self.o.of.sticky.eq(self.i.tot[1] | self.i.tot[0]),
+                    self.o.z.e.eq(self.i.z.e + 1)
+            ]
+            # tot[-1] (MSB) zero case
+            with m.Else():
+                m.d.comb += [
+                    self.o.z.m.eq(self.i.tot[3:]),
+                    self.o.of.m0.eq(self.i.tot[3]),
+                    self.o.of.guard.eq(self.i.tot[2]),
+                    self.o.of.round_bit.eq(self.i.tot[1]),
+                    self.o.of.sticky.eq(self.i.tot[0])
+            ]
+
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.mid.eq(self.i.mid)
+
         return m
 
 
