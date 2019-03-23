@@ -1720,8 +1720,8 @@ class FPADDBaseMod:
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.o,
                                     n1.out_z.mid, self.o.mid))
 
-        pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.o,
-                                    sc.o.mid, self.o.mid))
+        #pz = self.add_state(FPPutZ("put_z", sc.out_z.z, self.o,
+        #                            sc.o.mid, self.o.mid))
 
 
 class FPADDBase(FPState):
