@@ -460,9 +460,9 @@ class FPAddSpecialCasesDeNorm(FPState):
         m.d.sync += self.o.eq(self.dmod.o)
 
     def action(self, m):
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
+        #with m.If(self.out_do_z):
+        #    m.next = "put_z"
+        #with m.Else():
             m.next = "align"
 
 
@@ -840,9 +840,8 @@ class FPAddStage0Mod:
                     self.o.tot.eq(bm0 - am0),
                     self.o.z.s.eq(self.i.b.s)
             ]
-        with m.Else():
-            m.d.comb += self.o.oz.eq(self.i.z.v)
 
+        m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.mid.eq(self.i.mid)
         return m
