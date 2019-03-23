@@ -263,15 +263,16 @@ class FPNumBase2Ops:
 class FPSCData:
 
     def __init__(self, width, id_wid):
-        self.out_do_z = Signal(reset_less=True)
         self.a = FPNumBase(width, True)
         self.b = FPNumBase(width, True)
         self.z = FPNumOut(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
                 self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
 
 class FPAddSpecialCasesMod:
     """ special cases: NaNs, infs, zeros, denormalised
@@ -472,10 +473,10 @@ class FPAddDeNormMod(FPState):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumBase2Ops(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -489,20 +490,24 @@ class FPAddDeNormMod(FPState):
         m.submodules.denorm_in_b = self.i.b
         m.submodules.denorm_out_a = self.o.a
         m.submodules.denorm_out_b = self.o.b
-        # hmmm, don't like repeating identical code
-        m.d.comb += self.o.a.eq(self.i.a)
-        with m.If(self.i.a.exp_n127):
-            m.d.comb += self.o.a.e.eq(self.i.a.N126) # limit a exponent
-        with m.Else():
-            m.d.comb += self.o.a.m[-1].eq(1) # set top mantissa bit
 
-        m.d.comb += self.o.b.eq(self.i.b)
-        with m.If(self.i.b.exp_n127):
-            m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
-        with m.Else():
-            m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
+        with m.If(~self.i.out_do_z):
+            # XXX hmmm, don't like repeating identical code
+            m.d.comb += self.o.a.eq(self.i.a)
+            with m.If(self.i.a.exp_n127):
+                m.d.comb += self.o.a.e.eq(self.i.a.N126) # limit a exponent
+            with m.Else():
+                m.d.comb += self.o.a.m[-1].eq(1) # set top mantissa bit
+
+            m.d.comb += self.o.b.eq(self.i.b)
+            with m.If(self.i.b.exp_n127):
+                m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
+            with m.Else():
+                m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
 
         m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.z.eq(self.i.z)
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
 
         return m
 
@@ -601,10 +606,13 @@ class FPNumIn2Ops:
     def __init__(self, width, id_wid):
         self.a = FPNumIn(None, width)
         self.b = FPNumIn(None, width)
+        self.z = FPNumOut(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
 class FPAddAlignSingleMod:
