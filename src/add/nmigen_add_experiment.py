@@ -1322,10 +1322,12 @@ class FPRoundData:
 
     def __init__(self, width, id_wid):
         self.z = FPNumBase(width, False)
+        self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z),
+                self.mid.eq(i.mid)]
 
 
 class FPRoundMod:
@@ -1351,11 +1353,13 @@ class FPRoundMod:
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_z.eq(self.i)
-        with m.If(self.i.roundz):
-            m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1) # mantissa rounds up
-            with m.If(self.i.z.m == self.i.z.m1s): # all 1s
-                m.d.comb += self.out_z.z.e.eq(self.i.z.e + 1) # exponent up
+        m.d.comb += self.out_z.eq(self.i) # copies mid, z, out_do_z
+        with m.If(~self.i.out_do_z):
+            with m.If(self.i.roundz):
+                m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1) # mantissa up
+                with m.If(self.i.z.m == self.i.z.m1s): # all 1s
+                    m.d.comb += self.out_z.z.e.eq(self.i.z.e + 1) # exponent up
+
         return m
 
 
@@ -1412,9 +1416,10 @@ class FPCorrectionsMod:
         m = Module()
         m.submodules.corr_in_z = self.i.z
         m.submodules.corr_out_z = self.out_z.z
-        m.d.comb += self.out_z.eq(self.i)
-        with m.If(self.i.z.is_denormalised):
-            m.d.comb += self.out_z.z.e.eq(self.i.z.N127)
+        m.d.comb += self.out_z.eq(self.i) # copies mid, z, out_do_z
+        with m.If(~self.i.out_do_z):
+            with m.If(self.i.z.is_denormalised):
+                m.d.comb += self.out_z.z.e.eq(self.i.z.N127)
         return m
 
 
