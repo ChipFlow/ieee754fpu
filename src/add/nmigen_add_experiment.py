@@ -9,7 +9,7 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
-from example_buf_pipe import StageChain
+from example_buf_pipe import StageChain, UnbufferedPipeline
 #from fpbase import FPNumShiftMultiRight
 
 
@@ -1814,6 +1814,57 @@ class FPADDBase(FPState):
             with m.Else():
                 m.d.sync += self.out_z.stb.eq(1)
 
+class FPADDStageIn:
+    def __init__(self, width, id_wid):
+        self.a = Signal(width)
+        self.b = Signal(width)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
+
+class FPADDStageOut:
+    def __init__(self, width, id_wid):
+        self.z = Signal(width)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+
+# matches the format of FPADDStageOut, allows eq function to do assignments
+class PlaceHolder: pass
+
+
+class FPAddBaseStage:
+    def __init__(self, width, id_wid):
+        self.width = width
+        self.id_wid = id_wid
+
+    def ispec(self):
+        return FPADDStageIn(self.width, self.id_wid)
+
+    def ospec(self):
+        return FPADDStageOut(self.width, self.id_wid)
+
+    def process(self, i):
+        o = PlaceHolder()
+        o.z = i.a + i.b
+        o.mid = i.mid
+        return o
+
+
+class FPADDBasePipe:
+    def __init__(self, width, id_wid):
+        stage1 = FPAddBaseStage(width, id_wid)
+        self.pipe = UnbufferedPipeline(stage1)
+
+    def elaborate(self, platform):
+        return self.pipe.elaborate(platform)
+
+    def ports(self):
+        return self.pipe.ports()
 
 class ResArray:
     def __init__(self, width, id_wid):
