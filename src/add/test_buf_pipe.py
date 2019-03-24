@@ -403,7 +403,7 @@ class ExampleAddRecordStage:
 
     record_spec = [('src1', 16), ('src2', 16)]
     def ispec(self):
-        """ returns a tuple of input signals which will be the incoming data
+        """ returns a Record using the specification
         """
         return Record(self.record_spec)
 
@@ -411,7 +411,8 @@ class ExampleAddRecordStage:
         return Record(self.record_spec)
 
     def process(self, i):
-        """ process the input data (sums the values in the tuple) and returns it
+        """ process the input data, returning a dictionary with key names
+            that exactly match the Record's attributes.
         """
         return {'src1': i.src1 + 1,
                 'src2': i.src2 + 1}
@@ -423,7 +424,7 @@ class ExampleAddRecordPlaceHolderStage:
 
     record_spec = [('src1', 16), ('src2', 16)]
     def ispec(self):
-        """ returns a tuple of input signals which will be the incoming data
+        """ returns a Record using the specification
         """
         return Record(self.record_spec)
 
@@ -431,7 +432,8 @@ class ExampleAddRecordPlaceHolderStage:
         return Record(self.record_spec)
 
     def process(self, i):
-        """ process the input data (sums the values in the tuple) and returns it
+        """ process the input data, returning a PlaceHolder class instance
+            with attributes that exactly match those of the Record.
         """
         o = PlaceHolder()
         o.src1 = i.src1 + 1
