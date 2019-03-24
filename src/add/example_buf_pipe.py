@@ -187,9 +187,14 @@ def eq(o, i):
         if isinstance(ao, Record):
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):
-                    rres = eq(ao.fields[field_name], ai.fields[field_name])
+                    val = ai.fields
                 else:
-                    rres = eq(ao.fields[field_name], ai[field_name])
+                    val = ai
+                if hasattr(val, field_name):
+                    val = getattr(val, field_name)
+                else:
+                    val = val[field_name]
+                rres = eq(ao.fields[field_name], val)
                 res += rres
         else:
             rres = ao.eq(ai)

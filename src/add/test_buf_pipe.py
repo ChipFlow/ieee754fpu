@@ -147,6 +147,15 @@ def test3_resultfn(o_data, expected, i, o):
                 "%d-%d data %x not match %x\n" \
                 % (i, o, o_data, expected)
 
+def data_placeholder():
+        data = []
+        for i in range(num_tests):
+            d = PlaceHolder()
+            d.src1 = randint(0, 1<<16-1)
+            d.src2 = randint(0, 1<<16-1)
+            data.append(d)
+        return data
+
 def data_dict():
         data = []
         for i in range(num_tests):
@@ -408,6 +417,30 @@ class ExampleAddRecordStage:
                 'src2': i.src2 + 1}
 
 
+class ExampleAddRecordPlaceHolderStage:
+    """ example use of a Record, with a placeholder as the processing result
+    """
+
+    record_spec = [('src1', 16), ('src2', 16)]
+    def ispec(self):
+        """ returns a tuple of input signals which will be the incoming data
+        """
+        return Record(self.record_spec)
+
+    def ospec(self):
+        return Record(self.record_spec)
+
+    def process(self, i):
+        """ process the input data (sums the values in the tuple) and returns it
+        """
+        o = PlaceHolder()
+        o.src1 = i.src1 + 1
+        o.src2 = i.src2 + 1
+        return o
+
+class PlaceHolder: pass
+
+
 class ExampleAddRecordPipe(UnbufferedPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
@@ -420,6 +453,23 @@ class ExampleAddRecordPipe(UnbufferedPipeline):
 def test7_resultfn(o_data, expected, i, o):
     res = (expected['src1'] + 1, expected['src2'] + 1)
     assert o_data['src1'] == res[0] and o_data['src2'] == res[1], \
+                "%d-%d data %s not match %s\n" \
+                % (i, o, repr(o_data), repr(expected))
+
+
+class ExampleAddRecordPlaceHolderPipe(UnbufferedPipeline):
+    """ an example of how to use the combinatorial pipeline.
+    """
+
+    def __init__(self):
+        stage = ExampleAddRecordPlaceHolderStage()
+        UnbufferedPipeline.__init__(self, stage)
+
+
+def test11_resultfn(o_data, expected, i, o):
+    res1 = expected.src1 + 1
+    res2 = expected.src2 + 1
+    assert o_data['src1'] == res1 and o_data['src2'] == res2, \
                 "%d-%d data %s not match %s\n" \
                 % (i, o, repr(o_data), repr(expected))
 
@@ -574,5 +624,11 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltbufpipe10.il", "w") as f:
         f.write(vl)
+
+    print ("test 11")
+    dut = ExampleAddRecordPlaceHolderPipe()
+    data=data_placeholder()
+    test = Test5(dut, test11_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
 
