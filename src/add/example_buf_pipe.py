@@ -174,10 +174,12 @@ def eq(o, i):
         responsibility of further calling eq and returning a list of
         eq assignments
 
-        Record is a special (unusual, recursive) case, where the input
-        is specified as a dictionary (which may contain further dictionaries,
+        Record is a special (unusual, recursive) case, where the input may be
+        specified as a dictionary (which may contain further dictionaries,
         recursively), where the field names of the dictionary must match
-        the Record's field spec.
+        the Record's field spec.  Alternatively, an object with the same
+        member names as the Record may be assigned: it does not have to
+        *be* a Record.
     """
     if not isinstance(o, Sequence):
         o, i = [o], [i]
@@ -190,10 +192,10 @@ def eq(o, i):
                     val = ai.fields
                 else:
                     val = ai
-                if hasattr(val, field_name):
+                if hasattr(val, field_name): # check for attribute
                     val = getattr(val, field_name)
                 else:
-                    val = val[field_name]
+                    val = val[field_name] # dictionary-style specification
                 rres = eq(ao.fields[field_name], val)
                 res += rres
         else:
