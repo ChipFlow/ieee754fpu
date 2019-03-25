@@ -181,11 +181,11 @@ def eq(o, i):
         member names as the Record may be assigned: it does not have to
         *be* a Record.
     """
-    if not isinstance(o, Sequence):
+    if not isinstance(o, list) and not isinstance(o, tuple):
         o, i = [o], [i]
     res = []
     for (ao, ai) in zip(o, i):
-        #print ("eq", ao, ai)
+        #print ("eq ao", repr(ao), "ai:", repr(ai))
         if isinstance(ao, Record):
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):
@@ -351,7 +351,7 @@ class BufferedPipeline(PipelineBase):
             * p_mux: optional multiplex selector for incoming data
             * n_mux: optional multiplex router for outgoing data
         """
-        PipelineBase.__init__(self, stage)
+        PipelineBase.__init__(self, stage, n_len, p_len)
         self.p_mux = p_mux
         self.n_mux = n_mux
 
@@ -540,11 +540,10 @@ class UnbufferedPipeline(PipelineBase):
             SYNCHRONOUSLY.
     """
 
-    def __init__(self, stage, n_len=1, p_len=1, p_mux=None, n_mux=None):
-        PipelineBase.__init__(self, stage, p_len, n_len)
+    def __init__(self, stage, p_len=1, n_len=1, p_mux=None, n_mux=None):
+        PipelineBase.__init__(self, stage, n_len, p_len)
         self.p_mux = p_mux
         self.n_mux = n_mux
-        self._data_valid = Signal()
 
         # set up the input and output data
         for i in range(p_len):
@@ -560,10 +559,12 @@ class UnbufferedPipeline(PipelineBase):
 
         # need an array of buffer registers conforming to *input* spec
         r_data = []
+        data_valid = []
         p_len = len(self.p)
         for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
+            data_valid.append(Signal(name="data_valid"))
             if hasattr(self.stage, "setup"):
                 self.stage.setup(m, r)
         if len(r_data) > 1:
@@ -571,24 +572,26 @@ class UnbufferedPipeline(PipelineBase):
 
         ni = 0 # TODO: use n_nux to decide which to select
 
-        if self.p_mux:
-            pi = self.p_mux.mid
-            p_i_valid = self.p_mux.valid
-        else:
-            pi = 0
-            p_i_valid = Signal(reset_less=True)
-            m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
+        n_i_readyn = Signal(reset_less=True)
+        m.d.comb += n_i_readyn.eq(~self.n[ni].i_ready & data_valid[i])
 
-        m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
-        m.d.comb += self.n[ni].o_valid.eq(self._data_valid)
         for i in range(p_len):
-            m.d.comb += self.p[i].o_ready.eq(~self._data_valid | \
+            p_i_valid = Signal(reset_less=True)
+            m.d.comb += p_i_valid.eq(self.p[i].i_valid_logic())
+            m.d.comb += self.n[ni].o_valid.eq(data_valid[i])
+            m.d.comb += self.p[i].o_ready.eq(~data_valid[i] | \
                                               self.n[ni].i_ready)
-        m.d.sync += self._data_valid.eq(p_i_valid | \
-                                    (~self.n[ni].i_ready & self._data_valid))
-        with m.If(self.p[pi].i_valid & self.p[pi].o_ready):
-            m.d.sync += eq(r_data[pi], self.p[pi].i_data)
-        m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[pi]))
+            m.d.sync += data_valid[i].eq(p_i_valid | \
+                                        (n_i_readyn & data_valid[i]))
+            with m.If(self.p[i].i_valid & self.p[i].o_ready):
+                m.d.sync += eq(r_data[i], self.p[i].i_data)
+        if self.p_mux:
+            mid = self.p_mux.m_id
+            with m.If(self.p_mux.active):
+                m.d.comb += eq(self.n[ni].o_data,
+                               self.stage.process(r_data[mid]))
+        else:
+            m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[i]))
         return m
 
 
