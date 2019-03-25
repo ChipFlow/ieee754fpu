@@ -364,11 +364,17 @@ class BufferedPipeline(PipelineBase):
     def elaborate(self, platform):
         m = Module()
 
-        result = self.stage.ospec()
-        r_data = self.stage.ospec()
-        if hasattr(self.stage, "setup"):
-            for i in range(len(self.p)):
+        result = self.stage.ospec() # output data
+
+        # need an array of buffer registers conforming to *output* spec
+        r_data = []
+        for i in range(len(self.p)):
+            r = self.stage.ospec() # output type
+            r_data.append(r)
+            if hasattr(self.stage, "setup"):
                 self.stage.setup(m, self.p[i].i_data)
+        if len(r_data) > 1:
+            r_data = Array(r_data)
 
         pi = 0 # TODO: use p_mux to decide which to select
         ni = 0 # TODO: use n_nux to decide which to select
@@ -387,7 +393,7 @@ class BufferedPipeline(PipelineBase):
 
         # if not in stall condition, update the temporary register
         with m.If(self.p[pi].o_ready): # not stalled
-            m.d.sync += eq(r_data, result) # update buffer
+            m.d.sync += eq(r_data[ni], result) # update buffer
 
         with m.If(self.n[ni].i_ready): # next stage is ready
             with m.If(self.p[pi].o_ready): # not stalled
@@ -398,7 +404,7 @@ class BufferedPipeline(PipelineBase):
             with m.Else(): # p.o_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.n[ni].o_valid.eq(1),      # declare reg empty
-                             eq(self.n[ni].o_data, r_data), # flush buffer
+                             eq(self.n[ni].o_data, r_data[ni]), # flush buffer
                              self.p[pi].o_ready.eq(1),      # clear stall 
                             ]
                 # ignore input, since p.o_ready is also false.
@@ -540,8 +546,10 @@ class UnbufferedPipeline(PipelineBase):
     def elaborate(self, platform):
         m = Module()
 
-        r_data = []
         result = self.stage.ospec() # output data
+
+        # need an array of buffer registers conforming to *input* spec
+        r_data = []
         for i in range(len(self.p)):
             r = self.stage.ispec() # input type
             r_data.append(r)
