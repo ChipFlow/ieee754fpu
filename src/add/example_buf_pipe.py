@@ -337,8 +337,8 @@ class BufferedPipeline(PipelineBase):
 
         on the next cycle (as long as stall is not raised again) the
         input may begin to be processed and transferred directly to output.
-
     """
+
     def __init__(self, stage, n_len=1, p_len=1, p_mux=None, n_mux=None):
         """ set up a BufferedPipeline (multi-input, multi-output)
             NOTE: n_len > 1 and p_len > 1 is NOT supported
