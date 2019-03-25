@@ -581,6 +581,7 @@ class UnbufferedPipeline(PipelineBase):
 
         if self.p_mux:
             mid = self.p_mux.m_id
+            o_mid = Signal(len(mid))
             for i in range(p_len):
                 m.d.sync += data_valid[i].eq(0)
                 m.d.comb += n_i_readyn[i].eq(1)
@@ -599,13 +600,14 @@ class UnbufferedPipeline(PipelineBase):
             m.d.comb += self.n[ni].o_valid.eq(anyvalid.bool())
             m.d.sync += data_valid[mid].eq(p_i_valid[mid] | \
                                         (n_i_readyn[mid] & data_valid[mid]))
+            m.d.sync += eq(o_mid, mid)
 
             for i in range(p_len):
                 with m.If(self.p[i].i_valid & self.p[i].o_ready):
                     m.d.sync += eq(r_data[i], self.p[i].i_data)
 
             m.d.comb += eq(self.n[ni].o_data,
-                           self.stage.process(r_data[mid]))
+                           self.stage.process(r_data[o_mid]))
         else:
             for i in range(p_len):
                 m.d.comb += p_i_valid[i].eq(self.p[i].i_valid_logic())
