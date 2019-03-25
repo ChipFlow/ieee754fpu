@@ -560,38 +560,61 @@ class UnbufferedPipeline(PipelineBase):
         # need an array of buffer registers conforming to *input* spec
         r_data = []
         data_valid = []
+        p_i_valid = []
+        n_i_readyn = []
         p_len = len(self.p)
         for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
             data_valid.append(Signal(name="data_valid"))
+            p_i_valid.append(Signal(name="p_i_valid", reset_less=True))
+            n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
             if hasattr(self.stage, "setup"):
                 self.stage.setup(m, r)
         if len(r_data) > 1:
             r_data = Array(r_data)
+            p_i_valid = Array(p_i_valid)
+            n_i_readyn = Array(n_i_readyn)
+            data_valid = Array(data_valid)
 
         ni = 0 # TODO: use n_nux to decide which to select
 
-        n_i_readyn = Signal(reset_less=True)
-        m.d.comb += n_i_readyn.eq(~self.n[ni].i_ready & data_valid[i])
-
-        for i in range(p_len):
-            p_i_valid = Signal(reset_less=True)
-            m.d.comb += p_i_valid.eq(self.p[i].i_valid_logic())
-            m.d.comb += self.n[ni].o_valid.eq(data_valid[i])
-            m.d.comb += self.p[i].o_ready.eq(~data_valid[i] | \
-                                              self.n[ni].i_ready)
-            m.d.sync += data_valid[i].eq(p_i_valid | \
-                                        (n_i_readyn & data_valid[i]))
-            with m.If(self.p[i].i_valid & self.p[i].o_ready):
-                m.d.sync += eq(r_data[i], self.p[i].i_data)
         if self.p_mux:
             mid = self.p_mux.m_id
-            with m.If(self.p_mux.active):
-                m.d.comb += eq(self.n[ni].o_data,
-                               self.stage.process(r_data[mid]))
+            for i in range(p_len):
+                m.d.comb += p_i_valid[i].eq(0)
+                m.d.comb += self.p[i].o_ready.eq(0)
+            m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
+            m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | \
+                                              self.n[ni].i_ready)
+            m.d.comb += self.n[ni].o_valid.eq(data_valid[mid])
+
+            for i in range(p_len):
+                m.d.comb += n_i_readyn[i].eq(~self.n[ni].i_ready & \
+                                              data_valid[i])
+                m.d.sync += data_valid[i].eq(p_i_valid[i] | \
+                                            (n_i_readyn[i] & data_valid[i]))
+                with m.If(self.p[i].i_valid & self.p[i].o_ready):
+                    m.d.sync += eq(r_data[i], self.p[i].i_data)
+
+            m.d.comb += eq(self.n[ni].o_data,
+                           self.stage.process(r_data[mid]))
         else:
-            m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[i]))
+            for i in range(p_len):
+                m.d.comb += p_i_valid[i].eq(self.p[i].i_valid_logic())
+                m.d.comb += self.p[i].o_ready.eq(~data_valid[i] | \
+                                                  self.n[ni].i_ready)
+                m.d.comb += self.n[ni].o_valid.eq(data_valid[i])
+
+                m.d.comb += n_i_readyn[i].eq(~self.n[ni].i_ready & \
+                                              data_valid[i])
+                m.d.sync += data_valid[i].eq(p_i_valid[i] | \
+                                            (n_i_readyn[i] & data_valid[i]))
+                with m.If(self.p[i].i_valid & self.p[i].o_ready):
+                    m.d.sync += eq(r_data[i], self.p[i].i_data)
+
+                m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[i]))
+
         return m
 
 

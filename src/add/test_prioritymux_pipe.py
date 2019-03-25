@@ -52,7 +52,7 @@ class PriorityUnbufferedPipeline(UnbufferedPipeline):
 class PassData:
     def __init__(self):
         self.mid = Signal(2)
-        self.idx = Signal(5)
+        self.idx = Signal(6)
         self.data = Signal(16)
 
     def eq(self, i):
@@ -170,7 +170,7 @@ class InputTest:
         self.dut = dut
         self.di = {}
         self.do = {}
-        self.tlen = 10
+        self.tlen = 4
         for mid in range(dut.num_rows):
             self.di[mid] = {}
             self.do[mid] = {}
@@ -187,6 +187,8 @@ class InputTest:
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.o_ready
+
+            print ("send", mid, i, op2)
 
             yield rs.i_valid.eq(1)
             yield rs.i_data.data.eq(op2)
@@ -226,8 +228,11 @@ class InputTest:
             out_i = yield n.o_data.idx
             out_v = yield n.o_data.data
 
+            print ("recv", mid, out_i, out_v)
+
             # see if this output has occurred already, delete it if it has
-            assert out_i in self.do[mid]
+            assert out_i in self.do[mid], "out_i %d not in array %s" % \
+                                          (out_i, repr(self.do[mid]))
             assert self.do[mid][out_i] == out_v # pass-through data
             del self.do[mid][out_i]
 
