@@ -189,17 +189,17 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                o_p_ready = yield self.dut.p.o_ready
+                o_p_ready = yield self.dut.p[0].o_ready
                 if not o_p_ready:
                     yield
                     continue
                 if send and self.i != len(self.data):
-                    yield self.dut.p.i_valid.eq(1)
+                    yield self.dut.p[0].i_valid.eq(1)
                     for v in self.dut.set_input(self.data[self.i]):
                         yield v
                     self.i += 1
                 else:
-                    yield self.dut.p.i_valid.eq(0)
+                    yield self.dut.p[0].i_valid.eq(0)
                 yield
 
     def rcv(self):
@@ -207,19 +207,19 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 stall = randint(0, stall_range) != 0
-                yield self.dut.n.i_ready.eq(stall)
+                yield self.dut.n[0].i_ready.eq(stall)
                 yield
-                o_n_valid = yield self.dut.n.o_valid
-                i_n_ready = yield self.dut.n.i_ready
+                o_n_valid = yield self.dut.n[0].o_valid
+                i_n_ready = yield self.dut.n[0].i_ready
                 if not o_n_valid or not i_n_ready:
                     continue
-                if isinstance(self.dut.n.o_data, Record):
+                if isinstance(self.dut.n[0].o_data, Record):
                     o_data = {}
-                    dod = self.dut.n.o_data
+                    dod = self.dut.n[0].o_data
                     for k, v in dod.fields.items():
                         o_data[k] = yield v
                 else:
-                    o_data = yield self.dut.n.o_data
+                    o_data = yield self.dut.n[0].o_data
                 self.resultfn(o_data, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
@@ -582,9 +582,9 @@ if __name__ == '__main__':
     test = Test5(dut, test6_resultfn)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
 
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
-             list(dut.p.i_data) + [dut.n.o_data]
+    ports = [dut.p[0].i_valid, dut.n[0].i_ready,
+             dut.n[0].o_valid, dut.p[0].o_ready] + \
+             list(dut.p[0].i_data) + [dut.n[0].o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltcomb_pipe.il", "w") as f:
         f.write(vl)
@@ -595,10 +595,10 @@ if __name__ == '__main__':
     test = Test5(dut, test7_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready,
-             dut.p.i_data.src1, dut.p.i_data.src2,
-             dut.n.o_data.src1, dut.n.o_data.src2]
+    ports = [dut.p[0].i_valid, dut.n[0].i_ready,
+             dut.n[0].o_valid, dut.p[0].o_ready,
+             dut.p[0].i_data.src1, dut.p[0].i_data.src2,
+             dut.n[0].o_data.src1, dut.n[0].o_data.src2]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
@@ -611,9 +611,9 @@ if __name__ == '__main__':
 
     print ("test 9")
     dut = ExampleBufPipeChain2()
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
-             [dut.p.i_data] + [dut.n.o_data]
+    ports = [dut.p[0].i_valid, dut.n[0].i_ready,
+             dut.n[0].o_valid, dut.p[0].o_ready] + \
+             [dut.p[0].i_data] + [dut.n[0].o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipechain2.il", "w") as f:
         f.write(vl)

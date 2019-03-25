@@ -265,11 +265,11 @@ class PipelineBase:
             p.append(PrevControl(in_multi))
         for i in range(n_len):
             n.append(NextControl())
-        if p_len > 0:
+        if p_len > 1:
             self.p = Array(p)
         else:
             self.p = p
-        if n_len > 0:
+        if n_len > 1:
             self.n = Array(n)
         else:
             self.n = n
@@ -316,8 +316,6 @@ class BufferedPipeline(PipelineBase):
         if ever the input is ready and the output is not, processed data
         is stored in a temporary register.
 
-        Argument: stage.  see Stage API above
-
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
@@ -342,6 +340,17 @@ class BufferedPipeline(PipelineBase):
 
     """
     def __init__(self, stage, n_len=1, p_len=1, p_mux=None, n_mux=None):
+        """ set up a BufferedPipeline (multi-input, multi-output)
+            NOTE: n_len > 1 and p_len > 1 is NOT supported
+
+            Arguments:
+
+            * stage: see Stage API above
+            * p_len: number of inputs (PrevControls + data)
+            * n_len: number of outputs (NextControls + data)
+            * p_mux: optional multiplex selector for incoming data
+            * n_mux: optional multiplex router for outgoing data
+        """
         PipelineBase.__init__(self, stage)
         self.p_mux = p_mux
         self.n_mux = n_mux
@@ -358,7 +367,7 @@ class BufferedPipeline(PipelineBase):
         result = self.stage.ospec()
         r_data = self.stage.ospec()
         if hasattr(self.stage, "setup"):
-            for i in range(p_len):
+            for i in range(len(self.p)):
                 self.stage.setup(m, self.p[i].i_data)
 
         pi = 0 # TODO: use p_mux to decide which to select
@@ -518,32 +527,43 @@ class UnbufferedPipeline(PipelineBase):
             COMBINATORIALLY (no clock dependence).
     """
 
-    def __init__(self, stage):
-        PipelineBase.__init__(self, stage)
+    def __init__(self, stage, p_len=1, n_len=1):
+        PipelineBase.__init__(self, stage, p_len, n_len)
         self._data_valid = Signal()
 
         # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec() # output type
+        for i in range(p_len):
+            self.p[i].i_data = stage.ispec() # input type
+        for i in range(n_len):
+            self.n[i].o_data = stage.ospec()
 
     def elaborate(self, platform):
         m = Module()
 
-        r_data = self.stage.ispec() # input type
+        r_data = []
         result = self.stage.ospec() # output data
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(m, r_data)
+        for i in range(len(self.p)):
+            r = self.stage.ispec() # input type
+            r_data.append(r)
+            if hasattr(self.stage, "setup"):
+                self.stage.setup(m, r)
+        if len(r_data) > 1:
+            r_data = Array(r_data)
+
+        pi = 0 # TODO: use p_mux to decide which to select
+        ni = 0 # TODO: use n_nux to decide which to select
 
         p_i_valid = Signal(reset_less=True)
-        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
-        m.d.comb += eq(result, self.stage.process(r_data))
-        m.d.comb += self.n.o_valid.eq(self._data_valid)
-        m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
+        m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
+        m.d.comb += eq(result, self.stage.process(r_data[pi]))
+        m.d.comb += self.n[ni].o_valid.eq(self._data_valid)
+        m.d.comb += self.p[pi].o_ready.eq(~self._data_valid | \
+                                           self.n[ni].i_ready)
         m.d.sync += self._data_valid.eq(p_i_valid | \
-                                        (~self.n.i_ready & self._data_valid))
-        with m.If(self.p.i_valid & self.p.o_ready):
-            m.d.sync += eq(r_data, self.p.i_data)
-        m.d.comb += eq(self.n.o_data, result)
+                                    (~self.n[ni].i_ready & self._data_valid))
+        with m.If(self.p[pi].i_valid & self.p[pi].o_ready):
+            m.d.sync += eq(r_data[pi], self.p[pi].i_data)
+        m.d.comb += eq(self.n[ni].o_data, result)
         return m
 
 
