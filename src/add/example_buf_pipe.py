@@ -368,6 +368,7 @@ class BufferedPipeline(PipelineBase):
 
         # need an array of buffer registers conforming to *output* spec
         r_data = []
+        p_len = len(self.p)
         for i in range(len(self.p)):
             r = self.stage.ospec() # output type
             r_data.append(r)
@@ -405,21 +406,30 @@ class BufferedPipeline(PipelineBase):
                 # Flush the [already processed] buffer to the output port.
                 m.d.sync += [self.n[ni].o_valid.eq(1),      # declare reg empty
                              eq(self.n[ni].o_data, r_data[ni]), # flush buffer
-                             self.p[pi].o_ready.eq(1),      # clear stall 
                             ]
-                # ignore input, since p.o_ready is also false.
+                for i in range(p_len):
+                    m.d.sync += self.p[i].o_ready.eq(1) # clear stall
+                # ignore input, since p.o_ready is false (in current clock)
 
         # (n.i_ready) is false here: next stage is ready
         with m.Elif(o_n_validn): # next stage being told "ready"
             m.d.sync += [self.n[ni].o_valid.eq(p_i_valid),
-                         self.p[pi].o_ready.eq(1), # Keep the buffer empty
+                         self.p[pi].o_ready.eq(1),
                          eq(self.n[ni].o_data, result), # set output data
                         ]
+            for i in range(p_len):
+                m.d.sync += self.p[i].o_ready.eq(1) # Keep the buffer empty
 
         # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
-            m.d.sync += self.p[pi].o_ready.eq(~(p_i_valid & self.n[ni].o_valid))
+            for i in range(p_len):
+                piv = Signal(reset_less=True)
+                pnv = Signal(reset_less=True)
+                m.d.comb += [p_i_valid.eq(self.p[i].i_valid_logic()),
+                             pnv.eq(~(p_i_valid & self.n[ni].o_valid))
+                ]
+                m.d.sync += self.p[i].o_ready.eq(pnv)
 
         return m
 
@@ -530,8 +540,10 @@ class UnbufferedPipeline(PipelineBase):
             SYNCHRONOUSLY.
     """
 
-    def __init__(self, stage, p_len=1, n_len=1):
+    def __init__(self, stage, n_len=1, p_len=1, p_mux=None, n_mux=None):
         PipelineBase.__init__(self, stage, p_len, n_len)
+        self.p_mux = p_mux
+        self.n_mux = n_mux
         self._data_valid = Signal()
 
         # set up the input and output data
@@ -543,9 +555,13 @@ class UnbufferedPipeline(PipelineBase):
     def elaborate(self, platform):
         m = Module()
 
+        if self.p_mux:
+            m.submodules += self.p_mux
+
         # need an array of buffer registers conforming to *input* spec
         r_data = []
-        for i in range(len(self.p)):
+        p_len = len(self.p)
+        for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
             if hasattr(self.stage, "setup"):
@@ -553,14 +569,21 @@ class UnbufferedPipeline(PipelineBase):
         if len(r_data) > 1:
             r_data = Array(r_data)
 
-        pi = 0 # TODO: use p_mux to decide which to select
         ni = 0 # TODO: use n_nux to decide which to select
 
-        p_i_valid = Signal(reset_less=True)
+        if self.p_mux:
+            pi = self.p_mux.mid
+            p_i_valid = self.p_mux.valid
+        else:
+            pi = 0
+            p_i_valid = Signal(reset_less=True)
+            m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
+
         m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
         m.d.comb += self.n[ni].o_valid.eq(self._data_valid)
-        m.d.comb += self.p[pi].o_ready.eq(~self._data_valid | \
-                                           self.n[ni].i_ready)
+        for i in range(p_len):
+            m.d.comb += self.p[i].o_ready.eq(~self._data_valid | \
+                                              self.n[ni].i_ready)
         m.d.sync += self._data_valid.eq(p_i_valid | \
                                     (~self.n[ni].i_ready & self._data_valid))
         with m.If(self.p[pi].i_valid & self.p[pi].o_ready):

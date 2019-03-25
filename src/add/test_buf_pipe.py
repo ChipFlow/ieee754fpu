@@ -546,6 +546,86 @@ def data_2op():
             data.append(TestInputAdd(randint(0, 1<<16-1), randint(0, 1<<16-1)))
         return data
 
+class InputPriorityArbiter:
+    def __init__(self, pipe, num_rows):
+        self.pipe = pipe
+        self.num_rows = num_rows
+        self.mmax = int(log(self.num_rows) / log(2))
+        self.mid = Signal(self.mmax, reset_less=True) # multiplex id
+        self.active = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        assert len(self.pipe.p) == self.num_rows, \
+                "must declare input to be same size"
+        pe = PriorityEncoder(self.num_rows)
+        m.submodules.selector = pe
+
+        # connect priority encoder
+        in_ready = []
+        for i in range(self.num_rows):
+            p_i_valid = Signal(reset_less=True)
+            m.d.comb += p_i_valid.eq(self.pipe[i].i_valid_logic())
+            in_ready.append(p_i_valid)
+        m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
+        m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
+        m.d.comb += self.mid.eq(pe.o)       # output one active input
+
+        return m
+
+    def ports(self):
+        return [self.mid, self.active]
+
+
+class PriorityUnbufferedPipeline(UnbufferedPipeline):
+    def __init__(self, stage, p_len=4):
+        p_mux = InputPriorityArbiter(self, p_len)
+        UnbufferedPipeline.__init__(stage, p_len=p_len, p_mux=p_mux)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        pe = PriorityEncoder(self.num_rows)
+        m.submodules.selector = pe
+        m.submodules.out_op = self.out_op
+        m.submodules += self.rs
+
+        # connect priority encoder
+        in_ready = []
+        for i in range(self.num_rows):
+            in_ready.append(self.rs[i].ready)
+        m.d.comb += pe.i.eq(Cat(*in_ready))
+
+        active = Signal(reset_less=True)
+        out_en = Signal(reset_less=True)
+        m.d.comb += active.eq(~pe.n) # encoder active
+        m.d.comb += out_en.eq(active & self.out_op.trigger)
+
+        # encoder active: ack relevant input, record MID, pass output
+        with m.If(out_en):
+            rs = self.rs[pe.o]
+            m.d.sync += self.mid.eq(pe.o)
+            m.d.sync += rs.ack.eq(0)
+            m.d.sync += self.out_op.stb.eq(0)
+            for j in range(self.num_ops):
+                m.d.sync += self.out_op.v[j].eq(rs.out_op[j])
+        with m.Else():
+            m.d.sync += self.out_op.stb.eq(1)
+            # acks all default to zero
+            for i in range(self.num_rows):
+                m.d.sync += self.rs[i].ack.eq(1)
+
+        return m
+
+    def ports(self):
+        res = []
+        for i in range(self.num_rows):
+            inop = self.rs[i]
+            res += inop.in_op + [inop.stb]
+        return self.out_op.ports() + res + [self.mid]
+
+
 
 num_tests = 100
 
