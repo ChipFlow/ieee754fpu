@@ -196,7 +196,7 @@ class InputTest:
             #    yield v
             yield
 
-        yield p.i_valid.eq(0)
+        yield rs.i_valid.eq(0)
         ## wait random period of time before queueing another value
         #for i in range(randint(0, 3)):
         #    yield
@@ -216,14 +216,15 @@ class InputTest:
             #    yield
             n = self.dut.n[0]
             yield n.i_ready.eq(1)
+            yield
             o_n_valid = yield n.o_valid
             i_n_ready = yield n.i_ready
             if not o_n_valid or not i_n_ready:
                 continue
 
-            mid = yield n.o_data[2]
-            out_i = yield n.o_data[0]
-            out_v = yield n.o_data[1]
+            mid = yield n.o_data.mid
+            out_i = yield n.o_data.idx
+            out_v = yield n.o_data.data
 
             # see if this output has occurred already, delete it if it has
             assert out_i in self.do[mid]
