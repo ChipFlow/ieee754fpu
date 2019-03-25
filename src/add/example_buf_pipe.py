@@ -307,7 +307,7 @@ class PipelineBase:
                     self.p[i].i_data]# XXX need flattening!]
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid,
-                    self.n.o_data]   # XXX need flattening!]
+                    self.n[i].o_data]   # XXX need flattening!]
         return res
 
 
@@ -514,7 +514,7 @@ class UnbufferedPipeline(PipelineBase):
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
-                            r_data        result
+                            r_data          |
                               |             |
                               +--process ->-+
 
@@ -528,9 +528,6 @@ class UnbufferedPipeline(PipelineBase):
             A temporary (buffered) copy of a prior (valid) input.
             This is HELD if the output is not ready.  It is updated
             SYNCHRONOUSLY.
-        result: output_shape according to ospec
-            The output of the combinatorial logic.  it is updated
-            COMBINATORIALLY (no clock dependence).
     """
 
     def __init__(self, stage, p_len=1, n_len=1):
@@ -545,8 +542,6 @@ class UnbufferedPipeline(PipelineBase):
 
     def elaborate(self, platform):
         m = Module()
-
-        result = self.stage.ospec() # output data
 
         # need an array of buffer registers conforming to *input* spec
         r_data = []
@@ -563,7 +558,6 @@ class UnbufferedPipeline(PipelineBase):
 
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p[pi].i_valid_logic())
-        m.d.comb += eq(result, self.stage.process(r_data[pi]))
         m.d.comb += self.n[ni].o_valid.eq(self._data_valid)
         m.d.comb += self.p[pi].o_ready.eq(~self._data_valid | \
                                            self.n[ni].i_ready)
@@ -571,7 +565,7 @@ class UnbufferedPipeline(PipelineBase):
                                     (~self.n[ni].i_ready & self._data_valid))
         with m.If(self.p[pi].i_valid & self.p[pi].o_ready):
             m.d.sync += eq(r_data[pi], self.p[pi].i_data)
-        m.d.comb += eq(self.n[ni].o_data, result)
+        m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[pi]))
         return m
 
 
