@@ -13,37 +13,41 @@ from random import randint
 
 
 def check_o_n_valid(dut, val):
+    o_n_valid = yield dut.n[0].o_valid
+    assert o_n_valid == val
+
+def check_o_n_valid2(dut, val):
     o_n_valid = yield dut.n.o_valid
     assert o_n_valid == val
 
 
 def testbench(dut):
     #yield dut.i_p_rst.eq(1)
-    yield dut.n.i_ready.eq(0)
-    yield dut.p.o_ready.eq(0)
+    yield dut.n[0].i_ready.eq(0)
+    yield dut.p[0].o_ready.eq(0)
     yield
     yield
     #yield dut.i_p_rst.eq(0)
-    yield dut.n.i_ready.eq(1)
-    yield dut.p.i_data.eq(5)
-    yield dut.p.i_valid.eq(1)
+    yield dut.n[0].i_ready.eq(1)
+    yield dut.p[0].i_data.eq(5)
+    yield dut.p[0].i_valid.eq(1)
     yield
 
-    yield dut.p.i_data.eq(7)
+    yield dut.p[0].i_data.eq(7)
     yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed
     yield
     yield from check_o_n_valid(dut, 1) # ok *now* i_p_valid effect is felt
 
-    yield dut.p.i_data.eq(2)
+    yield dut.p[0].i_data.eq(2)
     yield
-    yield dut.n.i_ready.eq(0) # begin going into "stall" (next stage says ready)
-    yield dut.p.i_data.eq(9)
+    yield dut.n[0].i_ready.eq(0) # begin going into "stall" (next stage says ready)
+    yield dut.p[0].i_data.eq(9)
     yield
-    yield dut.p.i_valid.eq(0)
-    yield dut.p.i_data.eq(12)
+    yield dut.p[0].i_valid.eq(0)
+    yield dut.p[0].i_data.eq(12)
     yield
-    yield dut.p.i_data.eq(32)
-    yield dut.n.i_ready.eq(1)
+    yield dut.p[0].i_data.eq(32)
+    yield dut.n[0].i_ready.eq(1)
     yield
     yield from check_o_n_valid(dut, 1) # buffer still needs to output
     yield
@@ -66,13 +70,13 @@ def testbench2(dut):
     yield
 
     yield dut.p.i_data.eq(7)
-    yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed 2 clocks
+    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
     yield
-    yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed 2 clocks
+    yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
 
     yield dut.p.i_data.eq(2)
     yield
-    yield from check_o_n_valid(dut, 1) # ok *now* i_p_valid effect is felt
+    yield from check_o_n_valid2(dut, 1) # ok *now* i_p_valid effect is felt
     yield dut.n.i_ready.eq(0) # begin going into "stall" (next stage says ready)
     yield dut.p.i_data.eq(9)
     yield
@@ -82,13 +86,13 @@ def testbench2(dut):
     yield dut.p.i_data.eq(32)
     yield dut.n.i_ready.eq(1)
     yield
-    yield from check_o_n_valid(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
     yield
-    yield from check_o_n_valid(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
     yield
-    yield from check_o_n_valid(dut, 1) # buffer still needs to output
+    yield from check_o_n_valid2(dut, 1) # buffer still needs to output
     yield
-    yield from check_o_n_valid(dut, 0) # buffer outputted, *now* we're done.
+    yield from check_o_n_valid2(dut, 0) # buffer outputted, *now* we're done.
     yield
     yield
     yield
@@ -113,16 +117,16 @@ class Test3:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                o_p_ready = yield self.dut.p.o_ready
+                o_p_ready = yield self.dut.p[0].o_ready
                 if not o_p_ready:
                     yield
                     continue
                 if send and self.i != len(self.data):
-                    yield self.dut.p.i_valid.eq(1)
-                    yield self.dut.p.i_data.eq(self.data[self.i])
+                    yield self.dut.p[0].i_valid.eq(1)
+                    yield self.dut.p[0].i_data.eq(self.data[self.i])
                     self.i += 1
                 else:
-                    yield self.dut.p.i_valid.eq(0)
+                    yield self.dut.p[0].i_valid.eq(0)
                 yield
 
     def rcv(self):
@@ -130,13 +134,13 @@ class Test3:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 stall = randint(0, stall_range) != 0
-                yield self.dut.n.i_ready.eq(stall)
+                yield self.dut.n[0].i_ready.eq(stall)
                 yield
-                o_n_valid = yield self.dut.n.o_valid
-                i_n_ready = yield self.dut.n.i_ready
+                o_n_valid = yield self.dut.n[0].o_valid
+                i_n_ready = yield self.dut.n[0].i_ready
                 if not o_n_valid or not i_n_ready:
                     continue
-                o_data = yield self.dut.n.o_data
+                o_data = yield self.dut.n[0].o_data
                 self.resultfn(o_data, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
