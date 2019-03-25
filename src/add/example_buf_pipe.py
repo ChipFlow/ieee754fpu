@@ -566,7 +566,7 @@ class UnbufferedPipeline(PipelineBase):
         for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
-            data_valid.append(Signal(name="data_valid"))
+            data_valid.append(Signal(name="data_valid", reset_less=True))
             p_i_valid.append(Signal(name="p_i_valid", reset_less=True))
             n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
             if hasattr(self.stage, "setup"):
@@ -603,11 +603,18 @@ class UnbufferedPipeline(PipelineBase):
             m.d.sync += eq(o_mid, mid)
 
             for i in range(p_len):
-                with m.If(self.p[i].i_valid & self.p[i].o_ready):
+                vr = Signal(reset_less=True)
+                m.d.comb += vr.eq(self.p[i].i_valid & self.p[i].o_ready)
+                with m.If(vr):
                     m.d.sync += eq(r_data[i], self.p[i].i_data)
 
             m.d.comb += eq(self.n[ni].o_data,
                            self.stage.process(r_data[o_mid]))
+            #with m.Switch(o_mid):
+            #    for i in range(p_len):
+            #        with m.Case(i):
+            #            m.d.comb += eq(self.n[ni].o_data,
+            #               self.stage.process(r_data[i]))
         else:
             for i in range(p_len):
                 m.d.comb += p_i_valid[i].eq(self.p[i].i_valid_logic())

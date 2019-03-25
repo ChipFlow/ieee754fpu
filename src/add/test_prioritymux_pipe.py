@@ -51,9 +51,9 @@ class PriorityUnbufferedPipeline(UnbufferedPipeline):
 
 class PassData:
     def __init__(self):
-        self.mid = Signal(2)
-        self.idx = Signal(6)
-        self.data = Signal(16)
+        self.mid = Signal(2, reset_less=True)
+        self.idx = Signal(6, reset_less=True)
+        self.data = Signal(16, reset_less=True)
 
     def eq(self, i):
         return [self.mid.eq(i.mid), self.idx.eq(i.idx), self.data.eq(i.data)]
@@ -170,7 +170,7 @@ class InputTest:
         self.dut = dut
         self.di = {}
         self.do = {}
-        self.tlen = 4
+        self.tlen = 10
         for mid in range(dut.num_rows):
             self.di[mid] = {}
             self.do[mid] = {}
