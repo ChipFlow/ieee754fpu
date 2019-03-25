@@ -577,23 +577,30 @@ class UnbufferedPipeline(PipelineBase):
             n_i_readyn = Array(n_i_readyn)
             data_valid = Array(data_valid)
 
-        ni = 0 # TODO: use n_nux to decide which to select
+        ni = 0 # TODO: use n_mux to decide which to select
 
         if self.p_mux:
             mid = self.p_mux.m_id
             for i in range(p_len):
+                m.d.sync += data_valid[i].eq(0)
+                m.d.comb += n_i_readyn[i].eq(1)
                 m.d.comb += p_i_valid[i].eq(0)
                 m.d.comb += self.p[i].o_ready.eq(0)
             m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
             m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | \
                                               self.n[ni].i_ready)
-            m.d.comb += self.n[ni].o_valid.eq(data_valid[mid])
+            m.d.comb += n_i_readyn[mid].eq(~self.n[ni].i_ready & \
+                                          data_valid[mid])
+            anyvalid = Signal(i, reset_less=True)
+            av = []
+            for i in range(p_len):
+                av.append(data_valid[i])
+            anyvalid = Cat(*av)
+            m.d.comb += self.n[ni].o_valid.eq(anyvalid.bool())
+            m.d.sync += data_valid[mid].eq(p_i_valid[mid] | \
+                                        (n_i_readyn[mid] & data_valid[mid]))
 
             for i in range(p_len):
-                m.d.comb += n_i_readyn[i].eq(~self.n[ni].i_ready & \
-                                              data_valid[i])
-                m.d.sync += data_valid[i].eq(p_i_valid[i] | \
-                                            (n_i_readyn[i] & data_valid[i]))
                 with m.If(self.p[i].i_valid & self.p[i].o_ready):
                     m.d.sync += eq(r_data[i], self.p[i].i_data)
 

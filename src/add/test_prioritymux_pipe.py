@@ -175,28 +175,28 @@ class InputTest:
             self.di[mid] = {}
             self.do[mid] = {}
             for i in range(self.tlen):
-                self.di[mid][i] = randint(0, 100)
+                self.di[mid][i] = randint(0, 100) + (mid<<8)
                 self.do[mid][i] = self.di[mid][i]
 
     def send(self, mid):
         for i in range(self.tlen):
             op2 = self.di[mid][i]
             rs = dut.p[mid]
-            yield rs.i_valid.eq(0)
+            yield rs.i_valid.eq(1)
             o_p_ready = yield rs.o_ready
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.o_ready
 
-            print ("send", mid, i, op2)
+            print ("send", mid, i, hex(op2))
 
-            yield rs.i_valid.eq(1)
             yield rs.i_data.data.eq(op2)
             yield rs.i_data.idx.eq(i)
             yield rs.i_data.mid.eq(mid)
             #for v in self.dut.set_input((op2, i, mid)):
             #    yield v
             yield
+            yield rs.i_valid.eq(0)
 
         yield rs.i_valid.eq(0)
         ## wait random period of time before queueing another value
@@ -228,7 +228,7 @@ class InputTest:
             out_i = yield n.o_data.idx
             out_v = yield n.o_data.data
 
-            print ("recv", mid, out_i, out_v)
+            print ("recv", mid, out_i, hex(out_v))
 
             # see if this output has occurred already, delete it if it has
             assert out_i in self.do[mid], "out_i %d not in array %s" % \
