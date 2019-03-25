@@ -183,6 +183,10 @@ class InputTest:
             op2 = self.di[mid][i]
             rs = dut.p[mid]
             yield rs.i_valid.eq(1)
+            yield rs.i_data.data.eq(op2)
+            yield rs.i_data.idx.eq(i)
+            yield rs.i_data.mid.eq(mid)
+            yield
             o_p_ready = yield rs.o_ready
             while not o_p_ready:
                 yield
@@ -190,13 +194,10 @@ class InputTest:
 
             print ("send", mid, i, hex(op2))
 
-            yield rs.i_data.data.eq(op2)
-            yield rs.i_data.idx.eq(i)
-            yield rs.i_data.mid.eq(mid)
-            #for v in self.dut.set_input((op2, i, mid)):
-            #    yield v
-            yield
             yield rs.i_valid.eq(0)
+            # wait random period of time before queueing another value
+            for i in range(randint(0, 3)):
+                yield
 
         yield rs.i_valid.eq(0)
         ## wait random period of time before queueing another value
@@ -247,7 +248,7 @@ class InputTest:
 
 class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
     def __init__(self):
-        self.num_rows = 2
+        self.num_rows = 4
         stage = PassThroughStage()
         PriorityUnbufferedPipeline.__init__(self, stage, p_len=self.num_rows)
 
@@ -271,7 +272,7 @@ if __name__ == '__main__':
 
     test = InputTest(dut)
     run_simulation(dut, [test.send(1), test.send(0),
-                         #test.send(3), test.send(2),
+                         test.send(3), test.send(2),
                          test.rcv()],
                    vcd_name="test_inputgroup_parallel.vcd")
 
