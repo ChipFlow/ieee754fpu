@@ -101,6 +101,7 @@ from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.cli import verilog, rtlil
 from nmigen.hdl.rec import Record, Layout
 
+from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
 
 
@@ -206,7 +207,42 @@ def eq(o, i):
     return res
 
 
-class StageChain:
+class StageCls(metaclass=ABCMeta):
+    """ Class-based "Stage" API.  requires instantiation (after derivation)
+        see "Stage API" above.
+    """
+    @abstractmethod
+    def ispec(self): pass       # REQUIRED
+    @abstractmethod
+    def ospec(self): pass       # REQUIRED
+    #@abstractmethod
+    #def setup(self, m, i): pass # OPTIONAL
+    @abstractmethod
+    def process(self, i): pass  # REQUIRED
+
+
+class Stage(metaclass=ABCMeta):
+    """ Static "Stage" API.  does not require instantiation (after derivation)
+        see "Stage API" above
+    """
+    @staticmethod
+    @abstractmethod
+    def ispec(): pass
+
+    @staticmethod
+    @abstractmethod
+    def ospec(): pass
+
+    #@staticmethod
+    #@abstractmethod
+    #def setup(m, i): pass
+
+    @staticmethod
+    @abstractmethod
+    def process(i): pass
+
+
+class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
         combinatorial chain.
@@ -241,7 +277,7 @@ class StageChain:
         return self.o
 
 
-class PipelineBase:
+class ControlBase:
     """ Common functions for Pipeline API
     """
     def __init__(self, stage=None, in_multi=None):
@@ -291,7 +327,7 @@ class PipelineBase:
                ]
 
 
-class BufferedPipeline(PipelineBase):
+class BufferedPipeline(ControlBase):
     """ buffered pipeline stage.  data and strobe signals travel in sync.
         if ever the input is ready and the output is not, processed data
         is stored in a temporary register.
@@ -322,7 +358,8 @@ class BufferedPipeline(PipelineBase):
 
     """
     def __init__(self, stage):
-        PipelineBase.__init__(self, stage)
+        ControlBase.__init__(self)
+        self.stage = stage
 
         # set up the input and output data
         self.p.i_data = stage.ispec() # input type
@@ -381,7 +418,7 @@ class BufferedPipeline(PipelineBase):
         return m
 
 
-class ExampleAddStage:
+class ExampleAddStage(StageCls):
     """ an example of how to use the buffered pipeline, as a class instance
     """
 
@@ -411,7 +448,7 @@ class ExampleBufPipeAdd(BufferedPipeline):
         BufferedPipeline.__init__(self, addstage)
 
 
-class ExampleStage:
+class ExampleStage(Stage):
     """ an example of how to use the buffered pipeline, in a static class
         fashion
     """
@@ -428,7 +465,7 @@ class ExampleStage:
         return i + 1
 
 
-class ExampleStageCls:
+class ExampleStageCls(StageCls):
     """ an example of how to use the buffered pipeline, in a static class
         fashion
     """
@@ -453,7 +490,7 @@ class ExampleBufPipe(BufferedPipeline):
         BufferedPipeline.__init__(self, ExampleStage)
 
 
-class UnbufferedPipeline(PipelineBase):
+class UnbufferedPipeline(ControlBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.
 
@@ -491,7 +528,8 @@ class UnbufferedPipeline(PipelineBase):
     """
 
     def __init__(self, stage):
-        PipelineBase.__init__(self, stage)
+        ControlBase.__init__(self)
+        self.stage = stage
         self._data_valid = Signal()
 
         # set up the input and output data
