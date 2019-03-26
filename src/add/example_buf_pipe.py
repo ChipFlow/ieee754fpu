@@ -97,7 +97,7 @@
     it's quite a complex state machine!
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module, Array
+from nmigen import Signal, Cat, Const, Mux, Module
 from nmigen.cli import verilog, rtlil
 from nmigen.hdl.rec import Record, Layout
 
@@ -181,11 +181,11 @@ def eq(o, i):
         member names as the Record may be assigned: it does not have to
         *be* a Record.
     """
-    if not isinstance(o, list) and not isinstance(o, tuple):
+    if not isinstance(o, Sequence):
         o, i = [o], [i]
     res = []
     for (ao, ai) in zip(o, i):
-        #print ("eq ao", repr(ao), "ai:", repr(ai))
+        #print ("eq", ao, ai)
         if isinstance(ao, Record):
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):
@@ -244,7 +244,7 @@ class StageChain:
 class PipelineBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, stage, in_multi=None, p_len=1, n_len=1):
+    def __init__(self, stage, in_multi=None):
         """ pass in a "stage" which may be either a static class or a class
             instance, which has four functions (one optional):
             * ispec: returns input signals according to the input specification
@@ -259,62 +259,44 @@ class PipelineBase:
         self.stage = stage
 
         # set up input and output IO ACK (prev/next ready/valid)
-        p = []
-        n = []
-        for i in range(p_len):
-            p.append(PrevControl(in_multi))
-        for i in range(n_len):
-            n.append(NextControl())
-        if p_len > 1:
-            self.p = Array(p)
-        else:
-            self.p = p
-        if n_len > 1:
-            self.n = Array(n)
-        else:
-            self.n = n
+        self.p = PrevControl(in_multi)
+        self.n = NextControl()
 
-    def connect_to_next(self, nxt, p_idx=0, n_idx=0):
+    def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
         """
-        return self.n[n_idx].connect_to_next(nxt.p[p_idx])
+        return self.n.connect_to_next(nxt.p)
 
-    def connect_in(self, prev, idx=0, prev_idx=None):
+    def connect_in(self, prev):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
-        if prev_idx is None:
-            return self.p[idx].connect_in(prev.p)
-        return self.p[idx].connect_in(prev.p[prev_idx])
+        return self.p.connect_in(prev.p)
 
-    def connect_out(self, nxt, idx=0, nxt_idx=None):
+    def connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
-        if nxt_idx is None:
-            return self.n[idx].connect_out(nxt.n)
-        return self.n[idx].connect_out(nxt.n[nxt+idx])
+        return self.n.connect_out(nxt.n)
 
-    def set_input(self, i, idx=0):
+    def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p[idx].i_data, i)
+        return eq(self.p.i_data, i)
 
     def ports(self):
-        res = []
-        for i in range(len(self.p)):
-            res += [self.p[i].i_valid, self.p[i].o_ready,
-                    self.p[i].i_data]# XXX need flattening!]
-        for i in range(len(self.n)):
-            res += [self.n[i].i_ready, self.n[i].o_valid,
-                    self.n[i].o_data]   # XXX need flattening!]
-        return res
+        return [self.p.i_valid, self.n.i_ready,
+                self.n.o_valid, self.p.o_ready,
+                self.p.i_data, self.n.o_data   # XXX need flattening!
+               ]
 
 
 class BufferedPipeline(PipelineBase):
     """ buffered pipeline stage.  data and strobe signals travel in sync.
         if ever the input is ready and the output is not, processed data
         is stored in a temporary register.
+
+        Argument: stage.  see Stage API above
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
@@ -337,99 +319,64 @@ class BufferedPipeline(PipelineBase):
 
         on the next cycle (as long as stall is not raised again) the
         input may begin to be processed and transferred directly to output.
+
     """
-
-    def __init__(self, stage, n_len=1, p_len=1, p_mux=None, n_mux=None):
-        """ set up a BufferedPipeline (multi-input, multi-output)
-            NOTE: n_len > 1 and p_len > 1 is NOT supported
-
-            Arguments:
-
-            * stage: see Stage API above
-            * p_len: number of inputs (PrevControls + data)
-            * n_len: number of outputs (NextControls + data)
-            * p_mux: optional multiplex selector for incoming data
-            * n_mux: optional multiplex router for outgoing data
-        """
-        PipelineBase.__init__(self, stage, n_len, p_len)
-        self.p_mux = p_mux
-        self.n_mux = n_mux
+    def __init__(self, stage):
+        PipelineBase.__init__(self, stage)
 
         # set up the input and output data
-        for i in range(p_len):
-            self.p[i].i_data = stage.ispec() # input type
-        for i in range(n_len):
-            self.n[i].o_data = stage.ospec()
+        self.p.i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec()
 
     def elaborate(self, platform):
         m = Module()
 
-        result = self.stage.ospec() # output data
-
-        # need an array of buffer registers conforming to *output* spec
-        r_data = []
-        p_len = len(self.p)
-        for i in range(len(self.p)):
-            r = self.stage.ospec() # output type
-            r_data.append(r)
-            if hasattr(self.stage, "setup"):
-                self.stage.setup(m, self.p[i].i_data)
-        if len(r_data) > 1:
-            r_data = Array(r_data)
-
-        pi = 0 # TODO: use p_mux to decide which to select
-        ni = 0 # TODO: use n_nux to decide which to select
+        result = self.stage.ospec()
+        r_data = self.stage.ospec()
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
-        m.d.comb += [p_i_valid.eq(self.p[pi].i_valid_logic()),
-                     o_n_validn.eq(~self.n[ni].o_valid),
-                     i_p_valid_o_p_ready.eq(p_i_valid & self.p[pi].o_ready),
+        m.d.comb += [p_i_valid.eq(self.p.i_valid_logic()),
+                     o_n_validn.eq(~self.n.o_valid),
+                     i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
-        m.d.comb += eq(result, self.stage.process(self.p[pi].i_data))
+        m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # if not in stall condition, update the temporary register
-        with m.If(self.p[pi].o_ready): # not stalled
-            m.d.sync += eq(r_data[ni], result) # update buffer
+        with m.If(self.p.o_ready): # not stalled
+            m.d.sync += eq(r_data, result) # update buffer
 
-        with m.If(self.n[ni].i_ready): # next stage is ready
-            with m.If(self.p[pi].o_ready): # not stalled
+        with m.If(self.n.i_ready): # next stage is ready
+            with m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
-                m.d.sync += [self.n[ni].o_valid.eq(p_i_valid),
-                             eq(self.n[ni].o_data, result), # update output
+                m.d.sync += [self.n.o_valid.eq(p_i_valid),
+                             eq(self.n.o_data, result), # update output
                             ]
             with m.Else(): # p.o_ready is false, and something is in buffer.
                 # Flush the [already processed] buffer to the output port.
-                m.d.sync += [self.n[ni].o_valid.eq(1),      # declare reg empty
-                             eq(self.n[ni].o_data, r_data[ni]), # flush buffer
+                m.d.sync += [self.n.o_valid.eq(1),      # declare reg empty
+                             eq(self.n.o_data, r_data), # flush buffer
+                             self.p.o_ready.eq(1),      # clear stall condition
                             ]
-                for i in range(p_len):
-                    m.d.sync += self.p[i].o_ready.eq(1) # clear stall
-                # ignore input, since p.o_ready is false (in current clock)
+                # ignore input, since p.o_ready is also false.
 
         # (n.i_ready) is false here: next stage is ready
         with m.Elif(o_n_validn): # next stage being told "ready"
-            m.d.sync += [self.n[ni].o_valid.eq(p_i_valid),
-                         self.p[pi].o_ready.eq(1),
-                         eq(self.n[ni].o_data, result), # set output data
+            m.d.sync += [self.n.o_valid.eq(p_i_valid),
+                         self.p.o_ready.eq(1), # Keep the buffer empty
+                         eq(self.n.o_data, result), # set output data
                         ]
-            for i in range(p_len):
-                m.d.sync += self.p[i].o_ready.eq(1) # Keep the buffer empty
 
         # (n.i_ready) false and (n.o_valid) true:
         with m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
-            for i in range(p_len):
-                piv = Signal(reset_less=True)
-                pnv = Signal(reset_less=True)
-                m.d.comb += [p_i_valid.eq(self.p[i].i_valid_logic()),
-                             pnv.eq(~(p_i_valid & self.n[ni].o_valid))
-                ]
-                m.d.sync += self.p[i].o_ready.eq(pnv)
+            m.d.sync += self.p.o_ready.eq(~(p_i_valid & self.n.o_valid))
 
         return m
 
@@ -524,7 +471,7 @@ class UnbufferedPipeline(PipelineBase):
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
-                            r_data          |
+                            r_data        result
                               |             |
                               +--process ->-+
 
@@ -538,99 +485,37 @@ class UnbufferedPipeline(PipelineBase):
             A temporary (buffered) copy of a prior (valid) input.
             This is HELD if the output is not ready.  It is updated
             SYNCHRONOUSLY.
+        result: output_shape according to ospec
+            The output of the combinatorial logic.  it is updated
+            COMBINATORIALLY (no clock dependence).
     """
 
-    def __init__(self, stage, p_len=1, n_len=1, p_mux=None, n_mux=None):
-        PipelineBase.__init__(self, stage, n_len, p_len)
-        self.p_mux = p_mux
-        self.n_mux = n_mux
+    def __init__(self, stage):
+        PipelineBase.__init__(self, stage)
+        self._data_valid = Signal()
 
         # set up the input and output data
-        for i in range(p_len):
-            self.p[i].i_data = stage.ispec() # input type
-        for i in range(n_len):
-            self.n[i].o_data = stage.ospec()
+        self.p.i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
         m = Module()
 
-        if self.p_mux:
-            m.submodules += self.p_mux
+        r_data = self.stage.ispec() # input type
+        result = self.stage.ospec() # output data
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, r_data)
 
-        # need an array of buffer registers conforming to *input* spec
-        r_data = []
-        data_valid = []
-        p_i_valid = []
-        n_i_readyn = []
-        p_len = len(self.p)
-        for i in range(p_len):
-            r = self.stage.ispec() # input type
-            r_data.append(r)
-            data_valid.append(Signal(name="data_valid", reset_less=True))
-            p_i_valid.append(Signal(name="p_i_valid", reset_less=True))
-            n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
-            if hasattr(self.stage, "setup"):
-                self.stage.setup(m, r)
-        if len(r_data) > 1:
-            r_data = Array(r_data)
-            p_i_valid = Array(p_i_valid)
-            n_i_readyn = Array(n_i_readyn)
-            data_valid = Array(data_valid)
-
-        ni = 0 # TODO: use n_mux to decide which to select
-
-        if self.p_mux:
-            mid = self.p_mux.m_id
-            o_mid = Signal(len(mid))
-            for i in range(p_len):
-                m.d.sync += data_valid[i].eq(0)
-                m.d.comb += n_i_readyn[i].eq(1)
-                m.d.comb += p_i_valid[i].eq(0)
-                m.d.comb += self.p[i].o_ready.eq(0)
-            m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
-            m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | \
-                                              self.n[ni].i_ready)
-            m.d.comb += n_i_readyn[mid].eq(~self.n[ni].i_ready & \
-                                          data_valid[mid])
-            anyvalid = Signal(i, reset_less=True)
-            av = []
-            for i in range(p_len):
-                av.append(data_valid[i])
-            anyvalid = Cat(*av)
-            m.d.comb += self.n[ni].o_valid.eq(anyvalid.bool())
-            m.d.sync += data_valid[mid].eq(p_i_valid[mid] | \
-                                        (n_i_readyn[mid] & data_valid[mid]))
-            m.d.sync += eq(o_mid, mid)
-
-            for i in range(p_len):
-                vr = Signal(reset_less=True)
-                m.d.comb += vr.eq(self.p[i].i_valid & self.p[i].o_ready)
-                with m.If(vr):
-                    m.d.sync += eq(r_data[i], self.p[i].i_data)
-
-            m.d.comb += eq(self.n[ni].o_data,
-                           self.stage.process(r_data[o_mid]))
-            #with m.Switch(o_mid):
-            #    for i in range(p_len):
-            #        with m.Case(i):
-            #            m.d.comb += eq(self.n[ni].o_data,
-            #               self.stage.process(r_data[i]))
-        else:
-            for i in range(p_len):
-                m.d.comb += p_i_valid[i].eq(self.p[i].i_valid_logic())
-                m.d.comb += self.p[i].o_ready.eq(~data_valid[i] | \
-                                                  self.n[ni].i_ready)
-                m.d.comb += self.n[ni].o_valid.eq(data_valid[i])
-
-                m.d.comb += n_i_readyn[i].eq(~self.n[ni].i_ready & \
-                                              data_valid[i])
-                m.d.sync += data_valid[i].eq(p_i_valid[i] | \
-                                            (n_i_readyn[i] & data_valid[i]))
-                with m.If(self.p[i].i_valid & self.p[i].o_ready):
-                    m.d.sync += eq(r_data[i], self.p[i].i_data)
-
-                m.d.comb += eq(self.n[ni].o_data, self.stage.process(r_data[i]))
-
+        p_i_valid = Signal(reset_less=True)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+        m.d.comb += eq(result, self.stage.process(r_data))
+        m.d.comb += self.n.o_valid.eq(self._data_valid)
+        m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
+        m.d.sync += self._data_valid.eq(p_i_valid | \
+                                        (~self.n.i_ready & self._data_valid))
+        with m.If(self.p.i_valid & self.p.o_ready):
+            m.d.sync += eq(r_data, self.p.i_data)
+        m.d.comb += eq(self.n.o_data, result)
         return m
 
 
