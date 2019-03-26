@@ -7,7 +7,7 @@ from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
 from example_buf_pipe import ExamplePipeline, UnbufferedPipeline
 from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
-from example_buf_pipe import StageChain
+from example_buf_pipe import StageChain, PipelineBase
 
 from random import randint
 
@@ -262,7 +262,7 @@ def testbench4(dut):
                 break
 
 
-class ExampleBufPipe2:
+class ExampleBufPipe2(PipelineBase):
     """
         connect these:  ------|---------------|
                               v               v
@@ -271,16 +271,14 @@ class ExampleBufPipe2:
         p_i_data  >>in  pipe1 p_i_data  out>> n_o_data  >>in  pipe2
     """
     def __init__(self):
+        PipelineBase.__init__(self)
+
+        # input / output
+        self.p.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
+        self.n.o_data = Signal(32) # out>> - goes out to the NEXT stage
+
         self.pipe1 = ExampleBufPipe()
         self.pipe2 = ExampleBufPipe()
-
-        # input
-        self.p = PrevControl()
-        self.p.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
-
-        # output
-        self.n = NextControl()
-        self.n.o_data = Signal(32) # out>> - goes out to the NEXT stage
 
     def elaborate(self, platform):
         m = Module()
