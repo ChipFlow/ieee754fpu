@@ -12,22 +12,16 @@ from collections.abc import Sequence
 from example_buf_pipe import eq, NextControl, PrevControl, ExampleStage
 
 
-class PipelineBase:
+class MultiInControl:
     """ Common functions for Pipeline API
     """
-    def __init__(self, stage, in_multi=None, p_len=1):
-        """ pass in a "stage" which may be either a static class or a class
-            instance, which has four functions (one optional):
-            * ispec: returns input signals according to the input specification
-            * ispec: returns output signals to the output specification
-            * process: takes an input instance and returns processed data
-            * setup: performs any module linkage if the stage uses one.
+    def __init__(self, in_multi=None, p_len=1):
+        """ Multi-input Control class
 
             User must also:
-            * add i_data member to PrevControl and
-            * add o_data member to NextControl
+            * add i_data members to PrevControl and
+            * add o_data member  to NextControl
         """
-        self.stage = stage
 
         # set up input and output IO ACK (prev/next ready/valid)
         p = []
@@ -73,7 +67,7 @@ class PipelineBase:
 
 
 
-class CombMultiInPipeline(PipelineBase):
+class CombMultiInPipeline(MultiInControl):
     """ A multi-input Combinatorial block conforming to the Pipeline API
 
         Attributes:
@@ -89,7 +83,8 @@ class CombMultiInPipeline(PipelineBase):
     """
 
     def __init__(self, stage, p_len, p_mux):
-        PipelineBase.__init__(self, stage, p_len=p_len)
+        MultiInControl.__init__(self, p_len=p_len)
+        self.stage = stage
         self.p_mux = p_mux
 
         # set up the input and output data
