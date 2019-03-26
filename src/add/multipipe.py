@@ -67,6 +67,129 @@ class MultiInControl:
 
 
 
+class MultiOutControl:
+    """ Common functions for Pipeline API
+    """
+    def __init__(self, n_len=1):
+        """ Multi-output Control class
+
+            User must also:
+            * add i_data member to PrevControl and
+            * add o_data members to NextControl
+        """
+
+        # set up input and output IO ACK (prev/next ready/valid)
+        self.p = PrevControl(in_multi)
+        for i in range(n_len):
+            n.append(NextControl())
+        self.n = Array(n)
+
+    def connect_to_next(self, nxt, n_idx=0):
+        """ helper function to connect to the next stage data/valid/ready.
+        """
+        return self.n[n_idx].connect_to_next(nxt.p)
+
+    def connect_in(self, prev, idx=0):
+        """ helper function to connect stage to an input source.  do not
+            use to connect stage-to-stage!
+        """
+        return self.n[idx].connect_in(prev.p)
+
+    def connect_out(self, nxt, idx=0, nxt_idx=None):
+        """ helper function to connect stage to an output source.  do not
+            use to connect stage-to-stage!
+        """
+        if nxt_idx is None:
+            return self.n[idx].connect_out(nxt.n)
+        return self.n[idx].connect_out(nxt.n[nxt_idx])
+
+    def set_input(self, i):
+        """ helper function to set the input data
+        """
+        return eq(self.p.i_data, i)
+
+    def ports(self):
+        res = []
+        res += [self.p.i_valid, self.p.o_ready,
+                self.p.i_data]# XXX need flattening!]
+        for i in range(len(self.n)):
+            res += [self.n[i].i_ready, self.n[i].o_valid,
+                    self.n[i].o_data]   # XXX need flattening!]
+        return res
+
+
+
+class CombMultiOutPipeline(MultiInControl):
+    """ A multi-input Combinatorial block conforming to the Pipeline API
+
+        Attributes:
+        -----------
+        p.i_data : StageInput, shaped according to ispec
+            The pipeline input
+        p.o_data : StageOutput, shaped according to ospec
+            The pipeline output
+        r_data : input_shape according to ispec
+            A temporary (buffered) copy of a prior (valid) input.
+            This is HELD if the output is not ready.  It is updated
+            SYNCHRONOUSLY.
+    """
+
+    def __init__(self, stage, n_len, n_mux):
+        MultiInControl.__init__(self, n_len=n_len)
+        self.stage = stage
+        self.p_mux = p_mux
+
+        # set up the input and output data
+        for i in range(p_len):
+            self.p[i].i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.submodules += self.p_mux
+
+        # need buffer register conforming to *input* spec
+        r_data = self.stage.ispec() # input type
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, r_data)
+
+        data_valid = []
+        n_i_readyn = []
+        n_len = len(self.n)
+        for i in range(n_len):
+            data_valid.append(Signal(name="data_valid", reset_less=True))
+            n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
+        n_i_readyn = Array(n_i_readyn)
+        data_valid = Array(data_valid)
+
+        p_i_valid = Signal(reset_less=True)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+
+        mid = self.p_mux.m_id
+
+        for i in range(p_len):
+            m.d.comb += data_valid[i].eq(0)
+            m.d.comb += n_i_readyn[i].eq(1)
+            m.d.comb += self.n[i].o_valid.eq(data_valid[i])
+        m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | self.n.i_ready)
+        m.d.comb += n_i_readyn[mid].eq(~self.n[mid].i_ready & data_valid[mid])
+        anyvalid = Signal(i, reset_less=True)
+        av = []
+        for i in range(p_len):
+            av.append(~data_valid[i] | self.n[i].i_ready)
+        anyvalid = Cat(*av)
+        m.d.comb += self.p.o_ready.eq(anyvalid.bool())
+        m.d.comb += data_valid[mid].eq(p_i_valid | \
+                                    (n_i_readyn[mid] & data_valid[mid]))
+
+        with m.If(self.p.i_valid & self.p.o_ready):
+            m.d.comb += eq(r_data, self.p.i_data)
+        m.d.comb += eq(self.n[mid].o_data, self.stage.process(r_data))
+
+        return m
+
+
 class CombMultiInPipeline(MultiInControl):
     """ A multi-input Combinatorial block conforming to the Pipeline API
 

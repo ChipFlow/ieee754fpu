@@ -216,7 +216,7 @@ class InputTest:
 
 class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
     def __init__(self):
-        self.num_rows = 2
+        self.num_rows = 4
         stage = PassThroughStage()
         PriorityUnbufferedPipeline.__init__(self, stage, p_len=self.num_rows)
 
@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
     test = InputTest(dut)
     run_simulation(dut, [test.send(1), test.send(0),
-                         #test.send(3), test.send(2),
+                         test.send(3), test.send(2),
                          test.rcv()],
                    vcd_name="test_inputgroup_multi.vcd")
 
