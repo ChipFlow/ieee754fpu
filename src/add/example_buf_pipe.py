@@ -244,7 +244,7 @@ class StageChain:
 class PipelineBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, stage, in_multi=None):
+    def __init__(self, stage=None, in_multi=None):
         """ pass in a "stage" which may be either a static class or a class
             instance, which has four functions (one optional):
             * ispec: returns input signals according to the input specification

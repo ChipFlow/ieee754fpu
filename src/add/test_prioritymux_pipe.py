@@ -3,47 +3,15 @@ from math import log
 from nmigen import Module, Signal, Cat
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
-from nmigen.lib.coding import PriorityEncoder
 
-from example_buf_pipe import UnbufferedPipeline
-
-
-class InputPriorityArbiter:
-    def __init__(self, pipe, num_rows):
-        self.pipe = pipe
-        self.num_rows = num_rows
-        self.mmax = int(log(self.num_rows) / log(2))
-        self.m_id = Signal(self.mmax, reset_less=True) # multiplex id
-        self.active = Signal(reset_less=True)
-
-    def elaborate(self, platform):
-        m = Module()
-
-        assert len(self.pipe.p) == self.num_rows, \
-                "must declare input to be same size"
-        pe = PriorityEncoder(self.num_rows)
-        m.submodules.selector = pe
-
-        # connect priority encoder
-        in_ready = []
-        for i in range(self.num_rows):
-            p_i_valid = Signal(reset_less=True)
-            m.d.comb += p_i_valid.eq(self.pipe.p[i].i_valid_logic())
-            in_ready.append(p_i_valid)
-        m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
-        m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
-        m.d.comb += self.m_id.eq(pe.o)       # output one active input
-
-        return m
-
-    def ports(self):
-        return [self.m_id, self.active]
+from multipipe import CombMultiInPipeline, InputPriorityArbiter
 
 
-class PriorityUnbufferedPipeline(UnbufferedPipeline):
+
+class PriorityUnbufferedPipeline(CombMultiInPipeline):
     def __init__(self, stage, p_len=4):
         p_mux = InputPriorityArbiter(self, p_len)
-        UnbufferedPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
+        CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
 
     def ports(self):
         return self.p_mux.ports()
@@ -217,7 +185,7 @@ class InputTest:
             #    stall = randint(0, stall_range) != 0
             #    yield self.dut.n[0].i_ready.eq(stall)
             #    yield
-            n = self.dut.n[0]
+            n = self.dut.n
             yield n.i_ready.eq(1)
             yield
             o_n_valid = yield n.o_valid
@@ -248,7 +216,7 @@ class InputTest:
 
 class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
     def __init__(self):
-        self.num_rows = 4
+        self.num_rows = 2
         stage = PassThroughStage()
         PriorityUnbufferedPipeline.__init__(self, stage, p_len=self.num_rows)
 
@@ -257,22 +225,21 @@ class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
         for i in range(len(self.p)):
             res += [self.p[i].i_valid, self.p[i].o_ready] + \
                     self.p[i].i_data.ports()
-        for i in range(len(self.n)):
-            res += [self.n[i].i_ready, self.n[i].o_valid] + \
-                    self.n[i].o_data.ports()
+        res += [self.n.i_ready, self.n.o_valid] + \
+                self.n.o_data.ports()
         return res
 
 
 if __name__ == '__main__':
     dut = TestPriorityMuxPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_inputgroup.il", "w") as f:
+    with open("test_inputgroup_multi.il", "w") as f:
         f.write(vl)
     #run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")
 
     test = InputTest(dut)
     run_simulation(dut, [test.send(1), test.send(0),
-                         test.send(3), test.send(2),
+                         #test.send(3), test.send(2),
                          test.rcv()],
-                   vcd_name="test_inputgroup_parallel.vcd")
+                   vcd_name="test_inputgroup_multi.vcd")
 
