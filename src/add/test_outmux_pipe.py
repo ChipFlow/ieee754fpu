@@ -142,9 +142,12 @@ class OutputTest:
         self.dut = dut
         self.di = []
         self.do = {}
-        self.tlen = 3
+        self.tlen = 10
         for i in range(self.tlen * dut.num_rows):
-            mid = randint(0, dut.num_rows-1)
+            if i < dut.num_rows:
+                mid = i
+            else:
+                mid = randint(0, dut.num_rows-1)
             data = randint(0, 255) + (mid<<8)
             if mid not in self.do:
                 self.do[mid] = []
@@ -177,15 +180,10 @@ class OutputTest:
     def rcv(self, mid):
         out_i = 0
         count = 0
-        while out_i != self.tlen:
+        stall_range = randint(0, 3)
+        while out_i != len(self.do[mid]):
             count += 1
-            if count == 1000:
-                break
-            #stall_range = randint(0, 3)
-            #for j in range(randint(1,10)):
-            #    stall = randint(0, stall_range) != 0
-            #    yield self.dut.n[0].i_ready.eq(stall)
-            #    yield
+            assert count != 2000, "timeout: too long"
             n = self.dut.n[mid]
             yield n.i_ready.eq(1)
             yield
@@ -201,6 +199,14 @@ class OutputTest:
             assert self.do[mid][out_i] == out_v # pass-through data
 
             out_i += 1
+
+            if randint(0, 5) == 0:
+                stall_range = randint(0, 3)
+            stall = randint(0, stall_range) != 0
+            if stall:
+                yield n.i_ready.eq(0)
+                for i in range(stall_range):
+                    yield
 
 
 class TestPriorityMuxPipe(MuxUnbufferedPipeline):

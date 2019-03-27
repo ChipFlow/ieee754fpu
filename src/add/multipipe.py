@@ -156,42 +156,27 @@ class CombMultiOutPipeline(MultiOutControlBase):
     def elaborate(self, platform):
         m = Module()
 
-        #m.submodules += self.n_mux
+        if hasattr(self.n_mux, "elaborate"): # TODO: identify submodule?
+            m.submodules += self.n_mux
 
         # need buffer register conforming to *input* spec
         r_data = self.stage.ispec() # input type
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
-        data_valid = []
-        n_i_readyn = []
-        n_len = len(self.n)
-        for i in range(n_len):
-            data_valid.append(Signal(name="data_valid", reset_less=True))
-            n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
-        n_i_readyn = Array(n_i_readyn)
-        data_valid = Array(data_valid)
+        mid = self.n_mux.m_id
 
+        data_valid = Signal() # is data valid or not
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
 
-        mid = self.n_mux.m_id
-
-        for i in range(n_len):
-            m.d.comb += data_valid[i].eq(0)
-            m.d.comb += n_i_readyn[i].eq(1)
+        for i in range(len(self.n)):
             m.d.comb += self.n[i].o_valid.eq(0)
-        m.d.comb += self.n[mid].o_valid.eq(data_valid[mid])
-        m.d.comb += n_i_readyn[mid].eq(~self.n[mid].i_ready & data_valid[mid])
-        anyvalid = Signal(i, reset_less=True)
-        av = []
-        for i in range(n_len):
-            av.append(~data_valid[i] | self.n[i].i_ready)
-        anyvalid = Cat(*av)
-        m.d.comb += self.p.o_ready.eq(anyvalid.bool())
-        m.d.comb += data_valid[mid].eq(p_i_valid | \
-                                    (n_i_readyn[mid] & data_valid[mid]))
-
+        data_valid = self.n[mid].o_valid
+        #m.d.comb += self.n[mid].o_valid.eq(data_valid)
+        m.d.comb += self.p.o_ready.eq(~data_valid | self.n[mid].i_ready)
+        m.d.comb += data_valid.eq(p_i_valid | \
+                                    (~self.n[mid].i_ready & data_valid))
         with m.If(self.p.i_valid & self.p.o_ready):
             m.d.comb += eq(r_data, self.p.i_data)
         m.d.comb += eq(self.n[mid].o_data, self.stage.process(r_data))
