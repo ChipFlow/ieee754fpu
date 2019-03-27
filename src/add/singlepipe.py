@@ -308,6 +308,8 @@ class Stage(metaclass=ABCMeta):
 
 class RecordBasedStage(Stage):
     """ convenience class which provides a Records-based layout.
+        honestly it's a lot easier just to create a direct Records-based
+        class (see ExampleAddRecordStage)
     """
     def __init__(self, in_shape, out_shape, processfn, setupfn=None):
         self.in_shape = in_shape
