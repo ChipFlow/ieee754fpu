@@ -74,7 +74,9 @@ class MultiOutControlBase:
     """ Common functions for Pipeline API
     """
     def __init__(self, n_len=1):
-        """ Multi-output Control class
+        """ Multi-output Control class.  Conforms to same API as ControlBase...
+            mostly.  has additional indices to the multiple *output* stages
+            [MultiInControlBase has multiple *input* stages]
 
             * p: contains ready/valid to the previou stage
             * n: contains ready/valid to the next stages PLURAL
@@ -117,10 +119,10 @@ class MultiOutControlBase:
     def ports(self):
         res = []
         res += [self.p.i_valid, self.p.o_ready,
-                self.p.i_data]# XXX need flattening!]
+                self.p.i_data] # XXX need flattening!
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid,
-                    self.n[i].o_data]   # XXX need flattening!]
+                    self.n[i].o_data]   # XXX need flattening!
         return res
 
 
