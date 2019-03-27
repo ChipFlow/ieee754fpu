@@ -7,7 +7,6 @@ from nmigen.cli import verilog, rtlil
 from multipipe import CombMultiInPipeline, InputPriorityArbiter
 
 
-
 class PriorityUnbufferedPipeline(CombMultiInPipeline):
     def __init__(self, stage, p_len=4):
         p_mux = InputPriorityArbiter(self, p_len)
@@ -16,6 +15,7 @@ class PriorityUnbufferedPipeline(CombMultiInPipeline):
     def ports(self):
         return self.p_mux.ports()
         #return UnbufferedPipeline.ports(self) + self.p_mux.ports()
+
 
 class PassData:
     def __init__(self):
