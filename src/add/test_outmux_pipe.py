@@ -5,6 +5,7 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMultiOutPipeline
+from singlepipe import UnbufferedPipeline
 
 
 class MuxUnbufferedPipeline(CombMultiOutPipeline):
@@ -41,6 +42,23 @@ class PassThroughStage:
                 
     def process(self, i):
         return i.data
+
+
+class PassThroughDataStage:
+    def ispec(self):
+        return PassInData()
+    def ospec(self):
+        return self.ispec() # same as ospec
+
+    def process(self, i):
+        return i # pass-through
+
+
+
+class PassThroughPipe(UnbufferedPipeline):
+    def __init__(self):
+        UnbufferedPipeline.__init__(self, PassThroughDataStage())
+
 
 
 
@@ -210,8 +228,8 @@ class OutputTest:
 
 
 class TestPriorityMuxPipe(MuxUnbufferedPipeline):
-    def __init__(self):
-        self.num_rows = 4
+    def __init__(self, num_rows):
+        self.num_rows = num_rows
         stage = PassThroughStage()
         MuxUnbufferedPipeline.__init__(self, stage, n_len=self.num_rows)
 
@@ -225,8 +243,34 @@ class TestPriorityMuxPipe(MuxUnbufferedPipeline):
         return res
 
 
+class TestSyncToPriorityPipe:
+    def __init__(self):
+        self.num_rows = 4
+        self.pipe = PassThroughPipe()
+        self.muxpipe = TestPriorityMuxPipe(self.num_rows)
+
+        self.p = self.pipe.p
+        self.n = self.muxpipe.n
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules += self.pipe
+        m.submodules += self.muxpipe
+        m.d.comb += self.pipe.n.connect_to_next(self.muxpipe.p)
+        return m
+
+    def ports(self):
+        res = [self.p.i_valid, self.p.o_ready] + \
+                self.p.i_data.ports()
+        for i in range(len(self.n)):
+            res += [self.n[i].i_ready, self.n[i].o_valid] + \
+                    [self.n[i].o_data]
+                    #self.n[i].o_data.ports()
+        return res
+
+
 if __name__ == '__main__':
-    dut = TestPriorityMuxPipe()
+    dut = TestSyncToPriorityPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_outmux_pipe.il", "w") as f:
         f.write(vl)
