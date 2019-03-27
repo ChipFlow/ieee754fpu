@@ -255,6 +255,20 @@ class Stage(metaclass=ABCMeta):
     def process(i): pass
 
 
+class RecordBasedStage(Stage):
+    """ convenience class which provides a Records-based layout.
+    """
+   def __init__(self, in_shape, out_shape, processfn, setupfn=None):
+      self.in_shape = in_shape
+      self.out_shape = out_shape
+      self.__process = processfn
+      self.__setup = setupfn
+   def ispec(self): return Record(self.in_shape)
+   def ospec(self): return Record(self.out_shape)
+   def process(seif, i): return self.__process(i)
+   def setup(seif, m, i): return self.__setup(m, i)
+
+
 class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
@@ -546,4 +560,24 @@ class UnbufferedPipeline(ControlBase):
             m.d.sync += eq(r_data, self.p.i_data)
         m.d.comb += eq(self.n.o_data, result)
         return m
+
+
+class PassThroughStage(StageCls):
+    """ a pass-through stage which has its input data spec equal to its output,
+        and "passes through" its data from input to output.
+    """
+    def __init__(self, iospec):
+        self.iospecfn = iospecfn
+    def ispec(self): return self.iospecfn()
+    def ospec(self): return self.iospecfn()
+    def process(self, i): return i
+
+
+class RegisterPipeline(UnbufferedPipeline):
+    """ A pipeline stage that delays by one clock cycle, creating a
+        sync'd latch out of o_data and o_valid as an indirect byproduct
+        of using PassThroughStage
+    """
+    def __init__(self, iospecfn):
+        UnbufferedPipeline.__init__(self, PassThroughStage(iospecfn))
 
