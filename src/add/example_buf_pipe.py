@@ -5,12 +5,8 @@ from singlepipe import (PrevControl, NextControl, ControlBase,
                         StageCls, Stage, StageChain,
                         BufferedPipeline, UnbufferedPipeline, eq)
 
-from nmigen import Signal, Cat, Const, Mux, Module
+from nmigen import Signal, Module
 from nmigen.cli import verilog, rtlil
-from nmigen.hdl.rec import Record, Layout
-
-from abc import ABCMeta, abstractmethod
-from collections.abc import Sequence
 
 
 class ExampleAddStage(StageCls):

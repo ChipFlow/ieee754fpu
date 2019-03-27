@@ -1,4 +1,5 @@
 """ Pipeline and BufferedPipeline implementation, conforming to the same API.
+    For multi-input and multi-output variants, see multipipe.
 
     eq:
     --
@@ -33,25 +34,73 @@
                 the submodules must be combinatorial blocks and
                 must have their inputs and output linked combinatorially.
 
+    Both StageCls (for use with non-static classes) and Stage (for use
+    by static classes) are abstract classes from which, for convenience
+    and as a courtesy to other developers, anything conforming to the
+    Stage API may *choose* to derive.
+
     StageChain:
     ----------
 
     A useful combinatorial wrapper around stages that chains them together
-    and then presents a Stage-API-conformant interface.
+    and then presents a Stage-API-conformant interface.  By presenting
+    the same API as the stages it wraps, it can clearly be used recursively.
+
+    RecordBasedStage:
+    ----------------
+
+    A convenience class that takes an input shape, output shape, a
+    "processing" function and an optional "setup" function.  Honestly
+    though, there's not much more effort to just... create a class
+    that returns a couple of Records (see ExampleAddRecordStage in
+    examples).
+
+    PassThroughStage:
+    ----------------
+
+    A convenience class that takes a single function as a parameter,
+    that is chain-called to create the exact same input and output spec.
+    It has a process() function that simply returns its input.
+
+    Instances of this class are completely redundant if handed to
+    StageChain, however when passed to UnbufferedPipeline they
+    can be used to introduce a single clock delay.
+
+    ControlBase:
+    -----------
+
+    The base class for pipelines.  Contains previous and next ready/valid/data.
+    Also has an extremely useful "connect" function that can be used to
+    connect a chain of pipelines and present the exact same prev/next
+    ready/valid/data API.
 
     UnbufferedPipeline:
     ------------------
 
     A simple stalling clock-synchronised pipeline that has no buffering
-    (unlike BufferedPipeline).  A stall anywhere along the line will
-    result in a stall back-propagating down the entire chain.
+    (unlike BufferedPipeline).  Data flows on *every* clock cycle when
+    the conditions are right (this is nominally when the input is valid
+    and the output is ready).
 
-    The BufferedPipeline by contrast will buffer incoming data, allowing
-    previous stages one clock cycle's grace before also having to stall.
+    A stall anywhere along the line will result in a stall back-propagating
+    down the entire chain.  The BufferedPipeline by contrast will buffer
+    incoming data, allowing previous stages one clock cycle's grace before
+    also having to stall.
 
     An advantage of the UnbufferedPipeline over the Buffered one is
     that the amount of logic needed (number of gates) is greatly
-    reduced.
+    reduced (no second set of buffers basically)
+
+    The disadvantage of the UnbufferedPipeline is that the valid/ready
+    logic, if chained together, is *combinatorial*, resulting in
+    progressively larger gate delay.
+
+    RegisterPipeline:
+    ----------------
+
+    A convenience class that, because UnbufferedPipeline introduces a single
+    clock delay, when its stage is a PassThroughStage, it results in a Pipeline
+    stage that, duh, delays its (unmodified) input by one clock cycle.
 
     BufferedPipeline:
     ----------------
