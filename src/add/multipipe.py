@@ -1,4 +1,13 @@
-""" Combinatorial Multi-input multiplexer block conforming to Pipeline API
+""" Combinatorial Multi-input and Multi-output multiplexer blocks
+    conforming to Pipeline API
+
+    Multi-input is complex because if any one input is ready, the output
+    can be ready, and the decision comes from a separate module.
+
+    Multi-output is simple (pretty much identical to UnbufferedPipeline),
+    and the selection is just a mux.  The only proviso (difference) being:
+    the outputs not being selected have to have their o_ready signals
+    DEASSERTED.
 """
 
 from math import log
@@ -67,7 +76,6 @@ class MultiInControlBase:
         res += [self.n.i_ready, self.n.o_valid,
                 self.n.o_data]   # XXX need flattening!]
         return res
-
 
 
 class MultiOutControlBase:
@@ -166,14 +174,12 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         mid = self.n_mux.m_id
 
-        data_valid = Signal() # is data valid or not
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
 
         for i in range(len(self.n)):
             m.d.comb += self.n[i].o_valid.eq(0)
         data_valid = self.n[mid].o_valid
-        #m.d.comb += self.n[mid].o_valid.eq(data_valid)
         m.d.comb += self.p.o_ready.eq(~data_valid | self.n[mid].i_ready)
         m.d.comb += data_valid.eq(p_i_valid | \
                                     (~self.n[mid].i_ready & data_valid))
