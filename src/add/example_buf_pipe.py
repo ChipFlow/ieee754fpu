@@ -339,7 +339,9 @@ class ControlBase:
                      out---in out--in out---in
 
             Also takes care of allocating i_data/o_data, by looking up
-            the data spec for each end of the pipechain.
+            the data spec for each end of the pipechain.  i.e It is NOT
+            necessary to allocate self.p.i_data or self.n.o_data manually:
+            this is handled AUTOMATICALLY, here.
 
             Basically this function is the direct equivalent of StageChain,
             except that unlike StageChain, the Pipeline logic is followed.
