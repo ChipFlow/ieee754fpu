@@ -259,7 +259,7 @@ def eq(o, i):
         elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
             for p in ai.ports():
                 op = getattr(ao, p.name)
-                print (op, p, p.name)
+                #print (op, p, p.name)
                 rres = op.eq(p)
                 if not isinstance(rres, Sequence):
                     rres = [rres]
