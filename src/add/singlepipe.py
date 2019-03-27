@@ -238,6 +238,14 @@ def eq(o, i):
         the Record's field spec.  Alternatively, an object with the same
         member names as the Record may be assigned: it does not have to
         *be* a Record.
+
+        ArrayProxy is also special-cased, it's a bit messy: whilst ArrayProxy
+        has an eq function, the object being assigned to it (e.g. a python
+        object) might not.  despite the *input* having an eq function,
+        that doesn't help us, because it's the *ArrayProxy* that's being
+        assigned to.  so.... we cheat.  use the ports() function of the
+        python object, enumerate them, find out the list of Signals that way,
+        and assign them.
     """
     if not isinstance(o, Sequence):
         o, i = [o], [i]
