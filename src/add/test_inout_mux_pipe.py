@@ -232,13 +232,13 @@ class TestMuxOutPipe(MuxUnbufferedPipeline):
 class TestInOutPipe:
     def __init__(self, num_rows=4):
         self.num_rows = num_rows
-        self.inpipe = TestPriorityMuxPipe(num_rows)
-        self.pipe1 = PassThroughPipe()
-        self.pipe2 = PassThroughPipe()
-        self.outpipe = TestMuxOutPipe(num_rows)
+        self.inpipe = TestPriorityMuxPipe(num_rows) # fan-in (combinatorial)
+        self.pipe1 = PassThroughPipe()              # stage 1 (clock-sync)
+        self.pipe2 = PassThroughPipe()              # stage 2 (clock-sync)
+        self.outpipe = TestMuxOutPipe(num_rows)     # fan-out (combinatorial)
 
-        self.p = self.inpipe.p
-        self.n = self.outpipe.n
+        self.p = self.inpipe.p  # kinda annoying,
+        self.n = self.outpipe.n # use pipe in/out as this class in/out
         self._ports = self.inpipe.ports() + self.outpipe.ports()
 
     def elaborate(self, platform):
