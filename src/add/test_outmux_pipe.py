@@ -37,7 +37,7 @@ class PassThroughStage:
         return PassInData()
 
     def ospec(self):
-        return Signal(16, reset_less=True)
+        return Signal(16, name="data_out", reset_less=True)
                 
     def process(self, i):
         return i.data
