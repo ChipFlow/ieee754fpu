@@ -12,11 +12,15 @@ from collections.abc import Sequence
 from example_buf_pipe import eq, NextControl, PrevControl, ExampleStage
 
 
-class MultiInControl:
+class MultiInControlBase:
     """ Common functions for Pipeline API
     """
     def __init__(self, in_multi=None, p_len=1):
-        """ Multi-input Control class
+        """ Multi-input Control class.  Conforms to same API as ControlBase...
+            mostly.  has additional indices to the *multiple* input stages
+
+            * p: contains ready/valid to the previous stages PLURAL
+            * n: contains ready/valid to the next stage
 
             User must also:
             * add i_data members to PrevControl and
@@ -66,11 +70,14 @@ class MultiInControl:
 
 
 
-class MultiOutControl:
+class MultiOutControlBase:
     """ Common functions for Pipeline API
     """
     def __init__(self, n_len=1):
         """ Multi-output Control class
+
+            * p: contains ready/valid to the previou stage
+            * n: contains ready/valid to the next stages PLURAL
 
             User must also:
             * add i_data member to PrevControl and
@@ -118,7 +125,7 @@ class MultiOutControl:
 
 
 
-class CombMultiOutPipeline(MultiInControl):
+class CombMultiOutPipeline(MultiOutControlBase):
     """ A multi-input Combinatorial block conforming to the Pipeline API
 
         Attributes:
@@ -134,7 +141,7 @@ class CombMultiOutPipeline(MultiInControl):
     """
 
     def __init__(self, stage, n_len, n_mux):
-        MultiInControl.__init__(self, n_len=n_len)
+        MultiOutControlBase.__init__(self, n_len=n_len)
         self.stage = stage
         self.p_mux = p_mux
 
@@ -189,7 +196,7 @@ class CombMultiOutPipeline(MultiInControl):
         return m
 
 
-class CombMultiInPipeline(MultiInControl):
+class CombMultiInPipeline(MultiInControlBase):
     """ A multi-input Combinatorial block conforming to the Pipeline API
 
         Attributes:
@@ -205,7 +212,7 @@ class CombMultiInPipeline(MultiInControl):
     """
 
     def __init__(self, stage, p_len, p_mux):
-        MultiInControl.__init__(self, p_len=p_len)
+        MultiInControlBase.__init__(self, p_len=p_len)
         self.stage = stage
         self.p_mux = p_mux
 
