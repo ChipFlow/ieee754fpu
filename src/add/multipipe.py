@@ -22,7 +22,6 @@ class MultiInControl:
             * add i_data members to PrevControl and
             * add o_data member  to NextControl
         """
-
         # set up input and output IO ACK (prev/next ready/valid)
         p = []
         for i in range(p_len):
@@ -35,21 +34,21 @@ class MultiInControl:
         """
         return self.n.connect_to_next(nxt.p[p_idx])
 
-    def connect_in(self, prev, idx=0, prev_idx=None):
+    def _connect_in(self, prev, idx=0, prev_idx=None):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
         if prev_idx is None:
-            return self.p[idx].connect_in(prev.p)
-        return self.p[idx].connect_in(prev.p[prev_idx])
+            return self.p[idx]._connect_in(prev.p)
+        return self.p[idx]._connect_in(prev.p[prev_idx])
 
-    def connect_out(self, nxt):
+    def _connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
         if nxt_idx is None:
-            return self.n.connect_out(nxt.n)
-        return self.n.connect_out(nxt.n)
+            return self.n._connect_out(nxt.n)
+        return self.n._connect_out(nxt.n)
 
     def set_input(self, i, idx=0):
         """ helper function to set the input data
@@ -89,19 +88,19 @@ class MultiOutControl:
         """
         return self.n[n_idx].connect_to_next(nxt.p)
 
-    def connect_in(self, prev, idx=0):
+    def _connect_in(self, prev, idx=0):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
-        return self.n[idx].connect_in(prev.p)
+        return self.n[idx]._connect_in(prev.p)
 
-    def connect_out(self, nxt, idx=0, nxt_idx=None):
+    def _connect_out(self, nxt, idx=0, nxt_idx=None):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
         if nxt_idx is None:
-            return self.n[idx].connect_out(nxt.n)
-        return self.n[idx].connect_out(nxt.n[nxt_idx])
+            return self.n[idx]._connect_out(nxt.n)
+        return self.n[idx]._connect_out(nxt.n[nxt_idx])
 
     def set_input(self, i):
         """ helper function to set the input data
