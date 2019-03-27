@@ -73,7 +73,7 @@ class MultiInControlBase:
 class MultiOutControlBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, n_len=1):
+    def __init__(self, n_len=1, in_multi=None):
         """ Multi-output Control class.  Conforms to same API as ControlBase...
             mostly.  has additional indices to the multiple *output* stages
             [MultiInControlBase has multiple *input* stages]
@@ -88,6 +88,7 @@ class MultiOutControlBase:
 
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi)
+        n = []
         for i in range(n_len):
             n.append(NextControl())
         self.n = Array(n)
@@ -145,17 +146,17 @@ class CombMultiOutPipeline(MultiOutControlBase):
     def __init__(self, stage, n_len, n_mux):
         MultiOutControlBase.__init__(self, n_len=n_len)
         self.stage = stage
-        self.p_mux = p_mux
+        self.n_mux = n_mux
 
         # set up the input and output data
-        for i in range(p_len):
-            self.p[i].i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec()
+        self.p.i_data = stage.ispec() # input type
+        for i in range(n_len):
+            self.n[i].o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules += self.p_mux
+        #m.submodules += self.n_mux
 
         # need buffer register conforming to *input* spec
         r_data = self.stage.ispec() # input type
@@ -174,17 +175,17 @@ class CombMultiOutPipeline(MultiOutControlBase):
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
 
-        mid = self.p_mux.m_id
+        mid = self.n_mux.m_id
 
-        for i in range(p_len):
+        for i in range(n_len):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_i_readyn[i].eq(1)
-            m.d.comb += self.n[i].o_valid.eq(data_valid[i])
-        m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | self.n.i_ready)
+            m.d.comb += self.n[i].o_valid.eq(0)
+        m.d.comb += self.n[mid].o_valid.eq(data_valid[mid])
         m.d.comb += n_i_readyn[mid].eq(~self.n[mid].i_ready & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
         av = []
-        for i in range(p_len):
+        for i in range(n_len):
             av.append(~data_valid[i] | self.n[i].i_ready)
         anyvalid = Cat(*av)
         m.d.comb += self.p.o_ready.eq(anyvalid.bool())
