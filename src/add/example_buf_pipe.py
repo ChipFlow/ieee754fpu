@@ -123,8 +123,8 @@ class PrevControl:
         self.o_ready = Signal(name="p_o_ready") # prev   <<out self
 
     def _connect_in(self, prev):
-        """ helper function to connect stage to an input source.  do not
-            use to connect stage-to-stage!
+        """ internal helper function to connect stage to an input source.
+            do not use to connect stage-to-stage!
         """
         return [self.i_valid.eq(prev.i_valid),
                 prev.o_ready.eq(self.o_ready),
@@ -153,6 +153,7 @@ class NextControl:
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
+            use this when connecting stage-to-stage
         """
         return [nxt.i_valid.eq(self.o_valid),
                 self.i_ready.eq(nxt.o_ready),
@@ -160,8 +161,8 @@ class NextControl:
                ]
 
     def _connect_out(self, nxt):
-        """ helper function to connect stage to an output source.  do not
-            use to connect stage-to-stage!
+        """ internal helper function to connect stage to an output source.
+            do not use to connect stage-to-stage!
         """
         return [nxt.o_valid.eq(self.o_valid),
                 self.i_ready.eq(nxt.i_ready),
@@ -288,7 +289,7 @@ class StageChain(StageCls):
         self.o = o                             # last loop is the output
 
     def process(self, i):
-        return self.o
+        return self.o # conform to Stage API: return last-loop output
 
 
 class ControlBase:
@@ -315,14 +316,14 @@ class ControlBase:
         return self.n.connect_to_next(nxt.p)
 
     def _connect_in(self, prev):
-        """ helper function to connect stage to an input source.  do not
-            use to connect stage-to-stage!
+        """ internal helper function to connect stage to an input source.
+            do not use to connect stage-to-stage!
         """
         return self.p._connect_in(prev.p)
 
     def _connect_out(self, nxt):
-        """ helper function to connect stage to an output source.  do not
-            use to connect stage-to-stage!
+        """ internal helper function to connect stage to an output source.
+            do not use to connect stage-to-stage!
         """
         return self.n._connect_out(nxt.n)
 
@@ -392,7 +393,7 @@ class ControlBase:
 class BufferedPipeline(ControlBase):
     """ buffered pipeline stage.  data and strobe signals travel in sync.
         if ever the input is ready and the output is not, processed data
-        is stored in a temporary register.
+        is shunted in a temporary register.
 
         Argument: stage.  see Stage API above
 
