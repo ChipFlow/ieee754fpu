@@ -150,8 +150,9 @@
     it's quite a complex state machine!
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module
+from nmigen import Signal, Cat, Const, Mux, Module, Value
 from nmigen.cli import verilog, rtlil
+from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record, Layout
 
 from abc import ABCMeta, abstractmethod
@@ -254,6 +255,14 @@ def eq(o, i):
                 else:
                     val = val[field_name] # dictionary-style specification
                 rres = eq(ao.fields[field_name], val)
+                res += rres
+        elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
+            for p in ai.ports():
+                op = getattr(ao, p.name)
+                print (op, p, p.name)
+                rres = op.eq(p)
+                if not isinstance(rres, Sequence):
+                    rres = [rres]
                 res += rres
         else:
             rres = ao.eq(ai)
