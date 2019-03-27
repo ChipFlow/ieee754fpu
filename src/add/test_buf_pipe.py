@@ -282,25 +282,19 @@ def testbench4(dut):
 ######################################################################
 
 class ExampleBufPipe2(ControlBase):
+    """ Example of how to do chained pipeline stages.
     """
-        connect these:    ------|---------------|
-                                v               v
-        i_p_valid >>in  pipe1 o_n_valid out>> i_p_valid >>in  pipe2
-        o_p_ready <<out pipe1 i_n_ready <<in  o_p_ready <<out pipe2
-        p_i_data  >>in  pipe1 p_i_data  out>> n_o_data  >>in  pipe2
-    """
-    def __init__(self):
-        ControlBase.__init__(self)
-
-        self.pipe1 = ExampleBufPipe()
-        self.pipe2 = ExampleBufPipe()
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.pipe1 = self.pipe1
-        m.submodules.pipe2 = self.pipe2
 
-        self.connect(m, [self.pipe1, self.pipe2])
+        pipe1 = ExampleBufPipe()
+        pipe2 = ExampleBufPipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        self.connect(m, [pipe1, pipe2])
 
         return m
 
