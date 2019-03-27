@@ -141,14 +141,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         Attributes:
         -----------
-        p.i_data : StageInput, shaped according to ispec
-            The pipeline input
-        p.o_data : StageOutput, shaped according to ospec
-            The pipeline output
-        r_data : input_shape according to ispec
-            A temporary (buffered) copy of a prior (valid) input.
-            This is HELD if the output is not ready.  It is updated
-            SYNCHRONOUSLY.
+        p.i_data : stage input data (non-array).  shaped according to ispec
+        n.o_data : stage output data array.       shaped according to ospec
     """
 
     def __init__(self, stage, n_len, n_mux):
@@ -172,11 +166,15 @@ class CombMultiOutPipeline(MultiOutControlBase):
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
+        # multiplexer id taken from n_mux
         mid = self.n_mux.m_id
 
+        # temporaries
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
 
+        # all outputs to next stages first initialised to zero (invalid)
+        # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
             m.d.comb += self.n[i].o_valid.eq(0)
         data_valid = self.n[mid].o_valid
@@ -270,6 +268,8 @@ class CombMultiInPipeline(MultiInControlBase):
 
 
 class InputPriorityArbiter:
+    """ arbitration module for Input-Mux pipe, baed on PriorityEncoder
+    """
     def __init__(self, pipe, num_rows):
         self.pipe = pipe
         self.num_rows = num_rows
