@@ -588,7 +588,6 @@ class UnbufferedPipeline(ControlBase):
     def __init__(self, stage):
         ControlBase.__init__(self)
         self.stage = stage
-        self._data_valid = Signal()
 
         # set up the input and output data
         self.p.i_data = stage.ispec() # input type
@@ -601,12 +600,13 @@ class UnbufferedPipeline(ControlBase):
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
+        data_valid = Signal()
         p_i_valid = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
-        m.d.comb += self.n.o_valid.eq(self._data_valid)
-        m.d.comb += self.p.o_ready.eq(~self._data_valid | self.n.i_ready)
-        m.d.sync += self._data_valid.eq(p_i_valid | \
-                                        (~self.n.i_ready & self._data_valid))
+        m.d.comb += self.n.o_valid.eq(data_valid)
+        m.d.comb += self.p.o_ready.eq(~data_valid | self.n.i_ready)
+        m.d.sync += data_valid.eq(p_i_valid | \
+                                        (~self.n.i_ready & data_valid))
         with m.If(self.p.i_valid & self.p.o_ready):
             m.d.sync += eq(r_data, self.p.i_data)
         m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
