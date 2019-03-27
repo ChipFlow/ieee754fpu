@@ -292,10 +292,6 @@ class ExampleBufPipe2(ControlBase):
     def __init__(self):
         ControlBase.__init__(self)
 
-        # input / output
-        self.p.i_data = Signal(32) # >>in - comes in from the PREVIOUS stage
-        self.n.o_data = Signal(32) # out>> - goes out to the NEXT stage
-
         self.pipe1 = ExampleBufPipe()
         self.pipe2 = ExampleBufPipe()
 
@@ -304,14 +300,7 @@ class ExampleBufPipe2(ControlBase):
         m.submodules.pipe1 = self.pipe1
         m.submodules.pipe2 = self.pipe2
 
-        # connect inter-pipe input/output valid/ready/data
-        m.d.comb += self.pipe1.connect_to_next(self.pipe2)
-
-        # inputs/outputs to the module: pipe1 connections here (LHS)
-        m.d.comb += self.pipe1.connect_in(self)
-
-        # now pipe2 connections (RHS)
-        m.d.comb += self.pipe2.connect_out(self)
+        self.connect(m, [self.pipe1, self.pipe2])
 
         return m
 
@@ -599,6 +588,13 @@ if __name__ == '__main__':
     print ("test 2")
     dut = ExampleBufPipe2()
     run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe2.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipe2.il", "w") as f:
+        f.write(vl)
+
 
     print ("test 3")
     dut = ExampleBufPipe()

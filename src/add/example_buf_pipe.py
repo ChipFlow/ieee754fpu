@@ -122,7 +122,7 @@ class PrevControl:
         self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
         self.o_ready = Signal(name="p_o_ready") # prev   <<out self
 
-    def connect_in(self, prev):
+    def _connect_in(self, prev):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
@@ -159,7 +159,7 @@ class NextControl:
                 eq(nxt.i_data, self.o_data),
                ]
 
-    def connect_out(self, nxt):
+    def _connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
@@ -314,17 +314,66 @@ class ControlBase:
         """
         return self.n.connect_to_next(nxt.p)
 
-    def connect_in(self, prev):
+    def _connect_in(self, prev):
         """ helper function to connect stage to an input source.  do not
             use to connect stage-to-stage!
         """
-        return self.p.connect_in(prev.p)
+        return self.p._connect_in(prev.p)
 
-    def connect_out(self, nxt):
+    def _connect_out(self, nxt):
         """ helper function to connect stage to an output source.  do not
             use to connect stage-to-stage!
         """
-        return self.n.connect_out(nxt.n)
+        return self.n._connect_out(nxt.n)
+
+    def connect(self, m, pipechain):
+        """ connects a chain (list) of Pipeline instances together and
+            links them to this ControlBase instance:
+
+                      in <----> self <---> out
+                       |                   ^
+                       v                   |
+                    [pipe1, pipe2, pipe3, pipe4]
+                       |    ^  |    ^  |     ^
+                       v    |  v    |  v     |
+                     out---in out--in out---in
+
+            Also takes care of allocating i_data/o_data, by looking up
+            the data spec for each end of the pipechain.
+
+            Basically this function is the direct equivalent of StageChain,
+            except that unlike StageChain, the Pipeline logic is followed.
+
+            Just as StageChain presents an object that conforms to the
+            Stage API from a list of objects that also conform to the
+            Stage API, an object that calls this Pipeline connect function
+            has the exact same pipeline API as the list of pipline objects
+            it is called with.
+
+            Thus it becomes possible to build up larger chains recursively.
+            More complex chains (multi-input, multi-output) will have to be
+            done manually.
+        """
+        eqs = [] # collated list of assignment statements
+
+        # connect inter-chain
+        for i in range(len(pipechain)-1):
+            pipe1 = pipechain[i]
+            pipe2 = pipechain[i+1]
+            eqs += pipe1.connect_to_next(pipe2)
+
+        # connect front of chain to ourselves
+        front = pipechain[0]
+        self.p.i_data = front.stage.ispec()
+        eqs += front._connect_in(self)
+
+        # connect end of chain to ourselves
+        end = pipechain[-1]
+        self.n.o_data = end.stage.ospec()
+        eqs += end._connect_out(self)
+
+        # activate the assignments
+        m.d.comb += eqs
 
     def set_input(self, i):
         """ helper function to set the input data
