@@ -49,6 +49,10 @@
     The BufferedPipeline by contrast will buffer incoming data, allowing
     previous stages one clock cycle's grace before also having to stall.
 
+    An advantage of the UnbufferedPipeline over the Buffered one is
+    that the amount of logic needed (number of gates) is greatly
+    reduced.
+
     BufferedPipeline:
     ----------------
 
@@ -209,7 +213,11 @@ def eq(o, i):
 
 class StageCls(metaclass=ABCMeta):
     """ Class-based "Stage" API.  requires instantiation (after derivation)
-        see "Stage API" above.
+
+        see "Stage API" above..  Note: python does *not* require derivation
+        from this class.  All that is required is that the pipelines *have*
+        the functions listed in this class.  Derivation from this class
+        is therefore merely a "courtesy" to maintainers.
     """
     @abstractmethod
     def ispec(self): pass       # REQUIRED
@@ -223,7 +231,11 @@ class StageCls(metaclass=ABCMeta):
 
 class Stage(metaclass=ABCMeta):
     """ Static "Stage" API.  does not require instantiation (after derivation)
-        see "Stage API" above
+
+        see "Stage API" above.  Note: python does *not* require derivation
+        from this class.  All that is required is that the pipelines *have*
+        the functions listed in this class.  Derivation from this class
+        is therefore merely a "courtesy" to maintainers.
     """
     @staticmethod
     @abstractmethod
@@ -246,6 +258,8 @@ class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
         combinatorial chain.
+
+        the end result basically conforms to the exact same Stage API.
 
         * input to this class will be the input of the first stage
         * output of first stage goes into input of second
@@ -280,19 +294,16 @@ class StageChain(StageCls):
 class ControlBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, stage=None, in_multi=None):
-        """ pass in a "stage" which may be either a static class or a class
-            instance, which has four functions (one optional):
-            * ispec: returns input signals according to the input specification
-            * ispec: returns output signals to the output specification
-            * process: takes an input instance and returns processed data
-            * setup: performs any module linkage if the stage uses one.
+    def __init__(self, in_multi=None):
+        """ Base class containing ready/valid/data to previous and next stages
+
+            * p: contains ready/valid to the previous stage
+            * n: contains ready/valid to the next stage
 
             User must also:
-            * add i_data member to PrevControl and
-            * add o_data member to NextControl
+            * add i_data member to PrevControl (p) and
+            * add o_data member to NextControl (n)
         """
-        self.stage = stage
 
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi)
