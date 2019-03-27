@@ -309,15 +309,15 @@ class Stage(metaclass=ABCMeta):
 class RecordBasedStage(Stage):
     """ convenience class which provides a Records-based layout.
     """
-   def __init__(self, in_shape, out_shape, processfn, setupfn=None):
-      self.in_shape = in_shape
-      self.out_shape = out_shape
-      self.__process = processfn
-      self.__setup = setupfn
-   def ispec(self): return Record(self.in_shape)
-   def ospec(self): return Record(self.out_shape)
-   def process(seif, i): return self.__process(i)
-   def setup(seif, m, i): return self.__setup(m, i)
+    def __init__(self, in_shape, out_shape, processfn, setupfn=None):
+        self.in_shape = in_shape
+        self.out_shape = out_shape
+        self.__process = processfn
+        self.__setup = setupfn
+    def ispec(self): return Record(self.in_shape)
+    def ospec(self): return Record(self.out_shape)
+    def process(seif, i): return self.__process(i)
+    def setup(seif, m, i): return self.__setup(m, i)
 
 
 class StageChain(StageCls):
