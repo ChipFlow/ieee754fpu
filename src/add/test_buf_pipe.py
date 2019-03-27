@@ -299,6 +299,10 @@ class ExampleBufPipe2(ControlBase):
         return m
 
 
+######################################################################
+# Test 9
+######################################################################
+
 class ExampleBufPipeChain2(BufferedPipeline):
     """ connects two stages together as a *single* combinatorial stage.
     """
