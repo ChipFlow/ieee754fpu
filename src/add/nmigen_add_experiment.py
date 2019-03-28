@@ -1249,14 +1249,13 @@ class FPNormToPack(FPState, UnbufferedPipeline):
         chain.setup(m, i)
         self.out_z = pmod.ospec()
 
-        # XXX TODO: sync for state-based
-        m.d.comb += self.out_z.mid.eq(pmod.o.mid)
-        m.d.comb += self.out_z.z.eq(pmod.o.z) # outputs packed result
+        self.o = pmod.o
 
     def process(self, i):
-        return self.out_z
+        return self.o
 
     def action(self, m):
+        m.d.sync += self.out_z.eq(self.process(None))
         m.next = "pack_put_z"
 
 
