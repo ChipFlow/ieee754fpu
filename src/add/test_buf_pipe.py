@@ -291,6 +291,9 @@ class ExampleBufPipe2(ControlBase):
         pipe1 = ExampleBufPipe()
         pipe2 = ExampleBufPipe()
 
+        self.p.i_data = pipe1.stage.ispec()
+        self.n.o_data = pipe2.stage.ospec()
+
         m.submodules.pipe1 = pipe1
         m.submodules.pipe2 = pipe2
 

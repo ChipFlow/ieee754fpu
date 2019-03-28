@@ -1846,6 +1846,9 @@ class FPADDStageIn:
     def eq(self, i):
         return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
+    def ports(self):
+        return [self.a, self.b, self.mid]
+
 
 class FPADDStageOut:
     def __init__(self, width, id_wid):
@@ -1854,6 +1857,9 @@ class FPADDStageOut:
 
     def eq(self, i):
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+    def ports(self):
+        return [self.z, self.mid]
 
 
 # matches the format of FPADDStageOut, allows eq function to do assignments
@@ -1878,14 +1884,23 @@ class FPAddBaseStage:
         return o
 
 
+class FPADDBasePipe1(UnbufferedPipeline):
+    def __init__(self, width, id_wid):
+        stage = FPAddBaseStage(width, id_wid)
+        UnbufferedPipeline.__init__(self, stage)
+
+
 class FPADDBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
+        self.pipe1 = FPADDBasePipe1(width, id_wid)
+        self.p.i_data = self.pipe1.stage.ispec()
+        self.n.o_data = self.pipe1.stage.ospec()
 
     def elaborate(self, platform):
         m = Module()
-        stage1 = FPAddBaseStage(width, id_wid)
-        m.d.comb += self.connect([stage1])
+        m.submodules.pipe1 = self.pipe1
+        self.connect(m, [self.pipe1])
         return m
 
 
@@ -1902,7 +1917,7 @@ class FPAddInPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
     def ispec(self): return FPADDStageIn(self.width, self.id_wid)
-    def ospec(self): return self.ospec()
+    def ospec(self): return self.ispec()
     def process(self, i): return i
 
 
@@ -1911,6 +1926,8 @@ class FPADDInMuxPipe(PriorityCombPipeline):
         self.num_rows = num_rows
         stage = FPAddInPassThruStage(width, id_width)
         PriorityCombPipeline.__init__(self, stage, p_len=self.num_rows)
+        #self.p.i_data = stage.ispec()
+        #self.n.o_data = stage.ospec()
 
     def ports(self):
         res = []
@@ -1938,7 +1955,7 @@ class FPAddOutPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
     def ispec(self): return FPADDStageOut(self.width, self.id_wid)
-    def ospec(self): return self.ospec()
+    def ospec(self): return self.ispec()
     def process(self, i): return i
 
 
@@ -1947,6 +1964,8 @@ class FPADDMuxOutPipe(MuxCombPipeline):
         self.num_rows = num_rows
         stage = FPAddOutPassThruStage(width, id_wid)
         MuxCombPipeline.__init__(self, stage, n_len=self.num_rows)
+        #self.p.i_data = stage.ispec()
+        #self.n.o_data = stage.ospec()
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \
@@ -1955,8 +1974,6 @@ class FPADDMuxOutPipe(MuxCombPipeline):
             res += [self.n[i].i_ready, self.n[i].o_valid] + \
                     self.n[i].o_data.ports()
         return res
-
-
 
 
 class FPADDMuxInOut:
