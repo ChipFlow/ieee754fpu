@@ -187,6 +187,36 @@ class FPGetOp(FPState):
             m.d.sync += self.in_op.ack.eq(1)
 
 
+class FPNumBase2Ops:
+
+    def __init__(self, width, id_wid, m_extra=True):
+        self.a = FPNumBase(width, m_extra)
+        self.b = FPNumBase(width, m_extra)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
+    def ports(self):
+        return [self.a, self.b, self.mid]
+
+
+class FPADDBaseData:
+
+    def __init__(self, width, id_wid):
+        self.width = width
+        self.id_wid = id_wid
+        self.a  = Signal(width)
+        self.b  = Signal(width)
+        self.mid = Signal(id_wid, reset_less=True)
+
+    def eq(self, i):
+        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+
+    def ports(self):
+        return [self.a, self.b, self.mid]
+
+
 class FPGet2OpMod(Trigger):
     def __init__(self, width, id_wid):
         Trigger.__init__(self)
@@ -253,17 +283,6 @@ class FPGet2Op(FPState):
             ]
         with m.Else():
             m.d.sync += self.mod.ack.eq(1)
-
-
-class FPNumBase2Ops:
-
-    def __init__(self, width, id_wid, m_extra=True):
-        self.a = FPNumBase(width, m_extra)
-        self.b = FPNumBase(width, m_extra)
-        self.mid = Signal(id_wid, reset_less=True)
-
-    def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
 class FPSCData:
@@ -1608,21 +1627,6 @@ class FPPutZIdx(FPState):
             m.next = self.to_state
         with m.Else():
             m.d.sync += self.out_zs[self.in_mid].stb.eq(1)
-
-class FPADDBaseData:
-
-    def __init__(self, width, id_wid):
-        self.width = width
-        self.id_wid = id_wid
-        self.a  = Signal(width)
-        self.b  = Signal(width)
-        self.mid = Signal(id_wid, reset_less=True)
-
-    def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
-
-    def ports(self):
-        return [self.a, self.b, self.mid]
 
 class FPOpData:
     def __init__(self, width, id_wid):
