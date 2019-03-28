@@ -454,7 +454,7 @@ class FPAddSpecialCases(FPState):
             m.next = "denormalise"
 
 
-class FPAddSpecialCasesDeNorm(FPState):
+class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -464,6 +464,7 @@ class FPAddSpecialCasesDeNorm(FPState):
         FPState.__init__(self, "special_cases")
         self.smod = FPAddSpecialCasesMod(width, id_wid)
         self.dmod = FPAddDeNormMod(width, id_wid)
+        UnbufferedPipeline.__init__(self, self)
         self.o = self.ospec()
 
     def ispec(self):
@@ -768,16 +769,18 @@ class FPAddAlignSingle(FPState):
         m.next = "add_0"
 
 
-class FPAddAlignSingleAdd(FPState):
+class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
         self.width = width
         self.id_wid = id_wid
+        UnbufferedPipeline.__init__(self, self)
         self.a1o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width, self.id_wid) # AlignSingle ispec
+        return FPSCData(self.width, self.id_wid)
+        #return FPNumBase2Ops(self.width, self.id_wid) # AlignSingle ispec
 
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
@@ -1330,12 +1333,13 @@ class FPNorm1Multi(FPState):
             m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
 
 
-class FPNormToPack(FPState):
+class FPNormToPack(FPState, UnbufferedPipeline):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "normalise_1")
         self.id_wid = id_wid
         self.width = width
+        UnbufferedPipeline.__init__(self, self)
 
     def ispec(self):
         return FPAddStage1Data(self.width, self.id_wid) # Norm1ModSingle ispec
@@ -1890,12 +1894,18 @@ class FPADDBasePipe1(UnbufferedPipeline):
 class FPADDBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
-        self.pipe1 = FPADDBasePipe1(width, id_wid)
-        self._eqs = self.connect([self.pipe1])
+        #self.pipe1 = FPADDBasePipe1(width, id_wid)
+        self.pipe1 = FPAddSpecialCasesDeNorm(width, id_wid)
+        self.pipe2 = FPAddAlignSingleAdd(width, id_wid)
+        self.pipe3 = FPNormToPack(width, id_wid)
+
+        self._eqs = self.connect([self.pipe1, self.pipe2, self.pipe3])
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.pipe1 = self.pipe1
+        m.submodules.scnorm = self.pipe1
+        m.submodules.addalign = self.pipe2
+        m.submodules.normpack = self.pipe3
         m.d.comb += self._eqs
         return m
 

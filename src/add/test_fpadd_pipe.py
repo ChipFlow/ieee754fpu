@@ -1,4 +1,4 @@
-""" key strategic example showing how to do multi-input fan-in into a 
+""" key strategic example showing how to do multi-input fan-in into a
     multi-stage pipeline, then multi-output fanout.
 
     the multiplex ID from the fan-in is passed in to the pipeline, preserved,
@@ -13,6 +13,7 @@ from nmigen.cli import verilog, rtlil
 
 from nmigen_add_experiment import (FPADDMuxInOut,)
 
+from sfpy import Float32
 
 class InputTest:
     def __init__(self, dut):
@@ -20,14 +21,16 @@ class InputTest:
         self.di = {}
         self.do = {}
         self.tlen = 4
+        self.width = 32
         for mid in range(dut.num_rows):
             self.di[mid] = {}
             self.do[mid] = []
             for i in range(self.tlen):
-                op1 = randint(0, 255) 
-                op2 = randint(0, 255) 
+                op1 = randint(0, (1<<self.width)-1)
+                op2 = randint(0, (1<<self.width)-1)
+                res = Float32(op1) + Float32(op2)
                 self.di[mid][i] = (op1, op2)
-                self.do[mid].append(op1 + op2)
+                self.do[mid].append(res.bits)
 
     def send(self, mid):
         for i in range(self.tlen):
@@ -43,7 +46,11 @@ class InputTest:
                 yield
                 o_p_ready = yield rs.o_ready
 
-            print ("send", mid, i, op1, op2, op1+op2)
+            fop1 = Float32(op1)
+            fop2 = Float32(op2)
+            res = fop1 + fop2
+            print ("send", mid, i, hex(op1), hex(op2), hex(res.bits),
+                           fop1, fop2, res)
 
             yield rs.i_valid.eq(0)
             # wait random period of time before queueing another value
@@ -83,13 +90,14 @@ class InputTest:
             out_mid = yield n.o_data.mid
             out_z = yield n.o_data.z
 
-            print ("recv", out_mid, out_z)
-
             out_i = 0
+
+            print ("recv", out_mid, hex(out_z), "expected",
+                        hex(self.do[mid][out_i] ))
 
             # see if this output has occurred already, delete it if it has
             assert mid == out_mid, "out_mid %d not correct %d" % (out_mid, mid)
-            assert self.do[mid][out_i] == out_z # pass-through data
+            assert self.do[mid][out_i] == out_z
             del self.do[mid][out_i]
 
             # check if there's any more outputs
@@ -100,7 +108,7 @@ class InputTest:
 
 
 if __name__ == '__main__':
-    dut = FPADDMuxInOut(16, 2, 4)
+    dut = FPADDMuxInOut(32, 2, 4)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_fpadd_pipe.il", "w") as f:
         f.write(vl)
