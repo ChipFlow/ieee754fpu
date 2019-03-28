@@ -10,6 +10,9 @@ from math import log
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 from singlepipe import (ControlBase, StageChain, UnbufferedPipeline)
+from multipipe import CombMultiOutPipeline
+from multipipe import CombMultiInPipeline, InputPriorityArbiter
+
 #from fpbase import FPNumShiftMultiRight
 
 
@@ -1833,6 +1836,7 @@ class FPADDBase(FPState):
             with m.Else():
                 m.d.sync += self.out_z.stb.eq(1)
 
+
 class FPADDStageIn:
     def __init__(self, width, id_wid):
         self.a = Signal(width)
@@ -1883,6 +1887,106 @@ class FPADDBasePipe(ControlBase):
         stage1 = FPAddBaseStage(width, id_wid)
         m.d.comb += self.connect([stage1])
         return m
+
+
+class PriorityCombPipeline(CombMultiInPipeline):
+    def __init__(self, stage, p_len):
+        p_mux = InputPriorityArbiter(self, p_len)
+        CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
+
+    def ports(self):
+        return self.p_mux.ports()
+
+
+class FPAddInPassThruStage:
+    def __init__(self, width, id_wid):
+        self.width, self.id_wid = width, id_wid
+    def ispec(self): return FPADDStageIn(self.width, self.id_wid)
+    def ospec(self): return self.ospec()
+    def process(self, i): return i
+
+
+class FPADDInMuxPipe(PriorityCombPipeline):
+    def __init__(self, width, id_width, num_rows):
+        self.num_rows = num_rows
+        stage = FPAddInPassThruStage(width, id_width)
+        PriorityCombPipeline.__init__(self, stage, p_len=self.num_rows)
+
+    def ports(self):
+        res = []
+        for i in range(len(self.p)):
+            res += [self.p[i].i_valid, self.p[i].o_ready] + \
+                    self.p[i].i_data.ports()
+        res += [self.n.i_ready, self.n.o_valid] + \
+                self.n.o_data.ports()
+        return res
+
+
+class MuxCombPipeline(CombMultiOutPipeline):
+    def __init__(self, stage, n_len):
+        # HACK: stage is also the n-way multiplexer
+        CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
+
+        # HACK: n-mux is also the stage... so set the muxid equal to input mid
+        stage.m_id = self.p.i_data.mid
+
+    def ports(self):
+        return self.p_mux.ports()
+
+
+class FPAddOutPassThruStage:
+    def __init__(self, width, id_wid):
+        self.width, self.id_wid = width, id_wid
+    def ispec(self): return FPADDStageOut(self.width, self.id_wid)
+    def ospec(self): return self.ospec()
+    def process(self, i): return i
+
+
+class FPADDMuxOutPipe(MuxCombPipeline):
+    def __init__(self, width, id_wid, num_rows):
+        self.num_rows = num_rows
+        stage = FPAddOutPassThruStage(width, id_wid)
+        MuxCombPipeline.__init__(self, stage, n_len=self.num_rows)
+
+    def ports(self):
+        res = [self.p.i_valid, self.p.o_ready] + \
+                self.p.i_data.ports()
+        for i in range(len(self.n)):
+            res += [self.n[i].i_ready, self.n[i].o_valid] + \
+                    self.n[i].o_data.ports()
+        return res
+
+
+
+
+class FPADDMuxInOut:
+    """ Reservation-Station version of FPADD pipeline.
+
+        fan-in on
+    """
+    def __init__(self, width, id_wid, num_rows):
+        self.num_rows = num_rows
+        self.inpipe = FPADDInMuxPipe(width, id_wid, num_rows)   # fan-in
+        self.fpadd = FPADDBasePipe(width, id_wid)               # add stage
+        self.outpipe = FPADDMuxOutPipe(width, id_wid, num_rows) # fan-out
+
+        self.p = self.inpipe.p  # kinda annoying,
+        self.n = self.outpipe.n # use pipe in/out as this class in/out
+        self._ports = self.inpipe.ports() + self.outpipe.ports()
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.inpipe = self.inpipe
+        m.submodules.fpadd = self.fpadd
+        m.submodules.outpipe = self.outpipe
+
+        m.d.comb += self.inpipe.n.connect_to_next(self.fpadd.p)
+        m.d.comb += self.fpadd.connect_to_next(self.outpipe)
+
+        return m
+
+    def ports(self):
+        return self._ports
 
 
 class ResArray:
