@@ -459,6 +459,9 @@ class FPAddSpecialCasesDeNorm(FPState):
         # out_do_z=False
         m.d.sync += self.o.eq(self.dmod.o)
 
+    def process(self, i):
+        return self.o
+
     def action(self, m):
         #with m.If(self.out_do_z):
         #    m.next = "put_z"
@@ -762,6 +765,9 @@ class FPAddAlignSingleAdd(FPState):
         chain.setup(m, i)
 
         m.d.sync += self.a1o.eq(a1mod.o)
+
+    def process(self, i):
+        return self.a1o
 
     def action(self, m):
         m.next = "normalise_1"
@@ -1322,6 +1328,9 @@ class FPNormToPack(FPState):
 
         m.d.sync += self.out_z.mid.eq(pmod.o.mid)
         m.d.sync += self.out_z.z.v.eq(pmod.o.z.v) # outputs packed result
+
+    def process(self, i):
+        return self.out_z
 
     def action(self, m):
         m.next = "pack_put_z"
