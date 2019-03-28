@@ -9,7 +9,7 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
-from example_buf_pipe import StageChain, UnbufferedPipeline
+from singlepipe import (ControlBase, StageChain, UnbufferedPipeline)
 #from fpbase import FPNumShiftMultiRight
 
 
@@ -1874,16 +1874,16 @@ class FPAddBaseStage:
         return o
 
 
-class FPADDBasePipe:
+class FPADDBasePipe(ControlBase):
     def __init__(self, width, id_wid):
-        stage1 = FPAddBaseStage(width, id_wid)
-        self.pipe = UnbufferedPipeline(stage1)
+        ControlBase.__init__(self)
 
     def elaborate(self, platform):
-        return self.pipe.elaborate(platform)
+        m = Module()
+        stage1 = FPAddBaseStage(width, id_wid)
+        m.d.comb += self.connect([stage1])
+        return m
 
-    def ports(self):
-        return self.pipe.ports()
 
 class ResArray:
     def __init__(self, width, id_wid):
