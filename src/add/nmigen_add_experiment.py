@@ -1615,6 +1615,8 @@ class FPADDBaseData:
     def eq(self, i):
         return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
+    def ports(self):
+        return [self.a, self.b, self.mid]
 
 class FPOpData:
     def __init__(self, width, id_wid):
@@ -1623,6 +1625,9 @@ class FPOpData:
 
     def eq(self, i):
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
+
+    def ports(self):
+        return [self.z, self.mid]
 
 
 class FPADDBaseMod:
@@ -1837,19 +1842,6 @@ class FPADDBase(FPState):
                 m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADDStageIn:
-    def __init__(self, width, id_wid):
-        self.a = Signal(width)
-        self.b = Signal(width)
-        self.mid = Signal(id_wid, reset_less=True)
-
-    def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
-
-    def ports(self):
-        return [self.a, self.b, self.mid]
-
-
 class FPADDStageOut:
     def __init__(self, width, id_wid):
         self.z = Signal(width)
@@ -1872,7 +1864,7 @@ class FPAddBaseStage:
         self.id_wid = id_wid
 
     def ispec(self):
-        return FPADDStageIn(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
         return FPADDStageOut(self.width, self.id_wid)
@@ -1915,7 +1907,7 @@ class PriorityCombPipeline(CombMultiInPipeline):
 class FPAddInPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
-    def ispec(self): return FPADDStageIn(self.width, self.id_wid)
+    def ispec(self): return FPADDBaseData(self.width, self.id_wid)
     def ospec(self): return self.ispec()
     def process(self, i): return i
 
