@@ -4,17 +4,7 @@ from nmigen import Module, Signal, Cat
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from multipipe import CombMultiInPipeline, InputPriorityArbiter
-
-
-class PriorityUnbufferedPipeline(CombMultiInPipeline):
-    def __init__(self, stage, p_len=4):
-        p_mux = InputPriorityArbiter(self, p_len)
-        CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
-
-    def ports(self):
-        return self.p_mux.ports()
-        #return UnbufferedPipeline.ports(self) + self.p_mux.ports()
+from multipipe import (CombMultiInPipeline, PriorityCombMuxInPipe)
 
 
 class PassData:
@@ -29,12 +19,12 @@ class PassData:
     def ports(self):
         return [self.mid, self.idx, self.data]
 
+
 class PassThroughStage:
     def ispec(self):
         return PassData()
     def ospec(self):
         return self.ispec() # same as ospec
-                
     def process(self, i):
         return i # pass-through
 
@@ -214,20 +204,11 @@ class InputTest:
                 break
 
 
-class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
+class TestPriorityMuxPipe(PriorityCombMuxInPipe):
     def __init__(self):
         self.num_rows = 4
         stage = PassThroughStage()
-        PriorityUnbufferedPipeline.__init__(self, stage, p_len=self.num_rows)
-
-    def ports(self):
-        res = []
-        for i in range(len(self.p)):
-            res += [self.p[i].i_valid, self.p[i].o_ready] + \
-                    self.p[i].i_data.ports()
-        res += [self.n.i_ready, self.n.o_valid] + \
-                self.n.o_data.ports()
-        return res
+        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
 
 if __name__ == '__main__':

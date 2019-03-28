@@ -71,10 +71,24 @@ class MultiInControlBase:
     def ports(self):
         res = []
         for i in range(len(self.p)):
-            res += [self.p[i].i_valid, self.p[i].o_ready,
-                    self.p[i].i_data]# XXX need flattening!]
-        res += [self.n.i_ready, self.n.o_valid,
-                self.n.o_data]   # XXX need flattening!]
+            p = self.p[i]
+            res += [p.i_valid, p.o_ready]
+            if hasattr(p.i_data, "ports"):
+                res += p.i_data.ports()
+            else:
+                rres = p.i_data
+                if not isinstance(rres, Sequence):
+                    rres = [rres]
+                res += rres
+        n = self.n
+        res += [n.i_ready, n.o_valid]
+        if hasattr(n.o_data, "ports"):
+            res += n.o_data.ports()
+        else:
+            rres = n.o_data
+            if not isinstance(rres, Sequence):
+                rres = [rres]
+            res += rres
         return res
 
 
