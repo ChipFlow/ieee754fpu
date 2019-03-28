@@ -144,20 +144,33 @@ class FPGet2Op(FPState):
         FPState.__init__(self, in_state)
         self.out_state = out_state
         self.mod = FPGet2OpMod(width, id_wid)
-        self.o = self.mod.ospec()
+        self.o = self.ospec()
         self.in_stb = Signal(reset_less=True)
         self.out_ack = Signal(reset_less=True)
         self.out_decode = Signal(reset_less=True)
 
-    def setup(self, m, i, in_stb, in_ack):
+    def ispec(self):
+        return self.mod.ispec()
+
+    def ospec(self):
+        return self.mod.ospec()
+
+    def trigger_setup(self, m, in_stb, in_ack):
+        """ links stb/ack
+        """
+        m.d.comb += self.mod.stb.eq(in_stb)
+        m.d.comb += in_ack.eq(self.mod.ack)
+
+    def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.get_ops = self.mod
         m.d.comb += self.mod.i.eq(i)
-        m.d.comb += self.mod.stb.eq(in_stb)
         m.d.comb += self.out_ack.eq(self.mod.ack)
         m.d.comb += self.out_decode.eq(self.mod.trigger)
-        m.d.comb += in_ack.eq(self.mod.ack)
+
+    def process(self, i):
+        return self.o
 
     def action(self, m):
         with m.If(self.out_decode):
@@ -1587,9 +1600,10 @@ class FPADDBaseMod:
 
         get = self.add_state(FPGet2Op("get_ops", "special_cases",
                                       self.width))
-        get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
+        get.setup(m, self.i)
         a = get.out_op1
         b = get.out_op2
+        get.trigger_setup(m, self.in_t.stb, self.in_t.ack)
 
         sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
@@ -1634,17 +1648,17 @@ class FPADDBaseMod:
 
     def get_compact_fragment(self, m, platform=None):
 
-        get = self.add_state(FPGet2Op("get_ops", "special_cases",
-                                      self.width, self.id_wid))
-        get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
 
+        get = FPGet2Op("get_ops", "special_cases", self.width, self.id_wid)
         sc = FPAddSpecialCasesDeNorm(self.width, self.id_wid)
         alm = FPAddAlignSingleAdd(self.width, self.id_wid)
         n1 = FPNormToPack(self.width, self.id_wid)
 
-        chainlist = [sc, alm, n1]
+        get.trigger_setup(m, self.in_t.stb, self.in_t.ack)
+
+        chainlist = [get, sc, alm, n1]
         chain = StageChain(chainlist, specallocate=True)
-        chain.setup(m, get.o)
+        chain.setup(m, self.i)
 
         for mod in chainlist:
             sc = self.add_state(mod)
