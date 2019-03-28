@@ -1638,14 +1638,16 @@ class FPADDBaseMod:
                                       self.width, self.id_wid))
         get.setup(m, self.i, self.in_t.stb, self.in_t.ack)
 
-        sc = self.add_state(FPAddSpecialCasesDeNorm(self.width, self.id_wid))
-        sc.setup(m, get.o)
+        sc = FPAddSpecialCasesDeNorm(self.width, self.id_wid)
+        alm = FPAddAlignSingleAdd(self.width, self.id_wid)
+        n1 = FPNormToPack(self.width, self.id_wid)
 
-        alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
-        alm.setup(m, sc.out)
+        chainlist = [sc, alm, n1]
+        chain = StageChain(chainlist, specallocate=True)
+        chain.setup(m, get.o)
 
-        n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
-        n1.setup(m, alm.a1o)
+        for mod in chainlist:
+            sc = self.add_state(mod)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.o,
                                     n1.out_z.mid, self.o.mid))
