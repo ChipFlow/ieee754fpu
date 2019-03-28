@@ -688,13 +688,13 @@ class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
         chain = StageChain([mod, a0mod, a1mod])
         chain.setup(m, i)
 
-        # XXX TODO: sync for state-based
-        m.d.comb += self.a1o.eq(a1mod.o)
+        self.o = a1mod.o
 
     def process(self, i):
-        return self.a1o
+        return self.o
 
     def action(self, m):
+        m.d.sync += self.a1o.eq(self.process(None))
         m.next = "normalise_1"
 
 
