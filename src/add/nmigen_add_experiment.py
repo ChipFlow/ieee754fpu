@@ -355,38 +355,36 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
-        self.smod = FPAddSpecialCasesMod(width, id_wid)
-        self.dmod = FPAddDeNormMod(width, id_wid)
+        self.width = width
+        self.id_wid = id_wid
         UnbufferedPipeline.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return self.smod.ispec()
+        return FPADDBaseData(self.width, self.id_wid) # SpecialCases ispec
 
     def ospec(self):
-        return self.dmod.ospec()
+        return FPSCData(self.width, self.id_wid) # DeNorm ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        # these only needed for break-out (early-out)
-        # out_z = self.smod.ospec()
-        # out_do_z = Signal(reset_less=True)
-        self.smod.setup(m, i)
-        self.dmod.setup(m, self.smod.o)
-        #m.d.comb += out_do_z.eq(self.smod.o.out_do_z)
+        smod = FPAddSpecialCasesMod(self.width, self.id_wid)
+        dmod = FPAddDeNormMod(self.width, self.id_wid)
 
-        # out_do_z=True, only needed for early-out (split pipeline)
-        #m.d.sync += out_z.z.v.eq(self.smod.o.z.v) # only take output
-        #m.d.sync += out_z.mid.eq(self.smod.o.mid)  # (and mid)
+        chain = StageChain([smod, dmod])
+        chain.setup(m, i)
 
-        # out_do_z=False
-        self.o = self.dmod.o
+        # only needed for break-out (early-out)
+        # self.out_do_z = smod.o.out_do_z
+
+        self.o = dmod.o
 
     def process(self, i):
         return self.o
 
     def action(self, m):
+        # for break-out (early-out)
         #with m.If(self.out_do_z):
         #    m.next = "put_z"
         #with m.Else():
@@ -407,6 +405,9 @@ class FPAddDeNormMod(FPState):
 
     def ospec(self):
         return FPSCData(self.width, self.id_wid)
+
+    def process(self, i):
+        return self.o
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -1518,6 +1519,7 @@ class FPPutZIdx(FPState):
             m.next = self.to_state
         with m.Else():
             m.d.sync += self.out_zs[self.in_mid].stb.eq(1)
+
 
 class FPOpData:
     def __init__(self, width, id_wid):
