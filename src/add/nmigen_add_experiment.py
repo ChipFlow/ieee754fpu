@@ -1923,39 +1923,6 @@ class FPADDMuxInOut:
         return self._ports
 
 
-class ResArray:
-    def __init__(self, width, id_wid):
-        self.width = width
-        self.id_wid = id_wid
-        res = []
-        for i in range(rs_sz):
-            out_z = FPOp(width)
-            out_z.name = "out_z_%d" % i
-            res.append(out_z)
-        self.res = Array(res)
-        self.in_z = FPOp(width)
-        self.in_mid = Signal(self.id_wid, reset_less=True)
-
-    def setup(self, m, in_z, in_mid):
-        m.d.comb += [self.in_z.eq(in_z),
-                     self.in_mid.eq(in_mid)]
-
-    def get_fragment(self, platform=None):
-        """ creates the HDL code-fragment for FPAdd
-        """
-        m = Module()
-        m.submodules.res_in_z = self.in_z
-        m.submodules += self.res
-
-        return m
-
-    def ports(self):
-        res = []
-        for z in self.res:
-            res += z.ports()
-        return res
-
-
 class FPADD(FPID):
     """ FPADD: stages as follows:
 
