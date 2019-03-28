@@ -3,7 +3,7 @@ from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from nmigen_add_experiment import InputGroup
+from inputgroup import InputGroup
 
 
 def testbench(dut):
