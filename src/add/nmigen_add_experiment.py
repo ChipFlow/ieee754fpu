@@ -381,6 +381,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         #m.d.sync += out_z.mid.eq(self.smod.o.mid)  # (and mid)
 
         # out_do_z=False
+        # XXX TODO: sync for state-based
         m.d.comb += self.o.eq(self.dmod.o)
 
     def process(self, i):
@@ -687,6 +688,7 @@ class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
         chain = StageChain([mod, a0mod, a1mod])
         chain.setup(m, i)
 
+        # XXX TODO: sync for state-based
         m.d.comb += self.a1o.eq(a1mod.o)
 
     def process(self, i):
@@ -1247,6 +1249,7 @@ class FPNormToPack(FPState, UnbufferedPipeline):
         chain.setup(m, i)
         self.out_z = pmod.ospec()
 
+        # XXX TODO: sync for state-based
         m.d.comb += self.out_z.mid.eq(pmod.o.mid)
         m.d.comb += self.out_z.z.eq(pmod.o.z) # outputs packed result
 
