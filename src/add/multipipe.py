@@ -258,6 +258,8 @@ class CombMultiInPipeline(MultiInControlBase):
             n_i_readyn = Array(n_i_readyn)
             data_valid = Array(data_valid)
 
+        nirn = Signal(reset_less=True)
+        m.d.comb += nirn.eq(~self.n.i_ready)
         mid = self.p_mux.m_id
         for i in range(p_len):
             m.d.comb += data_valid[i].eq(0)
@@ -266,7 +268,7 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += self.p[i].o_ready.eq(0)
         m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
         m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | self.n.i_ready)
-        m.d.comb += n_i_readyn[mid].eq(~self.n.i_ready & data_valid[mid])
+        m.d.comb += n_i_readyn[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
         av = []
         for i in range(p_len):
