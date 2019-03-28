@@ -10,6 +10,8 @@ from nmigen.compat.fhdl.bitcontainer import value_bits_sign
 # stages, and new members with names not starting with "_" are to be registered
 # for the next stage.
 
+from singlepipe import eq
+
 class SimplePipeline(object):
     """ Pipeline builder with auto generation of pipeline registers.
     """
@@ -50,5 +52,5 @@ class SimplePipeline(object):
         if next_stage not in self._pipeline_register_map:
             self._pipeline_register_map[next_stage] = {}
         self._pipeline_register_map[next_stage][name] = new_pipereg
-        self._pipe.sync += new_pipereg.eq(value)
+        self._pipe.sync += eq(new_pipereg, value)
 
