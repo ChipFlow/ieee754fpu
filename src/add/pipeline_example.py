@@ -22,7 +22,9 @@ class SimplePipelineExample(SimplePipeline):
         self.n = self.n + 1
 
     def stage2(self):
-        self.n = self.n << 1
+        localv = Signal(4)
+        self._pipe.comb += localv.eq(2)
+        self.n = self.n << localv
 
     def stage3(self):
         self.n = ~self.n
@@ -45,6 +47,6 @@ if __name__ == "__main__":
                     example.p._loopback,
         ])
 
-    print(verilog.convert(example, ports=[ 
-               example.p._loopback,
-             ]))
+    #print(verilog.convert(example, ports=[
+    #           example.p._loopback,
+    #         ]))
