@@ -520,8 +520,6 @@ class FPAddAlignMulti(FPState):
         m.submodules.align = self.mod
         m.d.comb += self.mod.in_a.eq(in_a)
         m.d.comb += self.mod.in_b.eq(in_b)
-        #m.d.comb += self.out_a.eq(self.mod.out_a)
-        #m.d.comb += self.out_b.eq(self.mod.out_b)
         m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
         m.d.sync += self.out_a.eq(self.mod.out_a)
         m.d.sync += self.out_b.eq(self.mod.out_b)
@@ -673,7 +671,6 @@ class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
 
     def ispec(self):
         return FPSCData(self.width, self.id_wid)
-        #return FPNumBase2Ops(self.width, self.id_wid) # AlignSingle ispec
 
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
@@ -847,10 +844,6 @@ class FPAddStage1Mod(FPState):
 
     def elaborate(self, platform):
         m = Module()
-        #m.submodules.norm1_in_overflow = self.in_of
-        #m.submodules.norm1_out_overflow = self.out_of
-        #m.submodules.norm1_in_z = self.in_z
-        #m.submodules.norm1_out_z = self.out_z
         m.d.comb += self.o.z.eq(self.i.z)
         # tot[-1] (MSB) gets set when the sum overflows. shift result down
         with m.If(~self.i.out_do_z):
@@ -970,6 +963,7 @@ class FPNormaliseModSingle:
             ]
 
         return m
+
 
 class FPNorm1Data:
 
