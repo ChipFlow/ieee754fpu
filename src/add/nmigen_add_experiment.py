@@ -9,7 +9,8 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
-from singlepipe import (ControlBase, StageChain, UnbufferedPipeline)
+from singlepipe import (ControlBase, StageChain, UnbufferedPipeline,
+                        PassThroughStage)
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
@@ -1872,18 +1873,11 @@ class FPADDBasePipe(ControlBase):
         return m
 
 
-class FPAddInPassThruStage:
-    def __init__(self, width, id_wid):
-        self.width, self.id_wid = width, id_wid
-    def ispec(self): return FPADDBaseData(self.width, self.id_wid)
-    def ospec(self): return self.ispec()
-    def process(self, i): return i
-
-
 class FPADDInMuxPipe(PriorityCombMuxInPipe):
-    def __init__(self, width, id_width, num_rows):
+    def __init__(self, width, id_wid, num_rows):
         self.num_rows = num_rows
-        stage = FPAddInPassThruStage(width, id_width)
+        def iospec(): return FPADDBaseData(width, id_wid)
+        stage = PassThroughStage(iospec)
         PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
     def ports(self):
@@ -1896,18 +1890,11 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
         return res
 
 
-class FPAddOutPassThruStage:
-    def __init__(self, width, id_wid):
-        self.width, self.id_wid = width, id_wid
-    def ispec(self): return FPPackData(self.width, self.id_wid)
-    def ospec(self): return self.ispec()
-    def process(self, i): return i
-
-
 class FPADDMuxOutPipe(CombMuxOutPipe):
     def __init__(self, width, id_wid, num_rows):
         self.num_rows = num_rows
-        stage = FPAddOutPassThruStage(width, id_wid)
+        def iospec(): return FPPackData(width, id_wid)
+        stage = PassThroughStage(iospec)
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
     def ports(self):

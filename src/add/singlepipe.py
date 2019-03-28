@@ -641,7 +641,7 @@ class PassThroughStage(StageCls):
     """ a pass-through stage which has its input data spec equal to its output,
         and "passes through" its data from input to output.
     """
-    def __init__(self, iospec):
+    def __init__(self, iospecfn):
         self.iospecfn = iospecfn
     def ispec(self): return self.iospecfn()
     def ospec(self): return self.iospecfn()
