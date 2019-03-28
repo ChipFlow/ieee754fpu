@@ -126,14 +126,20 @@ class MultiOutControlBase:
         return eq(self.p.i_data, i)
 
     def ports(self):
-        res = []
-        res += [self.p.i_valid, self.p.o_ready,
-                self.p.i_data] # XXX need flattening!
-        for i in range(len(self.n)):
-            res += [self.n[i].i_ready, self.n[i].o_valid,
-                    self.n[i].o_data]   # XXX need flattening!
-        return res
+        res = [self.p.i_valid, self.p.o_ready]
+        if hasattr(self.p.i_data, "ports"):
+            res += self.p.i_data.ports()
+        else:
+            res += self.p.i_data
 
+        for i in range(len(self.n)):
+            n = self.n[i]
+            res += [n.i_ready, n.o_valid]
+            if hasattr(n.o_data, "ports"):
+                res += n.o_data.ports()
+            else:
+                res += n.o_data
+        return res
 
 
 class CombMultiOutPipeline(MultiOutControlBase):
@@ -275,8 +281,6 @@ class CombMuxOutPipe(CombMultiOutPipeline):
         # HACK: n-mux is also the stage... so set the muxid equal to input mid
         stage.m_id = self.p.i_data.mid
 
-    def ports(self):
-        return self.p_mux.ports()
 
 
 class InputPriorityArbiter:

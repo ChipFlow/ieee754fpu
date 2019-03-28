@@ -1897,14 +1897,6 @@ class FPADDMuxOutPipe(CombMuxOutPipe):
         stage = PassThroughStage(iospec)
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
-    def ports(self):
-        res = [self.p.i_valid, self.p.o_ready] + \
-                self.p.i_data.ports()
-        for i in range(len(self.n)):
-            res += [self.n[i].i_ready, self.n[i].o_valid] + \
-                    self.n[i].o_data.ports()
-        return res
-
 
 class FPADDMuxInOut:
     """ Reservation-Station version of FPADD pipeline.
