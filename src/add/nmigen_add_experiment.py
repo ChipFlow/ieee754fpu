@@ -11,7 +11,7 @@ from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 from singlepipe import (ControlBase, StageChain, UnbufferedPipeline)
 from multipipe import CombMultiOutPipeline
-from multipipe import CombMultiInPipeline, InputPriorityArbiter
+from multipipe import PriorityCombMuxInPipe
 
 #from fpbase import FPNumShiftMultiRight
 
@@ -1910,15 +1910,6 @@ class FPADDBasePipe(ControlBase):
         return m
 
 
-class PriorityCombPipeline(CombMultiInPipeline):
-    def __init__(self, stage, p_len):
-        p_mux = InputPriorityArbiter(self, p_len)
-        CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
-
-    def ports(self):
-        return self.p_mux.ports()
-
-
 class FPAddInPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
@@ -1927,13 +1918,11 @@ class FPAddInPassThruStage:
     def process(self, i): return i
 
 
-class FPADDInMuxPipe(PriorityCombPipeline):
+class FPADDInMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, width, id_width, num_rows):
         self.num_rows = num_rows
         stage = FPAddInPassThruStage(width, id_width)
-        PriorityCombPipeline.__init__(self, stage, p_len=self.num_rows)
-        #self.p.i_data = stage.ispec()
-        #self.n.o_data = stage.ospec()
+        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
     def ports(self):
         res = []

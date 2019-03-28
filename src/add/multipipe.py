@@ -302,18 +302,18 @@ class InputPriorityArbiter:
 
 
 
-class ExamplePipeline(CombMultiInPipeline):
+class PriorityCombMuxInPipe(CombMultiInPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
-    def __init__(self, p_len=2):
+    def __init__(self, stage, p_len=2):
         p_mux = InputPriorityArbiter(self, p_len)
-        CombMultiInPipeline.__init__(self, ExampleStage, p_len, p_mux)
+        CombMultiInPipeline.__init__(self, stage, p_len, p_mux)
 
 
 if __name__ == '__main__':
 
-    dut = ExamplePipeline()
+    dut = PriorityCombMuxInPipe(ExampleStage)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_combpipe.il", "w") as f:
         f.write(vl)

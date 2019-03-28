@@ -1,4 +1,4 @@
-""" key strategic example showing how to do multi-input fan-in into a 
+""" key strategic example showing how to do multi-input fan-in into a
     multi-stage pipeline, then multi-output fanout.
 
     the multiplex ID from the fan-in is passed in to the pipeline, preserved,
@@ -12,18 +12,8 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMultiOutPipeline
-from multipipe import CombMultiInPipeline, InputPriorityArbiter
+from multipipe import PriorityCombMuxInPipe
 from singlepipe import UnbufferedPipeline
-
-
-class PriorityCombPipeline(CombMultiInPipeline):
-    def __init__(self, stage, p_len):
-        p_mux = InputPriorityArbiter(self, p_len)
-        CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
-
-    def ports(self):
-        return self.p_mux.ports()
-        #return UnbufferedPipeline.ports(self) + self.p_mux.ports()
 
 
 class MuxCombPipeline(CombMultiOutPipeline):
@@ -66,7 +56,7 @@ class PassThroughStage:
         return PassData()
     def ospec(self):
         return self.ispec() # same as ospec
-                
+
     def process(self, i):
         return i # pass-through
 
@@ -160,11 +150,11 @@ class InputTest:
         print ("recv ended", mid)
 
 
-class TestPriorityMuxPipe(PriorityCombPipeline):
+class TestPriorityMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, num_rows):
         self.num_rows = num_rows
         stage = PassThroughStage()
-        PriorityCombPipeline.__init__(self, stage, p_len=self.num_rows)
+        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
     def ports(self):
         res = []
