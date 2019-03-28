@@ -374,6 +374,7 @@ class StageChain(StageCls):
                 if self.specallocate:
                     ni = self.chain[idx+1].ispec() # new input on next loop
                     m.d.comb += eq(ni, o)          # assign to next input
+                    i = ni
                 else:
                     i = o
         self.o = o                             # last loop is the output
