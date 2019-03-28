@@ -16,7 +16,7 @@ from multipipe import CombMultiInPipeline, InputPriorityArbiter
 from singlepipe import UnbufferedPipeline
 
 
-class PriorityUnbufferedPipeline(CombMultiInPipeline):
+class PriorityCombPipeline(CombMultiInPipeline):
     def __init__(self, stage, p_len):
         p_mux = InputPriorityArbiter(self, p_len)
         CombMultiInPipeline.__init__(self, stage, p_len=p_len, p_mux=p_mux)
@@ -26,7 +26,7 @@ class PriorityUnbufferedPipeline(CombMultiInPipeline):
         #return UnbufferedPipeline.ports(self) + self.p_mux.ports()
 
 
-class MuxUnbufferedPipeline(CombMultiOutPipeline):
+class MuxCombPipeline(CombMultiOutPipeline):
     def __init__(self, stage, n_len):
         # HACK: stage is also the n-way multiplexer
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
@@ -160,11 +160,11 @@ class InputTest:
         print ("recv ended", mid)
 
 
-class TestPriorityMuxPipe(PriorityUnbufferedPipeline):
+class TestPriorityMuxPipe(PriorityCombPipeline):
     def __init__(self, num_rows):
         self.num_rows = num_rows
         stage = PassThroughStage()
-        PriorityUnbufferedPipeline.__init__(self, stage, p_len=self.num_rows)
+        PriorityCombPipeline.__init__(self, stage, p_len=self.num_rows)
 
     def ports(self):
         res = []
@@ -214,11 +214,11 @@ class OutputTest:
         yield rs.i_valid.eq(0)
 
 
-class TestMuxOutPipe(MuxUnbufferedPipeline):
+class TestMuxOutPipe(MuxCombPipeline):
     def __init__(self, num_rows):
         self.num_rows = num_rows
         stage = PassThroughStage()
-        MuxUnbufferedPipeline.__init__(self, stage, n_len=self.num_rows)
+        MuxCombPipeline.__init__(self, stage, n_len=self.num_rows)
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \
