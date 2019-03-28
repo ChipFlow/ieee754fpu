@@ -201,6 +201,9 @@ class FPGet2OpMod(Trigger):
     def ospec(self):
         return FPNumBase2Ops(self.width, self.id_wid)
 
+    def process(self, i):
+        return self.o
+
     def elaborate(self, platform):
         m = Trigger.elaborate(self, platform)
         m.submodules.get_op1_out = self.o.a
