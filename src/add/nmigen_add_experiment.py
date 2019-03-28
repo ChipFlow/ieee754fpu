@@ -1510,6 +1510,9 @@ class FPPackData:
     def eq(self, i):
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
 
+    def ports(self):
+        return [self.z, self.mid]
+
 
 class FPPackMod:
 
@@ -1851,50 +1854,9 @@ class FPADDBase(FPState):
                 m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADDStageOut:
-    def __init__(self, width, id_wid):
-        self.z = Signal(width)
-        self.mid = Signal(id_wid, reset_less=True)
-
-    def eq(self, i):
-        return [self.z.eq(i.z), self.mid.eq(i.mid)]
-
-    def ports(self):
-        return [self.z, self.mid]
-
-
-# matches the format of FPADDStageOut, allows eq function to do assignments
-class PlaceHolder: pass
-
-
-class FPAddBaseStage:
-    def __init__(self, width, id_wid):
-        self.width = width
-        self.id_wid = id_wid
-
-    def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid)
-
-    def ospec(self):
-        return FPADDStageOut(self.width, self.id_wid)
-
-    def process(self, i):
-        o = PlaceHolder()
-        o.z = i.a + i.b
-        o.mid = i.mid
-        return o
-
-
-class FPADDBasePipe1(UnbufferedPipeline):
-    def __init__(self, width, id_wid):
-        stage = FPAddBaseStage(width, id_wid)
-        UnbufferedPipeline.__init__(self, stage)
-
-
 class FPADDBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
-        #self.pipe1 = FPADDBasePipe1(width, id_wid)
         self.pipe1 = FPAddSpecialCasesDeNorm(width, id_wid)
         self.pipe2 = FPAddAlignSingleAdd(width, id_wid)
         self.pipe3 = FPNormToPack(width, id_wid)
@@ -1934,10 +1896,12 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
         return res
 
 
+
+
 class FPAddOutPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
-    def ispec(self): return FPADDStageOut(self.width, self.id_wid)
+    def ispec(self): return FPPackData(self.width, self.id_wid)
     def ospec(self): return self.ispec()
     def process(self, i): return i
 
