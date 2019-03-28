@@ -4,6 +4,7 @@ from nmigen import Module, Signal, Cat
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
+from singlepipe import PassThroughStage
 from multipipe import (CombMultiInPipeline, PriorityCombMuxInPipe)
 
 
@@ -18,16 +19,6 @@ class PassData:
 
     def ports(self):
         return [self.mid, self.idx, self.data]
-
-
-class PassThroughStage:
-    def ispec(self):
-        return PassData()
-    def ospec(self):
-        return self.ispec() # same as ospec
-    def process(self, i):
-        return i # pass-through
-
 
 
 def testbench(dut):
@@ -207,7 +198,8 @@ class InputTest:
 class TestPriorityMuxPipe(PriorityCombMuxInPipe):
     def __init__(self):
         self.num_rows = 4
-        stage = PassThroughStage()
+        def iospecfn(): return PassData()
+        stage = PassThroughStage(iospecfn)
         PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
 
