@@ -144,16 +144,6 @@ class TestPriorityMuxPipe(PriorityCombMuxInPipe):
         stage = PassThroughStage()
         PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
-    def ports(self):
-        res = []
-        for i in range(len(self.p)):
-            res += [self.p[i].i_valid, self.p[i].o_ready] + \
-                    self.p[i].i_data.ports()
-        res += [self.n.i_ready, self.n.o_valid] + \
-                self.n.o_data.ports()
-        return res
-
-
 
 class OutputTest:
     def __init__(self, dut):

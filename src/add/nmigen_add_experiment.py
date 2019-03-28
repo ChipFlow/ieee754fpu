@@ -1880,15 +1880,6 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
         stage = PassThroughStage(iospec)
         PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
-    def ports(self):
-        res = []
-        for i in range(len(self.p)):
-            res += [self.p[i].i_valid, self.p[i].o_ready] + \
-                    self.p[i].i_data.ports()
-        res += [self.n.i_ready, self.n.o_valid] + \
-                self.n.o_data.ports()
-        return res
-
 
 class FPADDMuxOutPipe(CombMuxOutPipe):
     def __init__(self, width, id_wid, num_rows):
