@@ -464,7 +464,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         FPState.__init__(self, "special_cases")
         self.smod = FPAddSpecialCasesMod(width, id_wid)
         self.dmod = FPAddDeNormMod(width, id_wid)
-        UnbufferedPipeline.__init__(self, self)
+        UnbufferedPipeline.__init__(self, self) # pipe is its own stage
         self.o = self.ospec()
 
     def ispec(self):
@@ -488,7 +488,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         #m.d.sync += out_z.mid.eq(self.smod.o.mid)  # (and mid)
 
         # out_do_z=False
-        m.d.sync += self.o.eq(self.dmod.o)
+        m.d.comb += self.o.eq(self.dmod.o)
 
     def process(self, i):
         return self.o
@@ -775,7 +775,7 @@ class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
         FPState.__init__(self, "align")
         self.width = width
         self.id_wid = id_wid
-        UnbufferedPipeline.__init__(self, self)
+        UnbufferedPipeline.__init__(self, self) # pipeline is its own stage
         self.a1o = self.ospec()
 
     def ispec(self):
@@ -797,7 +797,7 @@ class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
         chain = StageChain([mod, a0mod, a1mod])
         chain.setup(m, i)
 
-        m.d.sync += self.a1o.eq(a1mod.o)
+        m.d.comb += self.a1o.eq(a1mod.o)
 
     def process(self, i):
         return self.a1o
@@ -1339,7 +1339,7 @@ class FPNormToPack(FPState, UnbufferedPipeline):
         FPState.__init__(self, "normalise_1")
         self.id_wid = id_wid
         self.width = width
-        UnbufferedPipeline.__init__(self, self)
+        UnbufferedPipeline.__init__(self, self) # pipeline is its own stage
 
     def ispec(self):
         return FPAddStage1Data(self.width, self.id_wid) # Norm1ModSingle ispec
@@ -1360,8 +1360,8 @@ class FPNormToPack(FPState, UnbufferedPipeline):
         chain.setup(m, i)
         self.out_z = pmod.ospec()
 
-        m.d.sync += self.out_z.mid.eq(pmod.o.mid)
-        m.d.sync += self.out_z.z.eq(pmod.o.z) # outputs packed result
+        m.d.comb += self.out_z.mid.eq(pmod.o.mid)
+        m.d.comb += self.out_z.z.eq(pmod.o.z) # outputs packed result
 
     def process(self, i):
         return self.out_z

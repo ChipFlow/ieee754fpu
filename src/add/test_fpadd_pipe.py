@@ -20,7 +20,7 @@ class InputTest:
         self.dut = dut
         self.di = {}
         self.do = {}
-        self.tlen = 4
+        self.tlen = 10
         self.width = 32
         for mid in range(dut.num_rows):
             self.di[mid] = {}
@@ -28,6 +28,8 @@ class InputTest:
             for i in range(self.tlen):
                 op1 = randint(0, (1<<self.width)-1)
                 op2 = randint(0, (1<<self.width)-1)
+                #op1 = 0x40900000
+                #op2 = 0x40200000
                 res = Float32(op1) + Float32(op2)
                 self.di[mid][i] = (op1, op2)
                 self.do[mid].append(res.bits)
