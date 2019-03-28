@@ -299,6 +299,9 @@ class FPAddSpecialCasesMod:
         m.submodules.specialcases = self
         m.d.comb += self.i.eq(i)
 
+    def process(self, i):
+        return self.o
+
     def elaborate(self, platform):
         m = Module()
 
