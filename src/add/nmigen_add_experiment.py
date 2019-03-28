@@ -1892,7 +1892,11 @@ class FPADDMuxOutPipe(CombMuxOutPipe):
 class FPADDMuxInOut:
     """ Reservation-Station version of FPADD pipeline.
 
-        fan-in on
+        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * 3-stage adder pipeline
+        * fan-out on outputs (an array of FPPackData: z,mid)
+
+        Fan-in and Fan-out are combinatorial.
     """
     def __init__(self, width, id_wid, num_rows):
         self.num_rows = num_rows
