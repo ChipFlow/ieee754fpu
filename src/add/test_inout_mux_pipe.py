@@ -250,7 +250,7 @@ class TestInOutPipe:
 
         m.d.comb += self.inpipe.n.connect_to_next(self.pipe1.p)
         m.d.comb += self.pipe1.connect_to_next(self.pipe2)
-        m.d.comb += self.pipe1.connect_to_next(self.outpipe)
+        m.d.comb += self.pipe2.connect_to_next(self.outpipe)
 
         return m
 
