@@ -385,7 +385,7 @@ class ControlBase:
             * p: contains ready/valid to the previous stage
             * n: contains ready/valid to the next stage
 
-            User must also:
+            Except when calling Controlbase.connect(), user must also:
             * add i_data member to PrevControl (p) and
             * add o_data member to NextControl (n)
         """
@@ -468,10 +468,18 @@ class ControlBase:
         return eq(self.p.i_data, i)
 
     def ports(self):
-        return [self.p.i_valid, self.n.i_ready,
+        res = [self.p.i_valid, self.n.i_ready,
                 self.n.o_valid, self.p.o_ready,
-                self.p.i_data, self.n.o_data   # XXX need flattening!
                ]
+        if hasattr(self.p.i_data, "ports"):
+            res += self.p.i_data.ports()
+        else:
+            res += self.p.i_data
+        if hasattr(self.n.o_data, "ports"):
+            res += self.n.o_data.ports()
+        else:
+            res += self.n.o_data
+        return res
 
 
 class BufferedPipeline(ControlBase):
