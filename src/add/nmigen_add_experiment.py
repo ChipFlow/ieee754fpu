@@ -10,7 +10,7 @@ from math import log
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 from singlepipe import (ControlBase, StageChain, UnbufferedPipeline)
-from multipipe import CombMultiOutPipeline
+from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
 #from fpbase import FPNumShiftMultiRight
@@ -1934,18 +1934,6 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
         return res
 
 
-class MuxCombPipeline(CombMultiOutPipeline):
-    def __init__(self, stage, n_len):
-        # HACK: stage is also the n-way multiplexer
-        CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
-
-        # HACK: n-mux is also the stage... so set the muxid equal to input mid
-        stage.m_id = self.p.i_data.mid
-
-    def ports(self):
-        return self.p_mux.ports()
-
-
 class FPAddOutPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
@@ -1954,13 +1942,11 @@ class FPAddOutPassThruStage:
     def process(self, i): return i
 
 
-class FPADDMuxOutPipe(MuxCombPipeline):
+class FPADDMuxOutPipe(CombMuxOutPipe):
     def __init__(self, width, id_wid, num_rows):
         self.num_rows = num_rows
         stage = FPAddOutPassThruStage(width, id_wid)
-        MuxCombPipeline.__init__(self, stage, n_len=self.num_rows)
-        #self.p.i_data = stage.ispec()
-        #self.n.o_data = stage.ospec()
+        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \

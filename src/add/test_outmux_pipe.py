@@ -4,20 +4,8 @@ from nmigen import Module, Signal, Cat
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from multipipe import CombMultiOutPipeline
+from multipipe import CombMuxOutPipe
 from singlepipe import UnbufferedPipeline
-
-
-class MuxUnbufferedPipeline(CombMultiOutPipeline):
-    def __init__(self, stage, n_len):
-        # HACK: stage is also the n-way multiplexer
-        CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
-
-        # HACK: n-mux is also the stage... so set the muxid equal to input mid
-        stage.m_id = self.p.i_data.mid
-
-    def ports(self):
-        return self.p_mux.ports()
 
 
 class PassInData:
@@ -227,11 +215,11 @@ class OutputTest:
                     yield
 
 
-class TestPriorityMuxPipe(MuxUnbufferedPipeline):
+class TestPriorityMuxPipe(CombMuxOutPipe):
     def __init__(self, num_rows):
         self.num_rows = num_rows
         stage = PassThroughStage()
-        MuxUnbufferedPipeline.__init__(self, stage, n_len=self.num_rows)
+        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
     def ports(self):
         res = [self.p.i_valid, self.p.o_ready] + \

@@ -267,6 +267,18 @@ class CombMultiInPipeline(MultiInControlBase):
         return m
 
 
+class CombMuxOutPipe(CombMultiOutPipeline):
+    def __init__(self, stage, n_len):
+        # HACK: stage is also the n-way multiplexer
+        CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
+
+        # HACK: n-mux is also the stage... so set the muxid equal to input mid
+        stage.m_id = self.p.i_data.mid
+
+    def ports(self):
+        return self.p_mux.ports()
+
+
 class InputPriorityArbiter:
     """ arbitration module for Input-Mux pipe, baed on PriorityEncoder
     """
