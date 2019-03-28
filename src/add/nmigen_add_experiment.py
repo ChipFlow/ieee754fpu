@@ -358,7 +358,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         self.smod = FPAddSpecialCasesMod(width, id_wid)
         self.dmod = FPAddDeNormMod(width, id_wid)
         UnbufferedPipeline.__init__(self, self) # pipe is its own stage
-        self.o = self.ospec()
+        self.out = self.ospec()
 
     def ispec(self):
         return self.smod.ispec()
@@ -381,8 +381,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         #m.d.sync += out_z.mid.eq(self.smod.o.mid)  # (and mid)
 
         # out_do_z=False
-        # XXX TODO: sync for state-based
-        m.d.comb += self.o.eq(self.dmod.o)
+        self.o = self.dmod.o
 
     def process(self, i):
         return self.o
@@ -391,6 +390,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         #with m.If(self.out_do_z):
         #    m.next = "put_z"
         #with m.Else():
+            m.d.sync += self.out.eq(self.process(None))
             m.next = "align"
 
 
@@ -1640,7 +1640,7 @@ class FPADDBaseMod:
         sc.setup(m, get.o)
 
         alm = self.add_state(FPAddAlignSingleAdd(self.width, self.id_wid))
-        alm.setup(m, sc.o)
+        alm.setup(m, sc.out)
 
         n1 = self.add_state(FPNormToPack(self.width, self.id_wid))
         n1.setup(m, alm.a1o)
