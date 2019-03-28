@@ -440,22 +440,29 @@ class FPAddSpecialCasesDeNorm(FPState):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
         self.smod = FPAddSpecialCasesMod(width, id_wid)
-        self.out_z = self.smod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
         self.dmod = FPAddDeNormMod(width, id_wid)
-        self.o = self.dmod.ospec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return self.smod.ispec()
+
+    def ospec(self):
+        return self.dmod.ospec()
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
+        # these only needed for break-out (early-out)
+        # out_z = self.smod.ospec()
+        # out_do_z = Signal(reset_less=True)
         self.smod.setup(m, i)
         self.dmod.setup(m, self.smod.o)
-        m.d.comb += self.out_do_z.eq(self.smod.o.out_do_z)
+        #m.d.comb += out_do_z.eq(self.smod.o.out_do_z)
 
-        # out_do_z=True
-        m.d.sync += self.out_z.z.v.eq(self.smod.o.z.v) # only take output
-        m.d.sync += self.out_z.mid.eq(self.smod.o.mid)  # (and mid)
+        # out_do_z=True, only needed for early-out (split pipeline)
+        #m.d.sync += out_z.z.v.eq(self.smod.o.z.v) # only take output
+        #m.d.sync += out_z.mid.eq(self.smod.o.mid)  # (and mid)
+
         # out_do_z=False
         m.d.sync += self.o.eq(self.dmod.o)
 
