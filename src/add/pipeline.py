@@ -47,8 +47,9 @@ class SimplePipeline(object):
         next_stage = self._current_stage_num + 1
         pipereg_id = str(self._current_stage_num) + 'to' + str(next_stage)
         rname = 'pipereg_' + pipereg_id + '_' + name
-        new_pipereg = Signal(value_bits_sign(value), name=rname,
-                             reset_less=True)
+        #new_pipereg = Signal(value_bits_sign(value), name=rname,
+        #                     reset_less=True)
+        new_pipereg = Signal.like(value, name=rname, reset_less = True)
         if next_stage not in self._pipeline_register_map:
             self._pipeline_register_map[next_stage] = {}
         self._pipeline_register_map[next_stage][name] = new_pipereg
