@@ -229,24 +229,16 @@ class FPGet2OpMod(Trigger):
         return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPNumBase2Ops(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid)
 
     def process(self, i):
         return self.o
 
     def elaborate(self, platform):
         m = Trigger.elaborate(self, platform)
-        m.submodules.get_op1_out = self.o.a
-        m.submodules.get_op2_out = self.o.b
-        out_op1 = FPNumIn(None, self.width)
-        out_op2 = FPNumIn(None, self.width)
         with m.If(self.trigger):
             m.d.comb += [
-                out_op1.decode(self.i.a),
-                out_op2.decode(self.i.b),
-                self.o.a.eq(out_op1),
-                self.o.b.eq(out_op2),
-                self.o.mid.eq(self.i.mid)
+                self.o.eq(self.i),
             ]
         return m
 
@@ -313,7 +305,7 @@ class FPAddSpecialCasesMod:
         self.o = self.ospec()
 
     def ispec(self):
-        return FPNumBase2Ops(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
         return FPSCData(self.width, self.id_wid)
@@ -330,18 +322,25 @@ class FPAddSpecialCasesMod:
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.sc_in_a = self.i.a
-        m.submodules.sc_in_b = self.i.b
         m.submodules.sc_out_z = self.o.z
 
+        # decode: XXX really should move to separate stage
+        a1 = FPNumIn(None, self.width)
+        b1 = FPNumIn(None, self.width)
+        m.submodules.sc_decode_a = a1
+        m.submodules.sc_decode_b = b1
+        m.d.comb += [a1.decode(self.i.a),
+                     b1.decode(self.i.b),
+                    ]
+
         s_nomatch = Signal()
-        m.d.comb += s_nomatch.eq(self.i.a.s != self.i.b.s)
+        m.d.comb += s_nomatch.eq(a1.s != b1.s)
 
         m_match = Signal()
-        m.d.comb += m_match.eq(self.i.a.m == self.i.b.m)
+        m.d.comb += m_match.eq(a1.m == b1.m)
 
         # if a is NaN or b is NaN return NaN
-        with m.If(self.i.a.is_nan | self.i.b.is_nan):
+        with m.If(a1.is_nan | b1.is_nan):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.nan(0)
 
@@ -369,47 +368,43 @@ class FPAddSpecialCasesMod:
         #    m.d.comb += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
 
         # if a is inf return inf (or NaN)
-        with m.Elif(self.i.a.is_inf):
+        with m.Elif(a1.is_inf):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.inf(self.i.a.s)
+            m.d.comb += self.o.z.inf(a1.s)
             # if a is inf and signs don't match return NaN
-            with m.If(self.i.b.exp_128 & s_nomatch):
+            with m.If(b1.exp_128 & s_nomatch):
                 m.d.comb += self.o.z.nan(0)
 
         # if b is inf return inf
-        with m.Elif(self.i.b.is_inf):
+        with m.Elif(b1.is_inf):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.inf(self.i.b.s)
+            m.d.comb += self.o.z.inf(b1.s)
 
         # if a is zero and b zero return signed-a/b
-        with m.Elif(self.i.a.is_zero & self.i.b.is_zero):
+        with m.Elif(a1.is_zero & b1.is_zero):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.create(self.i.a.s & self.i.b.s,
-                                          self.i.b.e,
-                                          self.i.b.m[3:-1])
+            m.d.comb += self.o.z.create(a1.s & b1.s, b1.e, b1.m[3:-1])
 
         # if a is zero return b
-        with m.Elif(self.i.a.is_zero):
+        with m.Elif(a1.is_zero):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.create(self.i.b.s, self.i.b.e,
-                                      self.i.b.m[3:-1])
+            m.d.comb += self.o.z.create(b1.s, b1.e, b1.m[3:-1])
 
         # if b is zero return a
-        with m.Elif(self.i.b.is_zero):
+        with m.Elif(b1.is_zero):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.create(self.i.a.s, self.i.a.e,
-                                      self.i.a.m[3:-1])
+            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
-        with m.Elif(s_nomatch & m_match & (self.i.a.e == self.i.b.e)):
+        with m.Elif(s_nomatch & m_match & (a1.e == b1.e)):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
         # Denormalised Number checks next, so pass a/b data through
         with m.Else():
             m.d.comb += self.o.out_do_z.eq(0)
-            m.d.comb += self.o.a.eq(self.i.a)
-            m.d.comb += self.o.b.eq(self.i.b)
+            m.d.comb += self.o.a.eq(a1)
+            m.d.comb += self.o.b.eq(b1)
 
         m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.mid.eq(self.i.mid)
