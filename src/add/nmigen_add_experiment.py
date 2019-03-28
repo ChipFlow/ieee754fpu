@@ -1896,8 +1896,6 @@ class FPADDInMuxPipe(PriorityCombMuxInPipe):
         return res
 
 
-
-
 class FPAddOutPassThruStage:
     def __init__(self, width, id_wid):
         self.width, self.id_wid = width, id_wid
