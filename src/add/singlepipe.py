@@ -351,8 +351,9 @@ class StageChain(StageCls):
         * output of second goes into input into third (etc. etc.)
         * the output of this class will be the output of the last stage
     """
-    def __init__(self, chain):
+    def __init__(self, chain, specallocate=False):
         self.chain = chain
+        self.specallocate = specallocate
 
     def ispec(self):
         return self.chain[0].ispec()
@@ -364,12 +365,17 @@ class StageChain(StageCls):
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
-            o = self.chain[idx].ospec()     # only the last assignment survives
-            m.d.comb += eq(o, c.process(i)) # process input into "o"
+            if self.specallocate:
+                o = self.chain[idx].ospec()     # last assignment survives
+                m.d.comb += eq(o, c.process(i)) # process input into "o"
+            else:
+                o = c.process(i) # store input into "o"
             if idx != len(self.chain)-1:
-                ni = self.chain[idx+1].ispec() # becomes new input on next loop
-                m.d.comb += eq(ni, o)          # assign output to next input
-                i = ni
+                if self.specallocate:
+                    ni = self.chain[idx+1].ispec() # new input on next loop
+                    m.d.comb += eq(ni, o)          # assign to next input
+                else:
+                    i = o
         self.o = o                             # last loop is the output
 
     def process(self, i):
