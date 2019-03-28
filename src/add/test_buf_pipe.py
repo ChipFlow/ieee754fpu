@@ -291,13 +291,10 @@ class ExampleBufPipe2(ControlBase):
         pipe1 = ExampleBufPipe()
         pipe2 = ExampleBufPipe()
 
-        self.p.i_data = pipe1.stage.ispec()
-        self.n.o_data = pipe2.stage.ospec()
-
         m.submodules.pipe1 = pipe1
         m.submodules.pipe2 = pipe2
 
-        self.connect(m, [pipe1, pipe2])
+        m.d.comb += self.connect([pipe1, pipe2])
 
         return m
 

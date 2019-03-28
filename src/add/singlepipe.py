@@ -411,7 +411,7 @@ class ControlBase:
         """
         return self.n._connect_out(nxt.n)
 
-    def connect(self, m, pipechain):
+    def connect(self, pipechain):
         """ connects a chain (list) of Pipeline instances together and
             links them to this ControlBase instance:
 
@@ -451,16 +451,15 @@ class ControlBase:
 
         # connect front of chain to ourselves
         front = pipechain[0]
-        #self.p.i_data = front.stage.ispec()
+        self.p.i_data = front.stage.ispec()
         eqs += front._connect_in(self)
 
         # connect end of chain to ourselves
         end = pipechain[-1]
-        #self.n.o_data = end.stage.ospec()
+        self.n.o_data = end.stage.ospec()
         eqs += end._connect_out(self)
 
-        # activate the assignments
-        m.d.comb += eqs
+        return eqs
 
     def set_input(self, i):
         """ helper function to set the input data

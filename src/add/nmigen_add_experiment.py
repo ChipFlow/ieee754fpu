@@ -1894,13 +1894,12 @@ class FPADDBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
         self.pipe1 = FPADDBasePipe1(width, id_wid)
-        self.p.i_data = self.pipe1.stage.ispec()
-        self.n.o_data = self.pipe1.stage.ospec()
+        self._eqs = self.connect([self.pipe1])
 
     def elaborate(self, platform):
         m = Module()
         m.submodules.pipe1 = self.pipe1
-        self.connect(m, [self.pipe1])
+        m.d.comb += self._eqs
         return m
 
 
