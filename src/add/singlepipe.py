@@ -207,7 +207,6 @@ class NextControl:
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
             use this when connecting stage-to-stage
         """
-        print ("connect next", self, nxt)
         return [nxt.i_valid.eq(self.o_valid),
                 self.i_ready.eq(nxt.o_ready),
                 eq(nxt.i_data, self.o_data),
@@ -252,7 +251,7 @@ def eq(o, i):
         o, i = [o], [i]
     res = []
     for (ao, ai) in zip(o, i):
-        print ("eq", ao, ai)
+        #print ("eq", ao, ai)
         if isinstance(ao, Record):
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):
@@ -398,7 +397,6 @@ class ControlBase:
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
         """
-        print ("ControlBase connect next", self, nxt)
         return self.n.connect_to_next(nxt.p)
 
     def _connect_in(self, prev):
