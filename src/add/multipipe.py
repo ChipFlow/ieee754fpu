@@ -191,7 +191,9 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         # temporaries
         p_i_valid = Signal(reset_less=True)
+        pv = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+        m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
@@ -201,7 +203,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
         m.d.comb += self.p.o_ready.eq(~data_valid | self.n[mid].i_ready)
         m.d.comb += data_valid.eq(p_i_valid | \
                                     (~self.n[mid].i_ready & data_valid))
-        with m.If(self.p.i_valid & self.p.o_ready):
+        with m.If(pv):
             m.d.comb += eq(r_data, self.p.i_data)
         m.d.comb += eq(self.n[mid].o_data, self.stage.process(r_data))
 
