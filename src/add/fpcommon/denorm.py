@@ -2,20 +2,12 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array, Const
-from nmigen.lib.coding import PriorityEncoder
+from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-from fpbase import MultiShiftRMerge, Trigger
-from singlepipe import (ControlBase, StageChain, UnbufferedPipeline,
-                        PassThroughStage)
-from multipipe import CombMuxOutPipe
-from multipipe import PriorityCombMuxInPipe
-
+from fpbase import FPNumIn, FPNumOut, FPNumBase
 from fpbase import FPState
-from fpcommon.getop import (FPGetOpMod, FPGetOp, FPNumBase2Ops, FPADDBaseData,                              FPGet2OpMod, FPGet2Op)
 
 
 class FPSCData:
