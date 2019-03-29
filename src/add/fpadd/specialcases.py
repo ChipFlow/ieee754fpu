@@ -64,8 +64,20 @@ class FPAddSpecialCasesMod:
         e_match = Signal(reset_less=True)
         m.d.comb += m_match.eq(a1.e == b1.e)
 
+        aeqmb = Signal(reset_less=True)
+        m.d.comb += aeqmb.eq(s_nomatch & m_match & e_match)
+
+        abz = Signal(reset_less=True)
+        m.d.comb += abz.eq(a1.is_zero & b1.is_zero)
+
+        abnan = Signal(reset_less=True)
+        m.d.comb += abnan.eq(a1.is_nan | b1.is_nan)
+
+        bexp128s = Signal(reset_less=True)
+        m.d.comb += bexp128s.eq(b1.exp_128 & s_nomatch)
+
         # if a is NaN or b is NaN return NaN
-        with m.If(a1.is_nan | b1.is_nan):
+        with m.If(abnan):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.nan(0)
 
@@ -97,7 +109,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.inf(a1.s)
             # if a is inf and signs don't match return NaN
-            with m.If(b1.exp_128 & s_nomatch):
+            with m.If(bexp128s):
                 m.d.comb += self.o.z.nan(0)
 
         # if b is inf return inf
@@ -106,7 +118,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.z.inf(b1.s)
 
         # if a is zero and b zero return signed-a/b
-        with m.Elif(a1.is_zero & b1.is_zero):
+        with m.Elif(abz):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(a1.s & b1.s, b1.e, b1.m[3:-1])
 
@@ -121,7 +133,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
-        with m.Elif(s_nomatch & m_match & e_match):
+        with m.Elif(aeqmb):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
