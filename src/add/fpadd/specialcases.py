@@ -53,6 +53,8 @@ class FPAddSpecialCasesMod:
         m.submodules.sc_decode_b = b1
         m.d.comb += [a1.decode(self.i.a),
                      b1.decode(self.i.b),
+                     self.o.a.eq(a1),
+                     self.o.b.eq(b1)
                     ]
 
         s_nomatch = Signal(reset_less=True)
@@ -140,8 +142,6 @@ class FPAddSpecialCasesMod:
         # Denormalised Number checks next, so pass a/b data through
         with m.Else():
             m.d.comb += self.o.out_do_z.eq(0)
-            m.d.comb += self.o.a.eq(a1)
-            m.d.comb += self.o.b.eq(b1)
 
         m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.mid.eq(self.i.mid)
