@@ -2,24 +2,18 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array, Const
-from nmigen.lib.coding import PriorityEncoder
+from nmigen import Module
 from nmigen.cli import main, verilog
-from math import log
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-from fpbase import MultiShiftRMerge, Trigger
-from singlepipe import (ControlBase, StageChain, UnbufferedPipeline,
+from singlepipe import (StageChain, UnbufferedPipeline,
                         PassThroughStage)
-from multipipe import CombMuxOutPipe
-from multipipe import PriorityCombMuxInPipe
 
-from fpbase import FPState, FPID
+from fpbase import FPState
 from fpcommon.denorm import FPSCData
 from fpcommon.postcalc import FPAddStage1Data
 from fpadd.align import FPAddAlignSingleMod
-from fpadd.add0 import (FPAddStage0Data, FPAddStage0Mod, FPAddStage0)
-from fpadd.add1 import (FPAddStage1Mod, FPAddStage1)
+from fpadd.add0 import FPAddStage0Mod
+from fpadd.add1 import FPAddStage1Mod
 
 
 class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
