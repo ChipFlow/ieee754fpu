@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPNumIn
+from fpbase import FPNumDecode
 from singlepipe import UnbufferedPipeline, StageChain
 
 from fpbase import FPState, FPID
@@ -47,12 +47,12 @@ class FPAddSpecialCasesMod:
         m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumIn(None, self.width)
-        b1 = FPNumIn(None, self.width)
+        a1 = FPNumDecode(None, self.width)
+        b1 = FPNumDecode(None, self.width)
         m.submodules.sc_decode_a = a1
         m.submodules.sc_decode_b = b1
-        m.d.comb += [a1.decode(self.i.a),
-                     b1.decode(self.i.b),
+        m.d.comb += [a1.v.eq(self.i.a),
+                     b1.v.eq(self.i.b),
                      self.o.a.eq(a1),
                      self.o.b.eq(b1)
                     ]

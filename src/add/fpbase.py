@@ -298,6 +298,44 @@ class FPNumShift(FPNumBase):
                 self.m.eq(sm.lshift(self.m, maxslen))
                ]
 
+
+class FPNumDecode(FPNumBase):
+    """ Floating-point Number Class
+
+        Contains signals for an incoming copy of the value, decoded into
+        sign / exponent / mantissa.
+        Also contains encoding functions, creation and recognition of
+        zero, NaN and inf (all signed)
+
+        Four extra bits are included in the mantissa: the top bit
+        (m[-1]) is effectively a carry-overflow.  The other three are
+        guard (m[2]), round (m[1]), and sticky (m[0])
+    """
+    def __init__(self, op, width, m_extra=True):
+        FPNumBase.__init__(self, width, m_extra)
+        self.op = op
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+
+        m.d.comb += self.decode(self.v)
+
+        return m
+
+    def decode(self, v):
+        """ decodes a latched value into sign / exponent / mantissa
+
+            bias is subtracted here, from the exponent.  exponent
+            is extended to 10 bits so that subtract 127 is done on
+            a 10-bit number
+        """
+        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        #print ("decode", self.e_end)
+        return [self.m.eq(Cat(*args)), # mantissa
+                self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
+                self.s.eq(v[-1]),                 # sign
+                ]
+
 class FPNumIn(FPNumBase):
     """ Floating-point Number Class
 
@@ -314,15 +352,6 @@ class FPNumIn(FPNumBase):
         FPNumBase.__init__(self, width, m_extra)
         self.latch_in = Signal()
         self.op = op
-
-    def elaborate(self, platform):
-        m = FPNumBase.elaborate(self, platform)
-
-        #m.d.comb += self.latch_in.eq(self.op.ack & self.op.stb)
-        #with m.If(self.latch_in):
-        #    m.d.sync += self.decode(self.v)
-
-        return m
 
     def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
