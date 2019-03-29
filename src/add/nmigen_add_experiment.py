@@ -14,7 +14,7 @@ from singlepipe import (ControlBase, StageChain, UnbufferedPipeline,
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
-from fpbase import FPState
+from fpbase import FPState, FPID
 from fpcommon.getop import (FPGetOpMod, FPGetOp, FPNumBase2Ops, FPADDBaseData,                              FPGet2OpMod, FPGet2Op)
 from fpcommon.denorm import (FPSCData, FPAddDeNormMod, FPAddDeNorm)
 from fpcommon.postcalc import FPAddStage1Data
@@ -140,21 +140,6 @@ class FPAddSpecialCasesMod:
         m.d.comb += self.o.mid.eq(self.i.mid)
 
         return m
-
-
-class FPID:
-    def __init__(self, id_wid):
-        self.id_wid = id_wid
-        if self.id_wid:
-            self.in_mid = Signal(id_wid, reset_less=True)
-            self.out_mid = Signal(id_wid, reset_less=True)
-        else:
-            self.in_mid = None
-            self.out_mid = None
-
-    def idsync(self, m):
-        if self.id_wid is not None:
-            m.d.sync += self.out_mid.eq(self.in_mid)
 
 
 class FPAddSpecialCases(FPState):
