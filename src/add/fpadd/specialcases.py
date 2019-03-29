@@ -64,7 +64,7 @@ class FPAddSpecialCasesMod:
         m.d.comb += m_match.eq(a1.m == b1.m)
 
         e_match = Signal(reset_less=True)
-        m.d.comb += m_match.eq(a1.e == b1.e)
+        m.d.comb += e_match.eq(a1.e == b1.e)
 
         aeqmb = Signal(reset_less=True)
         m.d.comb += aeqmb.eq(s_nomatch & m_match & e_match)
