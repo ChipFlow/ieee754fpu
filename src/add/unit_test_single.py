@@ -141,7 +141,6 @@ def run_test(dut, stimulus_a, stimulus_b, op, get_case_fn):
         bf = Float32.from_bits(b)
         z = op(af, bf)
         expected_responses.append((z.get_bits(), mid))
-        #print (af, bf, z)
         actual = yield from get_case_fn(dut, a, b, mid)
         actual_responses.append(actual)
 

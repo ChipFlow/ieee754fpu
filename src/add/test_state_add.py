@@ -59,12 +59,12 @@ def testbench(dut):
                     0x5e8ef81, 0x5c75da81, 0x2b017]
     stimulus_b = [0xadd79efa, 0xC0000000, 0x1c800000, 0xc038ed3a, 0xb328cd45, 
                     0x114f3db, 0x2f642a39, 0xff3807ab]
-    yield from run_test(dut, stimulus_a, stimulus_b, add, check_case)
+    yield from run_test(dut, stimulus_a, stimulus_b, add, get_case)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
-    yield from run_corner_cases(dut, count, add)
-    yield from run_edge_cases(dut, count, add)
+    yield from run_corner_cases(dut, count, add, get_case)
+    yield from run_edge_cases(dut, count, add, get_case)
 
 if __name__ == '__main__':
     dut = FPADD(width=32, single_cycle=True)
