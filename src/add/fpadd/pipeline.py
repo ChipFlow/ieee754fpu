@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, 
+from nmigen import Module
 from nmigen.cli import main, verilog
 
 from singlepipe import (ControlBase, UnbufferedPipeline, PassThroughStage)
