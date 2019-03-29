@@ -5,8 +5,8 @@
 from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
-from nmigen_add_experiment import FPState, FPGetOp
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
+from fpcommon.getop import FPGetOp
 
 class Div:
     def __init__(self, width):

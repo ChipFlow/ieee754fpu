@@ -1,8 +1,8 @@
 from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
-from nmigen_add_experiment import FPState, FPGetOp
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
+from fpcommon.getop import FPGetOp
 
 
 class FPMUL(FPBase):
