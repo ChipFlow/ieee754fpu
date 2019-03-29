@@ -2,10 +2,8 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array, Const
-from nmigen.lib.coding import PriorityEncoder
+from nmigen import Module, 
 from nmigen.cli import main, verilog
-from math import log
 
 from singlepipe import (ControlBase, UnbufferedPipeline, PassThroughStage)
 from multipipe import CombMuxOutPipe
