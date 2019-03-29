@@ -55,11 +55,14 @@ class FPAddSpecialCasesMod:
                      b1.decode(self.i.b),
                     ]
 
-        s_nomatch = Signal()
+        s_nomatch = Signal(reset_less=True)
         m.d.comb += s_nomatch.eq(a1.s != b1.s)
 
-        m_match = Signal()
+        m_match = Signal(reset_less=True)
         m.d.comb += m_match.eq(a1.m == b1.m)
+
+        e_match = Signal(reset_less=True)
+        m.d.comb += m_match.eq(a1.e == b1.e)
 
         # if a is NaN or b is NaN return NaN
         with m.If(a1.is_nan | b1.is_nan):
@@ -118,7 +121,7 @@ class FPAddSpecialCasesMod:
             m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
-        with m.Elif(s_nomatch & m_match & (a1.e == b1.e)):
+        with m.Elif(s_nomatch & m_match & e_match):
             m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
