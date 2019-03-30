@@ -1,10 +1,10 @@
 """ Example 5: Making use of PyRTL and Introspection. """
 
 from nmigen import Module, Signal
-from nmigen.cli import main, verilog
+from nmigen.cli import main, verilog, rtlil
 
 
-from pipeline import SimplePipeline, ObjectProxy
+from pipeline import SimplePipeline, ObjectProxy, PipeManager
 
 
 class SimplePipelineExample(SimplePipeline):
@@ -37,7 +37,7 @@ class ObjectBasedPipelineExample(SimplePipeline):
     """ A very simple pipeline to show how registers are inferred. """
 
     def __init__(self, pipe):
-        ObjectBasedPipeline.__init__(self, pipe)
+        SimplePipeline.__init__(self, pipe)
         self._loopback = Signal(4)
         o = ObjectProxy(pipe)
         o.a = Signal(4)
@@ -82,12 +82,50 @@ class PipeModule:
     def get_fragment(self, platform=None):
         return self.m
 
+
+class PipelineStageExample(PipeManager):
+
+    def __init__(self):
+        self.m = Module()
+        self._loopback = Signal(4)
+        PipeManager.__init__(self, self.m.d)
+
+    def stage0(self):
+        self.n = ~self._loopback
+
+    def stage1(self):
+        self.n = self.n + 2
+
+    def stage2(self):
+        localv = Signal(4)
+        self._pipe.comb += localv.eq(2)
+        self.n = self.n << localv
+
+    def stage3(self):
+        self.n = ~self.n
+
+    def stage4(self):
+        self._pipe.sync += self._loopback.eq(self.n + 3)
+
+    def get_fragment(self, platform=None):
+
+        with self.Stage() as p:
+            p.n = ~self._loopback
+        with self.Stage(p) as p:
+            p.n = p.n + 2
+
+        return self.m
+
+
+
 if __name__ == "__main__":
     example = PipeModule()
-    main(example, ports=[
-                    example.p._loopback,
-        ])
-
-    #print(verilog.convert(example, ports=[
-    #           example.p._loopback,
-    #         ]))
+    with open("pipe_module.il", "w") as f:
+        f.write(rtlil.convert(example, ports=[
+               example.p._loopback,
+             ]))
+    example = PipelineStageExample()
+    with open("pipe_stage_module.il", "w") as f:
+        f.write(rtlil.convert(example, ports=[
+               example._loopback,
+             ]))

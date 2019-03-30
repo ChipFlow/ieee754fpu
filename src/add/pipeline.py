@@ -4,6 +4,7 @@ from nmigen import Signal
 from nmigen.hdl.rec import Record
 from nmigen import tracer
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
+from contextlib import contextmanager
 
 from singlepipe import eq
 
@@ -69,7 +70,69 @@ class ObjectProxy:
         self._pipe.sync += eq(new_pipereg, value)
 
 
-class SimplePipeline(object):
+class PipelineStage:
+    """ Pipeline builder stage with auto generation of pipeline registers.
+    """
+
+    def __init__(self, pipe, prev=None):
+        self._pipe = pipe
+        self._preg_map = {}
+        self._prev_stage = prev
+        if prev:
+            print ("prev", prev._preg_map)
+            if prev._current_stage_num in prev._preg_map:
+                m = prev._preg_map[prev._current_stage_num]
+                self._preg_map[prev._current_stage_num] = m
+            self._current_stage_num = prev._current_stage_num + 1
+            if self._current_stage_num in prev._preg_map:
+                m = prev._preg_map[self._current_stage_num]
+                self._preg_map[self._current_stage_num] = m
+                print ("make current", m)
+        else:
+            self._current_stage_num = 0
+
+    def __getattr__(self, name):
+        try:
+            return self._preg_map[self._current_stage_num][name]
+        except KeyError:
+            raise AttributeError(
+                'error, no pipeline register "%s" defined for stage %d'
+                % (name, self._current_stage_num))
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            # do not do anything tricky with variables starting with '_'
+            object.__setattr__(self, name, value)
+            return
+        next_stage = self._current_stage_num + 1
+        pipereg_id = str(self._current_stage_num) + 'to' + str(next_stage)
+        rname = 'pipereg_' + pipereg_id + '_' + name
+        #new_pipereg = Signal(value_bits_sign(value), name=rname,
+        #                     reset_less=True)
+        if isinstance(value, ObjectProxy):
+            new_pipereg = ObjectProxy.like(self._pipe, value,
+                                           name=rname, reset_less = True)
+        else:
+            new_pipereg = Signal.like(value, name=rname, reset_less = True)
+        if next_stage not in self._preg_map:
+            self._preg_map[next_stage] = {}
+        self._preg_map[next_stage][name] = new_pipereg
+        self._pipe.sync += eq(new_pipereg, value)
+
+
+class PipeManager:
+    def __init__(self, pipe):
+        self._pipe = pipe
+
+    @contextmanager
+    def Stage(self, prev=None):
+        stage = PipelineStage(self._pipe, prev)
+        try:
+            yield stage
+        finally:
+            pass
+
+class SimplePipeline:
     """ Pipeline builder with auto generation of pipeline registers.
     """
 
