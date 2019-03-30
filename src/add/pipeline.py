@@ -74,8 +74,8 @@ class PipelineStage:
     """ Pipeline builder stage with auto generation of pipeline registers.
     """
 
-    def __init__(self, pipe, prev=None):
-        self._pipe = pipe
+    def __init__(self, m, prev=None):
+        self._m = m
         self._preg_map = {}
         self._prev_stage = prev
         if prev:
@@ -117,18 +117,18 @@ class PipelineStage:
         if next_stage not in self._preg_map:
             self._preg_map[next_stage] = {}
         self._preg_map[next_stage][name] = new_pipereg
-        self._pipe.sync += eq(new_pipereg, value)
+        self._m.d.sync += eq(new_pipereg, value)
 
 
 class PipeManager:
-    def __init__(self, pipe):
-        self._pipe = pipe
+    def __init__(self, m):
+        self.m = m
 
     @contextmanager
     def Stage(self, prev=None):
-        stage = PipelineStage(self._pipe, prev)
+        stage = PipelineStage(self.m, prev)
         try:
-            yield stage
+            yield stage, stage._m
         finally:
             pass
 

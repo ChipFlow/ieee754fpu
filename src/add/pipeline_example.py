@@ -88,7 +88,7 @@ class PipelineStageExample(PipeManager):
     def __init__(self):
         self.m = Module()
         self._loopback = Signal(4)
-        PipeManager.__init__(self, self.m.d)
+        PipeManager.__init__(self, self.m)
 
     def stage0(self):
         self.n = ~self._loopback
@@ -109,10 +109,14 @@ class PipelineStageExample(PipeManager):
 
     def get_fragment(self, platform=None):
 
-        with self.Stage() as p:
+        with self.Stage() as (p, m):
             p.n = ~self._loopback
-        with self.Stage(p) as p:
+        with self.Stage(p) as (p, m):
             p.n = p.n + 2
+        with self.Stage(p) as (p, m):
+            localv = Signal(4)
+            m.d.comb += localv.eq(2)
+            p.n = p.n << localv
 
         return self.m
 
