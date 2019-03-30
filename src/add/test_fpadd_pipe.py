@@ -110,7 +110,7 @@ class InputTest:
 
 
 if __name__ == '__main__':
-    dut = FPADDMuxInOut(32, 2, 4)
+    dut = FPADDMuxInOut(32, 4)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_fpadd_pipe.il", "w") as f:
         f.write(vl)
