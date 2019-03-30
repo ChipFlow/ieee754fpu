@@ -109,11 +109,11 @@ class PipelineStageExample(PipeManager):
 
     def get_fragment(self, platform=None):
 
-        with self.Stage() as (p, m):
+        with self.Stage("first") as (p, m):
             p.n = ~self._loopback
-        with self.Stage(p) as (p, m):
+        with self.Stage("second", p) as (p, m):
             p.n = p.n + 2
-        with self.Stage(p) as (p, m):
+        with self.Stage("third", p) as (p, m):
             localv = Signal(4)
             m.d.comb += localv.eq(2)
             p.n = p.n << localv

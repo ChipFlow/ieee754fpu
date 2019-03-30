@@ -74,38 +74,35 @@ class PipelineStage:
     """ Pipeline builder stage with auto generation of pipeline registers.
     """
 
-    def __init__(self, m, prev=None):
+    def __init__(self, name, m, prev=None):
         self._m = m
+        self._stagename = name
         self._preg_map = {}
         self._prev_stage = prev
         if prev:
             print ("prev", prev._preg_map)
-            if prev._current_stage_num in prev._preg_map:
-                m = prev._preg_map[prev._current_stage_num]
-                self._preg_map[prev._current_stage_num] = m
-            self._current_stage_num = prev._current_stage_num + 1
-            if self._current_stage_num in prev._preg_map:
-                m = prev._preg_map[self._current_stage_num]
-                self._preg_map[self._current_stage_num] = m
+            if prev._stagename in prev._preg_map:
+                m = prev._preg_map[prev._stagename]
+                self._preg_map[prev._stagename] = m
+            if '__nextstage__' in prev._preg_map:
+                m = prev._preg_map['__nextstage__']
+                self._preg_map[self._stagename] = m
                 print ("make current", m)
-        else:
-            self._current_stage_num = 0
 
     def __getattr__(self, name):
         try:
-            return self._preg_map[self._current_stage_num][name]
+            return self._preg_map[self._stagename][name]
         except KeyError:
             raise AttributeError(
                 'error, no pipeline register "%s" defined for stage %d'
-                % (name, self._current_stage_num))
+                % (name, self._stagename))
 
     def __setattr__(self, name, value):
         if name.startswith('_'):
             # do not do anything tricky with variables starting with '_'
             object.__setattr__(self, name, value)
             return
-        next_stage = self._current_stage_num + 1
-        pipereg_id = str(self._current_stage_num) + 'to' + str(next_stage)
+        pipereg_id = self._stagename
         rname = 'pipereg_' + pipereg_id + '_' + name
         #new_pipereg = Signal(value_bits_sign(value), name=rname,
         #                     reset_less=True)
@@ -114,6 +111,7 @@ class PipelineStage:
                                            name=rname, reset_less = True)
         else:
             new_pipereg = Signal.like(value, name=rname, reset_less = True)
+        next_stage = '__nextstage__'
         if next_stage not in self._preg_map:
             self._preg_map[next_stage] = {}
         self._preg_map[next_stage][name] = new_pipereg
@@ -125,8 +123,8 @@ class PipeManager:
         self.m = m
 
     @contextmanager
-    def Stage(self, prev=None):
-        stage = PipelineStage(self.m, prev)
+    def Stage(self, name, prev=None):
+        stage = PipelineStage(name, self.m, prev)
         try:
             yield stage, stage._m
         finally:
