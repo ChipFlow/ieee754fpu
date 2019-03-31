@@ -94,7 +94,7 @@ class PipelineStageExample:
 
         with PipeManager(m, pipemode=True) as pipe:
 
-            with pipe.Stage("first") as (p, m):
+            with pipe.Stage("first", ispec=[self._loopback]) as (p, m):
                 p.n = ~self._loopback
             with pipe.Stage("second", p) as (p, m):
                 #p.n = ~self._loopback + 2

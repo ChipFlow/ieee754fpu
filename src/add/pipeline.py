@@ -73,30 +73,32 @@ class ObjectProxy:
         rname = name
         new_pipereg = like(value, rname, self._pipe)
         object.__setattr__(self, name, new_pipereg)
-        self._pipe.sync += eq(new_pipereg, value)
+        if self._pipe:
+            self._pipe.sync += eq(new_pipereg, value)
 
 
 class PipelineStage:
     """ Pipeline builder stage with auto generation of pipeline registers.
     """
 
-    def __init__(self, name, m, prev=None, pipemode=False):
+    def __init__(self, name, m, prev=None, pipemode=False, ispec=None):
         self._m = m
         self._stagename = name
         self._preg_map = {}
         self._prev_stage = prev
+        self._ispec = ispec
         if prev:
             print ("prev", prev._stagename, prev._preg_map)
             if prev._stagename in prev._preg_map:
                 m = prev._preg_map[prev._stagename]
                 self._preg_map[prev._stagename] = m
-                for k, v in m.items():
-                    m[k] = like(v, k, self._m)
+                #for k, v in m.items():
+                    #m[k] = like(v, k, self._m)
             if '__nextstage__' in prev._preg_map:
                 m = prev._preg_map['__nextstage__']
                 self._preg_map[self._stagename] = m
-                for k, v in m.items():
-                    m[k] = like(v, k, self._m)
+                #for k, v in m.items():
+                    #m[k] = like(v, k, self._m)
                 print ("make current", self._stagename, m)
         self._pipemode = pipemode
         self._eqs = []
@@ -136,27 +138,39 @@ class PipelineStage:
 class AutoStage(StageCls):
     def __init__(self, inspecs, outspecs, eqs):
         self.inspecs, self.outspecs, self.eqs = inspecs, outspecs, eqs
-    def ispec(self): return self.inspecs
-    def ospec(self): return self.outspecs
+    def ispec(self): return self.like(self.inspecs)
+    def ospec(self): return self.like(self.outspecs)
+    def like(self, specs):
+        res = []
+        for v in specs:
+            res.append(like(v, v.name, None))
+        return res
+
     def process(self, i):
         return self.eqs
-    #def setup(self, m, i): #m.d.comb += self.eqs
+    def setup(self, m, i):
+        m.d.comb += eq(self.inspecs, i)
 
 
 class PipeManager:
-    def __init__(self, m, pipemode=False):
+    def __init__(self, m, pipemode=False, pipetype=None):
         self.m = m
         self.pipemode = pipemode
+        self.pipetype = pipetype
 
     @contextmanager
-    def Stage(self, name, prev=None):
-        stage = PipelineStage(name, self.m, prev, self.pipemode)
+    def Stage(self, name, prev=None, ispec=None):
+        stage = PipelineStage(name, self.m, prev, self.pipemode, ispec=ispec)
         try:
             yield stage, stage._m
         finally:
             pass
         if self.pipemode:
-            inspecs = self.get_specs(stage, name)
+            if stage._ispec:
+                print ("use ispec", stage._ispec)
+                inspecs = stage._ispec
+            else:
+                inspecs = self.get_specs(stage, name)
             outspecs = self.get_specs(stage, '__nextstage__', liked=True)
             s = AutoStage(inspecs, outspecs, stage._eqs)
             self.stages.append(s)
@@ -180,11 +194,14 @@ class PipeManager:
         cb = ControlBase()
         for s in self.stages:
             print (s, s.inspecs, s.outspecs)
-            p = UnbufferedPipeline(s)
+            if self.pipetype == 'buffered':
+                p = BufferedPipeline(s)
+            else:
+                p = UnbufferedPipeline(s)
             pipes.append(p)
             self.m.submodules += p
 
-        #self.m.d.comb += cb.connect(pipes)
+        self.m.d.comb += cb.connect(pipes)
 
 
 class SimplePipeline:
