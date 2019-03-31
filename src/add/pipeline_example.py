@@ -83,42 +83,31 @@ class PipeModule:
         return self.m
 
 
-class PipelineStageExample(PipeManager):
+class PipelineStageExample:
 
     def __init__(self):
-        self.m = Module()
         self._loopback = Signal(4)
-        PipeManager.__init__(self, self.m)
-
-    def stage0(self):
-        self.n = ~self._loopback
-
-    def stage1(self):
-        self.n = self.n + 2
-
-    def stage2(self):
-        localv = Signal(4)
-        self._pipe.comb += localv.eq(2)
-        self.n = self.n << localv
-
-    def stage3(self):
-        self.n = ~self.n
-
-    def stage4(self):
-        self._pipe.sync += self._loopback.eq(self.n + 3)
 
     def get_fragment(self, platform=None):
 
-        with self.Stage("first") as (p, m):
-            p.n = ~self._loopback
-        with self.Stage("second", p) as (p, m):
-            p.n = p.n + 2
-        with self.Stage("third", p) as (p, m):
-            localv = Signal(4)
-            m.d.comb += localv.eq(2)
-            p.n = p.n << localv
+        m = Module()
 
-        return self.m
+        with PipeManager(m, pipemode=True) as pipe:
+
+            with pipe.Stage("first") as (p, m):
+                p.n = ~self._loopback
+            with pipe.Stage("second", p) as (p, m):
+                #p.n = ~self._loopback + 2
+                p.n = p.n + 2
+            with pipe.Stage("third", p) as (p, m):
+                #p.n = ~self._loopback + 5
+                localv = Signal(4)
+                m.d.comb += localv.eq(2)
+                p.n = p.n << localv
+
+        print (pipe.stages)
+
+        return m
 
 
 

@@ -1,12 +1,15 @@
 """ Example 5: Making use of PyRTL and Introspection. """
 
+from collections.abc import Sequence
+
 from nmigen import Signal
 from nmigen.hdl.rec import Record
 from nmigen import tracer
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
 from contextlib import contextmanager
 
-from singlepipe import eq
+from singlepipe import eq, StageCls, ControlBase, BufferedPipeline
+from singlepipe import UnbufferedPipeline
 
 
 # The following example shows how pyrtl can be used to make some interesting
@@ -15,6 +18,14 @@ from singlepipe import eq
 # class of SimplePipeline where methods with names starting with "stage" are
 # stages, and new members with names not starting with "_" are to be registered
 # for the next stage.
+
+def like(value, rname, pipe):
+    if isinstance(value, ObjectProxy):
+        return ObjectProxy.like(pipe, value, name=rname, reset_less=True)
+    else:
+        return Signal(value_bits_sign(value), name=rname,
+                             reset_less=True)
+        return Signal.like(value, name=rname, reset_less=True)
 
 
 class ObjectProxy:
@@ -60,12 +71,7 @@ class ObjectProxy:
             return
         #rname = "%s_%s" % (self.name, name)
         rname = name
-        if isinstance(value, ObjectProxy):
-            new_pipereg = ObjectProxy.like(self._pipe, value,
-                                           name=rname, reset_less=True)
-        else:
-            new_pipereg = Signal.like(value, name=rname, reset_less=True)
-
+        new_pipereg = like(value, rname, self._pipe)
         object.__setattr__(self, name, new_pipereg)
         self._pipe.sync += eq(new_pipereg, value)
 
@@ -74,27 +80,35 @@ class PipelineStage:
     """ Pipeline builder stage with auto generation of pipeline registers.
     """
 
-    def __init__(self, name, m, prev=None):
+    def __init__(self, name, m, prev=None, pipemode=False):
         self._m = m
         self._stagename = name
         self._preg_map = {}
         self._prev_stage = prev
         if prev:
-            print ("prev", prev._preg_map)
+            print ("prev", prev._stagename, prev._preg_map)
             if prev._stagename in prev._preg_map:
                 m = prev._preg_map[prev._stagename]
                 self._preg_map[prev._stagename] = m
+                for k, v in m.items():
+                    m[k] = like(v, k, self._m)
             if '__nextstage__' in prev._preg_map:
                 m = prev._preg_map['__nextstage__']
                 self._preg_map[self._stagename] = m
-                print ("make current", m)
+                for k, v in m.items():
+                    m[k] = like(v, k, self._m)
+                print ("make current", self._stagename, m)
+        self._pipemode = pipemode
+        self._eqs = []
 
     def __getattr__(self, name):
         try:
-            return self._preg_map[self._stagename][name]
+            v = self._preg_map[self._stagename][name]
+            return v
+            #return like(v, name, self._m)
         except KeyError:
             raise AttributeError(
-                'error, no pipeline register "%s" defined for stage %d'
+                'error, no pipeline register "%s" defined for stage %s'
                 % (name, self._stagename))
 
     def __setattr__(self, name, value):
@@ -104,31 +118,74 @@ class PipelineStage:
             return
         pipereg_id = self._stagename
         rname = 'pipereg_' + pipereg_id + '_' + name
-        #new_pipereg = Signal(value_bits_sign(value), name=rname,
-        #                     reset_less=True)
-        if isinstance(value, ObjectProxy):
-            new_pipereg = ObjectProxy.like(self._pipe, value,
-                                           name=rname, reset_less = True)
-        else:
-            new_pipereg = Signal.like(value, name=rname, reset_less = True)
+        new_pipereg = like(value, rname, self._m)
         next_stage = '__nextstage__'
         if next_stage not in self._preg_map:
             self._preg_map[next_stage] = {}
         self._preg_map[next_stage][name] = new_pipereg
-        self._m.d.sync += eq(new_pipereg, value)
+        if self._pipemode:
+            self._eqs.append(value)
+            print ("!pipemode: append", new_pipereg, value)
+            #self._m.d.comb += assign
+        else:
+            print ("!pipemode: assign", new_pipereg, value)
+            assign = eq(new_pipereg, value)
+            self._m.d.sync += assign
+
+
+class AutoStage(StageCls):
+    def __init__(self, inspecs, outspecs, eqs):
+        self.inspecs, self.outspecs, self.eqs = inspecs, outspecs, eqs
+    def ispec(self): return self.inspecs
+    def ospec(self): return self.outspecs
+    def process(self, i):
+        return self.eqs
+    #def setup(self, m, i): #m.d.comb += self.eqs
 
 
 class PipeManager:
-    def __init__(self, m):
+    def __init__(self, m, pipemode=False):
         self.m = m
+        self.pipemode = pipemode
 
     @contextmanager
     def Stage(self, name, prev=None):
-        stage = PipelineStage(name, self.m, prev)
+        stage = PipelineStage(name, self.m, prev, self.pipemode)
         try:
             yield stage, stage._m
         finally:
             pass
+        if self.pipemode:
+            inspecs = self.get_specs(stage, name)
+            outspecs = self.get_specs(stage, '__nextstage__', liked=True)
+            s = AutoStage(inspecs, outspecs, stage._eqs)
+            self.stages.append(s)
+
+    def get_specs(self, stage, name, liked=False):
+        if name in stage._preg_map:
+            res = []
+            for k, v in stage._preg_map[name].items():
+                #v = like(v, k, stage._m)
+                res.append(v)
+            return res
+        return []
+
+    def __enter__(self):
+        self.stages = []
+        return self
+
+    def __exit__(self, *args):
+        print (args)
+        pipes = []
+        cb = ControlBase()
+        for s in self.stages:
+            print (s, s.inspecs, s.outspecs)
+            p = UnbufferedPipeline(s)
+            pipes.append(p)
+            self.m.submodules += p
+
+        #self.m.d.comb += cb.connect(pipes)
+
 
 class SimplePipeline:
     """ Pipeline builder with auto generation of pipeline registers.
