@@ -21,7 +21,7 @@ from singlepipe import UnbufferedPipeline
 
 def like(value, rname, pipe):
     if isinstance(value, ObjectProxy):
-        return ObjectProxy.like(pipe, value, name=rname, reset_less=True)
+        return ObjectProxy.like(None, value, name=rname, reset_less=True)
     else:
         return Signal(value_bits_sign(value), name=rname,
                              reset_less=True)
@@ -29,19 +29,20 @@ def like(value, rname, pipe):
 
 
 class ObjectProxy:
-    def __init__(self, pipe, name=None):
-        self._pipe = pipe
+    def __init__(self, m, name=None, pipemode=False):
+        self._m = m
         if name is None:
             name = tracer.get_var_name(default=None)
         self.name = name
+        self._pipemode = pipemode
 
     @classmethod
-    def like(cls, pipe, value, name=None, src_loc_at=0, **kwargs):
+    def like(cls, m, value, name=None, src_loc_at=0, **kwargs):
         name = name or tracer.get_var_name(depth=2 + src_loc_at,
                                             default="$like")
 
         src_loc_at_1 = 1 + src_loc_at
-        r = ObjectProxy(pipe, value.name)
+        r = ObjectProxy(m, value.name)
         for a in value.ports():
             aname = a.name
             setattr(r, aname, a)
@@ -71,10 +72,10 @@ class ObjectProxy:
             return
         #rname = "%s_%s" % (self.name, name)
         rname = name
-        new_pipereg = like(value, rname, self._pipe)
+        new_pipereg = like(value, rname, self._m)
         object.__setattr__(self, name, new_pipereg)
-        if self._pipe:
-            self._pipe.sync += eq(new_pipereg, value)
+        if self._m:
+            self._m.d.sync += eq(new_pipereg, value)
 
 
 class PipelineStage:
@@ -208,8 +209,8 @@ class SimplePipeline:
     """ Pipeline builder with auto generation of pipeline registers.
     """
 
-    def __init__(self, pipe):
-        self._pipe = pipe
+    def __init__(self, m):
+        self._m = m
         self._pipeline_register_map = {}
         self._current_stage_num = 0
 
@@ -242,12 +243,12 @@ class SimplePipeline:
         #new_pipereg = Signal(value_bits_sign(value), name=rname,
         #                     reset_less=True)
         if isinstance(value, ObjectProxy):
-            new_pipereg = ObjectProxy.like(self._pipe, value,
+            new_pipereg = ObjectProxy.like(self._m, value,
                                            name=rname, reset_less = True)
         else:
             new_pipereg = Signal.like(value, name=rname, reset_less = True)
         if next_stage not in self._pipeline_register_map:
             self._pipeline_register_map[next_stage] = {}
         self._pipeline_register_map[next_stage][name] = new_pipereg
-        self._pipe.sync += eq(new_pipereg, value)
+        self._m.d.sync += eq(new_pipereg, value)
 

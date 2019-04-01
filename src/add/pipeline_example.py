@@ -36,10 +36,10 @@ class SimplePipelineExample(SimplePipeline):
 class ObjectBasedPipelineExample(SimplePipeline):
     """ A very simple pipeline to show how registers are inferred. """
 
-    def __init__(self, pipe):
-        SimplePipeline.__init__(self, pipe)
+    def __init__(self, m):
+        SimplePipeline.__init__(self, m)
         self._loopback = Signal(4)
-        o = ObjectProxy(pipe)
+        o = ObjectProxy(m)
         o.a = Signal(4)
         o.b = Signal(4)
         self._obj = o
@@ -51,16 +51,16 @@ class ObjectBasedPipelineExample(SimplePipeline):
 
     def stage1(self):
         self.n = self.n + self.o.a
-        o = ObjectProxy(self._pipe)
+        o = ObjectProxy(self._m)
         o.a = self.n
         o.b = self.o.b
         self.o = o
 
     def stage2(self):
         localv = Signal(4)
-        self._pipe.comb += localv.eq(2)
+        self._m.d.comb += localv.eq(2)
         self.n = self.n << localv
-        o = ObjectProxy(self._pipe)
+        o = ObjectProxy(self._m)
         o.b = self.n + self.o.a + self.o.b
         self.o = o
 
@@ -70,14 +70,14 @@ class ObjectBasedPipelineExample(SimplePipeline):
         self.o.b = self.o.b + self.n
 
     def stage4(self):
-        self._pipe.sync += self._loopback.eq(self.n + 3 + self.o.b)
+        self._m.d.sync += self._loopback.eq(self.n + 3 + self.o.b)
 
 
 class PipeModule:
 
     def __init__(self):
         self.m = Module()
-        self.p = ObjectBasedPipelineExample(self.m.d)
+        self.p = ObjectBasedPipelineExample(self.m)
 
     def get_fragment(self, platform=None):
         return self.m
@@ -109,6 +109,46 @@ class PipelineStageExample:
 
         return m
 
+class PipelineStageObjectExample:
+
+    def __init__(self):
+        self._loopback = Signal(4)
+
+    def get_fragment(self, platform=None):
+
+        m = Module()
+
+        o = ObjectProxy(None)
+        o.a = Signal(4)
+        o.b = Signal(4)
+        self._obj = o
+
+        with PipeManager(m, pipemode=True) as pipe:
+
+            with pipe.Stage("first",
+                            ispec=[self._loopback, self._obj]) as (p, m):
+                p.n = ~self._loopback
+                p.o = self._obj
+            with pipe.Stage("second", p) as (p, m):
+                #p.n = ~self._loopback + 2
+                p.n = p.n + 2
+                o = ObjectProxy(None)
+                o.a = p.n
+                o.b = p.o.b
+                p.o = o
+            with pipe.Stage("third", p) as (p, m):
+                #p.n = ~self._loopback + 5
+                localv = Signal(4)
+                m.d.comb += localv.eq(2)
+                p.n = p.n << localv
+                o = ObjectProxy(None)
+                o.b = p.n + p.o.a + p.o.b
+                p.o = o
+
+        print (pipe.stages)
+
+        return m
+
 
 
 if __name__ == "__main__":
@@ -119,6 +159,11 @@ if __name__ == "__main__":
              ]))
     example = PipelineStageExample()
     with open("pipe_stage_module.il", "w") as f:
+        f.write(rtlil.convert(example, ports=[
+               example._loopback,
+             ]))
+    example = PipelineStageObjectExample()
+    with open("pipe_stage_object_module.il", "w") as f:
         f.write(rtlil.convert(example, ports=[
                example._loopback,
              ]))
