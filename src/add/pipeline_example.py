@@ -1,6 +1,6 @@
 """ Example 5: Making use of PyRTL and Introspection. """
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Const
 from nmigen.cli import main, verilog, rtlil
 
 
@@ -53,7 +53,7 @@ class ObjectBasedPipelineExample(SimplePipeline):
         self.n = self.n + self.o.a
         o = ObjectProxy(self._m)
         o.a = self.n
-        o.b = self.o.b
+        o.b = self.o.b + self.n + Const(5)
         self.o = o
 
     def stage2(self):
@@ -103,7 +103,8 @@ class PipelineStageExample:
                 #p.n = ~self._loopback + 5
                 localv = Signal(4)
                 m.d.comb += localv.eq(2)
-                p.n = p.n << localv
+                p.n = p.n << localv + 1
+                #p.m = p.n + 2
 
         print (pipe.stages)
 
@@ -118,34 +119,40 @@ class PipelineStageObjectExample:
 
         m = Module()
 
-        o = ObjectProxy(None)
+        o = ObjectProxy(m, pipemode=False)
         o.a = Signal(4)
         o.b = Signal(4)
-        self._obj = o
+        self.obj = o
+
+        localv2 = Signal(4)
+        m.d.sync += localv2.eq(localv2 + 3)
+
+        #m.d.comb += self.obj.a.eq(localv2 + 1)
+        #m.d.sync += self._loopback.eq(localv2)
 
         with PipeManager(m, pipemode=True) as pipe:
 
             with pipe.Stage("first",
-                            ispec=[self._loopback, self._obj]) as (p, m):
+                            ispec=[self._loopback, self.obj]) as (p, m):
                 p.n = ~self._loopback
-                p.o = self._obj
+                p.o = self.obj
             with pipe.Stage("second", p) as (p, m):
                 #p.n = ~self._loopback + 2
-                p.n = p.n + 2
-                o = ObjectProxy(None)
+                p.n = p.n + Const(2)
+                o = ObjectProxy(m, pipemode=False)
                 o.a = p.n
-                o.b = p.o.b
+                o.b = p.o.b + p.n + Const(5)
                 p.o = o
             with pipe.Stage("third", p) as (p, m):
                 #p.n = ~self._loopback + 5
                 localv = Signal(4)
                 m.d.comb += localv.eq(2)
                 p.n = p.n << localv
-                o = ObjectProxy(None)
-                o.b = p.n + p.o.a + p.o.b
+                o = ObjectProxy(m, pipemode=False)
+                o.b = p.n + p.o.b + p.o.a
                 p.o = o
 
-        print (pipe.stages)
+        print ("stages", pipe.stages)
 
         return m
 

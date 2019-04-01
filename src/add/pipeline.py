@@ -19,13 +19,23 @@ from singlepipe import UnbufferedPipeline
 # stages, and new members with names not starting with "_" are to be registered
 # for the next stage.
 
-def like(value, rname, pipe):
+def like(value, rname, pipe, pipemode=False):
     if isinstance(value, ObjectProxy):
-        return ObjectProxy.like(None, value, name=rname, reset_less=True)
+        return ObjectProxy.like(pipe, value, pipemode=pipemode,
+                                name=rname, reset_less=True)
     else:
         return Signal(value_bits_sign(value), name=rname,
                              reset_less=True)
         return Signal.like(value, name=rname, reset_less=True)
+
+def get_eqs(_eqs):
+    eqs = []
+    for e in _eqs:
+        if isinstance(e, ObjectProxy):
+            eqs += get_eqs(e._eqs)
+        else:
+            eqs.append(e)
+    return eqs
 
 
 class ObjectProxy:
@@ -35,47 +45,77 @@ class ObjectProxy:
             name = tracer.get_var_name(default=None)
         self.name = name
         self._pipemode = pipemode
+        self._eqs = []
+        self._preg_map = {}
 
     @classmethod
-    def like(cls, m, value, name=None, src_loc_at=0, **kwargs):
+    def like(cls, m, value, pipemode=False, name=None, src_loc_at=0, **kwargs):
         name = name or tracer.get_var_name(depth=2 + src_loc_at,
                                             default="$like")
 
         src_loc_at_1 = 1 + src_loc_at
-        r = ObjectProxy(m, value.name)
+        r = ObjectProxy(m, value.name, pipemode)
+        #for a, aname in value._preg_map.items():
+        #    r._preg_map[aname] = like(a, aname, m, pipemode)
         for a in value.ports():
             aname = a.name
-            setattr(r, aname, a)
+            r._preg_map[aname] = like(a, aname, m, pipemode)
         return r
 
+    def __repr__(self):
+        subobjs = []
+        for a in self.ports():
+            aname = a.name
+            ai = self._preg_map[aname]
+            subobjs.append(repr(ai))
+        return "<OP %s>" % subobjs
+
     def eq(self, i):
+        print ("ObjectProxy eq", self, i)
         res = []
         for a in self.ports():
             aname = a.name
-            ai = getattr(i, aname)
+            ai = i._preg_map[aname]
             res.append(a.eq(ai))
         return res
 
     def ports(self):
         res = []
-        for aname in dir(self):
-            a = getattr(self, aname)
+        for aname, a in self._preg_map.items():
             if isinstance(a, Signal) or isinstance(a, ObjectProxy) or \
                isinstance(a, Record):
                 res.append(a)
+        print ("ObjectPorts", res)
         return res
 
+    def __getattr__(self, name):
+        try:
+            v = self._preg_map[name]
+            return v
+            #return like(v, name, self._m)
+        except KeyError:
+            raise AttributeError(
+                'error, no pipeline register "%s" defined for OP %s'
+                % (name, self.name))
+
     def __setattr__(self, name, value):
-        if name.startswith('_') or name == 'name':
+        if name.startswith('_') or name in ['name', 'ports', 'eq', 'like']:
             # do not do anything tricky with variables starting with '_'
             object.__setattr__(self, name, value)
             return
         #rname = "%s_%s" % (self.name, name)
         rname = name
-        new_pipereg = like(value, rname, self._m)
-        object.__setattr__(self, name, new_pipereg)
-        if self._m:
-            self._m.d.sync += eq(new_pipereg, value)
+        new_pipereg = like(value, rname, self._m, self._pipemode)
+        self._preg_map[name] = new_pipereg
+        #object.__setattr__(self, name, new_pipereg)
+        if self._pipemode:
+            print ("OP pipemode", new_pipereg, value)
+            #self._eqs.append(value)
+            #self._m.d.comb += eq(new_pipereg, value)
+            pass
+        elif self._m:
+            print ("OP !pipemode assign", new_pipereg, value, type(value))
+            self._m.d.comb += eq(new_pipereg, value)
 
 
 class PipelineStage:
@@ -121,14 +161,14 @@ class PipelineStage:
             return
         pipereg_id = self._stagename
         rname = 'pipereg_' + pipereg_id + '_' + name
-        new_pipereg = like(value, rname, self._m)
+        new_pipereg = like(value, rname, self._m, self._pipemode)
         next_stage = '__nextstage__'
         if next_stage not in self._preg_map:
             self._preg_map[next_stage] = {}
         self._preg_map[next_stage][name] = new_pipereg
         if self._pipemode:
             self._eqs.append(value)
-            print ("!pipemode: append", new_pipereg, value)
+            print ("pipemode: append", new_pipereg, value)
             #self._m.d.comb += assign
         else:
             print ("!pipemode: assign", new_pipereg, value)
@@ -139,18 +179,23 @@ class PipelineStage:
 class AutoStage(StageCls):
     def __init__(self, inspecs, outspecs, eqs):
         self.inspecs, self.outspecs, self.eqs = inspecs, outspecs, eqs
+        self.o = self.ospec()
     def ispec(self): return self.like(self.inspecs)
     def ospec(self): return self.like(self.outspecs)
     def like(self, specs):
         res = []
         for v in specs:
-            res.append(like(v, v.name, None))
+            res.append(like(v, v.name, None, pipemode=True))
         return res
 
     def process(self, i):
-        return self.eqs
+        print ("stage process", i)
+        return self.o
+
     def setup(self, m, i):
-        m.d.comb += eq(self.inspecs, i)
+        print ("stage setup", i)
+        m.d.sync += eq(i, self.eqs)
+        m.d.comb += eq(self.o, i)
 
 
 class PipeManager:
@@ -161,6 +206,7 @@ class PipeManager:
 
     @contextmanager
     def Stage(self, name, prev=None, ispec=None):
+        print ("start stage", name)
         stage = PipelineStage(name, self.m, prev, self.pipemode, ispec=ispec)
         try:
             yield stage, stage._m
@@ -173,8 +219,11 @@ class PipeManager:
             else:
                 inspecs = self.get_specs(stage, name)
             outspecs = self.get_specs(stage, '__nextstage__', liked=True)
-            s = AutoStage(inspecs, outspecs, stage._eqs)
+            eqs = get_eqs(stage._eqs)
+            print ("stage eqs", name, eqs)
+            s = AutoStage(inspecs, outspecs, eqs)
             self.stages.append(s)
+        print ("end stage", name, "\n")
 
     def get_specs(self, stage, name, liked=False):
         if name in stage._preg_map:
@@ -190,11 +239,11 @@ class PipeManager:
         return self
 
     def __exit__(self, *args):
-        print (args)
+        print ("exit stage", args)
         pipes = []
         cb = ControlBase()
         for s in self.stages:
-            print (s, s.inspecs, s.outspecs)
+            print ("stage specs", s, s.inspecs, s.outspecs)
             if self.pipetype == 'buffered':
                 p = BufferedPipeline(s)
             else:
