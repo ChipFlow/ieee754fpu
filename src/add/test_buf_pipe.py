@@ -333,14 +333,14 @@ def test9_resultfn(o_data, expected, i, o):
 
 class SetLessThan:
     def __init__(self, width, signed):
-        self.src1 = Signal((width, signed))
-        self.src2 = Signal((width, signed))
-        self.output = Signal(width)
+        self.m = Module()
+        self.src1 = Signal((width, signed), name="src1")
+        self.src2 = Signal((width, signed), name="src2")
+        self.output = Signal(width, name="out")
 
     def elaborate(self, platform):
-        m = Module()
-        m.d.comb += self.output.eq(Mux(self.src1 < self.src2, 1, 0))
-        return m
+        self.m.d.comb += self.output.eq(Mux(self.src1 < self.src2, 1, 0))
+        return self.m
 
 
 class LTStage(StageCls):
@@ -350,10 +350,10 @@ class LTStage(StageCls):
         self.slt = SetLessThan(16, True)
 
     def ispec(self):
-        return (Signal(16), Signal(16))
+        return (Signal(16, name="sig1"), Signal(16, "sig2"))
 
     def ospec(self):
-        return Signal(16)
+        return Signal(16, "out")
 
     def setup(self, m, i):
         self.o = Signal(16)

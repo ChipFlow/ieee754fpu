@@ -28,6 +28,16 @@ def like(value, rname, pipe, pipemode=False):
                              reset_less=True)
         return Signal.like(value, name=rname, reset_less=True)
 
+def get_assigns(_assigns):
+    assigns = []
+    for e in _assigns:
+        if isinstance(e, ObjectProxy):
+            assigns += get_assigns(e._assigns)
+        else:
+            assigns.append(e)
+    return assigns
+
+
 def get_eqs(_eqs):
     eqs = []
     for e in _eqs:
@@ -46,6 +56,7 @@ class ObjectProxy:
         self.name = name
         self._pipemode = pipemode
         self._eqs = []
+        self._assigns = []
         self._preg_map = {}
 
     @classmethod
@@ -116,6 +127,9 @@ class ObjectProxy:
         elif self._m:
             print ("OP !pipemode assign", new_pipereg, value, type(value))
             self._m.d.comb += eq(new_pipereg, value)
+        else:
+            print ("OP !pipemode !m", new_pipereg, value, type(value))
+            self._assigns += eq(new_pipereg, value)
 
 
 class PipelineStage:
@@ -143,6 +157,7 @@ class PipelineStage:
                 print ("make current", self._stagename, m)
         self._pipemode = pipemode
         self._eqs = []
+        self._assigns = []
 
     def __getattr__(self, name):
         try:
@@ -168,18 +183,28 @@ class PipelineStage:
         self._preg_map[next_stage][name] = new_pipereg
         if self._pipemode:
             self._eqs.append(value)
-            print ("pipemode: append", new_pipereg, value)
+            assign = eq(new_pipereg, value)
+            print ("pipemode: append", new_pipereg, value, assign)
+            if isinstance(value, ObjectProxy):
+                print ("OP, assigns:", value._assigns)
+                self._assigns += value._assigns
             #self._m.d.comb += assign
-        else:
+            self._assigns += assign
+        elif self._m:
             print ("!pipemode: assign", new_pipereg, value)
             assign = eq(new_pipereg, value)
             self._m.d.sync += assign
+        else:
+            print ("!pipemode !m: defer assign", new_pipereg, value)
+            assign = eq(new_pipereg, value)
+            self._assigns += assign
 
 
 class AutoStage(StageCls):
-    def __init__(self, inspecs, outspecs, eqs):
-        self.inspecs, self.outspecs, self.eqs = inspecs, outspecs, eqs
-        self.o = self.ospec()
+    def __init__(self, inspecs, outspecs, eqs, assigns):
+        self.inspecs, self.outspecs = inspecs, outspecs
+        self.eqs, self.assigns = eqs, assigns
+        #self.o = self.ospec()
     def ispec(self): return self.like(self.inspecs)
     def ospec(self): return self.like(self.outspecs)
     def like(self, specs):
@@ -190,12 +215,23 @@ class AutoStage(StageCls):
 
     def process(self, i):
         print ("stage process", i)
-        return self.o
+        return self.eqs
 
     def setup(self, m, i):
         print ("stage setup", i)
-        m.d.sync += eq(i, self.eqs)
-        m.d.comb += eq(self.o, i)
+        #m.d.comb += eq(self.o, i)
+
+
+class AutoPipe(UnbufferedPipeline):
+    def __init__(self, stage, assigns):
+        UnbufferedPipeline.__init__(self, stage)
+        self.assigns = assigns
+
+    def elaborate(self, platform):
+        m = UnbufferedPipeline.elaborate(self, platform)
+        m.d.comb += self.assigns
+        print ("assigns", self.assigns)
+        return m
 
 
 class PipeManager:
@@ -207,9 +243,9 @@ class PipeManager:
     @contextmanager
     def Stage(self, name, prev=None, ispec=None):
         print ("start stage", name)
-        stage = PipelineStage(name, self.m, prev, self.pipemode, ispec=ispec)
+        stage = PipelineStage(name, None, prev, self.pipemode, ispec=ispec)
         try:
-            yield stage, stage._m
+            yield stage, self.m #stage._m
         finally:
             pass
         if self.pipemode:
@@ -220,10 +256,12 @@ class PipeManager:
                 inspecs = self.get_specs(stage, name)
             outspecs = self.get_specs(stage, '__nextstage__', liked=True)
             eqs = get_eqs(stage._eqs)
+            assigns = get_assigns(stage._assigns)
             print ("stage eqs", name, eqs)
-            s = AutoStage(inspecs, outspecs, eqs)
+            print ("stage assigns", name, assigns)
+            s = AutoStage(inspecs, outspecs, eqs, assigns)
             self.stages.append(s)
-        print ("end stage", name, "\n")
+        print ("end stage", name, self.pipemode, "\n")
 
     def get_specs(self, stage, name, liked=False):
         if name in stage._preg_map:
@@ -247,7 +285,7 @@ class PipeManager:
             if self.pipetype == 'buffered':
                 p = BufferedPipeline(s)
             else:
-                p = UnbufferedPipeline(s)
+                p = AutoPipe(s, s.assigns)
             pipes.append(p)
             self.m.submodules += p
 

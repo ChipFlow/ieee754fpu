@@ -396,7 +396,6 @@ class ControlBase:
             * add i_data member to PrevControl (p) and
             * add o_data member to NextControl (n)
         """
-
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi)
         self.n = NextControl()
@@ -527,56 +526,57 @@ class BufferedPipeline(ControlBase):
         self.n.o_data = stage.ospec()
 
     def elaborate(self, platform):
-        m = Module()
+
+        self.m = Module()
 
         result = self.stage.ospec()
         r_data = self.stage.ospec()
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.i_data)
+            self.stage.setup(self.m, self.p.i_data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
-        m.d.comb += [p_i_valid.eq(self.p.i_valid_logic()),
+        self.m.d.comb += [p_i_valid.eq(self.p.i_valid_logic()),
                      o_n_validn.eq(~self.n.o_valid),
                      i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
-        m.d.comb += eq(result, self.stage.process(self.p.i_data))
+        self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # if not in stall condition, update the temporary register
-        with m.If(self.p.o_ready): # not stalled
-            m.d.sync += eq(r_data, result) # update buffer
+        with self.m.If(self.p.o_ready): # not stalled
+            self.m.d.sync += eq(r_data, result) # update buffer
 
-        with m.If(self.n.i_ready): # next stage is ready
-            with m.If(self.p.o_ready): # not stalled
+        with self.m.If(self.n.i_ready): # next stage is ready
+            with self.m.If(self.p.o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
-                m.d.sync += [self.n.o_valid.eq(p_i_valid),
-                             eq(self.n.o_data, result), # update output
+                self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
+                                  eq(self.n.o_data, result), # update output
                             ]
-            with m.Else(): # p.o_ready is false, and something is in buffer.
+            with self.m.Else(): # p.o_ready is false, and something in buffer
                 # Flush the [already processed] buffer to the output port.
-                m.d.sync += [self.n.o_valid.eq(1),      # declare reg empty
-                             eq(self.n.o_data, r_data), # flush buffer
-                             self.p.o_ready.eq(1),      # clear stall condition
+                self.m.d.sync += [self.n.o_valid.eq(1),      # declare reg empty
+                                  eq(self.n.o_data, r_data), # flush buffer
+                                  self.p.o_ready.eq(1),      # clear stall
                             ]
                 # ignore input, since p.o_ready is also false.
 
         # (n.i_ready) is false here: next stage is ready
-        with m.Elif(o_n_validn): # next stage being told "ready"
-            m.d.sync += [self.n.o_valid.eq(p_i_valid),
-                         self.p.o_ready.eq(1), # Keep the buffer empty
-                         eq(self.n.o_data, result), # set output data
+        with self.m.Elif(o_n_validn): # next stage being told "ready"
+            self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
+                              self.p.o_ready.eq(1), # Keep the buffer empty
+                              eq(self.n.o_data, result), # set output data
                         ]
 
         # (n.i_ready) false and (n.o_valid) true:
-        with m.Elif(i_p_valid_o_p_ready):
+        with self.m.Elif(i_p_valid_o_p_ready):
             # If next stage *is* ready, and not stalled yet, accept input
-            m.d.sync += self.p.o_ready.eq(~(p_i_valid & self.n.o_valid))
+            self.m.d.sync += self.p.o_ready.eq(~(p_i_valid & self.n.o_valid))
 
-        return m
+        return self.m
 
 
 class UnbufferedPipeline(ControlBase):
@@ -625,27 +625,27 @@ class UnbufferedPipeline(ControlBase):
         self.n.o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
-        m = Module()
+        self.m = Module()
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ispec() # input type
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, r_data)
+            self.stage.setup(self.m, r_data)
 
         # some temporarie
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
-        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
-        m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
+        self.m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+        self.m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
-        m.d.comb += self.n.o_valid.eq(data_valid)
-        m.d.comb += self.p.o_ready.eq(~data_valid | self.n.i_ready)
-        m.d.sync += data_valid.eq(p_i_valid | \
+        self.m.d.comb += self.n.o_valid.eq(data_valid)
+        self.m.d.comb += self.p.o_ready.eq(~data_valid | self.n.i_ready)
+        self.m.d.sync += data_valid.eq(p_i_valid | \
                                         (~self.n.i_ready & data_valid))
-        with m.If(pv):
-            m.d.sync += eq(r_data, self.p.i_data)
-        m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
-        return m
+        with self.m.If(pv):
+            self.m.d.sync += eq(r_data, self.p.i_data)
+        self.m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
+        return self.m
 
 
 class PassThroughStage(StageCls):

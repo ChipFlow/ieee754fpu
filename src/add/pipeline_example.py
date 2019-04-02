@@ -119,10 +119,10 @@ class PipelineStageObjectExample:
 
         m = Module()
 
-        o = ObjectProxy(m, pipemode=False)
+        o = ObjectProxy(None, pipemode=False)
         o.a = Signal(4)
         o.b = Signal(4)
-        self.obj = o
+        self._obj = o
 
         localv2 = Signal(4)
         m.d.sync += localv2.eq(localv2 + 3)
@@ -133,13 +133,13 @@ class PipelineStageObjectExample:
         with PipeManager(m, pipemode=True) as pipe:
 
             with pipe.Stage("first",
-                            ispec=[self._loopback, self.obj]) as (p, m):
+                            ispec=[self._loopback, self._obj]) as (p, m):
                 p.n = ~self._loopback
-                p.o = self.obj
+                p.o = self._obj
             with pipe.Stage("second", p) as (p, m):
                 #p.n = ~self._loopback + 2
                 p.n = p.n + Const(2)
-                o = ObjectProxy(m, pipemode=False)
+                o = ObjectProxy(None, pipemode=False)
                 o.a = p.n
                 o.b = p.o.b + p.n + Const(5)
                 p.o = o
@@ -148,7 +148,7 @@ class PipelineStageObjectExample:
                 localv = Signal(4)
                 m.d.comb += localv.eq(2)
                 p.n = p.n << localv
-                o = ObjectProxy(m, pipemode=False)
+                o = ObjectProxy(None, pipemode=False)
                 o.b = p.n + p.o.b + p.o.a
                 p.o = o
 
