@@ -130,10 +130,11 @@ class PipelineStageObjectExample:
         #m.d.comb += self.obj.a.eq(localv2 + 1)
         #m.d.sync += self._loopback.eq(localv2)
 
+        ispec= [self._loopback, self._obj]
         with PipeManager(m, pipemode=True) as pipe:
 
             with pipe.Stage("first",
-                            ispec=[self._loopback, self._obj]) as (p, m):
+                            ispec=ispec) as (p, m):
                 p.n = ~self._loopback
                 p.o = self._obj
             with pipe.Stage("second", p) as (p, m):

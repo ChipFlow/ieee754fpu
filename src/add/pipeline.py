@@ -96,7 +96,7 @@ class ObjectProxy:
             if isinstance(a, Signal) or isinstance(a, ObjectProxy) or \
                isinstance(a, Record):
                 res.append(a)
-        print ("ObjectPorts", res)
+        #print ("ObjectPorts", res)
         return res
 
     def __getattr__(self, name):
@@ -188,6 +188,7 @@ class PipelineStage:
             if isinstance(value, ObjectProxy):
                 print ("OP, assigns:", value._assigns)
                 self._assigns += value._assigns
+                #self._eqs += value._eqs
             #self._m.d.comb += assign
             self._assigns += assign
         elif self._m:
@@ -198,27 +199,33 @@ class PipelineStage:
             print ("!pipemode !m: defer assign", new_pipereg, value)
             assign = eq(new_pipereg, value)
             self._assigns += assign
+            if isinstance(value, ObjectProxy):
+                print ("OP, defer assigns:", value._assigns)
+                self._assigns += value._assigns
 
+def likelist(specs):
+    res = []
+    for v in specs:
+        res.append(like(v, v.name, None, pipemode=True))
+    return res
 
 class AutoStage(StageCls):
     def __init__(self, inspecs, outspecs, eqs, assigns):
         self.inspecs, self.outspecs = inspecs, outspecs
         self.eqs, self.assigns = eqs, assigns
         #self.o = self.ospec()
-    def ispec(self): return self.like(self.inspecs)
-    def ospec(self): return self.like(self.outspecs)
-    def like(self, specs):
-        res = []
-        for v in specs:
-            res.append(like(v, v.name, None, pipemode=True))
-        return res
+    def ispec(self): return likelist(self.inspecs)
+    def ospec(self): return likelist(self.outspecs)
 
     def process(self, i):
         print ("stage process", i)
         return self.eqs
 
     def setup(self, m, i):
+        #self.o = self.ospec()
+        m.d.comb += eq(self.inspecs, i)
         print ("stage setup", i)
+        print ("stage setup inspecs", self.inspecs)
         #m.d.comb += eq(self.o, i)
 
 
@@ -243,6 +250,8 @@ class PipeManager:
     @contextmanager
     def Stage(self, name, prev=None, ispec=None):
         print ("start stage", name)
+        if ispec:
+            ispec = likelist(ispec)
         stage = PipelineStage(name, None, prev, self.pipemode, ispec=ispec)
         try:
             yield stage, self.m #stage._m
@@ -254,6 +263,7 @@ class PipeManager:
                 inspecs = stage._ispec
             else:
                 inspecs = self.get_specs(stage, name)
+                inspecs = likelist(inspecs)
             outspecs = self.get_specs(stage, '__nextstage__', liked=True)
             eqs = get_eqs(stage._eqs)
             assigns = get_assigns(stage._assigns)
