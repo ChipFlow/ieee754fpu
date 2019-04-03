@@ -138,7 +138,6 @@ class ObjectProxy:
         else:
             print ("OP !pipemode !m", new_pipereg, value, type(value))
             self._assigns += eq(new_pipereg, value)
-            #self._eqs.append(new_pipereg)
             if isinstance(value, ObjectProxy):
                 print ("OP, defer assigns:", value._assigns)
                 self._assigns += value._assigns
@@ -215,6 +214,7 @@ class PipelineStage:
             if isinstance(value, ObjectProxy):
                 print ("OP, defer assigns:", value._assigns)
                 self._assigns += value._assigns
+                self._eqs += value._eqs
 
 def likelist(specs):
     res = []

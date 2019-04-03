@@ -251,7 +251,7 @@ def eq(o, i):
         o, i = [o], [i]
     res = []
     for (ao, ai) in zip(o, i):
-        #print ("eq", ao, ai)
+        print ("eq", ao, ai)
         if isinstance(ao, Record):
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):

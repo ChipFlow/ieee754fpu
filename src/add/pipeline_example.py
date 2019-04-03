@@ -138,11 +138,13 @@ class PipelineStageObjectExample:
                 p.n = ~self._loopback
                 p.o = self._obj
             with pipe.Stage("second", p) as (p, m):
-                #p.n = ~self._loopback + 2
-                p.n = p.n + Const(2)
+                localv = Signal(4)
+                m.d.comb += localv.eq(p.n + Const(2))
+                p.n = localv
                 o = ObjectProxy(None, pipemode=False)
-                o.c = p.n
-                o.d = p.o.b + p.n + Const(5)
+                o.c = localv
+                o.d = p.o.b + localv + Const(5)
+                o.e = p.o.b + localv
                 p.o = o
             with pipe.Stage("third", p) as (p, m):
                 #p.n = ~self._loopback + 5
