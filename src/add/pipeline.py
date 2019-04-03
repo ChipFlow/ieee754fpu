@@ -151,7 +151,7 @@ class PipelineStage:
     def __init__(self, name, m, prev=None, pipemode=False, ispec=None):
         self._m = m
         self._stagename = name
-        self._preg_map = {}
+        self._preg_map = {'__nextstage__': {}}
         self._prev_stage = prev
         self._ispec = ispec
         if prev:
@@ -172,6 +172,8 @@ class PipelineStage:
         self._assigns = []
 
     def __getattr__(self, name):
+        #if name in self._preg_map['__nextstage__']:
+        #    return self._preg_map['__nextstage__'][name]
         try:
             v = self._preg_map[self._stagename][name]
             return v
