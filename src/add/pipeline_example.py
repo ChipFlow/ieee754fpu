@@ -52,8 +52,8 @@ class ObjectBasedPipelineExample(SimplePipeline):
     def stage1(self):
         self.n = self.n + self.o.a
         o = ObjectProxy(self._m)
-        o.a = self.n
-        o.b = self.o.b + self.n + Const(5)
+        o.c = self.n
+        o.d = self.o.b + self.n + Const(5)
         self.o = o
 
     def stage2(self):
@@ -61,16 +61,16 @@ class ObjectBasedPipelineExample(SimplePipeline):
         self._m.d.comb += localv.eq(2)
         self.n = self.n << localv
         o = ObjectProxy(self._m)
-        o.b = self.n + self.o.a + self.o.b
+        o.e = self.n + self.o.c + self.o.d
         self.o = o
 
     def stage3(self):
         self.n = ~self.n
         self.o = self.o
-        self.o.b = self.o.b + self.n
+        self.o.e = self.o.e + self.n
 
     def stage4(self):
-        self._m.d.sync += self._loopback.eq(self.n + 3 + self.o.b)
+        self._m.d.sync += self._loopback.eq(self.n + 3 + self.o.e)
 
 
 class PipeModule:
@@ -141,8 +141,8 @@ class PipelineStageObjectExample:
                 #p.n = ~self._loopback + 2
                 p.n = p.n + Const(2)
                 o = ObjectProxy(None, pipemode=False)
-                o.a = p.n
-                o.b = p.o.b + p.n + Const(5)
+                o.c = p.n
+                o.d = p.o.b + p.n + Const(5)
                 p.o = o
             with pipe.Stage("third", p) as (p, m):
                 #p.n = ~self._loopback + 5
@@ -150,7 +150,31 @@ class PipelineStageObjectExample:
                 m.d.comb += localv.eq(2)
                 p.n = p.n << localv
                 o = ObjectProxy(None, pipemode=False)
-                o.b = p.n + p.o.b + p.o.a
+                o.e = p.n + p.o.c + p.o.d
+                p.o = o
+
+        print ("stages", pipe.stages)
+
+        return m
+
+
+class PipelineStageObjectExample2:
+
+    def __init__(self):
+        self._loopback = Signal(4)
+
+    def get_fragment(self, platform=None):
+
+        m = Module()
+
+        ispec= [self._loopback]
+        with PipeManager(m, pipemode=True) as pipe:
+
+            with pipe.Stage("first",
+                            ispec=ispec) as (p, m):
+                p.n = ~self._loopback
+                o = ObjectProxy(None, pipemode=False)
+                o.b = ~self._loopback + Const(5)
                 p.o = o
 
         print ("stages", pipe.stages)
