@@ -3,6 +3,7 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
 from fpcommon.getop import FPGetOp
+from singlepipe import eq
 
 
 class FPMUL(FPBase):
@@ -14,6 +15,12 @@ class FPMUL(FPBase):
         self.in_a  = FPOp(width)
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
+
+	self.states = []
+
+    def add_state(self, state):
+	self.states.append(state)
+	return state
 
     def get_fragment(self, platform=None):
         """ creates the HDL code-fragment for FPMUL
@@ -34,19 +41,24 @@ class FPMUL(FPBase):
         m.submodules.b = b
         m.submodules.z = z
 
+        m.d.comb += a.v.eq(self.a.v)
+        m.d.comb += b.v.eq(self.b.v)
+
         with m.FSM() as fsm:
 
             # ******
             # gets operand a
 
             with m.State("get_a"):
-                self.get_op(m, self.in_a, a, "get_b")
+                res = self.get_op(m, self.in_a, a, "get_b")
+		m.d.sync += eq([a, self.in_a.ack], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
-                self.get_op(m, self.in_b, b, "special_cases")
+                res = self.get_op(m, self.in_b, b, "special_cases")
+		m.d.sync += eq([b, self.in_b.ack], res)
 
             # ******
             # special cases
