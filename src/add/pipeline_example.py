@@ -86,7 +86,7 @@ class PipeModule:
 class PipelineStageExample:
 
     def __init__(self):
-        self._loopback = Signal(4)
+        self._loopback = Signal(4, name="loopback")
 
     def get_fragment(self, platform=None):
 
@@ -94,16 +94,17 @@ class PipelineStageExample:
 
         with PipeManager(m, pipemode=True) as pipe:
 
-            with pipe.Stage("first", ispec=[self._loopback]) as (p, m):
-                p.n = ~self._loopback
+            ispec={'loopback': self._loopback}
+            with pipe.Stage("first", ispec=ispec) as (p, m):
+                p.n = ~p.loopback
             with pipe.Stage("second", p) as (p, m):
                 #p.n = ~self._loopback + 2
-                p.n = p.n + 2
+                p.n = p.n + Const(2)
             with pipe.Stage("third", p) as (p, m):
                 #p.n = ~self._loopback + 5
                 localv = Signal(4)
                 m.d.comb += localv.eq(2)
-                p.n = p.n << localv + 1
+                p.n = p.n << localv + Const(1)
                 #p.m = p.n + 2
 
         print (pipe.stages)
@@ -113,7 +114,7 @@ class PipelineStageExample:
 class PipelineStageObjectExample:
 
     def __init__(self):
-        self._loopback = Signal(4)
+        self.loopback = Signal(4)
 
     def get_fragment(self, platform=None):
 
@@ -122,7 +123,7 @@ class PipelineStageObjectExample:
         o = ObjectProxy(None, pipemode=False)
         o.a = Signal(4)
         o.b = Signal(4)
-        self._obj = o
+        self.obj = o
 
         localv2 = Signal(4)
         m.d.sync += localv2.eq(localv2 + 3)
@@ -130,15 +131,14 @@ class PipelineStageObjectExample:
         #m.d.comb += self.obj.a.eq(localv2 + 1)
         #m.d.sync += self._loopback.eq(localv2)
 
-        ispec= [self._loopback, self._obj]
+        ispec= {'loopback': self.loopback, 'obj': self.obj}
         with PipeManager(m, pipemode=True) as pipe:
 
-            with pipe.Stage("first",
-                            ispec=ispec) as (p, m):
-                p.n = ~self._loopback
-                p.o = self._obj
+            with pipe.Stage("first", ispec=ispec) as (p, m):
+                p.n = ~p.loopback
+                p.o = p.obj
             with pipe.Stage("second", p) as (p, m):
-                #p.n = ~self._loopback + 2
+                #p.n = ~self.loopback + 2
                 localn = Signal(4)
                 m.d.comb += localn.eq(p.n)
                 o = ObjectProxy(None, pipemode=False)
@@ -196,8 +196,9 @@ if __name__ == "__main__":
         f.write(rtlil.convert(example, ports=[
                example._loopback,
              ]))
+    #exit(0)
     example = PipelineStageObjectExample()
     with open("pipe_stage_object_module.il", "w") as f:
         f.write(rtlil.convert(example, ports=[
-               example._loopback,
+               example.loopback,
              ]))

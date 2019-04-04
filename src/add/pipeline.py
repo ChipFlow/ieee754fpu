@@ -55,7 +55,7 @@ class ObjectProxy:
             name = tracer.get_var_name(default=None)
         self.name = name
         self._pipemode = pipemode
-        self._eqs = []
+        self._eqs = {}
         self._assigns = []
         self._preg_map = {}
 
@@ -154,27 +154,31 @@ class PipelineStage:
         self._preg_map = {'__nextstage__': {}}
         self._prev_stage = prev
         self._ispec = ispec
+        if ispec:
+            self._preg_map[self._stagename] = ispec
         if prev:
             print ("prev", prev._stagename, prev._preg_map)
-            if prev._stagename in prev._preg_map:
-                m = prev._preg_map[prev._stagename]
-                self._preg_map[prev._stagename] = m
-                #for k, v in m.items():
-                    #m[k] = like(v, k, self._m)
+            #if prev._stagename in prev._preg_map:
+            #    m = prev._preg_map[prev._stagename]
+            #    self._preg_map[prev._stagename] = m
             if '__nextstage__' in prev._preg_map:
                 m = prev._preg_map['__nextstage__']
+                m = likedict(m)
                 self._preg_map[self._stagename] = m
                 #for k, v in m.items():
                     #m[k] = like(v, k, self._m)
                 print ("make current", self._stagename, m)
         self._pipemode = pipemode
-        self._eqs = []
+        self._eqs = {}
         self._assigns = []
 
-    def __getattr__(self, name):
+    def __getattribute__(self, name):
+        if name.startswith('_'):
+            return object.__getattribute__(self, name)
         #if name in self._preg_map['__nextstage__']:
         #    return self._preg_map['__nextstage__'][name]
         try:
+            print ("getattr", name, object.__getattribute__(self, '_preg_map'))
             v = self._preg_map[self._stagename][name]
             return v
             #return like(v, name, self._m)
@@ -195,14 +199,15 @@ class PipelineStage:
         if next_stage not in self._preg_map:
             self._preg_map[next_stage] = {}
         self._preg_map[next_stage][name] = new_pipereg
+        print ("setattr", name, value, self._preg_map)
         if self._pipemode:
-            self._eqs.append(new_pipereg)
+            self._eqs[name] = new_pipereg
             assign = eq(new_pipereg, value)
             print ("pipemode: append", new_pipereg, value, assign)
             if isinstance(value, ObjectProxy):
                 print ("OP, assigns:", value._assigns)
                 self._assigns += value._assigns
-                self._eqs += value._eqs
+                self._eqs[name]._eqs = value._eqs
             #self._m.d.comb += assign
             self._assigns += assign
         elif self._m:
@@ -212,16 +217,25 @@ class PipelineStage:
         else:
             print ("!pipemode !m: defer assign", new_pipereg, value)
             assign = eq(new_pipereg, value)
+            self._eqs[name] = new_pipereg
             self._assigns += assign
             if isinstance(value, ObjectProxy):
                 print ("OP, defer assigns:", value._assigns)
                 self._assigns += value._assigns
-                self._eqs += value._eqs
+                self._eqs[name]._eqs = value._eqs
 
 def likelist(specs):
     res = []
     for v in specs:
         res.append(like(v, v.name, None, pipemode=True))
+    return res
+
+def likedict(specs):
+    if not isinstance(specs, dict):
+        return like(specs, specs.name, None, pipemode=True)
+    res = {}
+    for k, v in specs.items():
+        res[k] = likedict(v)
     return res
 
 
@@ -230,20 +244,20 @@ class AutoStage(StageCls):
         self.inspecs, self.outspecs = inspecs, outspecs
         self.eqs, self.assigns = eqs, assigns
         #self.o = self.ospec()
-    def ispec(self): return likelist(self.inspecs)
-    def ospec(self): return likelist(self.outspecs)
+    def ispec(self): return likedict(self.inspecs)
+    def ospec(self): return likedict(self.outspecs)
 
     def process(self, i):
         print ("stage process", i)
-        return self.outspecs
+        return self.eqs
 
     def setup(self, m, i):
-        print ("stage setup i", i)
+        print ("stage setup i", i, m)
         print ("stage setup inspecs", self.inspecs)
         print ("stage setup outspecs", self.outspecs)
         print ("stage setup eqs", self.eqs)
         #self.o = self.ospec()
-        m.d.comb += eq(self.eqs, i)
+        m.d.comb += eq(self.inspecs, i)
         #m.d.comb += eq(self.outspecs, self.eqs)
         #m.d.comb += eq(self.o, i)
 
@@ -256,7 +270,7 @@ class AutoPipe(UnbufferedPipeline):
     def elaborate(self, platform):
         m = UnbufferedPipeline.elaborate(self, platform)
         m.d.comb += self.assigns
-        print ("assigns", self.assigns)
+        print ("assigns", self.assigns, m)
         return m
 
 
@@ -268,9 +282,9 @@ class PipeManager:
 
     @contextmanager
     def Stage(self, name, prev=None, ispec=None):
-        print ("start stage", name)
         if ispec:
-            ispec = likelist(ispec)
+            ispec = likedict(ispec)
+        print ("start stage", name, ispec)
         stage = PipelineStage(name, None, prev, self.pipemode, ispec=ispec)
         try:
             yield stage, self.m #stage._m
@@ -282,9 +296,11 @@ class PipeManager:
                 inspecs = stage._ispec
             else:
                 inspecs = self.get_specs(stage, name)
-                inspecs = likelist(inspecs)
+                #inspecs = likedict(inspecs)
             outspecs = self.get_specs(stage, '__nextstage__', liked=True)
-            eqs = get_eqs(stage._eqs)
+            print ("stage inspecs", name, inspecs)
+            print ("stage outspecs", name, outspecs)
+            eqs = stage._eqs # get_eqs(stage._eqs)
             assigns = get_assigns(stage._assigns)
             print ("stage eqs", name, eqs)
             print ("stage assigns", name, assigns)
@@ -293,6 +309,7 @@ class PipeManager:
         print ("end stage", name, self.pipemode, "\n")
 
     def get_specs(self, stage, name, liked=False):
+        return stage._preg_map[name]
         if name in stage._preg_map:
             res = []
             for k, v in stage._preg_map[name].items():
@@ -301,7 +318,7 @@ class PipeManager:
                 #if isinstance(v, ObjectProxy):
                 #    res += v.get_specs()
             return res
-        return []
+        return {}
 
     def __enter__(self):
         self.stages = []
