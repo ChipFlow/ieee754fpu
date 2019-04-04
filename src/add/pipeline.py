@@ -130,7 +130,7 @@ class ObjectProxy:
         self._preg_map[name] = new_pipereg
         #object.__setattr__(self, name, new_pipereg)
         if self._pipemode:
-            print ("OP pipemode", new_pipereg, value)
+            print ("OP pipemode", self._syncmode, new_pipereg, value)
             assign = eq(new_pipereg, value)
             if self._syncmode:
                 self._m.d.sync += assign
