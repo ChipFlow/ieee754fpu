@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
-from fpcommon.getop import FPGetOp
+from singlepipe import eq
 
 class Div:
     def __init__(self, width):
@@ -61,31 +61,24 @@ class FPDIV(FPBase):
         m.submodules.z = z
         m.submodules.of = of
 
+        m.d.comb += a.v.eq(self.in_a.v)
+        m.d.comb += b.v.eq(self.in_b.v)
+
         with m.FSM() as fsm:
 
             # ******
             # gets operand a
 
-            geta = FPGetOp("get_a", "get_b", self.in_a, self.width)
-            geta.setup(m, self.in_a)
-
             with m.State("get_a"):
-                geta.action(m)
-                with m.If(geta.out_decode):
-                    m.d.sync += a.decode(self.in_a.v)
-                #self.get_op(m, self.in_a, a, "get_b")
+                res = self.get_op(m, self.in_a, a, "get_b")
+                m.d.sync += eq([a, self.in_a.ack], res)
 
             # ******
             # gets operand b
 
-            getb = FPGetOp("get_b", "special_cases", self.in_b, self.width)
-            getb.setup(m, self.in_b)
-
             with m.State("get_b"):
-                getb.action(m)
-                with m.If(getb.out_decode):
-                    m.d.sync += b.decode(self.in_b.v)
-                #self.get_op(m, self.in_b, b, "special_cases")
+                res = self.get_op(m, self.in_b, b, "special_cases")
+                m.d.sync += eq([b, self.in_b.ack], res)
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
