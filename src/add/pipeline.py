@@ -49,12 +49,13 @@ def get_eqs(_eqs):
 
 
 class ObjectProxy:
-    def __init__(self, m, name=None, pipemode=False):
+    def __init__(self, m, name=None, pipemode=False, syncmode=True):
         self._m = m
         if name is None:
             name = tracer.get_var_name(default=None)
         self.name = name
         self._pipemode = pipemode
+        self._syncmode = syncmode
         self._eqs = {}
         self._assigns = []
         self._preg_map = {}
@@ -130,8 +131,11 @@ class ObjectProxy:
         #object.__setattr__(self, name, new_pipereg)
         if self._pipemode:
             print ("OP pipemode", new_pipereg, value)
-            #self._m.d.comb += eq(new_pipereg, value)
-            pass
+            assign = eq(new_pipereg, value)
+            if self._syncmode:
+                self._m.d.sync += assign
+            else:
+                self._m.d.comb += assign
         elif self._m:
             print ("OP !pipemode assign", new_pipereg, value, type(value))
             self._m.d.comb += eq(new_pipereg, value)
