@@ -7,6 +7,8 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
+from singlepipe import eq
+
 
 class FPADD(FPBase):
 
@@ -49,13 +51,15 @@ class FPADD(FPBase):
             # gets operand a
 
             with m.State("get_a"):
-                self.get_op(m, self.in_a, a, "get_b")
+                res = self.get_op(m, self.in_a, a, "get_b")
+                m.d.sync += eq([a, self.in_a.ack], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
-                self.get_op(m, self.in_b, b, "special_cases")
+                res = self.get_op(m, self.in_b, b, "special_cases")
+                m.d.sync += eq([b, self.in_b.ack], res)
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised

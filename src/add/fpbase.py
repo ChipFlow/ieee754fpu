@@ -7,6 +7,9 @@ from math import log
 from operator import or_
 from functools import reduce
 
+from pipeline import ObjectProxy
+
+
 class MultiShiftR:
 
     def __init__(self, width):
@@ -353,6 +356,22 @@ class FPNumIn(FPNumBase):
         self.latch_in = Signal()
         self.op = op
 
+    def decode2(self, m):
+        """ decodes a latched value into sign / exponent / mantissa
+
+            bias is subtracted here, from the exponent.  exponent
+            is extended to 10 bits so that subtract 127 is done on
+            a 10-bit number
+        """
+        v = self.v
+        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        #print ("decode", self.e_end)
+        res = ObjectProxy(m, pipemode=False)
+        res.m = Cat(*args)                             # mantissa
+        res.e = v[self.e_start:self.e_end] - self.P127 # exp
+        res.s = v[-1]                                  # sign
+        return res
+
     def decode(self, v):
         """ decodes a latched value into sign / exponent / mantissa
 
@@ -509,15 +528,15 @@ class FPBase:
             when both stb and ack are 1.
             acknowledgement is sent by setting ack to ZERO.
         """
+        res = v.decode2(m)
+        ack = Signal()
         with m.If((op.ack) & (op.stb)):
             m.next = next_state
-            m.d.sync += [
-                # op is latched in from FPNumIn class on same ack/stb
-                v.decode(op.v),
-                op.ack.eq(0)
-            ]
+            # op is latched in from FPNumIn class on same ack/stb
+            m.d.comb += ack.eq(0)
         with m.Else():
-            m.d.sync += op.ack.eq(1)
+            m.d.comb += ack.eq(1)
+        return [res, ack]
 
     def denormalise(self, m, a):
         """ denormalises a number.  this is probably the wrong name for
