@@ -247,9 +247,15 @@ def eq(o, i):
         python object, enumerate them, find out the list of Signals that way,
         and assign them.
     """
+    res = []
+    if isinstance(o, dict):
+        for (k, v) in o.items():
+            print ("d-eq", v, i[k])
+            res.append(v.eq(i[k]))
+        return res
+
     if not isinstance(o, Sequence):
         o, i = [o], [i]
-    res = []
     for (ao, ai) in zip(o, i):
         print ("eq", ao, ai)
         if isinstance(ao, Record):
