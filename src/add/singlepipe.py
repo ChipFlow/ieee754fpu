@@ -233,6 +233,13 @@ class NextControl:
             return self.s_o_valid
         return self._o_valid
 
+    def i_ready_logic(self):
+        """ public-facing API: receives indication that transmit is possible
+        """
+        if self.stage_ctl:
+            return self.i_ready & self.s_o_valid
+        return self.i_ready
+
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
