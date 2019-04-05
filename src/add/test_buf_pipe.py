@@ -608,13 +608,13 @@ class ExampleStageDelayCls(StageCls):
         return i + 1
 
 
-class ExampleBufDelayedPipe(UnbufferedPipeline):
+class ExampleBufDelayedPipe(BufferedPipeline):
     """ an example of how to use the buffered pipeline.
     """
 
     def __init__(self):
         stage = ExampleStageDelayCls()
-        UnbufferedPipeline.__init__(self, stage, stage_ctl=False)
+        BufferedPipeline.__init__(self, stage, stage_ctl=True)
 
 
 class ExampleBufPipe3(ControlBase):
@@ -634,6 +634,19 @@ class ExampleBufPipe3(ControlBase):
         m.d.comb += self.connect([pipe1, pipe2])
 
         return m
+
+def data_chain1():
+        data = []
+        for i in range(num_tests):
+            data.append(randint(0, 1<<16-2))
+        return data
+
+
+def test12_resultfn(o_data, expected, i, o):
+    res = expected + 1
+    assert o_data == res, \
+                "%d-%d data %x not match %s\n" \
+                % (i, o, o_data, repr(expected))
 
 
 
@@ -736,9 +749,10 @@ if __name__ == '__main__':
 
 
     print ("test 12")
-    dut = ExampleBufPipe3()
-    data = data_chain2()
-    test = Test5(dut, test9_resultfn, data=data)
+    #dut = ExampleBufPipe3()
+    dut = ExampleBufDelayedPipe()
+    data = data_chain1()
+    test = Test5(dut, test12_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \

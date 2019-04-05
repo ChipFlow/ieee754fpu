@@ -523,9 +523,6 @@ class ControlBase:
 
         # when the pipeline (buffered or otherwise) says "ready",
         # test the *stage* "ready".
-        m.d.comb += self.p.s_o_ready.eq(self.p._o_ready)
-        m.d.comb += self.n.s_o_valid.eq(self.n._o_valid)
-        return m
 
         with m.If(self.p._o_ready):
             m.d.comb += self.p.s_o_ready.eq(self.stage.p_o_ready)
