@@ -594,11 +594,13 @@ class ExampleStageDelayCls(StageCls):
     def ospec(self):
         return Signal(16, name="example_output_signal")
 
-    def p_o_ready(self, m, p_in, p_out):
-        m.d.comb += p_out.eq(p_in)
+    @property
+    def p_o_ready(self):
+        return Const(1)
 
-    def n_o_valid(self, m, n_in, n_out):
-        m.d.comb += n_out.eq(n_in)
+    @property
+    def n_o_valid(self):
+        return Const(1)
 
     def process(self, i):
         """ process the input data and returns it (adds 1)
