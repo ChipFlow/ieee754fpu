@@ -41,8 +41,8 @@ class FPMUL(FPBase):
         m.submodules.b = b
         m.submodules.z = z
 
-        m.d.comb += a.v.eq(self.a.v)
-        m.d.comb += b.v.eq(self.b.v)
+        m.d.comb += a.v.eq(self.in_a.v)
+        m.d.comb += b.v.eq(self.in_b.v)
 
         with m.FSM() as fsm:
 
