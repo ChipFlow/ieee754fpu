@@ -675,14 +675,14 @@ class UnbufferedPipeline(ControlBase):
         self.n.o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
-        self.m = Module()
+        self.m = ControlBase.elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ispec() # input type
         if hasattr(self.stage, "setup"):
             self.stage.setup(self.m, r_data)
 
-        # some temporarie
+        # some temporaries
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
         self.m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
