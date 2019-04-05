@@ -514,7 +514,7 @@ class ControlBase:
             res += self.n.o_data
         return res
 
-    def elaborate(self, platform):
+    def _elaborate(self, platform):
         """ handles case where stage has dynamic ready/valid functions
         """
         m = Module()
@@ -523,6 +523,10 @@ class ControlBase:
 
         # when the pipeline (buffered or otherwise) says "ready",
         # test the *stage* "ready".
+        m.d.comb += self.p.s_o_ready.eq(self.p._o_ready)
+        m.d.comb += self.n.s_o_valid.eq(self.n._o_valid)
+        return m
+
         with m.If(self.p._o_ready):
             m.d.comb += self.p.s_o_ready.eq(self.stage.p_o_ready)
         with m.Else():
@@ -577,7 +581,7 @@ class BufferedPipeline(ControlBase):
 
     def elaborate(self, platform):
 
-        self.m = ControlBase.elaborate(self, platform)
+        self.m = ControlBase._elaborate(self, platform)
 
         result = self.stage.ospec()
         r_data = self.stage.ospec()
@@ -675,7 +679,7 @@ class UnbufferedPipeline(ControlBase):
         self.n.o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
-        self.m = ControlBase.elaborate(self, platform)
+        self.m = ControlBase._elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ispec() # input type

@@ -608,13 +608,13 @@ class ExampleStageDelayCls(StageCls):
         return i + 1
 
 
-class ExampleBufDelayedPipe(BufferedPipeline):
+class ExampleBufDelayedPipe(UnbufferedPipeline):
     """ an example of how to use the buffered pipeline.
     """
 
     def __init__(self):
         stage = ExampleStageDelayCls()
-        BufferedPipeline.__init__(self, stage, stage_ctl=True)
+        UnbufferedPipeline.__init__(self, stage, stage_ctl=False)
 
 
 class ExampleBufPipe3(ControlBase):
@@ -623,7 +623,7 @@ class ExampleBufPipe3(ControlBase):
     """
 
     def elaborate(self, platform):
-        m = Module()
+        m = ControlBase._elaborate(self, platform)
 
         pipe1 = ExampleBufPipe()
         pipe2 = ExampleBufDelayedPipe()
