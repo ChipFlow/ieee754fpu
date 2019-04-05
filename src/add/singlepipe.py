@@ -171,10 +171,16 @@ class PrevControl:
     def __init__(self, i_width=1, stage_ctl=False):
         self.stage_ctl = stage_ctl
         self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
-        self.o_ready = Signal(name="p_o_ready") # prev   <<out self
+        self._o_ready = Signal(name="p_o_ready") # prev   <<out self
         self.i_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_ready = Signal(name="p_s_o_rdy") # prev   <<out self
+
+    @property
+    def o_ready(self):
+        if self.stage_ctl:
+            return self.s_o_ready
+        return self._o_ready
 
     def _connect_in(self, prev):
         """ internal helper function to connect stage to an input source.
@@ -202,11 +208,17 @@ class NextControl:
     """
     def __init__(self, stage_ctl=False):
         self.stage_ctl = stage_ctl
-        self.o_valid = Signal(name="n_o_valid") # self out>>  next
+        self._o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_valid = Signal(name="n_s_o_vld") # self out>>  next
+
+    @property
+    def o_valid(self):
+        if self.stage_ctl:
+            return self.s_o_valid
+        return self._o_valid
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
