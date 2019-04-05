@@ -16,11 +16,11 @@ class FPMUL(FPBase):
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
 
-	self.states = []
+        self.states = []
 
     def add_state(self, state):
-	self.states.append(state)
-	return state
+        self.states.append(state)
+        return state
 
     def get_fragment(self, platform=None):
         """ creates the HDL code-fragment for FPMUL
@@ -51,14 +51,14 @@ class FPMUL(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "get_b")
-		m.d.sync += eq([a, self.in_a.ack], res)
+                m.d.sync += eq([a, self.in_a.ack], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
                 res = self.get_op(m, self.in_b, b, "special_cases")
-		m.d.sync += eq([b, self.in_b.ack], res)
+                m.d.sync += eq([b, self.in_b.ack], res)
 
             # ******
             # special cases
