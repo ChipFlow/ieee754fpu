@@ -14,7 +14,7 @@
 
 """
 
-from nmigen import Module, Signal, Mux
+from nmigen import Module, Signal, Mux, Const
 from nmigen.hdl.rec import Record
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
@@ -613,7 +613,8 @@ class ExampleBufDelayedPipe(BufferedPipeline):
     """
 
     def __init__(self):
-        BufferedPipeline.__init__(self, ExampleStageDelayCls())
+        stage = ExampleStageDelayCls()
+        BufferedPipeline.__init__(self, stage, stage_ctl=True)
 
 
 class ExampleBufPipe3(ControlBase):
@@ -736,7 +737,9 @@ if __name__ == '__main__':
 
     print ("test 12")
     dut = ExampleBufPipe3()
-    run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe12.vcd")
+    data = data_chain2()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
              [dut.p.i_data] + [dut.n.o_data]
