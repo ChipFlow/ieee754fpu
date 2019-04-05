@@ -576,6 +576,61 @@ def data_2op():
         return data
 
 
+######################################################################
+# Test 12
+######################################################################
+
+class ExampleStageDelayCls(StageCls):
+    """ an example of how to use the buffered pipeline, in a static class
+        fashion
+    """
+
+    def __init__(self):
+        self.count = Signal(3)
+
+    def ispec(self):
+        return Signal(16, name="example_input_signal")
+
+    def ospec(self):
+        return Signal(16, name="example_output_signal")
+
+    def data_ready(self, i):
+        pass
+
+    def process(self, i):
+        """ process the input data and returns it (adds 1)
+        """
+        return i + 1
+
+
+class ExampleBufDelayedPipe(BufferedPipeline):
+    """ an example of how to use the buffered pipeline.
+    """
+
+    def __init__(self):
+        BufferedPipeline.__init__(self, ExampleStageDelayCls())
+
+
+class ExampleBufPipe3(ControlBase):
+    """ Example of how to do delayed pipeline, where the stage signals
+        whether it is ready.
+    """
+
+    def elaborate(self, platform):
+        m = Module()
+
+        pipe1 = ExampleBufPipe()
+        pipe2 = ExampleBufDelayedPipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
+
+
 num_tests = 100
 
 if __name__ == '__main__':
@@ -673,4 +728,14 @@ if __name__ == '__main__':
     test = Test5(dut, test11_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
+
+    print ("test 12")
+    dut = ExampleBufPipe3()
+    run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe12.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipe12.il", "w") as f:
+        f.write(vl)
 
