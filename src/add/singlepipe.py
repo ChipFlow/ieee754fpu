@@ -197,8 +197,12 @@ class PrevControl:
         vlen = len(self.i_valid)
         if vlen > 1: # multi-bit case: valid only when i_valid is all 1s
             all1s = Const(-1, (len(self.i_valid), False))
+            if self.stage_ctl:
+                return self.i_valid == all1s & self.s_o_ready
             return self.i_valid == all1s
         # single-bit i_valid case
+        if self.stage_ctl:
+            return self.i_valid & self.s_o_ready
         return self.i_valid
 
 

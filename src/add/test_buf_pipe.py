@@ -587,7 +587,7 @@ class ExampleStageDelayCls(StageCls):
     """
 
     def __init__(self):
-        self.count = Signal(3)
+        self.count = Signal(2)
 
     def ispec(self):
         return Signal(16, name="example_input_signal")
@@ -597,7 +597,6 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def p_o_ready(self):
-        return Const(1)
         return self.count == 0
 
     @property
@@ -611,7 +610,7 @@ class ExampleStageDelayCls(StageCls):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.sync += self.count.eq(~self.count)
+        m.d.sync += self.count.eq(self.count + 1)
         return m
 
 
