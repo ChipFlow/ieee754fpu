@@ -205,6 +205,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
+                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -597,6 +598,7 @@ class ExampleStageDelayCls(StageCls):
     @property
     def p_o_ready(self):
         return Const(1)
+        return self.count == 0
 
     @property
     def n_o_valid(self):
@@ -607,6 +609,11 @@ class ExampleStageDelayCls(StageCls):
         """
         return i + 1
 
+    def elaborate(self, platform):
+        m = Module()
+        m.d.sync += self.count.eq(~self.count)
+        return m
+
 
 class ExampleBufDelayedPipe(BufferedPipeline):
     """ an example of how to use the buffered pipeline.
@@ -615,6 +622,11 @@ class ExampleBufDelayedPipe(BufferedPipeline):
     def __init__(self):
         stage = ExampleStageDelayCls()
         BufferedPipeline.__init__(self, stage, stage_ctl=True)
+
+    def elaborate(self, platform):
+        m = BufferedPipeline.elaborate(self, platform)
+        m.submodules.stage = self.stage
+        return m
 
 
 class ExampleBufPipe3(ControlBase):

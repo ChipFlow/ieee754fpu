@@ -602,7 +602,7 @@ class BufferedPipeline(ControlBase):
             self.m.d.sync += eq(r_data, result) # update buffer
 
         with self.m.If(self.n.i_ready): # next stage is ready
-            with self.m.If(self.p.o_ready): # not stalled
+            with self.m.If(self.p._o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 self.m.d.sync += [self.n._o_valid.eq(p_i_valid),
                                   eq(self.n.o_data, result), # update output
