@@ -168,10 +168,13 @@ class PrevControl:
         * i_data : an input - added by the user of this class
     """
 
-    def __init__(self, i_width=1):
+    def __init__(self, i_width=1, stage_ctl=False):
+        self.stage_ctl = stage_ctl
         self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
         self.o_ready = Signal(name="p_o_ready") # prev   <<out self
         self.i_data = None # XXX MUST BE ADDED BY USER
+        if stage_ctl:
+            self.s_o_ready = Signal(name="p_s_o_rdy") # prev   <<out self
 
     def _connect_in(self, prev):
         """ internal helper function to connect stage to an input source.
@@ -197,10 +200,13 @@ class NextControl:
         * i_ready: input from next stage indicating that it can accept data
         * o_data : an output - added by the user of this class
     """
-    def __init__(self):
+    def __init__(self, stage_ctl=False):
+        self.stage_ctl = stage_ctl
         self.o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
+        if stage_ctl:
+            self.s_o_valid = Signal(name="n_s_o_vld") # self out>>  next
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -392,7 +398,7 @@ class StageChain(StageCls):
 class ControlBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, in_multi=None):
+    def __init__(self, in_multi=None, stage_ctl=False):
         """ Base class containing ready/valid/data to previous and next stages
 
             * p: contains ready/valid to the previous stage
@@ -403,8 +409,8 @@ class ControlBase:
             * add o_data member to NextControl (n)
         """
         # set up input and output IO ACK (prev/next ready/valid)
-        self.p = PrevControl(in_multi)
-        self.n = NextControl()
+        self.p = PrevControl(in_multi, stage_ctl)
+        self.n = NextControl(stage_ctl)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
