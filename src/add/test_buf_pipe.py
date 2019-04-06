@@ -598,8 +598,8 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def d_ready(self):
-        return Const(1)
         return self.count == 2
+        return Const(1)
 
     @property
     def d_valid(self):
@@ -618,8 +618,6 @@ class ExampleStageDelayCls(StageCls):
 
 
 class ExampleBufDelayedPipe(BufferedPipeline):
-    """ an example of how to use the buffered pipeline.
-    """
 
     def __init__(self):
         stage = ExampleStageDelayCls()
@@ -662,6 +660,22 @@ def test12_resultfn(o_data, expected, i, o):
     assert o_data == res, \
                 "%d-%d data %x not match %x\n" \
                 % (i, o, o_data, res)
+
+
+######################################################################
+# Test 13
+######################################################################
+
+class ExampleUnBufDelayedPipe(UnbufferedPipeline):
+
+    def __init__(self):
+        stage = ExampleStageDelayCls()
+        UnbufferedPipeline.__init__(self, stage, stage_ctl=True)
+
+    def elaborate(self, platform):
+        m = UnbufferedPipeline.elaborate(self, platform)
+        m.submodules.stage = self.stage
+        return m
 
 
 ######################################################################
@@ -777,5 +791,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe12.il", "w") as f:
+        f.write(vl)
+
+    print ("test 13")
+    #dut = ExampleBufPipe3()
+    dut = ExampleUnBufDelayedPipe()
+    data = data_chain1()
+    test = Test5(dut, test12_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe13.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
 
