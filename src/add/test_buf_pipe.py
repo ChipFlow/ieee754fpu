@@ -591,8 +591,9 @@ class ExampleStageDelayCls(StageCls):
         fashion
     """
 
-    def __init__(self):
+    def __init__(self, valid_trigger=2):
         self.count = Signal(2)
+        self.valid_trigger = valid_trigger
 
     def ispec(self):
         return Signal(16, name="example_input_signal")
@@ -607,7 +608,7 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def d_valid(self):
-        return self.count == 3
+        return self.count == self.valid_trigger
         return Const(1)
 
     def process(self, i):
@@ -695,11 +696,11 @@ class ExampleBufAdd1Pipe(BufferedPipeline):
         BufferedPipeline.__init__(self, stage)
 
 
-class ExampleUnBufAdd1Pipe(UnbufferedPipeline2):
+class ExampleUnBufAdd1Pipe(UnbufferedPipeline):
 
     def __init__(self):
         stage = ExampleStageCls()
-        UnbufferedPipeline2.__init__(self, stage)
+        UnbufferedPipeline.__init__(self, stage)
 
 
 class ExampleBufUnBufPipe(ControlBase):
