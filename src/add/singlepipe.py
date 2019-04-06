@@ -217,27 +217,10 @@ class NextControl:
         * i_ready: input from next stage indicating that it can accept data
         * o_data : an output - added by the user of this class
     """
-    def __init__(self, stage_ctl=False):
-        self.stage_ctl = stage_ctl
-        self._o_valid = Signal(name="n_o_valid") # self out>>  next
+    def __init__(self):
+        self.o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
-        self.d_valid = Signal(reset=1) # INTERNAL (data valid)
-
-    @property
-    def o_valid(self):
-        """ public-facing API: indicates (externally) that data is valid
-        """
-        return self._o_valid
-        if self.stage_ctl:
-            return self.s_o_valid
-
-    def i_ready_logic(self):
-        """ public-facing API: receives indication that transmit is possible
-        """
-        return self.i_ready
-        if self.stage_ctl:
-            return self.i_ready & self.s_o_valid
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -441,7 +424,7 @@ class ControlBase:
         """
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, stage_ctl)
-        self.n = NextControl(stage_ctl)
+        self.n = NextControl()
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -533,7 +516,7 @@ class ControlBase:
         """ handles case where stage has dynamic ready/valid functions
         """
         m = Module()
-        if not self.n.stage_ctl:
+        if not self.p.stage_ctl:
             return m
 
         # when the pipeline (buffered or otherwise) says "ready",
@@ -543,9 +526,6 @@ class ControlBase:
             m.d.comb += self.p.s_o_ready.eq(self.stage.p_o_ready)
         with m.Else():
             m.d.comb += self.p.s_o_ready.eq(0)
-
-        # bring data valid into n-control
-        m.d.comb += self.n.d_valid.eq(self.stage.d_valid)
 
         return m
 
@@ -616,12 +596,12 @@ class BufferedPipeline(ControlBase):
         with self.m.If(self.n.i_ready): # next stage is ready
             with self.m.If(self.p._o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
-                self.m.d.sync += [self.n._o_valid.eq(p_i_valid),
+                self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
                                   eq(self.n.o_data, result), # update output
                             ]
             with self.m.Else(): # p.o_ready is false, and something in buffer
                 # Flush the [already processed] buffer to the output port.
-                self.m.d.sync += [self.n._o_valid.eq(1),     # reg empty
+                self.m.d.sync += [self.n.o_valid.eq(1),     # reg empty
                                   eq(self.n.o_data, r_data), # flush buffer
                                   self.p._o_ready.eq(1),     # clear stall
                             ]
@@ -629,7 +609,7 @@ class BufferedPipeline(ControlBase):
 
         # (n.i_ready) is false here: next stage is ready
         with self.m.Elif(o_n_validn): # next stage being told "ready"
-            self.m.d.sync += [self.n._o_valid.eq(p_i_valid),
+            self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
                               self.p._o_ready.eq(1), # Keep the buffer empty
                               eq(self.n.o_data, result), # set output data
                         ]
@@ -701,7 +681,7 @@ class UnbufferedPipeline(ControlBase):
         self.m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
         self.m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
-        self.m.d.comb += self.n._o_valid.eq(data_valid)
+        self.m.d.comb += self.n.o_valid.eq(data_valid)
         self.m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready)
         self.m.d.sync += data_valid.eq(p_i_valid | \
                                         (~self.n.i_ready & data_valid))
