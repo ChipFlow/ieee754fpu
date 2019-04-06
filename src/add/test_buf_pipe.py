@@ -624,8 +624,9 @@ class ExampleStageDelayCls(StageCls):
 class ExampleBufDelayedPipe(BufferedPipeline):
 
     def __init__(self):
-        stage = ExampleStageDelayCls()
-        BufferedPipeline.__init__(self, stage, stage_ctl=True)
+        stage = ExampleStageDelayCls(valid_trigger=3)
+        BufferedPipeline.__init__(self, stage, stage_ctl=True,
+                                    buffermode=False)
 
     def elaborate(self, platform):
         m = BufferedPipeline.elaborate(self, platform)
@@ -653,14 +654,14 @@ def test12_resultfn(o_data, expected, i, o):
 # Test 13
 ######################################################################
 
-class ExampleUnBufDelayedPipe(UnbufferedPipeline):
+class ExampleUnBufDelayedPipe(BufferedPipeline):
 
     def __init__(self):
         stage = ExampleStageDelayCls()
-        UnbufferedPipeline.__init__(self, stage, stage_ctl=True)
+        BufferedPipeline.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
-        m = UnbufferedPipeline.elaborate(self, platform)
+        m = BufferedPipeline.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
 
