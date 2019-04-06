@@ -678,7 +678,7 @@ class ExampleUnBufDelayedPipe(UnbufferedPipeline):
         return m
 
 ######################################################################
-# Test 999
+# Test 999 - XXX FAILS
 ######################################################################
 
 class ExampleBufAdd1Pipe(BufferedPipeline):
@@ -700,7 +700,9 @@ class ExampleBufUnBufPipe(ControlBase):
     def elaborate(self, platform):
         m = ControlBase._elaborate(self, platform)
 
-        #pipe1 = ExampleBufPipe()
+        # XXX currently fails: any other permutation works fine.
+        # p1=u,p2=b ok p1=u,p2=u ok p1=b,p2=b ok
+        # also fails using UnbufferedPipeline as well
         pipe1 = ExampleBufAdd1Pipe()
         pipe2 = ExampleUnBufAdd1Pipe()
 
@@ -840,7 +842,7 @@ if __name__ == '__main__':
     with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
 
-    print ("test 999")
+    print ("test 999 (expected to fail, which is a bug)")
     dut = ExampleBufUnBufPipe()
     data = data_chain1()
     test = Test5(dut, test9_resultfn, data=data)
