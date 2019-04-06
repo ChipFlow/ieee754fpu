@@ -224,8 +224,8 @@ class Test5:
         while self.o != len(self.data):
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
-                stall = randint(0, stall_range) != 0
-                yield self.dut.n.i_ready.eq(stall)
+                ready = randint(0, stall_range) != 0
+                yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
                 i_n_ready = yield self.dut.n.i_ready_test
