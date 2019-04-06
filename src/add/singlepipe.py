@@ -528,18 +528,11 @@ class ControlBase:
         if not self.p.stage_ctl:
             return m
 
-        # when the pipeline (buffered or otherwise) says "ready",
-        # test the *stage* "ready".
+        # intercept the previous (outgoing) "ready", combine with stage ready
+        m.d.comb += self.p.s_o_ready.eq(self.p._o_ready & self.stage.p_o_ready)
 
-        with m.If(self.p._o_ready):
-            m.d.comb += self.p.s_o_ready.eq(self.stage.p_o_ready)
-        with m.Else():
-            m.d.comb += self.p.s_o_ready.eq(0)
-
-        with m.If(self.n.i_ready):
-            m.d.comb += self.n.d_valid.eq(self.stage.d_valid)
-        with m.Else():
-            m.d.comb += self.n.d_valid.eq(0)
+        # intercept the next (incoming) "ready" and combine it with data valid
+        m.d.comb += self.n.d_valid.eq(self.n.i_ready & self.stage.d_valid)
 
         return m
 
