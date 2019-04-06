@@ -679,6 +679,7 @@ class ExampleUnBufDelayedPipe(UnbufferedPipeline):
 
 ######################################################################
 # Test 999 - XXX FAILS
+# http://bugs.libre-riscv.org/show_bug.cgi?id=57
 ######################################################################
 
 class ExampleBufAdd1Pipe(BufferedPipeline):
