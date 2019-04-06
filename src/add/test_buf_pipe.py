@@ -26,7 +26,9 @@ from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain, ControlBase, StageCls
 from singlepipe import UnbufferedPipeline2
 
-from random import randint
+from random import randint, seed
+
+seed(0)
 
 
 def check_o_n_valid(dut, val):
@@ -207,6 +209,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
+                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -225,6 +228,7 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 ready = randint(0, stall_range) != 0
+                ready = True
                 yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
@@ -325,8 +329,8 @@ def data_chain2():
 def test9_resultfn(o_data, expected, i, o):
     res = expected + 2
     assert o_data == res, \
-                "%d-%d data %x not match %s\n" \
-                % (i, o, o_data, repr(expected))
+                "%d-%d received data %x not match expected %x\n" \
+                % (i, o, o_data, res)
 
 
 ######################################################################
@@ -598,12 +602,12 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def d_ready(self):
-        return self.count == 2
+        return (self.count == 1)# | (self.count == 3)
         return Const(1)
 
     @property
     def d_valid(self):
-        return self.count == 0
+        return self.count == 3
         return Const(1)
 
     def process(self, i):
@@ -637,9 +641,9 @@ class ExampleBufPipe3(ControlBase):
     def elaborate(self, platform):
         m = ControlBase._elaborate(self, platform)
 
-        #pipe1 = ExampleBufPipe()
+        #pipe1 = ExampleBufDelayedPipe()
         pipe1 = ExampleBufDelayedPipe()
-        pipe2 = ExampleBufDelayedPipe()
+        pipe2 = ExampleBufPipe()
 
         m.submodules.pipe1 = pipe1
         m.submodules.pipe2 = pipe2
@@ -651,7 +655,9 @@ class ExampleBufPipe3(ControlBase):
 def data_chain1():
         data = []
         for i in range(num_tests):
+            #data.append(1<<((i*2)%15))
             data.append(randint(0, 1<<16-2))
+            print (hex(data[-1]))
         return data
 
 
@@ -721,7 +727,7 @@ class ExampleBufUnBufPipe(ControlBase):
 # Unit Tests
 ######################################################################
 
-num_tests = 100
+num_tests = 10
 
 if __name__ == '__main__':
     print ("test 1")
@@ -843,6 +849,19 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe13.il", "w") as f:
+        f.write(vl)
+
+    print ("test 14")
+    dut = ExampleBufPipe3()
+    #dut = ExampleBufDelayedPipe()
+    data = data_chain1()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipe14.il", "w") as f:
         f.write(vl)
 
     print ("test 999 (expected to fail, which is a bug)")
