@@ -703,6 +703,8 @@ class ExampleBufUnBufPipe(ControlBase):
         # XXX currently fails: any other permutation works fine.
         # p1=u,p2=b ok p1=u,p2=u ok p1=b,p2=b ok
         # also fails using UnbufferedPipeline as well
+        #pipe1 = ExampleUnBufAdd1Pipe()
+        #pipe2 = ExampleBufAdd1Pipe()
         pipe1 = ExampleBufAdd1Pipe()
         pipe2 = ExampleUnBufAdd1Pipe()
 
