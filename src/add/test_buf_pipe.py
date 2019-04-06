@@ -153,7 +153,7 @@ class Test3:
                 yield self.dut.n.i_ready.eq(stall)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
-                i_n_ready = yield self.dut.n.i_ready
+                i_n_ready = yield self.dut.n.i_ready_test
                 if not o_n_valid or not i_n_ready:
                     continue
                 o_data = yield self.dut.n.o_data
@@ -185,9 +185,10 @@ def data_dict():
 
 
 class Test5:
-    def __init__(self, dut, resultfn, data=None):
+    def __init__(self, dut, resultfn, data=None, stage_ctl=False):
         self.dut = dut
         self.resultfn = resultfn
+        self.stage_ctl = stage_ctl
         if data:
             self.data = data
         else:
@@ -227,7 +228,7 @@ class Test5:
                 yield self.dut.n.i_ready.eq(stall)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
-                i_n_ready = yield self.dut.n.i_ready
+                i_n_ready = yield self.dut.n.i_ready_test
                 if not o_n_valid or not i_n_ready:
                     continue
                 if isinstance(self.dut.n.o_data, Record):
@@ -269,7 +270,7 @@ def testbench4(dut):
                 yield dut.p.i_valid.eq(0)
         yield
         o_n_valid = yield dut.n.o_valid
-        i_n_ready = yield dut.n.i_ready
+        i_n_ready = yield dut.n.i_ready_test
         if o_n_valid and i_n_ready:
             o_data = yield dut.n.o_data
             assert o_data == data[o] + 2, "%d-%d data %x not match %x\n" \
@@ -598,11 +599,11 @@ class ExampleStageDelayCls(StageCls):
     @property
     def p_o_ready(self):
         return Const(1)
-        return self.count == 0
+        return self.count == 2
 
     @property
     def d_valid(self):
-        return self.count == 2
+        return self.count == 0
         return Const(1)
 
     def process(self, i):
@@ -638,7 +639,8 @@ class ExampleBufPipe3(ControlBase):
     def elaborate(self, platform):
         m = ControlBase._elaborate(self, platform)
 
-        pipe1 = ExampleBufPipe()
+        #pipe1 = ExampleBufPipe()
+        pipe1 = ExampleBufDelayedPipe()
         pipe2 = ExampleBufDelayedPipe()
 
         m.submodules.pipe1 = pipe1
@@ -662,6 +664,9 @@ def test12_resultfn(o_data, expected, i, o):
                 % (i, o, o_data, res)
 
 
+######################################################################
+# Unit Tests
+######################################################################
 
 num_tests = 100
 
@@ -697,7 +702,7 @@ if __name__ == '__main__':
 
     print ("test 5")
     dut = ExampleBufPipeAdd()
-    test = Test5(dut, test5_resultfn)
+    test = Test5(dut, test5_resultfn, stage_ctl=True)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe5.vcd")
 
     print ("test 6")

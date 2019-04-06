@@ -188,12 +188,13 @@ class PrevControl:
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
-        return [self.i_valid.eq(prev.i_valid),
+        return [self.i_valid.eq(prev.i_valid_test),
                 prev.o_ready.eq(self.o_ready),
                 eq(self.i_data, prev.i_data),
                ]
 
-    def i_valid_logic(self):
+    @property
+    def i_valid_test(self):
         vlen = len(self.i_valid)
         if vlen > 1:
             # multi-bit case: valid only when i_valid is all 1s
@@ -217,10 +218,18 @@ class NextControl:
         * i_ready: input from next stage indicating that it can accept data
         * o_data : an output - added by the user of this class
     """
-    def __init__(self):
+    def __init__(self, stage_ctl=False):
+        self.stage_ctl = stage_ctl
         self.o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
+        self.d_valid = Signal(reset=1) # INTERNAL (data valid)
+
+    @property
+    def i_ready_test(self):
+        if self.stage_ctl:
+            return self.i_ready & self.d_valid
+        return self.i_ready
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -237,7 +246,7 @@ class NextControl:
             do not use to connect stage-to-stage!
         """
         return [nxt.o_valid.eq(self.o_valid),
-                self.i_ready.eq(nxt.i_ready),
+                self.i_ready.eq(nxt.i_ready_test),
                 eq(nxt.o_data, self.o_data),
                ]
 
@@ -424,7 +433,7 @@ class ControlBase:
         """
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, stage_ctl)
-        self.n = NextControl()
+        self.n = NextControl(stage_ctl)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -527,6 +536,11 @@ class ControlBase:
         with m.Else():
             m.d.comb += self.p.s_o_ready.eq(0)
 
+        with m.If(self.n.i_ready):
+            m.d.comb += self.n.d_valid.eq(self.stage.d_valid)
+        with m.Else():
+            m.d.comb += self.n.d_valid.eq(0)
+
         return m
 
 
@@ -581,7 +595,7 @@ class BufferedPipeline(ControlBase):
         o_n_validn = Signal(reset_less=True)
         i_p_valid_o_p_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
-        self.m.d.comb += [p_i_valid.eq(self.p.i_valid_logic()),
+        self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      o_n_validn.eq(~self.n.o_valid),
                      i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
         ]
@@ -593,7 +607,7 @@ class BufferedPipeline(ControlBase):
         with self.m.If(self.p.o_ready): # not stalled
             self.m.d.sync += eq(r_data, result) # update buffer
 
-        with self.m.If(self.n.i_ready): # next stage is ready
+        with self.m.If(self.n.i_ready_test): # next stage is ready
             with self.m.If(self.p._o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
@@ -678,13 +692,13 @@ class UnbufferedPipeline(ControlBase):
         # some temporaries
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
-        self.m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+        self.m.d.comb += p_i_valid.eq(self.p.i_valid_test)
         self.m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
         self.m.d.comb += self.n.o_valid.eq(data_valid)
-        self.m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready)
+        self.m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready_test)
         self.m.d.sync += data_valid.eq(p_i_valid | \
-                                        (~self.n.i_ready & data_valid))
+                                        (~self.n.i_ready_test & data_valid))
         with self.m.If(pv):
             self.m.d.sync += eq(r_data, self.p.i_data)
         self.m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
