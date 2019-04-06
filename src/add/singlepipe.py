@@ -223,7 +223,8 @@ class NextControl:
         self.o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
-        self.d_valid = Signal(reset=1) # INTERNAL (data valid)
+        if self.stage_ctl:
+            self.d_valid = Signal(reset=1) # INTERNAL (data valid)
 
     @property
     def i_ready_test(self):
