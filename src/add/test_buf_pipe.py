@@ -677,6 +677,43 @@ class ExampleUnBufDelayedPipe(UnbufferedPipeline):
         m.submodules.stage = self.stage
         return m
 
+######################################################################
+# Test 999
+######################################################################
+
+class ExampleBufAdd1Pipe(BufferedPipeline):
+
+    def __init__(self):
+        stage = ExampleStageCls()
+        BufferedPipeline.__init__(self, stage)
+
+
+class ExampleUnBufAdd1Pipe(UnbufferedPipeline):
+
+    def __init__(self):
+        stage = ExampleStageCls()
+        UnbufferedPipeline.__init__(self, stage)
+
+
+class ExampleBufUnBufPipe(ControlBase):
+    """ Example of how to do delayed pipeline, where the stage signals
+        whether it is ready.
+    """
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        #pipe1 = ExampleBufPipe()
+        pipe1 = ExampleBufAdd1Pipe()
+        pipe2 = ExampleUnBufAdd1Pipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
 
 ######################################################################
 # Unit Tests
@@ -804,5 +841,17 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe13.il", "w") as f:
+        f.write(vl)
+
+    print ("test 999")
+    dut = ExampleBufUnBufPipe()
+    data = data_chain1()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufunbuf999.il", "w") as f:
         f.write(vl)
 
