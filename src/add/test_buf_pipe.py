@@ -895,12 +895,12 @@ if __name__ == '__main__':
     dut = ExampleBufModeUnBufPipe()
     data = data_chain1()
     test = Test5(dut, test9_resultfn, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf15.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
-    with open("test_bufunbuf999.il", "w") as f:
+    with open("test_bufunbuf15.il", "w") as f:
         f.write(vl)
 
     print ("test 999 (expected to fail, which is a bug)")
