@@ -699,6 +699,74 @@ class UnbufferedPipeline(ControlBase):
         return self.m
 
 
+class UnbufferedPipeline2(ControlBase):
+    """ A simple pipeline stage with single-clock synchronisation
+        and two-way valid/ready synchronised signalling.
+
+        Note that a stall in one stage will result in the entire pipeline
+        chain stalling.
+
+        Also that unlike BufferedPipeline, the valid/ready signalling does NOT
+        travel synchronously with the data: the valid/ready signalling
+        combines in a *combinatorial* fashion.  Therefore, a long pipeline
+        chain will lengthen propagation delays.
+
+        Argument: stage.  see Stage API, above
+
+        stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
+        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
+                              |             |
+                            r_data        result
+                              |             |
+                              +--process ->-+
+
+        Attributes:
+        -----------
+        p.i_data : StageInput, shaped according to ispec
+            The pipeline input
+        p.o_data : StageOutput, shaped according to ospec
+            The pipeline output
+        buf : output_shape according to ospec
+            A temporary (buffered) copy of a valid output
+            This is HELD if the output is not ready.  It is updated
+            SYNCHRONOUSLY.
+    """
+
+    def __init__(self, stage, stage_ctl=False):
+        ControlBase.__init__(self, stage_ctl=stage_ctl)
+        self.stage = stage
+
+        # set up the input and output data
+        self.p.i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec() # output type
+
+    def elaborate(self, platform):
+        self.m = ControlBase._elaborate(self, platform)
+
+        buf_full = Signal() # is data valid or not
+        buf = self.stage.ospec() # output type
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(self.m, self.p.i_data)
+
+        # some temporaries
+        p_i_valid = Signal(reset_less=True)
+        self.m.d.comb += p_i_valid.eq(self.p.i_valid_test)
+
+        self.m.d.comb += self.n.o_valid.eq(buf_full | p_i_valid)
+        self.m.d.comb += self.p._o_ready.eq(~buf_full)
+        self.m.d.sync += buf_full.eq(~self.n.i_ready_test & \
+                                        (p_i_valid | buf_full))
+        with self.m.If(buf_full):
+            self.m.d.comb += eq(self.n.o_data, buf)
+        with self.m.Else():
+            self.m.d.comb += eq(self.n.o_data,
+                                self.stage.process(self.p.i_data))
+        self.m.d.sync += eq(buf, self.n.o_data)
+
+        return self.m
+
+
 class PassThroughStage(StageCls):
     """ a pass-through stage which has its input data spec equal to its output,
         and "passes through" its data from input to output.

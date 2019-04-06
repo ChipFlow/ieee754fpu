@@ -24,6 +24,7 @@ from example_buf_pipe import ExamplePipeline, UnbufferedPipeline
 from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain, ControlBase, StageCls
+from singlepipe import UnbufferedPipeline2
 
 from random import randint
 
@@ -206,7 +207,6 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -688,17 +688,14 @@ class ExampleBufAdd1Pipe(BufferedPipeline):
         BufferedPipeline.__init__(self, stage)
 
 
-class ExampleUnBufAdd1Pipe(UnbufferedPipeline):
+class ExampleUnBufAdd1Pipe(UnbufferedPipeline2):
 
     def __init__(self):
         stage = ExampleStageCls()
-        UnbufferedPipeline.__init__(self, stage)
+        UnbufferedPipeline2.__init__(self, stage)
 
 
 class ExampleBufUnBufPipe(ControlBase):
-    """ Example of how to do delayed pipeline, where the stage signals
-        whether it is ready.
-    """
 
     def elaborate(self, platform):
         m = ControlBase._elaborate(self, platform)
