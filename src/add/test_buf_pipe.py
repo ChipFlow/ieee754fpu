@@ -597,10 +597,12 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def p_o_ready(self):
+        return Const(1)
         return self.count == 0
 
     @property
-    def n_o_valid(self):
+    def d_valid(self):
+        return self.count == 2
         return Const(1)
 
     def process(self, i):
@@ -656,8 +658,8 @@ def data_chain1():
 def test12_resultfn(o_data, expected, i, o):
     res = expected + 1
     assert o_data == res, \
-                "%d-%d data %x not match %s\n" \
-                % (i, o, o_data, repr(expected))
+                "%d-%d data %x not match %x\n" \
+                % (i, o, o_data, res)
 
 
 

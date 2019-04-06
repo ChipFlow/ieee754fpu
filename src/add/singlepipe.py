@@ -222,23 +222,22 @@ class NextControl:
         self._o_valid = Signal(name="n_o_valid") # self out>>  next
         self.i_ready = Signal(name="n_i_ready") # self <<in   next
         self.o_data = None # XXX MUST BE ADDED BY USER
-        if stage_ctl:
-            self.s_o_valid = Signal(name="n_s_o_vld") # self out>>  next
+        self.d_valid = Signal(reset=1) # INTERNAL (data valid)
 
     @property
     def o_valid(self):
         """ public-facing API: indicates (externally) that data is valid
         """
+        return self._o_valid
         if self.stage_ctl:
             return self.s_o_valid
-        return self._o_valid
 
     def i_ready_logic(self):
         """ public-facing API: receives indication that transmit is possible
         """
+        return self.i_ready
         if self.stage_ctl:
             return self.i_ready & self.s_o_valid
-        return self.i_ready
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -545,12 +544,9 @@ class ControlBase:
         with m.Else():
             m.d.comb += self.p.s_o_ready.eq(0)
 
-        # when the pipeline (buffered or otherwise) says "valid",
-        # test the *stage* "valid".
-        with m.If(self.n._o_valid):
-            m.d.comb += self.n.s_o_valid.eq(self.stage.n_o_valid)
-        with m.Else():
-            m.d.comb += self.n.s_o_valid.eq(0)
+        # bring data valid into n-control
+        m.d.comb += self.n.d_valid.eq(self.stage.d_valid)
+
         return m
 
 
