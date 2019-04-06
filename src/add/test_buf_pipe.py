@@ -209,7 +209,6 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
