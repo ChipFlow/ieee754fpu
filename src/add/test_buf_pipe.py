@@ -597,7 +597,7 @@ class ExampleStageDelayCls(StageCls):
         return Signal(16, name="example_output_signal")
 
     @property
-    def p_o_ready(self):
+    def d_ready(self):
         return Const(1)
         return self.count == 2
 
