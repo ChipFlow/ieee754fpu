@@ -28,7 +28,7 @@ from singlepipe import UnbufferedPipeline2
 
 from random import randint, seed
 
-seed(0)
+#seed(0)
 
 
 def check_o_n_valid(dut, val):
@@ -634,25 +634,6 @@ class ExampleBufDelayedPipe(BufferedPipeline):
         return m
 
 
-class ExampleBufPipe3(ControlBase):
-    """ Example of how to do delayed pipeline, where the stage signals
-        whether it is ready.
-    """
-
-    def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
-
-        #pipe1 = ExampleBufDelayedPipe()
-        pipe1 = ExampleBufDelayedPipe()
-        pipe2 = ExampleBufPipe()
-
-        m.submodules.pipe1 = pipe1
-        m.submodules.pipe2 = pipe2
-
-        m.d.comb += self.connect([pipe1, pipe2])
-
-        return m
-
 def data_chain1():
         data = []
         for i in range(num_tests):
@@ -683,6 +664,55 @@ class ExampleUnBufDelayedPipe(UnbufferedPipeline):
         m = UnbufferedPipeline.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
+
+######################################################################
+# Test 14
+######################################################################
+
+class ExampleBufPipe3(ControlBase):
+    """ Example of how to do delayed pipeline, where the stage signals
+        whether it is ready.
+    """
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = ExampleBufDelayedPipe()
+        pipe2 = ExampleBufPipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
+######################################################################
+# Test 15
+######################################################################
+
+class ExampleBufModeAdd1Pipe(BufferedPipeline):
+
+    def __init__(self):
+        stage = ExampleStageCls()
+        BufferedPipeline.__init__(self, stage, buffermode=False)
+
+
+class ExampleBufModeUnBufPipe(ControlBase):
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = ExampleBufModeAdd1Pipe()
+        pipe2 = ExampleBufAdd1Pipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
 
 ######################################################################
 # Test 999 - XXX FAILS
@@ -827,7 +857,6 @@ if __name__ == '__main__':
 
 
     print ("test 12")
-    #dut = ExampleBufPipe3()
     dut = ExampleBufDelayedPipe()
     data = data_chain1()
     test = Test5(dut, test12_resultfn, data=data)
@@ -840,7 +869,6 @@ if __name__ == '__main__':
         f.write(vl)
 
     print ("test 13")
-    #dut = ExampleBufPipe3()
     dut = ExampleUnBufDelayedPipe()
     data = data_chain1()
     test = Test5(dut, test12_resultfn, data=data)
@@ -854,7 +882,6 @@ if __name__ == '__main__':
 
     print ("test 14")
     dut = ExampleBufPipe3()
-    #dut = ExampleBufDelayedPipe()
     data = data_chain1()
     test = Test5(dut, test9_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
@@ -863,6 +890,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe14.il", "w") as f:
+        f.write(vl)
+
+    print ("test 15)")
+    dut = ExampleBufModeUnBufPipe()
+    data = data_chain1()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufunbuf999.il", "w") as f:
         f.write(vl)
 
     print ("test 999 (expected to fail, which is a bug)")
