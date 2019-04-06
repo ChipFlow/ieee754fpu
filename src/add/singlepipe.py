@@ -587,11 +587,13 @@ class BufferedPipeline(ControlBase):
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
+        n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
         i_p_valid_o_p_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
         self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      o_n_validn.eq(~self.n.o_valid),
                      i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
+                     n_i_ready.eq(self.n.i_ready_test),
         ]
 
         # store result of processing in combinatorial temporary
@@ -601,7 +603,7 @@ class BufferedPipeline(ControlBase):
         with self.m.If(self.p.o_ready): # not stalled
             self.m.d.sync += eq(r_data, result) # update buffer
 
-        with self.m.If(self.n.i_ready_test): # next stage is ready
+        with self.m.If(n_i_ready): # next stage is ready
             with self.m.If(self.p._o_ready): # not stalled
                 # nothing in buffer: send (processed) input direct to output
                 self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
