@@ -639,7 +639,7 @@ def data_chain1():
         for i in range(num_tests):
             data.append(1<<((i*3)%15))
             #data.append(randint(0, 1<<16-2))
-            print (hex(data[-1]))
+            #print (hex(data[-1]))
         return data
 
 
@@ -654,14 +654,14 @@ def test12_resultfn(o_data, expected, i, o):
 # Test 13
 ######################################################################
 
-class ExampleUnBufDelayedPipe(BufferedPipeline2):
+class ExampleUnBufDelayedPipe(BufferedPipeline):
 
     def __init__(self):
-        stage = ExampleStageDelayCls(valid_trigger=1)
-        BufferedPipeline2.__init__(self, stage, stage_ctl=True)
+        stage = ExampleStageDelayCls(valid_trigger=3)
+        BufferedPipeline.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
-        m = BufferedPipeline2.elaborate(self, platform)
+        m = BufferedPipeline.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
 
@@ -762,7 +762,7 @@ class ExampleBufUnBufPipe(ControlBase):
 # Unit Tests
 ######################################################################
 
-num_tests = 10
+num_tests = 100
 
 if __name__ == '__main__':
     print ("test 1")

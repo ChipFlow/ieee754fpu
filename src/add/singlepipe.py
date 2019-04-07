@@ -683,6 +683,7 @@ class BufferedPipeline2(ControlBase):
 
         self.m = ControlBase._elaborate(self, platform)
 
+        r_busy = Signal()
         result = self.stage.ospec()
         if hasattr(self.stage, "setup"):
             self.stage.setup(self.m, self.p.i_data)
@@ -701,15 +702,18 @@ class BufferedPipeline2(ControlBase):
 
         # previous valid and ready
         with self.m.If(p_i_valid_p_o_ready):
-            self.m.d.sync += [self.n.o_valid.eq(1),      # output valid
+            self.m.d.sync += [r_busy.eq(1),      # output valid
+                              #self.n.o_valid.eq(1),      # output valid
                                   eq(self.n.o_data, result), # update output
                                  ]
         # previous invalid or not ready, however next is accepting
         with self.m.Elif(n_i_ready):
             self.m.d.sync += [ eq(self.n.o_data, result)]
             # TODO: could still send data here (if there was any)
-            self.m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
+            #self.m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
+            self.m.d.sync += r_busy.eq(0) # ...so set output invalid
 
+        self.m.d.comb += self.n.o_valid.eq(r_busy)
         # if next is ready, so is previous
         self.m.d.comb += self.p._o_ready.eq(n_i_ready)
 
