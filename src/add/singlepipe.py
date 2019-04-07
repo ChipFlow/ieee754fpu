@@ -705,8 +705,9 @@ class BufferedPipeline2(ControlBase):
                                  ]
         # previous invalid or not ready, however next is accepting
         with self.m.Elif(n_i_ready):
+            self.m.d.sync += [ eq(self.n.o_data, result)]
             # TODO: could still send data here (if there was any)
-            self.m.d.sync += self.n.o_valid.eq(0), # ...so set output invalid
+            self.m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
 
         # if next is ready, so is previous
         self.m.d.comb += self.p._o_ready.eq(n_i_ready)
