@@ -576,10 +576,9 @@ class BufferedPipeline(ControlBase):
         input may begin to be processed and transferred directly to output.
 
     """
-    def __init__(self, stage, stage_ctl=False, buffermode=True):
+    def __init__(self, stage, stage_ctl=False):
         ControlBase.__init__(self, stage_ctl=stage_ctl)
         self.stage = stage
-        self.buffermode = buffermode
 
         # set up the input and output data
         self.p.i_data = stage.ispec() # input type
@@ -590,8 +589,7 @@ class BufferedPipeline(ControlBase):
         self.m = ControlBase._elaborate(self, platform)
 
         result = self.stage.ospec()
-        if self.buffermode:
-            r_data = self.stage.ospec()
+        r_data = self.stage.ospec()
         if hasattr(self.stage, "setup"):
             self.stage.setup(self.m, self.p.i_data)
 
@@ -609,10 +607,9 @@ class BufferedPipeline(ControlBase):
         # store result of processing in combinatorial temporary
         self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
-        if self.buffermode:
-            # if not in stall condition, update the temporary register
-            with self.m.If(self.p.o_ready): # not stalled
-                self.m.d.sync += eq(r_data, result) # update buffer
+        # if not in stall condition, update the temporary register
+        with self.m.If(self.p.o_ready): # not stalled
+            self.m.d.sync += eq(r_data, result) # update buffer
 
         with self.m.If(n_i_ready): # next stage is ready
             with self.m.If(self.p._o_ready): # not stalled
@@ -620,13 +617,12 @@ class BufferedPipeline(ControlBase):
                 self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
                                   eq(self.n.o_data, result), # update output
                             ]
-            if self.buffermode:
-                with self.m.Else(): # p.o_ready is false, and data in buffer
-                    # Flush the [already processed] buffer to the output port.
-                    self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
-                                  eq(self.n.o_data, r_data), # flush buffer
-                                  self.p._o_ready.eq(1),     # clear stall
-                            ]
+            with self.m.Else(): # p.o_ready is false, and data in buffer
+                # Flush the [already processed] buffer to the output port.
+                self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
+                              eq(self.n.o_data, r_data), # flush buffer
+                              self.p._o_ready.eq(1),     # clear stall
+                        ]
                 # ignore input, since p.o_ready is also false.
 
         # (n.i_ready) is false here: next stage is ready

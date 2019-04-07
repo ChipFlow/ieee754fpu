@@ -592,7 +592,7 @@ class ExampleStageDelayCls(StageCls):
         fashion
     """
 
-    def __init__(self, valid_trigger=3):
+    def __init__(self, valid_trigger=2):
         self.count = Signal(2)
         self.valid_trigger = valid_trigger
 
@@ -627,8 +627,7 @@ class ExampleBufDelayedPipe(BufferedPipeline):
 
     def __init__(self):
         stage = ExampleStageDelayCls(valid_trigger=2)
-        BufferedPipeline.__init__(self, stage, stage_ctl=True,
-                                    buffermode=True)
+        BufferedPipeline.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
         m = BufferedPipeline.elaborate(self, platform)
