@@ -148,6 +148,14 @@
     dan calls a "buffered handshake".
 
     it's quite a complex state machine!
+
+    BufferedPipeline2
+    -----------------
+
+    Synchronised pipeline
+
+    Based on:
+    https://github.com/ZipCPU/dbgbus/blob/master/hexbus/rtl/hbdeword.v
 """
 
 from nmigen import Signal, Cat, Const, Mux, Module, Value
