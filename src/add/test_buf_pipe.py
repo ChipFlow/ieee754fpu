@@ -654,14 +654,14 @@ def test12_resultfn(o_data, expected, i, o):
 # Test 13
 ######################################################################
 
-class ExampleUnBufDelayedPipe(BufferedPipeline):
+class ExampleUnBufDelayedPipe(BufferedPipeline2):
 
     def __init__(self):
-        stage = ExampleStageDelayCls()
-        BufferedPipeline.__init__(self, stage, stage_ctl=True)
+        stage = ExampleStageDelayCls(valid_trigger=1)
+        BufferedPipeline2.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
-        m = BufferedPipeline.elaborate(self, platform)
+        m = BufferedPipeline2.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
 

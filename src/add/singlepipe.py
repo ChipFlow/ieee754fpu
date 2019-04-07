@@ -701,7 +701,7 @@ class BufferedPipeline2(ControlBase):
 
         # previous valid and ready
         with self.m.If(p_i_valid_p_o_ready):
-                self.m.d.sync += [self.n.o_valid.eq(1),      # output valid
+            self.m.d.sync += [self.n.o_valid.eq(1),      # output valid
                                   eq(self.n.o_data, result), # update output
                                  ]
         # previous invalid or not ready, however next is accepting
