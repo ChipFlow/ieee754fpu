@@ -679,47 +679,34 @@ class BufferedPipeline2(ControlBase):
         self.m = ControlBase._elaborate(self, platform)
 
         result = self.stage.ospec()
-        r_busy = Signal(reset=0)
         if hasattr(self.stage, "setup"):
             self.stage.setup(self.m, self.p.i_data)
 
         # establish some combinatorial temporaries
-        o_n_validn = Signal(reset_less=True)
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
-        o_n_valid_i_n_ready = Signal(reset_less=True)
+        p_i_valid_p_o_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
         self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
-                     o_n_validn.eq(~self.n.o_valid),
                      n_i_ready.eq(self.n.i_ready_test),
-                     o_n_valid_i_n_ready.eq(self.n.o_valid & n_i_ready),
+                     p_i_valid_p_o_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
         self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
-        with self.m.If(self.p.o_ready): # output is ready
-            with self.m.If(p_i_valid):   # and input is valid
-                self.m.d.sync += [r_busy.eq(1),
+        # previous valid and ready
+        with self.m.If(p_i_valid_p_o_ready):
+                self.m.d.sync += [self.n.o_valid.eq(1),      # output valid
                                   eq(self.n.o_data, result), # update output
                                  ]
-            # else stay in idle condition (output ready, but input wasn't valid)
+        # previous invalid or not ready, however next is accepting
+        with self.m.Elif(n_i_ready):
+            # TODO: could still send data here (if there was any)
+            self.m.d.sync += self.n.o_valid.eq(0), # ...so set output invalid
 
-        # output valid but not ready, and input is ready
-        with self.m.Elif(o_n_valid_i_n_ready):
-            # output transaction just took place
-            self.m.d.sync += [r_busy.eq(0),
-                              self.n.o_valid.eq(0), # set output invalid
-                             ]
-        # 
-        with self.m.Elif(o_n_validn):
-            # can check here for data valid
-            self.m.d.sync += [self.n.o_valid.eq(1),
-                              #eq(self.n.o_data, result), # update output
-                       ]
+        # if next is ready, so is previous
+        self.m.d.comb += self.p._o_ready.eq(n_i_ready)
 
-        #self.m.d.comb += self.p._o_ready.eq(~r_busy)
-        self.m.d.comb += self.p._o_ready.eq(~(((~n_i_ready)&(self.n.o_valid))| \
-                                            (r_busy)))
         return self.m
 
 
