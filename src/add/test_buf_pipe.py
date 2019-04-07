@@ -28,7 +28,7 @@ from singlepipe import UnbufferedPipeline2
 
 from random import randint, seed
 
-#seed(0)
+seed(4)
 
 
 def check_o_n_valid(dut, val):
@@ -136,6 +136,7 @@ class Test3:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
+                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -637,8 +638,8 @@ class ExampleBufDelayedPipe(BufferedPipeline):
 def data_chain1():
         data = []
         for i in range(num_tests):
-            #data.append(1<<((i*2)%15))
-            data.append(randint(0, 1<<16-2))
+            data.append(1<<((i*3)%15))
+            #data.append(randint(0, 1<<16-2))
             print (hex(data[-1]))
         return data
 
