@@ -136,7 +136,6 @@ class Test3:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -210,6 +209,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
+                #send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -228,7 +228,7 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 ready = randint(0, stall_range) != 0
-                ready = True
+                #ready = True
                 yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
@@ -627,7 +627,7 @@ class ExampleBufDelayedPipe(BufferedPipeline):
     def __init__(self):
         stage = ExampleStageDelayCls(valid_trigger=3)
         BufferedPipeline.__init__(self, stage, stage_ctl=True,
-                                    buffermode=False)
+                                    buffermode=True)
 
     def elaborate(self, platform):
         m = BufferedPipeline.elaborate(self, platform)
