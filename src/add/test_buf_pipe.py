@@ -912,7 +912,7 @@ if __name__ == '__main__':
     print ("test 16)")
     dut = ExampleBufModeUnBufPipe()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, test9_resultfn, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf16.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
