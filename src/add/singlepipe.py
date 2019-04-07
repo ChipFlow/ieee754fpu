@@ -541,7 +541,8 @@ class ControlBase:
         m.d.comb += self.p.s_o_ready.eq(self.p._o_ready & self.stage.d_ready)
 
         # intercept the next (incoming) "ready" and combine it with data valid
-        m.d.comb += self.n.d_valid.eq(self.n.i_ready & self.stage.d_valid)
+        sdv = self.stage.d_valid(self.n.i_ready)
+        m.d.comb += self.n.d_valid.eq(self.n.i_ready & sdv)
 
         return m
 

@@ -607,8 +607,7 @@ class ExampleStageDelayCls(StageCls):
         return (self.count == 1)# | (self.count == 3)
         return Const(1)
 
-    @property
-    def d_valid(self):
+    def d_valid(self, i_ready):
         return self.count == self.valid_trigger
         return Const(1)
 
