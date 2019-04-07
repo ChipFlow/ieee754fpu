@@ -636,6 +636,93 @@ class BufferedPipeline(ControlBase):
         return self.m
 
 
+class BufferedPipeline2(ControlBase):
+    """ buffered pipeline stage.  data and strobe signals travel in sync.
+        if ever the input is ready and the output is not, processed data
+        is shunted in a temporary register.
+
+        Argument: stage.  see Stage API above
+
+        stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
+        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
+                              |             |
+                            process --->----^
+                              |             |
+                              +-- r_data ->-+
+
+        input data p.i_data is read (only), is processed and goes into an
+        intermediate result store [process()].  this is updated combinatorially.
+
+        in a non-stall condition, the intermediate result will go into the
+        output (update_output).  however if ever there is a stall, it goes
+        into r_data instead [update_buffer()].
+
+        when the non-stall condition is released, r_data is the first
+        to be transferred to the output [flush_buffer()], and the stall
+        condition cleared.
+
+        on the next cycle (as long as stall is not raised again) the
+        input may begin to be processed and transferred directly to output.
+
+    """
+    def __init__(self, stage, stage_ctl=False):
+        ControlBase.__init__(self, stage_ctl=stage_ctl)
+        self.stage = stage
+
+        # set up the input and output data
+        self.p.i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec()
+
+    def elaborate(self, platform):
+
+        self.m = ControlBase._elaborate(self, platform)
+
+        result = self.stage.ospec()
+        r_busy = Signal(reset=0)
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(self.m, self.p.i_data)
+
+        # establish some combinatorial temporaries
+        o_n_validn = Signal(reset_less=True)
+        n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
+        o_n_valid_i_n_ready = Signal(reset_less=True)
+        p_i_valid = Signal(reset_less=True)
+        self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
+                     o_n_validn.eq(~self.n.o_valid),
+                     n_i_ready.eq(self.n.i_ready_test),
+                     o_n_valid_i_n_ready.eq(self.n.o_valid & n_i_ready),
+        ]
+
+        # store result of processing in combinatorial temporary
+        self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
+
+        with self.m.If(self.p.o_ready): # output is ready
+            with self.m.If(p_i_valid):   # and input is valid
+                self.m.d.sync += [r_busy.eq(1),
+                                  eq(self.n.o_data, result), # update output
+                                 ]
+            # else stay in idle condition (output ready, but input wasn't valid)
+
+        # output valid but not ready, and input is ready
+        with self.m.Elif(o_n_valid_i_n_ready):
+            # output transaction just took place
+            self.m.d.sync += [r_busy.eq(0),
+                              self.n.o_valid.eq(0), # set output invalid
+                             ]
+        # 
+        with self.m.Elif(o_n_validn):
+            # can check here for data valid
+            self.m.d.sync += [self.n.o_valid.eq(1),
+                              #eq(self.n.o_data, result), # update output
+                       ]
+
+        #self.m.d.comb += self.p._o_ready.eq(~r_busy)
+        self.m.d.comb += self.p._o_ready.eq(~(((~n_i_ready)&(self.n.o_valid))| \
+                                            (r_busy)))
+        return self.m
+
+
 class UnbufferedPipeline(ControlBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.

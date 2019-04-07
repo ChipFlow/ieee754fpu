@@ -25,6 +25,7 @@ from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain, ControlBase, StageCls
 from singlepipe import UnbufferedPipeline2
+from singlepipe import BufferedPipeline2
 
 from random import randint, seed
 
@@ -209,7 +210,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                #send = True
+                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -228,7 +229,7 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 ready = randint(0, stall_range) != 0
-                #ready = True
+                ready = True
                 yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
@@ -591,7 +592,7 @@ class ExampleStageDelayCls(StageCls):
         fashion
     """
 
-    def __init__(self, valid_trigger=2):
+    def __init__(self, valid_trigger=3):
         self.count = Signal(2)
         self.valid_trigger = valid_trigger
 
@@ -692,11 +693,11 @@ class ExampleBufPipe3(ControlBase):
 # Test 15
 ######################################################################
 
-class ExampleBufModeAdd1Pipe(BufferedPipeline):
+class ExampleBufModeAdd1Pipe(BufferedPipeline2):
 
     def __init__(self):
         stage = ExampleStageCls()
-        BufferedPipeline.__init__(self, stage, buffermode=False)
+        BufferedPipeline2.__init__(self, stage)
 
 
 ######################################################################
@@ -885,18 +886,6 @@ if __name__ == '__main__':
     with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
 
-    print ("test 14")
-    dut = ExampleBufPipe3()
-    data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
-             [dut.p.i_data] + [dut.n.o_data]
-    vl = rtlil.convert(dut, ports=ports)
-    with open("test_bufpipe14.il", "w") as f:
-        f.write(vl)
-
     print ("test 15)")
     dut = ExampleBufModeAdd1Pipe()
     data = data_chain1()
@@ -907,6 +896,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf15.il", "w") as f:
+        f.write(vl)
+
+    print ("test 14")
+    dut = ExampleBufPipe3()
+    data = data_chain1()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipe14.il", "w") as f:
         f.write(vl)
 
     print ("test 16)")
