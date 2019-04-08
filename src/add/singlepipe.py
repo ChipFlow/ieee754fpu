@@ -441,7 +441,7 @@ class StageChain(StageCls):
 class ControlBase:
     """ Common functions for Pipeline API
     """
-    def __init__(self, in_multi=None, stage_ctl=False):
+    def __init__(self, stage=None, in_multi=None, stage_ctl=False):
         """ Base class containing ready/valid/data to previous and next stages
 
             * p: contains ready/valid to the previous stage
@@ -451,9 +451,16 @@ class ControlBase:
             * add i_data member to PrevControl (p) and
             * add o_data member to NextControl (n)
         """
+        self.stage = stage
+
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, stage_ctl)
         self.n = NextControl(stage_ctl)
+
+        # set up the input and output data
+        if stage is not None:
+            self.p.i_data = stage.ispec() # input type
+            self.n.o_data = stage.ospec()
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -588,14 +595,6 @@ class BufferedHandshake(ControlBase):
         input may begin to be processed and transferred directly to output.
 
     """
-    def __init__(self, stage, stage_ctl=False):
-        ControlBase.__init__(self, stage_ctl=stage_ctl)
-        self.stage = stage
-
-        # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec()
-
     def elaborate(self, platform):
 
         self.m = ControlBase._elaborate(self, platform)
@@ -664,13 +663,6 @@ class SimpleHandshake(ControlBase):
                               |             |
                               +--process->--^
     """
-    def __init__(self, stage, stage_ctl=False):
-        ControlBase.__init__(self, stage_ctl=stage_ctl)
-        self.stage = stage
-
-        # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec()
 
     def elaborate(self, platform):
 
@@ -750,14 +742,6 @@ class UnbufferedPipeline(ControlBase):
             COMBINATORIALLY (no clock dependence).
     """
 
-    def __init__(self, stage, stage_ctl=False):
-        ControlBase.__init__(self, stage_ctl=stage_ctl)
-        self.stage = stage
-
-        # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec() # output type
-
     def elaborate(self, platform):
         self.m = ControlBase._elaborate(self, platform)
 
@@ -816,14 +800,6 @@ class UnbufferedPipeline2(ControlBase):
             SYNCHRONOUSLY.
     """
 
-    def __init__(self, stage, stage_ctl=False):
-        ControlBase.__init__(self, stage_ctl=stage_ctl)
-        self.stage = stage
-
-        # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec() # output type
-
     def elaborate(self, platform):
         self.m = ControlBase._elaborate(self, platform)
 
@@ -861,13 +837,6 @@ class PassThroughStage(StageCls):
 class PassThroughHandshake(ControlBase):
     """ A control block that delays by one clock cycle.
     """
-    def __init__(self, stage, stage_ctl=False):
-        ControlBase.__init__(self, stage_ctl=stage_ctl)
-        self.stage = stage
-
-        # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
         m = ControlBase._elaborate(self, platform)
