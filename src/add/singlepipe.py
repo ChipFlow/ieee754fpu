@@ -608,14 +608,22 @@ class BufferedHandshake(ControlBase):
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
-        i_p_valid_o_p_ready = Signal(reset_less=True)
+        nir_por = Signal(reset_less=True)
+        nir_por_n = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
         nir_novn = Signal(reset_less=True)
+        nirn_novn = Signal(reset_less=True)
+        por_pivn = Signal(reset_less=True)
+        npnn = Signal(reset_less=True)
         self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      o_n_validn.eq(~self.n.o_valid),
-                     i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
                      n_i_ready.eq(self.n.i_ready_test),
+                     nir_por.eq(n_i_ready & self.p._o_ready),
+                     nir_por_n.eq(n_i_ready & ~self.p._o_ready),
                      nir_novn.eq(n_i_ready | o_n_validn),
+                     nirn_novn.eq(~n_i_ready & o_n_validn),
+                     npnn.eq(nir_por | nirn_novn),
+                     por_pivn.eq(self.p._o_ready & ~p_i_valid)
         ]
 
         # store result of processing in combinatorial temporary
@@ -625,27 +633,19 @@ class BufferedHandshake(ControlBase):
         with self.m.If(self.p.o_ready): # not stalled
             self.m.d.sync += eq(r_data, result) # update buffer
 
-        with self.m.If(n_i_ready): # next stage is ready
-            with self.m.If(self.p._o_ready): # not stalled
-                # nothing in buffer: send (processed) input direct to output
-                self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
-                                  eq(self.n.o_data, result), # update output
-                            ]
-        # (n.i_ready) is false here: next stage is ready
-        with self.m.Elif(o_n_validn): # next stage being told "ready"
-            self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
-                              eq(self.n.o_data, result), # set output data
-                        ]
-
-        with self.m.If(n_i_ready & ~self.p._o_ready): # not stalled
-                # Flush the [already processed] buffer to the output port.
-                self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
+        # data pass-through conditions
+        with self.m.If(npnn):
+            self.m.d.sync += [self.n.o_valid.eq(p_i_valid), # valid if p_valid
+                              eq(self.n.o_data, result),    # update output
+                             ]
+        # buffer flush conditions (NOTE: n.o_valid override data passthru)
+        with self.m.If(nir_por_n): # not stalled
+            # Flush the [already processed] buffer to the output port.
+            self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
                               eq(self.n.o_data, r_data), # flush buffer
-                        ]
-                # ignore input, since p.o_ready is also false.
-
-        self.m.d.sync += self.p._o_ready.eq(nir_novn | \
-                            (self.p._o_ready & ~p_i_valid))
+                             ]
+        # output ready conditions
+        self.m.d.sync += self.p._o_ready.eq(nir_novn | por_pivn)
 
         return self.m
 
