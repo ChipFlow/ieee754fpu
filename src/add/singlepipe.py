@@ -295,6 +295,7 @@ def eq(o, i):
     for (ao, ai) in zip(o, i):
         #print ("eq", ao, ai)
         if isinstance(ao, Record):
+            rres = []
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
                 if isinstance(field_shape, Layout):
                     val = ai.fields
@@ -304,21 +305,18 @@ def eq(o, i):
                     val = getattr(val, field_name)
                 else:
                     val = val[field_name] # dictionary-style specification
-                rres = eq(ao.fields[field_name], val)
-                res += rres
+                rres += eq(ao.fields[field_name], val)
         elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
+            rres = []
             for p in ai.ports():
                 op = getattr(ao, p.name)
                 #print (op, p, p.name)
-                rres = op.eq(p)
-                if not isinstance(rres, Sequence):
-                    rres = [rres]
-                res += rres
+                rres.append(op.eq(p))
         else:
             rres = ao.eq(ai)
-            if not isinstance(rres, Sequence):
-                rres = [rres]
-            res += rres
+        if not isinstance(rres, Sequence):
+            rres = [rres]
+        res += rres
     return res
 
 
