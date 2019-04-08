@@ -122,5 +122,5 @@ if __name__ == '__main__':
                          test.send(0), test.send(1),
                          test.send(3), test.send(2),
                         ],
-                   vcd_name="test_inoutmux_pipe.vcd")
+                   vcd_name="test_fpadd_pipe.vcd")
 
