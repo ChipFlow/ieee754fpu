@@ -687,11 +687,11 @@ class SimpleHandshake(ControlBase):
         # previous valid and ready
         with m.If(p_i_valid_p_o_ready):
             m.d.sync += [r_busy.eq(1),      # output valid
-                              eq(self.n.o_data, result), # update output
-                             ]
+                         eq(self.n.o_data, result), # update output
+                        ]
         # previous invalid or not ready, however next is accepting
         with m.Elif(n_i_ready):
-            m.d.sync += [ eq(self.n.o_data, result)]
+            m.d.sync += [eq(self.n.o_data, result)]
             # TODO: could still send data here (if there was any)
             #m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
             m.d.sync += r_busy.eq(0) # ...so set output invalid
