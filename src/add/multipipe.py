@@ -192,7 +192,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
         # temporaries
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
-        m.d.comb += p_i_valid.eq(self.p.i_valid_logic())
+        m.d.comb += p_i_valid.eq(self.p.i_valid_test)
         m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
         # all outputs to next stages first initialised to zero (invalid)
@@ -323,7 +323,7 @@ class InputPriorityArbiter:
         in_ready = []
         for i in range(self.num_rows):
             p_i_valid = Signal(reset_less=True)
-            m.d.comb += p_i_valid.eq(self.pipe.p[i].i_valid_logic())
+            m.d.comb += p_i_valid.eq(self.pipe.p[i].i_valid_test)
             in_ready.append(p_i_valid)
         m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
         m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
