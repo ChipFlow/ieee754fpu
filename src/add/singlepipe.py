@@ -1,4 +1,4 @@
-""" Pipeline and BufferedPipeline implementation, conforming to the same API.
+""" Pipeline and BufferedHandshake implementation, conforming to the same API.
     For multi-input and multi-output variants, see multipipe.
 
     eq:
@@ -78,12 +78,12 @@
     ------------------
 
     A simple stalling clock-synchronised pipeline that has no buffering
-    (unlike BufferedPipeline).  Data flows on *every* clock cycle when
+    (unlike BufferedHandshake).  Data flows on *every* clock cycle when
     the conditions are right (this is nominally when the input is valid
     and the output is ready).
 
     A stall anywhere along the line will result in a stall back-propagating
-    down the entire chain.  The BufferedPipeline by contrast will buffer
+    down the entire chain.  The BufferedHandshake by contrast will buffer
     incoming data, allowing previous stages one clock cycle's grace before
     also having to stall.
 
@@ -102,7 +102,7 @@
     clock delay, when its stage is a PassThroughStage, it results in a Pipeline
     stage that, duh, delays its (unmodified) input by one clock cycle.
 
-    BufferedPipeline:
+    BufferedHandshake:
     ----------------
 
     nmigen implementation of buffered pipeline stage, based on zipcpu:
@@ -545,7 +545,7 @@ class ControlBase:
         return m
 
 
-class BufferedPipeline(ControlBase):
+class BufferedHandshake(ControlBase):
     """ buffered pipeline stage.  data and strobe signals travel in sync.
         if ever the input is ready and the output is not, processed data
         is shunted in a temporary register.
@@ -707,7 +707,7 @@ class UnbufferedPipeline(ControlBase):
         Note that a stall in one stage will result in the entire pipeline
         chain stalling.
 
-        Also that unlike BufferedPipeline, the valid/ready signalling does NOT
+        Also that unlike BufferedHandshake, the valid/ready signalling does NOT
         travel synchronously with the data: the valid/ready signalling
         combines in a *combinatorial* fashion.  Therefore, a long pipeline
         chain will lengthen propagation delays.
@@ -776,7 +776,7 @@ class UnbufferedPipeline2(ControlBase):
         Note that a stall in one stage will result in the entire pipeline
         chain stalling.
 
-        Also that unlike BufferedPipeline, the valid/ready signalling does NOT
+        Also that unlike BufferedHandshake, the valid/ready signalling does NOT
         travel synchronously with the data: the valid/ready signalling
         combines in a *combinatorial* fashion.  Therefore, a long pipeline
         chain will lengthen propagation delays.

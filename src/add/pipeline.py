@@ -8,7 +8,7 @@ from nmigen import tracer
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
 from contextlib import contextmanager
 
-from singlepipe import eq, StageCls, ControlBase, BufferedPipeline
+from singlepipe import eq, StageCls, ControlBase, BufferedHandshake
 from singlepipe import UnbufferedPipeline
 
 
@@ -335,7 +335,7 @@ class PipeManager:
         for s in self.stages:
             print ("stage specs", s, s.inspecs, s.outspecs)
             if self.pipetype == 'buffered':
-                p = BufferedPipeline(s)
+                p = BufferedHandshake(s)
             else:
                 p = AutoPipe(s, s.assigns)
             pipes.append(p)

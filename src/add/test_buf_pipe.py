@@ -22,7 +22,7 @@ from nmigen.cli import verilog, rtlil
 from example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
 from example_buf_pipe import ExamplePipeline, UnbufferedPipeline
 from example_buf_pipe import ExampleStageCls
-from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
+from example_buf_pipe import PrevControl, NextControl, BufferedHandshake
 from example_buf_pipe import StageChain, ControlBase, StageCls
 from singlepipe import UnbufferedPipeline2
 from singlepipe import SimpleHandshake
@@ -310,14 +310,14 @@ class ExampleBufPipe2(ControlBase):
 # Test 9
 ######################################################################
 
-class ExampleBufPipeChain2(BufferedPipeline):
+class ExampleBufPipeChain2(BufferedHandshake):
     """ connects two stages together as a *single* combinatorial stage.
     """
     def __init__(self):
         stage1 = ExampleStageCls()
         stage2 = ExampleStageCls()
         combined = StageChain([stage1, stage2])
-        BufferedPipeline.__init__(self, combined)
+        BufferedHandshake.__init__(self, combined)
 
 
 def data_chain2():
@@ -408,13 +408,13 @@ class ExampleLTPipeline(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, stage)
 
 
-class ExampleLTBufferedPipeDerived(BufferedPipeline):
+class ExampleLTBufferedPipeDerived(BufferedHandshake):
     """ an example of how to use the buffered pipeline.
     """
 
     def __init__(self):
         stage = LTStageDerived()
-        BufferedPipeline.__init__(self, stage)
+        BufferedHandshake.__init__(self, stage)
 
 
 def test6_resultfn(o_data, expected, i, o):
@@ -550,13 +550,13 @@ class ExampleAddClassStage(StageCls):
         return i.op1 + i.op2
 
 
-class ExampleBufPipeAddClass(BufferedPipeline):
+class ExampleBufPipeAddClass(BufferedHandshake):
     """ an example of how to use the buffered pipeline, using a class instance
     """
 
     def __init__(self):
         addstage = ExampleAddClassStage()
-        BufferedPipeline.__init__(self, addstage)
+        BufferedHandshake.__init__(self, addstage)
 
 
 class TestInputAdd:
@@ -622,14 +622,14 @@ class ExampleStageDelayCls(StageCls):
         return m
 
 
-class ExampleBufDelayedPipe(BufferedPipeline):
+class ExampleBufDelayedPipe(BufferedHandshake):
 
     def __init__(self):
         stage = ExampleStageDelayCls(valid_trigger=2)
-        BufferedPipeline.__init__(self, stage, stage_ctl=True)
+        BufferedHandshake.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
-        m = BufferedPipeline.elaborate(self, platform)
+        m = BufferedHandshake.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
 
@@ -654,14 +654,14 @@ def test12_resultfn(o_data, expected, i, o):
 # Test 13
 ######################################################################
 
-class ExampleUnBufDelayedPipe(BufferedPipeline):
+class ExampleUnBufDelayedPipe(BufferedHandshake):
 
     def __init__(self):
         stage = ExampleStageDelayCls(valid_trigger=3)
-        BufferedPipeline.__init__(self, stage, stage_ctl=True)
+        BufferedHandshake.__init__(self, stage, stage_ctl=True)
 
     def elaborate(self, platform):
-        m = BufferedPipeline.elaborate(self, platform)
+        m = BufferedHandshake.elaborate(self, platform)
         m.submodules.stage = self.stage
         return m
 
@@ -733,11 +733,11 @@ class ExampleBufPipe3(ControlBase):
 # http://bugs.libre-riscv.org/show_bug.cgi?id=57
 ######################################################################
 
-class ExampleBufAdd1Pipe(BufferedPipeline):
+class ExampleBufAdd1Pipe(BufferedHandshake):
 
     def __init__(self):
         stage = ExampleStageCls()
-        BufferedPipeline.__init__(self, stage)
+        BufferedHandshake.__init__(self, stage)
 
 
 class ExampleUnBufAdd1Pipe(UnbufferedPipeline):

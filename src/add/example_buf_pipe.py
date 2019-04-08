@@ -1,9 +1,9 @@
-""" Pipeline and BufferedPipeline examples
+""" Pipeline and BufferedHandshake examples
 """
 
 from singlepipe import (PrevControl, NextControl, ControlBase,
                         StageCls, Stage, StageChain,
-                        BufferedPipeline, UnbufferedPipeline, eq)
+                        BufferedHandshake, UnbufferedPipeline, eq)
 
 from nmigen import Signal, Module
 from nmigen.cli import verilog, rtlil
@@ -30,13 +30,13 @@ class ExampleAddStage(StageCls):
         return i[0] + i[1]
 
 
-class ExampleBufPipeAdd(BufferedPipeline):
+class ExampleBufPipeAdd(BufferedHandshake):
     """ an example of how to use the buffered pipeline, using a class instance
     """
 
     def __init__(self):
         addstage = ExampleAddStage()
-        BufferedPipeline.__init__(self, addstage)
+        BufferedHandshake.__init__(self, addstage)
 
 
 class ExampleStage(Stage):
@@ -73,12 +73,12 @@ class ExampleStageCls(StageCls):
         return i + 1
 
 
-class ExampleBufPipe(BufferedPipeline):
+class ExampleBufPipe(BufferedHandshake):
     """ an example of how to use the buffered pipeline.
     """
 
     def __init__(self):
-        BufferedPipeline.__init__(self, ExampleStage)
+        BufferedHandshake.__init__(self, ExampleStage)
 
 
 class ExamplePipeline(UnbufferedPipeline):
