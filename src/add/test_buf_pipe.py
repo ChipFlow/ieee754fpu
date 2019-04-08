@@ -666,28 +666,6 @@ class ExampleUnBufDelayedPipe(BufferedPipeline):
         return m
 
 ######################################################################
-# Test 14
-######################################################################
-
-class ExampleBufPipe3(ControlBase):
-    """ Example of how to do delayed pipeline, where the stage signals
-        whether it is ready.
-    """
-
-    def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
-
-        pipe1 = ExampleBufDelayedPipe()
-        pipe2 = ExampleBufPipe()
-
-        m.submodules.pipe1 = pipe1
-        m.submodules.pipe2 = pipe2
-
-        m.d.comb += self.connect([pipe1, pipe2])
-
-        return m
-
-######################################################################
 # Test 15
 ######################################################################
 
@@ -717,6 +695,38 @@ class ExampleBufModeUnBufPipe(ControlBase):
 
         return m
 
+######################################################################
+# Test 17
+######################################################################
+
+class ExampleUnBufAdd1Pipe2(UnbufferedPipeline2):
+
+    def __init__(self):
+        stage = ExampleStageCls()
+        UnbufferedPipeline2.__init__(self, stage)
+
+
+######################################################################
+# Test 998
+######################################################################
+
+class ExampleBufPipe3(ControlBase):
+    """ Example of how to do delayed pipeline, where the stage signals
+        whether it is ready.
+    """
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = ExampleBufDelayedPipe()
+        pipe2 = ExampleBufPipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
 
 ######################################################################
 # Test 999 - XXX FAILS
@@ -884,7 +894,7 @@ if __name__ == '__main__':
     with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
 
-    print ("test 15)")
+    print ("test 15")
     dut = ExampleBufModeAdd1Pipe()
     data = data_chain1()
     test = Test5(dut, test12_resultfn, data=data)
@@ -896,19 +906,7 @@ if __name__ == '__main__':
     with open("test_bufunbuf15.il", "w") as f:
         f.write(vl)
 
-    print ("test 14")
-    dut = ExampleBufPipe3()
-    data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
-             [dut.p.i_data] + [dut.n.o_data]
-    vl = rtlil.convert(dut, ports=ports)
-    with open("test_bufpipe14.il", "w") as f:
-        f.write(vl)
-
-    print ("test 16)")
+    print ("test 16")
     dut = ExampleBufModeUnBufPipe()
     data = data_chain1()
     test = Test5(dut, test9_resultfn, data=data)
@@ -918,6 +916,30 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf16.il", "w") as f:
+        f.write(vl)
+
+    print ("test 17")
+    dut = ExampleUnBufAdd1Pipe2()
+    data = data_chain1()
+    test = Test5(dut, test12_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe17.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_unbufpipe17.il", "w") as f:
+        f.write(vl)
+
+    print ("test 998 (fails, bug)")
+    dut = ExampleBufPipe3()
+    data = data_chain1()
+    test = Test5(dut, test9_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_bufpipe14.il", "w") as f:
         f.write(vl)
 
     print ("test 999 (expected to fail, which is a bug)")

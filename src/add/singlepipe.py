@@ -847,11 +847,9 @@ class UnbufferedPipeline2(ControlBase):
         self.m.d.comb += self.p._o_ready.eq(~buf_full)
         self.m.d.sync += buf_full.eq(~self.n.i_ready_test & \
                                         (p_i_valid | buf_full))
-        with self.m.If(buf_full):
-            self.m.d.comb += eq(self.n.o_data, buf)
-        with self.m.Else():
-            self.m.d.comb += eq(self.n.o_data,
-                                self.stage.process(self.p.i_data))
+
+        odata = Mux(buf_full, buf, self.stage.process(self.p.i_data))
+        self.m.d.comb += eq(self.n.o_data, odata)
         self.m.d.sync += eq(buf, self.n.o_data)
 
         return self.m
