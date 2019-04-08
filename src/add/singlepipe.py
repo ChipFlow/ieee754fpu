@@ -552,6 +552,10 @@ class ControlBase:
         """ handles case where stage has dynamic ready/valid functions
         """
         m = Module()
+
+        if self.stage is not None and hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.p.i_data)
+
         if not self.p.stage_ctl:
             return m
 
@@ -596,13 +600,10 @@ class BufferedHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-
         self.m = ControlBase._elaborate(self, platform)
 
         result = self.stage.ospec()
         r_data = self.stage.ospec()
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(self.m, self.p.i_data)
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
@@ -669,8 +670,6 @@ class SimpleHandshake(ControlBase):
 
         r_busy = Signal()
         result = self.stage.ospec()
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
@@ -745,8 +744,6 @@ class UnbufferedPipeline(ControlBase):
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ospec() # output type
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.i_data)
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
@@ -801,8 +798,6 @@ class UnbufferedPipeline2(ControlBase):
 
         buf_full = Signal() # is data valid or not
         buf = self.stage.ospec() # output type
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.i_data)
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
@@ -836,9 +831,6 @@ class PassThroughHandshake(ControlBase):
 
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
-
-        if hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.i_data)
 
         # temporaries
         p_i_valid = Signal(reset_less=True)
