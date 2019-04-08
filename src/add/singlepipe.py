@@ -638,7 +638,7 @@ class BufferedHandshake(ControlBase):
             self.m.d.sync += [self.n.o_valid.eq(p_i_valid), # valid if p_valid
                               eq(self.n.o_data, result),    # update output
                              ]
-        # buffer flush conditions (NOTE: n.o_valid override data passthru)
+        # buffer flush conditions (NOTE: can override data passthru conditions)
         with self.m.If(nir_por_n): # not stalled
             # Flush the [already processed] buffer to the output port.
             self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
