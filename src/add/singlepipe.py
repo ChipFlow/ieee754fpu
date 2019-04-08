@@ -610,10 +610,12 @@ class BufferedHandshake(ControlBase):
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
         i_p_valid_o_p_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
+        nir_novn = Signal(reset_less=True)
         self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      o_n_validn.eq(~self.n.o_valid),
                      i_p_valid_o_p_ready.eq(p_i_valid & self.p.o_ready),
                      n_i_ready.eq(self.n.i_ready_test),
+                     nir_novn.eq(n_i_ready | o_n_validn),
         ]
 
         # store result of processing in combinatorial temporary
@@ -629,25 +631,21 @@ class BufferedHandshake(ControlBase):
                 self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
                                   eq(self.n.o_data, result), # update output
                             ]
-            with self.m.Else(): # p.o_ready is false, and data in buffer
-                # Flush the [already processed] buffer to the output port.
-                self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
-                              eq(self.n.o_data, r_data), # flush buffer
-                              self.p._o_ready.eq(1),     # clear stall
-                        ]
-                # ignore input, since p.o_ready is also false.
-
         # (n.i_ready) is false here: next stage is ready
         with self.m.Elif(o_n_validn): # next stage being told "ready"
             self.m.d.sync += [self.n.o_valid.eq(p_i_valid),
-                              self.p._o_ready.eq(1), # Keep the buffer empty
                               eq(self.n.o_data, result), # set output data
                         ]
 
-        # (n.i_ready) false and (n.o_valid) true:
-        with self.m.Elif(i_p_valid_o_p_ready):
-            # If next stage *is* ready, and not stalled yet, accept input
-            self.m.d.sync += self.p._o_ready.eq(~(p_i_valid & self.n.o_valid))
+        with self.m.If(n_i_ready & ~self.p._o_ready): # not stalled
+                # Flush the [already processed] buffer to the output port.
+                self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
+                              eq(self.n.o_data, r_data), # flush buffer
+                        ]
+                # ignore input, since p.o_ready is also false.
+
+        self.m.d.sync += self.p._o_ready.eq(nir_novn | \
+                            (self.p._o_ready & ~p_i_valid))
 
         return self.m
 
