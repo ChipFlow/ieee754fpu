@@ -403,23 +403,31 @@ class StageChain(StageCls):
     def ospec(self):
         return self.chain[-1].ospec()
 
-    def setup(self, m, i):
+    def _specallocate_setup(self, m, i):
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
-            if self.specallocate:
-                o = self.chain[idx].ospec()     # last assignment survives
-                m.d.comb += eq(o, c.process(i)) # process input into "o"
-            else:
-                o = c.process(i) # store input into "o"
-            if idx != len(self.chain)-1:
-                if self.specallocate:
-                    ni = self.chain[idx+1].ispec() # new input on next loop
-                    m.d.comb += eq(ni, o)          # assign to next input
-                    i = ni
-                else:
-                    i = o
-        self.o = o                             # last loop is the output
+            o = self.chain[idx].ospec()     # last assignment survives
+            m.d.comb += eq(o, c.process(i)) # process input into "o"
+            if idx == len(self.chain)-1:
+                continue
+            ni = self.chain[idx+1].ispec()  # new input on next loop
+            m.d.comb += eq(ni, o)           # assign to next input
+            i = ni
+        return o                            # last loop is the output
+
+    def _noallocate_setup(self, m, i):
+        for (idx, c) in enumerate(self.chain):
+            if hasattr(c, "setup"):
+                c.setup(m, i)               # stage may have some module stuff
+            i = o = c.process(i)            # store input into "o"
+        return o                            # last loop is the output
+
+    def setup(self, m, i):
+        if self.specallocate:
+            self.o = self._specallocate_setup(m, i)
+        else:
+            self.o = self._noallocate_setup(m, i)
 
     def process(self, i):
         return self.o # conform to Stage API: return last-loop output
