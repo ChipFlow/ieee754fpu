@@ -744,9 +744,9 @@ class UnbufferedPipeline(ControlBase):
         self.m = m = ControlBase._elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
-        r_data = self.stage.ispec() # input type
+        r_data = self.stage.ospec() # output type
         if hasattr(self.stage, "setup"):
-            self.stage.setup(m, r_data)
+            self.stage.setup(m, self.p.i_data)
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
@@ -759,8 +759,8 @@ class UnbufferedPipeline(ControlBase):
         m.d.sync += data_valid.eq(p_i_valid | \
                                         (~self.n.i_ready_test & data_valid))
         with m.If(pv):
-            m.d.sync += eq(r_data, self.p.i_data)
-        m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
+            m.d.sync += eq(r_data, self.stage.process(self.p.i_data))
+        m.d.comb += eq(self.n.o_data, r_data)
 
         return self.m
 
@@ -836,6 +836,9 @@ class PassThroughHandshake(ControlBase):
 
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
+
+        if hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.p.i_data)
 
         # temporaries
         p_i_valid = Signal(reset_less=True)
