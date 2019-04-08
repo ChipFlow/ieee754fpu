@@ -782,11 +782,8 @@ class UnbufferedPipeline2(ControlBase):
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
-                              |             |
-                            r_data        result
-                              |             |
-                              +--process ->-+
-
+                              |             |    |
+                              +- process-> buf <-+
         Attributes:
         -----------
         p.i_data : StageInput, shaped according to ispec
