@@ -26,6 +26,8 @@ from example_buf_pipe import PrevControl, NextControl, BufferedHandshake
 from example_buf_pipe import StageChain, ControlBase, StageCls
 from singlepipe import UnbufferedPipeline2
 from singlepipe import SimpleHandshake
+from singlepipe import PassThroughHandshake
+from singlepipe import PassThroughStage
 
 from random import randint, seed
 
@@ -707,6 +709,26 @@ class ExampleUnBufAdd1Pipe2(UnbufferedPipeline2):
 
 
 ######################################################################
+# Test 18
+######################################################################
+
+class PassThroughTest(PassThroughHandshake):
+
+    def iospecfn(self):
+        return Signal(16, "out")
+
+    def __init__(self):
+        stage = PassThroughStage(self.iospecfn)
+        PassThroughHandshake.__init__(self, stage)
+
+def test_identical_resultfn(o_data, expected, i, o):
+    res = expected
+    assert o_data == res, \
+                "%d-%d data %x not match %x\n" \
+                % (i, o, o_data, res)
+
+
+######################################################################
 # Test 998
 ######################################################################
 
@@ -928,6 +950,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe17.il", "w") as f:
+        f.write(vl)
+
+    print ("test 18")
+    dut = PassThroughTest()
+    data = data_chain1()
+    test = Test5(dut, test_identical_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_passthru18.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_passthru18.il", "w") as f:
         f.write(vl)
 
     print ("test 998 (fails, bug)")

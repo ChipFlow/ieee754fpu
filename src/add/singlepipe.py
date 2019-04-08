@@ -95,6 +95,14 @@
     logic, if chained together, is *combinatorial*, resulting in
     progressively larger gate delay.
 
+    PassThroughHandshake:
+    ------------------
+
+    A Control class that introduces a single clock delay, passing its
+    data through unaltered.  Unlike RegisterPipeline (which relies
+    on UnbufferedPipeline and PassThroughStage) it handles ready/valid
+    itself.
+
     RegisterPipeline:
     ----------------
 
@@ -848,6 +856,36 @@ class PassThroughStage(StageCls):
     def ispec(self): return self.iospecfn()
     def ospec(self): return self.iospecfn()
     def process(self, i): return i
+
+
+class PassThroughHandshake(ControlBase):
+    """ A control block that delays by one clock cycle.
+    """
+    def __init__(self, stage, stage_ctl=False):
+        ControlBase.__init__(self, stage_ctl=stage_ctl)
+        self.stage = stage
+
+        # set up the input and output data
+        self.p.i_data = stage.ispec() # input type
+        self.n.o_data = stage.ospec() # output type
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        # temporaries
+        p_i_valid = Signal(reset_less=True)
+        pvr = Signal(reset_less=True)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_test)
+        m.d.comb += pvr.eq(p_i_valid & self.p.o_ready)
+
+        m.d.comb += self.p.o_ready.eq(~self.n.o_valid |  self.n.i_ready_test)
+        m.d.sync += self.n.o_valid.eq(p_i_valid       | ~self.p.o_ready)
+
+        odata = Mux(pvr, self.stage.process(self.p.i_data), self.n.o_data)
+        m.d.sync += eq(self.n.o_data, odata)
+
+        self.m = m
+        return m
 
 
 class RegisterPipeline(UnbufferedPipeline):
