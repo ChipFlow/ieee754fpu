@@ -665,42 +665,40 @@ class SimpleHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-
-        self.m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase._elaborate(self, platform)
 
         r_busy = Signal()
         result = self.stage.ospec()
         if hasattr(self.stage, "setup"):
-            self.stage.setup(self.m, self.p.i_data)
+            self.stage.setup(m, self.p.i_data)
 
         # establish some combinatorial temporaries
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
         p_i_valid_p_o_ready = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
-        self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
+        m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      n_i_ready.eq(self.n.i_ready_test),
                      p_i_valid_p_o_ready.eq(p_i_valid & self.p.o_ready),
         ]
 
         # store result of processing in combinatorial temporary
-        self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
+        m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # previous valid and ready
-        with self.m.If(p_i_valid_p_o_ready):
-            self.m.d.sync += [r_busy.eq(1),      # output valid
-                              #self.n.o_valid.eq(1),      # output valid
-                                  eq(self.n.o_data, result), # update output
-                                 ]
+        with m.If(p_i_valid_p_o_ready):
+            m.d.sync += [r_busy.eq(1),      # output valid
+                              eq(self.n.o_data, result), # update output
+                             ]
         # previous invalid or not ready, however next is accepting
-        with self.m.Elif(n_i_ready):
-            self.m.d.sync += [ eq(self.n.o_data, result)]
+        with m.Elif(n_i_ready):
+            m.d.sync += [ eq(self.n.o_data, result)]
             # TODO: could still send data here (if there was any)
-            #self.m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
-            self.m.d.sync += r_busy.eq(0) # ...so set output invalid
+            #m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
+            m.d.sync += r_busy.eq(0) # ...so set output invalid
 
-        self.m.d.comb += self.n.o_valid.eq(r_busy)
+        m.d.comb += self.n.o_valid.eq(r_busy)
         # if next is ready, so is previous
-        self.m.d.comb += self.p._o_ready.eq(n_i_ready)
+        m.d.comb += self.p._o_ready.eq(n_i_ready)
 
         return self.m
 
@@ -743,26 +741,27 @@ class UnbufferedPipeline(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase._elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ispec() # input type
         if hasattr(self.stage, "setup"):
-            self.stage.setup(self.m, r_data)
+            self.stage.setup(m, r_data)
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
-        self.m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        self.m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_test)
+        m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
 
-        self.m.d.comb += self.n.o_valid.eq(data_valid)
-        self.m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready_test)
-        self.m.d.sync += data_valid.eq(p_i_valid | \
+        m.d.comb += self.n.o_valid.eq(data_valid)
+        m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready_test)
+        m.d.sync += data_valid.eq(p_i_valid | \
                                         (~self.n.i_ready_test & data_valid))
-        with self.m.If(pv):
-            self.m.d.sync += eq(r_data, self.p.i_data)
-        self.m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
+        with m.If(pv):
+            m.d.sync += eq(r_data, self.p.i_data)
+        m.d.comb += eq(self.n.o_data, self.stage.process(r_data))
+
         return self.m
 
 
@@ -801,24 +800,24 @@ class UnbufferedPipeline2(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase._elaborate(self, platform)
 
         buf_full = Signal() # is data valid or not
         buf = self.stage.ospec() # output type
         if hasattr(self.stage, "setup"):
-            self.stage.setup(self.m, self.p.i_data)
+            self.stage.setup(m, self.p.i_data)
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
-        self.m.d.comb += p_i_valid.eq(self.p.i_valid_test)
+        m.d.comb += p_i_valid.eq(self.p.i_valid_test)
 
-        self.m.d.comb += self.n.o_valid.eq(buf_full | p_i_valid)
-        self.m.d.comb += self.p._o_ready.eq(~buf_full)
-        self.m.d.sync += buf_full.eq(~self.n.i_ready_test & self.n.o_valid)
+        m.d.comb += self.n.o_valid.eq(buf_full | p_i_valid)
+        m.d.comb += self.p._o_ready.eq(~buf_full)
+        m.d.sync += buf_full.eq(~self.n.i_ready_test & self.n.o_valid)
 
         odata = Mux(buf_full, buf, self.stage.process(self.p.i_data))
-        self.m.d.comb += eq(self.n.o_data, odata)
-        self.m.d.sync += eq(buf, self.n.o_data)
+        m.d.comb += eq(self.n.o_data, odata)
+        m.d.sync += eq(buf, self.n.o_data)
 
         return self.m
 
@@ -839,7 +838,7 @@ class PassThroughHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase._elaborate(self, platform)
 
         # temporaries
         p_i_valid = Signal(reset_less=True)
@@ -853,7 +852,6 @@ class PassThroughHandshake(ControlBase):
         odata = Mux(pvr, self.stage.process(self.p.i_data), self.n.o_data)
         m.d.sync += eq(self.n.o_data, odata)
 
-        self.m = m
         return m
 
 
