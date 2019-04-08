@@ -5,7 +5,7 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from singlepipe import (ControlBase, UnbufferedPipeline, PassThroughStage)
+from singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 

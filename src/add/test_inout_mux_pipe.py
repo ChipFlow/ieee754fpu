@@ -13,7 +13,7 @@ from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMultiOutPipeline, CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
-from singlepipe import UnbufferedPipeline
+from singlepipe import SimpleHandshake
 
 
 class PassData: # (Value):
@@ -50,9 +50,9 @@ class PassThroughStage:
 
 
 
-class PassThroughPipe(UnbufferedPipeline):
+class PassThroughPipe(SimpleHandshake):
     def __init__(self):
-        UnbufferedPipeline.__init__(self, PassThroughStage())
+        SimpleHandshake.__init__(self, PassThroughStage())
 
 
 class InputTest:

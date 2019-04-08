@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 from math import log
 
 from fpbase import FPNumDecode
-from singlepipe import UnbufferedPipeline, StageChain
+from singlepipe import SimpleHandshake, StageChain
 
 from fpbase import FPState, FPID
 from fpcommon.getop import FPADDBaseData
@@ -176,7 +176,7 @@ class FPAddSpecialCases(FPState):
             m.next = "denormalise"
 
 
-class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
+class FPAddSpecialCasesDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -186,7 +186,7 @@ class FPAddSpecialCasesDeNorm(FPState, UnbufferedPipeline):
         FPState.__init__(self, "special_cases")
         self.width = width
         self.id_wid = id_wid
-        UnbufferedPipeline.__init__(self, self) # pipe is its own stage
+        SimpleHandshake.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):

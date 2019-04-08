@@ -5,7 +5,7 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from singlepipe import (StageChain, UnbufferedPipeline,
+from singlepipe import (StageChain, SimpleHandshake,
                         PassThroughStage)
 
 from fpbase import FPState
@@ -16,13 +16,13 @@ from fpadd.add0 import FPAddStage0Mod
 from fpadd.add1 import FPAddStage1Mod
 
 
-class FPAddAlignSingleAdd(FPState, UnbufferedPipeline):
+class FPAddAlignSingleAdd(FPState, SimpleHandshake):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
         self.width = width
         self.id_wid = id_wid
-        UnbufferedPipeline.__init__(self, self) # pipeline is its own stage
+        SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.a1o = self.ospec()
 
     def ispec(self):

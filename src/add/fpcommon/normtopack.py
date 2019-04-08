@@ -4,7 +4,7 @@
 
 #from nmigen.cli import main, verilog
 
-from singlepipe import StageChain, UnbufferedPipeline
+from singlepipe import StageChain, SimpleHandshake
 
 from fpbase import FPState, FPID
 from fpcommon.postcalc import FPAddStage1Data
@@ -14,13 +14,13 @@ from fpcommon.corrections import FPCorrectionsMod
 from fpcommon.pack import FPPackData, FPPackMod
 
 
-class FPNormToPack(FPState, UnbufferedPipeline):
+class FPNormToPack(FPState, SimpleHandshake):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "normalise_1")
         self.id_wid = id_wid
         self.width = width
-        UnbufferedPipeline.__init__(self, self) # pipeline is its own stage
+        SimpleHandshake.__init__(self, self) # pipeline is its own stage
 
     def ispec(self):
         return FPAddStage1Data(self.width, self.id_wid) # Norm1ModSingle ispec

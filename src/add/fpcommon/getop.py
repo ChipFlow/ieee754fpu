@@ -9,7 +9,7 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
-from singlepipe import (ControlBase, StageChain, UnbufferedPipeline,
+from singlepipe import (ControlBase, StageChain, SimpleHandshake,
                         PassThroughStage)
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe

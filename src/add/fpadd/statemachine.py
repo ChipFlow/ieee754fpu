@@ -8,7 +8,7 @@ from math import log
 
 from fpbase import FPOp
 from fpbase import Trigger
-from singlepipe import (StageChain, UnbufferedPipeline)
+from singlepipe import (StageChain, SimpleHandshake)
 
 from fpbase import FPState, FPID
 from fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)

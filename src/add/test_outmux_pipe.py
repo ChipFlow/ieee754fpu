@@ -5,7 +5,7 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMuxOutPipe
-from singlepipe import UnbufferedPipeline
+from singlepipe import SimpleHandshake
 
 
 class PassInData:
@@ -43,9 +43,9 @@ class PassThroughDataStage:
 
 
 
-class PassThroughPipe(UnbufferedPipeline):
+class PassThroughPipe(SimpleHandshake):
     def __init__(self):
-        UnbufferedPipeline.__init__(self, PassThroughDataStage())
+        SimpleHandshake.__init__(self, PassThroughDataStage())
 
 
 
