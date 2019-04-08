@@ -649,24 +649,7 @@ class SimpleHandshake(ControlBase):
         stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
-                            process --->----^
-                              |             |
-                              +-- r_data ->-+
-
-        input data p.i_data is read (only), is processed and goes into an
-        intermediate result store [process()].  this is updated combinatorially.
-
-        in a non-stall condition, the intermediate result will go into the
-        output (update_output).  however if ever there is a stall, it goes
-        into r_data instead [update_buffer()].
-
-        when the non-stall condition is released, r_data is the first
-        to be transferred to the output [flush_buffer()], and the stall
-        condition cleared.
-
-        on the next cycle (as long as stall is not raised again) the
-        input may begin to be processed and transferred directly to output.
-
+                              +--process->--^
     """
     def __init__(self, stage, stage_ctl=False):
         ControlBase.__init__(self, stage_ctl=stage_ctl)
