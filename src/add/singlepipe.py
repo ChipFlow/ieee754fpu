@@ -593,8 +593,8 @@ class BufferedHandshake(ControlBase):
 
         on the next cycle (as long as stall is not raised again) the
         input may begin to be processed and transferred directly to output.
-
     """
+
     def elaborate(self, platform):
 
         self.m = ControlBase._elaborate(self, platform)
