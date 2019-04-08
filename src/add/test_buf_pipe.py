@@ -25,7 +25,7 @@ from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedPipeline
 from example_buf_pipe import StageChain, ControlBase, StageCls
 from singlepipe import UnbufferedPipeline2
-from singlepipe import BufferedPipeline2
+from singlepipe import SimpleHandshake
 
 from random import randint, seed
 
@@ -669,11 +669,11 @@ class ExampleUnBufDelayedPipe(BufferedPipeline):
 # Test 15
 ######################################################################
 
-class ExampleBufModeAdd1Pipe(BufferedPipeline2):
+class ExampleBufModeAdd1Pipe(SimpleHandshake):
 
     def __init__(self):
         stage = ExampleStageCls()
-        BufferedPipeline2.__init__(self, stage)
+        SimpleHandshake.__init__(self, stage)
 
 
 ######################################################################

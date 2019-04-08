@@ -149,12 +149,10 @@
 
     it's quite a complex state machine!
 
-    BufferedPipeline2
-    -----------------
+    SimpleHandshake
+    ---------------
 
-    Synchronised pipeline
-
-    Based on:
+    Synchronised pipeline, Based on:
     https://github.com/ZipCPU/dbgbus/blob/master/hexbus/rtl/hbdeword.v
 """
 
@@ -641,10 +639,9 @@ class BufferedPipeline(ControlBase):
         return self.m
 
 
-class BufferedPipeline2(ControlBase):
-    """ buffered pipeline stage.  data and strobe signals travel in sync.
-        if ever the input is ready and the output is not, processed data
-        is shunted in a temporary register.
+class SimpleHandshake(ControlBase):
+    """ simple handshake control.  data and strobe signals travel in sync.
+        implements the protocol used by Wishbone and AXI4.
 
         Argument: stage.  see Stage API above
 
