@@ -770,6 +770,26 @@ class FIFOTest16(FIFOtest):
 
 
 ######################################################################
+# Test 21
+######################################################################
+
+class ExampleFIFOPassThruPipe1(ControlBase):
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = FIFOTest16()
+        pipe2 = ExamplePassAdd1Pipe()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
+
+######################################################################
 # Test 997
 ######################################################################
 
@@ -860,7 +880,7 @@ class ExampleBufUnBufPipe(ControlBase):
 # Unit Tests
 ######################################################################
 
-num_tests = 100
+num_tests = 10
 
 if __name__ == '__main__':
     print ("test 1")
@@ -1052,6 +1072,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifo20.il", "w") as f:
+        f.write(vl)
+
+    print ("test 21")
+    dut = ExampleFIFOPassThruPipe1()
+    data = data_chain1()
+    test = Test5(dut, test12_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifopass21.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_fifopass21.il", "w") as f:
         f.write(vl)
 
     print ("test 997")
