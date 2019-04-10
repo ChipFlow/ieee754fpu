@@ -199,11 +199,15 @@ class PrevControl:
             return self.s_o_ready # set dynamically by stage
         return self._o_ready      # return this when not under dynamic control
 
-    def _connect_in(self, prev):
+    def _connect_in(self, prev, direct=False):
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
-        return [self.i_valid.eq(prev.i_valid_test),
+        if direct:
+            i_valid = prev.i_valid
+        else:
+            i_valid = prev.i_valid_test
+        return [self.i_valid.eq(i_valid),
                 prev.o_ready.eq(self.o_ready),
                 eq(self.i_data, prev.i_data),
                ]
@@ -257,12 +261,16 @@ class NextControl:
                 eq(nxt.i_data, self.o_data),
                ]
 
-    def _connect_out(self, nxt):
+    def _connect_out(self, nxt, direct=False):
         """ internal helper function to connect stage to an output source.
             do not use to connect stage-to-stage!
         """
+        if direct:
+            i_ready = nxt.i_ready
+        else:
+            i_ready = nxt.i_ready_test
         return [nxt.o_valid.eq(self.o_valid),
-                self.i_ready.eq(nxt.i_ready_test),
+                self.i_ready.eq(i_ready),
                 eq(nxt.o_data, self.o_data),
                ]
 
@@ -934,14 +942,15 @@ class FIFOtest(ControlBase):
         self.m = m = ControlBase._elaborate(self, platform)
 
         fifo = SyncFIFO(self.fwidth, self.fdepth)
+        m.submodules.fifo = fifo
 
         # prev: make the FIFO "look" like a PrevControl...
         fp = PrevControl()
-        fp.i_valid = fifo.writable
-        fp._o_ready = fifo.we
+        fp.i_valid = fifo.we
+        fp._o_ready = fifo.writable
         fp.i_data = fifo.din
         # ... so we can do this!
-        m.d.comb += fp._connect_in(self)
+        m.d.comb += fp._connect_in(self.p, True)
         
         # next: make the FIFO "look" like a NextControl...
         fn = NextControl()
@@ -949,7 +958,7 @@ class FIFOtest(ControlBase):
         fn.i_ready = fifo.re
         fn.o_data = fifo.dout
         # ... so we can do this!
-        m.d.comb += fn._connect_out(self)
+        m.d.comb += fn._connect_out(self.n)
 
         # err... that should be all!
         return m

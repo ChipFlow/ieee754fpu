@@ -28,6 +28,7 @@ from singlepipe import UnbufferedPipeline2
 from singlepipe import SimpleHandshake
 from singlepipe import PassThroughHandshake
 from singlepipe import PassThroughStage
+from singlepipe import FIFOtest
 
 from random import randint, seed
 
@@ -759,6 +760,16 @@ class ExampleBufPassThruPipe(ControlBase):
 
 
 ######################################################################
+# Test 20
+######################################################################
+
+class FIFOTest16(FIFOtest):
+
+    def __init__(self):
+        FIFOtest.__init__(self, 16, 2)
+
+
+######################################################################
 # Test 997
 ######################################################################
 
@@ -1029,6 +1040,18 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass19.il", "w") as f:
+        f.write(vl)
+
+    print ("test 20")
+    dut = FIFOTest16()
+    data = data_chain1()
+    test = Test5(dut, test_identical_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifo20.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_fifo20.il", "w") as f:
         f.write(vl)
 
     print ("test 997")
