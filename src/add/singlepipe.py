@@ -946,7 +946,7 @@ class FIFOtest(ControlBase):
         # next: make the FIFO "look" like a NextControl...
         fn = NextControl()
         fn.o_valid = fifo.readable
-        fn.i_ready = fifo.ee
+        fn.i_ready = fifo.re
         fn.o_data = fifo.dout
         # ... so we can do this!
         m.d.comb += fn._connect_out(self)
