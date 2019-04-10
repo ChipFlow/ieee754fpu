@@ -661,6 +661,35 @@ class SimpleHandshake(ControlBase):
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
                               +--process->--^
+        Truth Table
+
+        Inputs   Temporary  Output
+        -------  ---------- -----
+        P P N N  PiV& ~NiV&  N P
+        i o i o  PoR  NoV    o o
+        V R R V              V R
+
+        -------   -    -     - -
+        0 0 0 0   0    0    >0 0
+        0 0 0 1   0    1    >1 0
+        0 0 1 0   0    0     0 1
+        0 0 1 1   0    0     0 1
+        -------   -    -     - -
+        0 1 0 0   0    0    >0 0
+        0 1 0 1   0    1    >1 0
+        0 1 1 0   0    0     0 1
+        0 1 1 1   0    0     0 1
+        -------   -    -     - -
+        1 0 0 0   0    0    >0 0
+        1 0 0 1   0    1    >1 0
+        1 0 1 0   0    0     0 1
+        1 0 1 1   0    0     0 1
+        -------   -    -     - -
+        1 1 0 0   1    0     1 0
+        1 1 0 1   1    1     1 0
+        1 1 1 0   1    0     1 1
+        1 1 1 1   1    0     1 1
+        -------   -    -     - -
     """
 
     def elaborate(self, platform):
@@ -735,6 +764,38 @@ class UnbufferedPipeline(ControlBase):
         result: output_shape according to ospec
             The output of the combinatorial logic.  it is updated
             COMBINATORIALLY (no clock dependence).
+
+        Truth Table
+
+        Inputs  Temp  Output
+        -------   -   -----
+        P P N N ~NiR&  N P
+        i o i o  NoV   o o
+        V R R V        V R
+
+        -------   -    - -
+        0 0 0 0   0    0 1
+        0 0 0 1   1    1 0
+        0 0 1 0   0    0 1
+        0 0 1 1   0    0 1
+        -------   -    - -
+        0 1 0 0   0    0 1
+        0 1 0 1   1    1 0
+        0 1 1 0   0    0 1
+        0 1 1 1   0    0 1
+        -------   -    - -
+        1 0 0 0   0    1 1
+        1 0 0 1   1    1 0
+        1 0 1 0   0    1 1
+        1 0 1 1   0    1 1
+        -------   -    - -
+        1 1 0 0   0    1 1
+        1 1 0 1   1    1 0
+        1 1 1 0   0    1 1
+        1 1 1 1   0    1 1
+        -------   -    - -
+
+        Note: PoR is *NOT* involved in the above decision-making.
     """
 
     def elaborate(self, platform):
