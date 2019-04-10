@@ -166,6 +166,7 @@
 
 from nmigen import Signal, Cat, Const, Mux, Module, Value
 from nmigen.cli import verilog, rtlil
+from nmigen.lib.fifo import SyncFIFO
 from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record, Layout
 
@@ -913,4 +914,43 @@ class RegisterPipeline(UnbufferedPipeline):
     """
     def __init__(self, iospecfn):
         UnbufferedPipeline.__init__(self, PassThroughStage(iospecfn))
+
+
+class FIFOtest(ControlBase):
+    """ A test of using a SyncFIFO to see if it will work.
+        Note: the only things it will accept is a Signal of width "width".
+    """
+
+    def __init__(self, width, depth):
+
+        self.fwidth = width
+        self.fdepth = depth
+        def iospecfn():
+            return Signal(width, name="data")
+        stage = PassThroughStage(iospecfn)
+        ControlBase.__init__(self, stage=stage)
+
+    def elaborate(self, platform):
+        self.m = m = ControlBase._elaborate(self, platform)
+
+        fifo = SyncFIFO(self.fwidth, self.fdepth)
+
+        # prev: make the FIFO "look" like a PrevControl...
+        fp = PrevControl()
+        fp.i_valid = fifo.writable
+        fp._o_ready = fifo.we
+        fp.i_data = fifo.din
+        # ... so we can do this!
+        m.d.comb += fp._connect_in(self)
+        
+        # next: make the FIFO "look" like a NextControl...
+        fn = NextControl()
+        fn.o_valid = fifo.readable
+        fn.i_ready = fifo.ee
+        fn.o_data = fifo.dout
+        # ... so we can do this!
+        m.d.comb += fn._connect_out(self)
+
+        # err... that should be all!
+        return m
 
