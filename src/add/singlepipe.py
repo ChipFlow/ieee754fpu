@@ -1042,6 +1042,22 @@ class FIFOtest(ControlBase):
         fifo = SyncFIFO(fwidth, self.fdepth)
         m.submodules.fifo = fifo
 
+        # XXX TODO: would be nice to do these...
+        ## prev: make the FIFO "look" like a PrevControl...
+        #fp = PrevControl()
+        #fp.i_valid = fifo.we
+        #fp._o_ready = fifo.writable
+        #fp.i_data = fifo.din
+        #m.d.comb += fp._connect_in(self.p, True)
+
+        # next: make the FIFO "look" like a NextControl...
+        #fn = NextControl()
+        #fn.o_valid = fifo.readable
+        #fn.i_ready = fifo.re
+        #fn.o_data = fifo.dout
+        ## ... so we can do this!
+        #m.d.comb += fn._connect_out(self.n)
+
         # connect previous rdy/valid/data - do flatten on i_data
         m.d.comb += [fifo.we.eq(self.p.i_valid_test),
                      self.p.o_ready.eq(fifo.writable),
