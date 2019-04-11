@@ -174,6 +174,22 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
 
 
+class RecordObject(Record):
+    def __init__(self, layout=None, name=None):
+        Record.__init__(self, layout=layout or [], name=None)
+
+    def __setattr__(self, k, v):
+        if k in dir(Record) or "fields" not in self.__dict__:
+            return object.__setattr__(self, k, v)
+        self.__dict__["fields"][k] = v
+        if isinstance(v, Record):
+            newlayout = {k: (k, v.layout)}
+        else:
+            newlayout = {k: (k, v.shape())}
+        self.__dict__["layout"].fields.update(newlayout)
+
+
+
 class PrevControl:
     """ contains signals that come *from* the previous stage (both in and out)
         * i_valid: previous stage indicating all incoming data is valid.

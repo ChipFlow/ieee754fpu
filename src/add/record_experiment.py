@@ -3,22 +3,7 @@ from nmigen.hdl.rec import Record, Layout, DIR_NONE
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
-from singlepipe import flatten
-
-
-class RecordObject(Record):
-    def __init__(self, name=None):
-        Record.__init__(self, layout=[], name=None)
-
-    def __setattr__(self, k, v):
-        if k in dir(Record) or "fields" not in self.__dict__:
-            return object.__setattr__(self, k, v)
-        self.__dict__["fields"][k] = v
-        if isinstance(v, Record):
-            newlayout = {k: (k, v.layout)}
-        else:
-            newlayout = {k: (k, v.shape())}
-        self.__dict__["layout"].fields.update(newlayout)
+from singlepipe import flatten, RecordObject
 
 
 class RecordTest:
