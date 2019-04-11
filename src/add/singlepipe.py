@@ -351,9 +351,9 @@ class Visitor:
                 val = val[field_name] # dictionary-style specification
             val = self.visit(ao.fields[field_name], val, act)
             if isinstance(val, Sequence):
-                rres += val
+                res += val
             else:
-                rres.append(val)
+                res.append(val)
         return res
 
     def arrayproxy_visit(self, ao, ai, act):
@@ -1023,28 +1023,30 @@ class FIFOtest(ControlBase):
         Note: the only things it will accept is a Signal of width "width".
     """
 
-    def __init__(self, width, depth):
+    def __init__(self, iospecfn, width, depth):
 
-        self.fwidth = width
+        self.iospecfn = iospecfn
+        self.fwidth = width # XXX temporary
         self.fdepth = depth
-        def iospecfn():
-            return Signal(width, name="data")
-        stage = PassThroughStage(iospecfn)
-        ControlBase.__init__(self, stage=stage)
+        #stage = PassThroughStage(iospecfn)
+        ControlBase.__init__(self, stage=self)
+
+    def ispec(self): return self.iospecfn()
+    def ospec(self): return Signal(self.fwidth, name="dout")
+    def process(self, i): return i
 
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
 
-        fifo = SyncFIFO(self.fwidth, self.fdepth)
+        (fwidth, _) = self.p.i_data.shape()
+        fifo = SyncFIFO(fwidth, self.fdepth)
         m.submodules.fifo = fifo
 
-        # prev: make the FIFO "look" like a PrevControl...
-        fp = PrevControl()
-        fp.i_valid = fifo.we
-        fp._o_ready = fifo.writable
-        fp.i_data = fifo.din
-        # ... so we can do this!
-        m.d.comb += fp._connect_in(self.p, True)
+        # connect the rdy/valid/data
+        m.d.comb += [fifo.we.eq(self.p.i_valid_test),
+                     self.p.o_ready.eq(fifo.writable),
+                     eq(fifo.din, flatten(self.p.i_data)),
+                   ]
 
         # next: make the FIFO "look" like a NextControl...
         fn = NextControl()

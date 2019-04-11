@@ -763,10 +763,14 @@ class ExampleBufPassThruPipe(ControlBase):
 # Test 20
 ######################################################################
 
+def iospecfn():
+    return Signal(16, name="din")
+
 class FIFOTest16(FIFOtest):
 
+
     def __init__(self):
-        FIFOtest.__init__(self, 16, 2)
+        FIFOtest.__init__(self, iospecfn, 16, 2)
 
 
 ######################################################################

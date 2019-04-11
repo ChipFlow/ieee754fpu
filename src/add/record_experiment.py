@@ -27,7 +27,7 @@ class RecordTest:
 
         print (self.r1.fields)
         print (self.r1.shape())
-        print (len(self.r1))
+        print ("width", len(self.r1))
         m.d.comb += self.sig123.eq(flatten(self.r1))
 
         return m
