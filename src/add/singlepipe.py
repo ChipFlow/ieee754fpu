@@ -333,7 +333,11 @@ class Visitor:
                 val = getattr(val, field_name)
             else:
                 val = val[field_name] # dictionary-style specification
-            res += self.visit(ao.fields[field_name], val, act)
+            val = self.visit(ao.fields[field_name], val, act)
+            if isinstance(val, Sequence):
+                rres += val
+            else:
+                rres.append(val)
         return res
 
     def arrayproxy_visit(self, ao, ai, act):
@@ -365,6 +369,50 @@ def eq(o, i):
         the objects' eq function.
     """
     return Eq()(o, i)
+
+
+def flatten(i):
+    """ flattens a compound structure recursively using Cat
+    """
+    if not isinstance(i, Sequence):
+        i = [i]
+    res = []
+    for ai in i:
+        print ("flatten", ai)
+        if isinstance(ai, Record):
+            print ("record", list(ai.layout))
+            rres = []
+            for idx, (field_name, field_shape, _) in enumerate(ai.layout):
+                if isinstance(field_shape, Layout):
+                    val = ai.fields
+                else:
+                    val = ai
+                if hasattr(val, field_name): # check for attribute
+                    val = getattr(val, field_name)
+                else:
+                    val = val[field_name] # dictionary-style specification
+                print ("recidx", idx, field_name, field_shape, val)
+                val = flatten(val)
+                print ("recidx flat", idx, val)
+                if isinstance(val, Sequence):
+                    rres += val
+                else:
+                    rres.append(val)
+
+        elif isinstance(ai, ArrayProxy) and not isinstance(ai, Value):
+            rres = []
+            for p in ai.ports():
+                op = getattr(ai, p.name)
+                #print (op, p, p.name)
+                rres.append(flatten(p))
+        else:
+            rres = ai
+        if not isinstance(rres, Sequence):
+            rres = [rres]
+        res += rres
+        print ("flatten res", res)
+    return Cat(*res)
+
 
 
 class StageCls(metaclass=ABCMeta):
@@ -981,7 +1029,7 @@ class FIFOtest(ControlBase):
         fp.i_data = fifo.din
         # ... so we can do this!
         m.d.comb += fp._connect_in(self.p, True)
-        
+
         # next: make the FIFO "look" like a NextControl...
         fn = NextControl()
         fn.o_valid = fifo.readable
