@@ -275,15 +275,12 @@ class NextControl:
                ]
 
 
-def eq(o, i):
-    """ makes signals equal: a helper routine which identifies if it is being
-        passed a list (or tuple) of objects, or signals, or Records, and calls
-        the objects' eq function.
+def visitor(o, i, fn):
+    """ a helper routine which identifies if it is being passed a list
+        (or tuple) of objects, or signals, or Records, and calls
+        a visitor function.
 
-        complex objects (classes) can be used: they must follow the
-        convention of having an eq member function, which takes the
-        responsibility of further calling eq and returning a list of
-        eq assignments
+        the visiting fn is called when an object is identified.
 
         Record is a special (unusual, recursive) case, where the input may be
         specified as a dictionary (which may contain further dictionaries,
@@ -304,13 +301,13 @@ def eq(o, i):
     if isinstance(o, dict):
         for (k, v) in o.items():
             print ("d-eq", v, i[k])
-            res.append(v.eq(i[k]))
+            res.append(fn(v, i[k]))
         return res
 
     if not isinstance(o, Sequence):
         o, i = [o], [i]
     for (ao, ai) in zip(o, i):
-        #print ("eq", ao, ai)
+        #print ("visit", fn, ao, ai)
         if isinstance(ao, Record):
             rres = []
             for idx, (field_name, field_shape, _) in enumerate(ao.layout):
@@ -322,19 +319,29 @@ def eq(o, i):
                     val = getattr(val, field_name)
                 else:
                     val = val[field_name] # dictionary-style specification
-                rres += eq(ao.fields[field_name], val)
+                rres += visitor(ao.fields[field_name], val, fn)
         elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
             rres = []
             for p in ai.ports():
                 op = getattr(ao, p.name)
                 #print (op, p, p.name)
-                rres.append(op.eq(p))
+                rres.append(fn(op, p))
         else:
-            rres = ao.eq(ai)
+            rres = fn(ao, ai)
         if not isinstance(rres, Sequence):
             rres = [rres]
         res += rres
     return res
+
+def _eq_fn(o, i):
+    return o.eq(i)
+
+def eq(o, i):
+    """ makes signals equal: a helper routine which identifies if it is being
+        passed a list (or tuple) of objects, or signals, or Records, and calls
+        the objects' eq function.
+    """
+    return visitor(o, i, _eq_fn)
 
 
 class StageCls(metaclass=ABCMeta):
