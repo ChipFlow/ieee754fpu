@@ -358,6 +358,7 @@ class Eq(Visitor):
     def __call__(self, o, i):
         return self.visit(o, i, self)
 
+
 def eq(o, i):
     """ makes signals equal: a helper routine which identifies if it is being
         passed a list (or tuple) of objects, or signals, or Records, and calls
