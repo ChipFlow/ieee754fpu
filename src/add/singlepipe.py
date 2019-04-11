@@ -297,52 +297,66 @@ class Visitor:
         python object, enumerate them, find out the list of Signals that way,
         and assign them.
     """
-    def visit(self, o, i, fn):
-        res = []
+    def visit(self, o, i, act):
         if isinstance(o, dict):
-            for (k, v) in o.items():
-                print ("d-eq", v, i[k])
-                res.append(fn(v, i[k]))
-            return res
+            return self.dict_visit(o, i, act)
 
+        res = act.prepare()
         if not isinstance(o, Sequence):
             o, i = [o], [i]
         for (ao, ai) in zip(o, i):
             #print ("visit", fn, ao, ai)
             if isinstance(ao, Record):
-                rres = []
-                for idx, (field_name, field_shape, _) in enumerate(ao.layout):
-                    if isinstance(field_shape, Layout):
-                        val = ai.fields
-                    else:
-                        val = ai
-                    if hasattr(val, field_name): # check for attribute
-                        val = getattr(val, field_name)
-                    else:
-                        val = val[field_name] # dictionary-style specification
-                    rres += self.visit(ao.fields[field_name], val, fn)
+                rres = self.record_visit(ao, ai, act)
             elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
-                rres = []
-                for p in ai.ports():
-                    op = getattr(ao, p.name)
-                    #print (op, p, p.name)
-                    rres.append(fn(op, p))
+                rres = self.arrayproxy_visit(ao, ai, act)
             else:
-                rres = fn(ao, ai)
-            if not isinstance(rres, Sequence):
-                rres = [rres]
+                rres = act.fn(ao, ai)
             res += rres
+        return res
+
+    def dict_visit(self, o, i, act):
+        res = act.prepare()
+        for (k, v) in o.items():
+            print ("d-eq", v, i[k])
+            res.append(act.fn(v, i[k]))
+        return res
+
+    def record_visit(self, ao, ai, act):
+        res = act.prepare()
+        for idx, (field_name, field_shape, _) in enumerate(ao.layout):
+            if isinstance(field_shape, Layout):
+                val = ai.fields
+            else:
+                val = ai
+            if hasattr(val, field_name): # check for attribute
+                val = getattr(val, field_name)
+            else:
+                val = val[field_name] # dictionary-style specification
+            res += self.visit(ao.fields[field_name], val, act)
+        return res
+
+    def arrayproxy_visit(self, ao, ai, act):
+        res = act.prepare()
+        for p in ai.ports():
+            op = getattr(ao, p.name)
+            #print (op, p, p.name)
+            res.append(fn(op, p))
         return res
 
 
 class Eq(Visitor):
     def __init__(self):
         self.res = []
+    def prepare(self):
+        return []
+    def fn(self, o, i):
+        rres = o.eq(i)
+        if not isinstance(rres, Sequence):
+            rres = [rres]
+        return rres
     def __call__(self, o, i):
-        def _eq_fn(o, i):
-            return o.eq(i)
-        res = self.visit(o, i, _eq_fn)
-        return res
+        return self.visit(o, i, self)
 
 def eq(o, i):
     """ makes signals equal: a helper routine which identifies if it is being
