@@ -810,7 +810,6 @@ class ExampleAddRecordObjectStage(StageCls):
     def ispec(self):
         """ returns an instance of an Example2OpRecord.
         """
-        #return Example2OpClass()
         return Example2OpRecord()
 
     def ospec(self):
@@ -825,11 +824,11 @@ class ExampleAddRecordObjectStage(StageCls):
         return i.op1 + i.op2
 
 
-class ExampleRecordHandshakeAddClass(BufferedHandshake):
+class ExampleRecordHandshakeAddClass(SimpleHandshake):
 
     def __init__(self):
         addstage = ExampleAddRecordObjectStage()
-        BufferedHandshake.__init__(self, stage=addstage)
+        SimpleHandshake.__init__(self, stage=addstage)
 
 
 ######################################################################
