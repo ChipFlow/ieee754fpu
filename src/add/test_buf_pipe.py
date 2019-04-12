@@ -28,7 +28,7 @@ from singlepipe import UnbufferedPipeline2
 from singlepipe import SimpleHandshake
 from singlepipe import PassThroughHandshake
 from singlepipe import PassThroughStage
-from singlepipe import FIFOtest
+from singlepipe import FIFOControl
 
 from random import randint, seed
 
@@ -766,11 +766,11 @@ class ExampleBufPassThruPipe(ControlBase):
 def iospecfn():
     return Signal(16, name="din")
 
-class FIFOTest16(FIFOtest):
+class FIFOTest16(FIFOControl):
 
 
     def __init__(self):
-        FIFOtest.__init__(self, iospecfn, 16, 2)
+        FIFOControl.__init__(self, iospecfn, 2)
 
 
 ######################################################################

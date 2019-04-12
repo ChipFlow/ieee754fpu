@@ -1014,22 +1014,23 @@ class RegisterPipeline(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, PassThroughStage(iospecfn))
 
 
-class FIFOtest(ControlBase):
-    """ A test of using a SyncFIFO to see if it will work.
-        Note: the only things it will accept is a Signal of width "width".
+class FIFOControl(ControlBase):
+    """ FIFO Control.  Uses SyncFIFO to store data, coincidentally
+        happens to have same valid/ready signalling as Stage API.
+
+        i_data -> fifo.din -> FIFO -> fifo.dout -> o_data
     """
 
-    def __init__(self, iospecfn, width, depth):
+    def __init__(self, iospecfn, depth):
+        """ * iospecfn: specification for incoming and outgoing data
+            * depth   : number of entries in the FIFO
 
-        self.iospecfn = iospecfn
-        self.fwidth = width # XXX temporary
+            NOTE: FPGAs may have trouble with the defaults for SyncFIFO
+        """
+
         self.fdepth = depth
-        #stage = PassThroughStage(iospecfn)
-        ControlBase.__init__(self, stage=self)
-
-    def ispec(self): return self.iospecfn()
-    def ospec(self): return Signal(self.fwidth, name="dout")
-    def process(self, i): return i
+        stage = PassThroughStage(iospecfn)
+        ControlBase.__init__(self, stage=stage)
 
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
@@ -1038,8 +1039,7 @@ class FIFOtest(ControlBase):
         fifo = SyncFIFO(fwidth, self.fdepth)
         m.submodules.fifo = fifo
 
-        # XXX TODO: would be nice to do these...
-        ## prev: make the FIFO "look" like a PrevControl...
+        # prev: make the FIFO "look" like a PrevControl...
         fp = PrevControl()
         fp.i_valid = fifo.we
         fp._o_ready = fifo.writable
@@ -1053,18 +1053,6 @@ class FIFOtest(ControlBase):
         fn.o_data = fifo.dout
         # ... so we can do this!
         m.d.comb += fn._connect_out(self.n, fn=flatten)
-
-        # connect previous rdy/valid/data - do flatten on i_data
-        #m.d.comb += [fifo.we.eq(self.p.i_valid_test),
-        #             self.p.o_ready.eq(fifo.writable),
-        #             eq(fifo.din, flatten(self.p.i_data)),
-        #           ]
-
-        # connect next rdy/valid/data - do flatten on o_data
-        #m.d.comb += [self.n.o_valid.eq(fifo.readable),
-        #             fifo.re.eq(self.n.i_ready_test),
-        #             flatten(self.n.o_data).eq(fifo.dout),
-        #           ]
 
         # err... that should be all!
         return m
