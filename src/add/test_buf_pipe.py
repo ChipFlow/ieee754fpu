@@ -804,9 +804,6 @@ class Example2OpRecord(RecordObject):
         self.op1 = Signal(16)
         self.op2 = Signal(16)
 
-    def eq(self, i):
-        return [self.op1.eq(i.op1), self.op2.eq(i.op2)]
-
 
 class ExampleAddRecordObjectStage(StageCls):
 
