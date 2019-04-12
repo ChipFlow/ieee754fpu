@@ -280,10 +280,10 @@ class NextControl:
             do not use to connect stage-to-stage!
         """
         i_ready = nxt.i_ready if direct else nxt.i_ready_test
-        o_data = fn(self.o_data) if fn is not None else self.o_data
+        o_data = fn(nxt.o_data) if fn is not None else nxt.o_data
         return [nxt.o_valid.eq(self.o_valid),
                 self.i_ready.eq(i_ready),
-                eq(nxt.o_data, o_data),
+                eq(o_data, self.o_data),
                ]
 
 
