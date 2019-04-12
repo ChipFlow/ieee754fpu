@@ -906,13 +906,15 @@ class UnbufferedPipeline(ControlBase):
         # some temporaries
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
+        buf_full = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
         m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
+        m.d.comb += buf_full.eq(~self.n.i_ready_test & data_valid)
 
         m.d.comb += self.n.o_valid.eq(data_valid)
         m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready_test)
-        m.d.sync += data_valid.eq(p_i_valid | \
-                                        (~self.n.i_ready_test & data_valid))
+        m.d.sync += data_valid.eq(p_i_valid | buf_full)
+
         with m.If(pv):
             m.d.sync += eq(r_data, self.stage.process(self.p.i_data))
         m.d.comb += eq(self.n.o_data, r_data)
@@ -949,6 +951,36 @@ class UnbufferedPipeline2(ControlBase):
             A temporary (buffered) copy of a valid output
             This is HELD if the output is not ready.  It is updated
             SYNCHRONOUSLY.
+
+        Inputs  Temp  Output
+        -------   -   -----
+        P P N N ~NiR&  N P
+        i o i o  NoV   o o
+        V R R V        V R
+
+        -------   -    - -
+        0 0 0 0   0    0 1
+        0 0 0 1   1    1 0
+        0 0 1 0   0    0 1
+        0 0 1 1   0    0 1
+        -------   -    - -
+        0 1 0 0   0    0 1
+        0 1 0 1   1    1 0
+        0 1 1 0   0    0 1
+        0 1 1 1   0    0 1
+        -------   -    - -
+        1 0 0 0   0    1 1
+        1 0 0 1   1    1 0
+        1 0 1 0   0    1 1
+        1 0 1 1   0    1 1
+        -------   -    - -
+        1 1 0 0   0    1 1
+        1 1 0 1   1    1 0
+        1 1 1 0   0    1 1
+        1 1 1 1   0    1 1
+        -------   -    - -
+
+        Note: PoR is *NOT* involved in the above decision-making.
     """
 
     def elaborate(self, platform):
