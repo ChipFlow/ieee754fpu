@@ -764,7 +764,7 @@ class SimpleHandshake(ControlBase):
 
         Inputs   Temporary  Output
         -------  ---------- -----
-        P P N N  PiV& ~NiV&  N P
+        P P N N  PiV& ~NiR&  N P
         i o i o  PoR  NoV    o o
         V R R V              V R
 
@@ -1017,6 +1017,35 @@ class PassThroughStage(StageCls):
 
 class PassThroughHandshake(ControlBase):
     """ A control block that delays by one clock cycle.
+
+        Inputs   Temporary          Output Data
+        -------  ------------------  ----- ----
+        P P N N  PiV& PiV| NiR| pvr   N P  (pvr)
+        i o i o  PoR  ~PoR ~NoV       o o
+        V R R V                       V R
+
+        -------   -    -    -   -     - -
+        0 0 0 0   0    1    1   0     1 1   reg
+        0 0 0 1   0    1    0   0     1 0   reg
+        0 0 1 0   0    1    1   0     1 1   reg
+        0 0 1 1   0    1    1   0     1 1   reg
+        -------   -    -    -   -     - -
+        0 1 0 0   0    0    1   0     0 1   reg
+        0 1 0 1   0    0    0   0     0 0   reg
+        0 1 1 0   0    0    1   0     0 1   reg
+        0 1 1 1   0    0    1   0     0 1   reg
+        -------   -    -    -   -     - -
+        1 0 0 0   0    1    1   1     1 1   process(in)
+        1 0 0 1   0    1    0   0     1 0   reg
+        1 0 1 0   0    1    1   1     1 1   process(in)
+        1 0 1 1   0    1    1   1     1 1   process(in)
+        -------   -    -    -   -     - -
+        1 1 0 0   1    1    1   1     1 1   process(in)
+        1 1 0 1   1    1    0   0     1 0   reg
+        1 1 1 0   1    1    1   1     1 1   process(in)
+        1 1 1 1   1    1    1   1     1 1   process(in)
+        -------   -    -    -   -     - -
+
     """
 
     def elaborate(self, platform):
