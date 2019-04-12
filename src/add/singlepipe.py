@@ -960,22 +960,22 @@ class UnbufferedPipeline2(ControlBase):
 
         -------   -    - -
         0 0 0 0   0    0 1   process(i_data)
-        0 0 0 1   1    1 0   reg
+        0 0 0 1   1    1 0   reg (odata, unchanged)
         0 0 1 0   0    0 1   process(i_data)
         0 0 1 1   0    0 1   process(i_data)
         -------   -    - -
         0 1 0 0   0    0 1   process(i_data)
-        0 1 0 1   1    1 0   reg
+        0 1 0 1   1    1 0   reg (odata, unchanged)
         0 1 1 0   0    0 1   process(i_data)
         0 1 1 1   0    0 1   process(i_data)
         -------   -    - -
         1 0 0 0   0    1 1   process(i_data)
-        1 0 0 1   1    1 0   reg
+        1 0 0 1   1    1 0   reg (odata, unchanged)
         1 0 1 0   0    1 1   process(i_data)
         1 0 1 1   0    1 1   process(i_data)
         -------   -    - -
         1 1 0 0   0    1 1   process(i_data)
-        1 1 0 1   1    1 0   reg
+        1 1 0 1   1    1 0   reg (odata, unchanged)
         1 1 1 0   0    1 1   process(i_data)
         1 1 1 1   0    1 1   process(i_data)
         -------   -    - -
@@ -1025,23 +1025,23 @@ class PassThroughHandshake(ControlBase):
         V R R V                       V R
 
         -------   -    -    -   -     - -
-        0 0 0 0   0    1    1   0     1 1   reg
-        0 0 0 1   0    1    0   0     1 0   reg
-        0 0 1 0   0    1    1   0     1 1   reg
-        0 0 1 1   0    1    1   0     1 1   reg
+        0 0 0 0   0    1    1   0     1 1   odata (unchanged)
+        0 0 0 1   0    1    0   0     1 0   odata (unchanged)
+        0 0 1 0   0    1    1   0     1 1   odata (unchanged)
+        0 0 1 1   0    1    1   0     1 1   odata (unchanged)
         -------   -    -    -   -     - -
-        0 1 0 0   0    0    1   0     0 1   reg
-        0 1 0 1   0    0    0   0     0 0   reg
-        0 1 1 0   0    0    1   0     0 1   reg
-        0 1 1 1   0    0    1   0     0 1   reg
+        0 1 0 0   0    0    1   0     0 1   odata (unchanged)
+        0 1 0 1   0    0    0   0     0 0   odata (unchanged)
+        0 1 1 0   0    0    1   0     0 1   odata (unchanged)
+        0 1 1 1   0    0    1   0     0 1   odata (unchanged)
         -------   -    -    -   -     - -
         1 0 0 0   0    1    1   1     1 1   process(in)
-        1 0 0 1   0    1    0   0     1 0   reg
+        1 0 0 1   0    1    0   0     1 0   odata (unchanged)
         1 0 1 0   0    1    1   1     1 1   process(in)
         1 0 1 1   0    1    1   1     1 1   process(in)
         -------   -    -    -   -     - -
         1 1 0 0   1    1    1   1     1 1   process(in)
-        1 1 0 1   1    1    0   0     1 0   reg
+        1 1 0 1   1    1    0   0     1 0   odata (unchanged)
         1 1 1 0   1    1    1   1     1 1   process(in)
         1 1 1 1   1    1    1   1     1 1   process(in)
         -------   -    -    -   -     - -
