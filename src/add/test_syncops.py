@@ -3,7 +3,7 @@ from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog
 
-from nmigen_add_experiment import FPGetSyncOpsMod
+from inputgroup import FPGetSyncOpsMod
 
 
 def testbench(dut):

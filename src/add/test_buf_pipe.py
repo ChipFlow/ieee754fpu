@@ -45,7 +45,7 @@ def check_o_n_valid2(dut, val):
     assert o_n_valid == val
 
 
-def testbench(dut):
+def tbench(dut):
     #yield dut.i_p_rst.eq(1)
     yield dut.n.i_ready.eq(0)
     yield dut.p.o_ready.eq(0)
@@ -81,7 +81,7 @@ def testbench(dut):
     yield
 
 
-def testbench2(dut):
+def tbench2(dut):
     #yield dut.p.i_rst.eq(1)
     yield dut.n.i_ready.eq(0)
     #yield dut.p.o_ready.eq(0)
@@ -170,7 +170,7 @@ class Test3:
                 if self.o == len(self.data):
                     break
 
-def test3_resultfn(o_data, expected, i, o):
+def resultfn_3(o_data, expected, i, o):
     assert o_data == expected + 1, \
                 "%d-%d data %x not match %x\n" \
                 % (i, o, o_data, expected)
@@ -252,13 +252,13 @@ class Test5:
                 if self.o == len(self.data):
                     break
 
-def test5_resultfn(o_data, expected, i, o):
+def resultfn_5(o_data, expected, i, o):
     res = expected[0] + expected[1]
     assert o_data == res, \
                 "%d-%d data %x not match %s\n" \
                 % (i, o, o_data, repr(expected))
 
-def testbench4(dut):
+def tbench4(dut):
     data = []
     for i in range(num_tests):
         #data.append(randint(0, 1<<16-1))
@@ -331,7 +331,7 @@ def data_chain2():
         return data
 
 
-def test9_resultfn(o_data, expected, i, o):
+def resultfn_9(o_data, expected, i, o):
     res = expected + 2
     assert o_data == res, \
                 "%d-%d received data %x not match expected %x\n" \
@@ -421,7 +421,7 @@ class ExampleLTBufferedPipeDerived(BufferedHandshake):
         BufferedHandshake.__init__(self, stage)
 
 
-def test6_resultfn(o_data, expected, i, o):
+def resultfn_6(o_data, expected, i, o):
     res = 1 if expected[0] < expected[1] else 0
     assert o_data == res, \
                 "%d-%d data %x not match %s\n" \
@@ -491,7 +491,7 @@ class ExampleAddRecordPipe(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, stage)
 
 
-def test7_resultfn(o_data, expected, i, o):
+def resultfn_7(o_data, expected, i, o):
     res = (expected['src1'] + 1, expected['src2'] + 1)
     assert o_data['src1'] == res[0] and o_data['src2'] == res[1], \
                 "%d-%d data %s not match %s\n" \
@@ -507,7 +507,7 @@ class ExampleAddRecordPlaceHolderPipe(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, stage)
 
 
-def test11_resultfn(o_data, expected, i, o):
+def resultfn_test11(o_data, expected, i, o):
     res1 = expected.src1 + 1
     res2 = expected.src2 + 1
     assert o_data['src1'] == res1 and o_data['src2'] == res2, \
@@ -574,7 +574,7 @@ class TestInputAdd:
         self.op2 = op2
 
 
-def test8_resultfn(o_data, expected, i, o):
+def resultfn_8(o_data, expected, i, o):
     res = expected.op1 + expected.op2 # these are a TestInputAdd instance
     assert o_data == res, \
                 "%d-%d data %s res %x not match %s\n" \
@@ -647,7 +647,7 @@ def data_chain1():
         return data
 
 
-def test12_resultfn(o_data, expected, i, o):
+def resultfn_12(o_data, expected, i, o):
     res = expected + 1
     assert o_data == res, \
                 "%d-%d data %x not match %x\n" \
@@ -723,7 +723,7 @@ class PassThroughTest(PassThroughHandshake):
         stage = PassThroughStage(self.iospecfn)
         PassThroughHandshake.__init__(self, stage)
 
-def test_identical_resultfn(o_data, expected, i, o):
+def resultfn_identical(o_data, expected, i, o):
     res = expected
     assert o_data == res, \
                 "%d-%d data %x not match %x\n" \
@@ -983,11 +983,11 @@ num_tests = 10
 if __name__ == '__main__':
     print ("test 1")
     dut = ExampleBufPipe()
-    run_simulation(dut, testbench(dut), vcd_name="test_bufpipe.vcd")
+    run_simulation(dut, tbench(dut), vcd_name="test_bufpipe.vcd")
 
     print ("test 2")
     dut = ExampleBufPipe2()
-    run_simulation(dut, testbench2(dut), vcd_name="test_bufpipe2.vcd")
+    run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
              [dut.p.i_data] + [dut.n.o_data]
@@ -998,26 +998,26 @@ if __name__ == '__main__':
 
     print ("test 3")
     dut = ExampleBufPipe()
-    test = Test3(dut, test3_resultfn)
+    test = Test3(dut, resultfn_3)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe3.vcd")
 
     print ("test 3.5")
     dut = ExamplePipeline()
-    test = Test3(dut, test3_resultfn)
+    test = Test3(dut, resultfn_3)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_combpipe3.vcd")
 
     print ("test 4")
     dut = ExampleBufPipe2()
-    run_simulation(dut, testbench4(dut), vcd_name="test_bufpipe4.vcd")
+    run_simulation(dut, tbench4(dut), vcd_name="test_bufpipe4.vcd")
 
     print ("test 5")
     dut = ExampleBufPipeAdd()
-    test = Test5(dut, test5_resultfn, stage_ctl=True)
+    test = Test5(dut, resultfn_5, stage_ctl=True)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe5.vcd")
 
     print ("test 6")
     dut = ExampleLTPipeline()
-    test = Test5(dut, test6_resultfn)
+    test = Test5(dut, resultfn_6)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
 
     ports = [dut.p.i_valid, dut.n.i_ready,
@@ -1030,7 +1030,7 @@ if __name__ == '__main__':
     print ("test 7")
     dut = ExampleAddRecordPipe()
     data=data_dict()
-    test = Test5(dut, test7_resultfn, data=data)
+    test = Test5(dut, resultfn_7, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
     ports = [dut.p.i_valid, dut.n.i_ready,
@@ -1044,7 +1044,7 @@ if __name__ == '__main__':
     print ("test 8")
     dut = ExampleBufPipeAddClass()
     data=data_2op()
-    test = Test5(dut, test8_resultfn, data=data)
+    test = Test5(dut, resultfn_8, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe8.vcd")
 
     print ("test 9")
@@ -1057,13 +1057,13 @@ if __name__ == '__main__':
         f.write(vl)
 
     data = data_chain2()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv],
                         vcd_name="test_bufpipechain2.vcd")
 
     print ("test 10")
     dut = ExampleLTBufferedPipeDerived()
-    test = Test5(dut, test6_resultfn)
+    test = Test5(dut, resultfn_6)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltbufpipe10.vcd")
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltbufpipe10.il", "w") as f:
@@ -1072,14 +1072,14 @@ if __name__ == '__main__':
     print ("test 11")
     dut = ExampleAddRecordPlaceHolderPipe()
     data=data_placeholder()
-    test = Test5(dut, test11_resultfn, data=data)
+    test = Test5(dut, resultfn_test11, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
 
     print ("test 12")
     dut = ExampleBufDelayedPipe()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1091,7 +1091,7 @@ if __name__ == '__main__':
     print ("test 13")
     dut = ExampleUnBufDelayedPipe()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe13.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1103,7 +1103,7 @@ if __name__ == '__main__':
     print ("test 15")
     dut = ExampleBufModeAdd1Pipe()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf15.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1115,7 +1115,7 @@ if __name__ == '__main__':
     print ("test 16")
     dut = ExampleBufModeUnBufPipe()
     data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf16.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1127,7 +1127,7 @@ if __name__ == '__main__':
     print ("test 17")
     dut = ExampleUnBufAdd1Pipe2()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe17.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1139,7 +1139,7 @@ if __name__ == '__main__':
     print ("test 18")
     dut = PassThroughTest()
     data = data_chain1()
-    test = Test5(dut, test_identical_resultfn, data=data)
+    test = Test5(dut, resultfn_identical, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_passthru18.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1151,7 +1151,7 @@ if __name__ == '__main__':
     print ("test 19")
     dut = ExampleBufPassThruPipe()
     data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass19.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1163,7 +1163,7 @@ if __name__ == '__main__':
     print ("test 20")
     dut = FIFOTest16()
     data = data_chain1()
-    test = Test5(dut, test_identical_resultfn, data=data)
+    test = Test5(dut, resultfn_identical, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifo20.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1175,7 +1175,7 @@ if __name__ == '__main__':
     print ("test 21")
     dut = ExampleFIFOPassThruPipe1()
     data = data_chain1()
-    test = Test5(dut, test12_resultfn, data=data)
+    test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifopass21.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1187,7 +1187,7 @@ if __name__ == '__main__':
     print ("test 22")
     dut = ExampleRecordHandshakeAddClass()
     data=data_2op()
-    test = Test5(dut, test8_resultfn, data=data)
+    test = Test5(dut, resultfn_8, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord22.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1200,7 +1200,7 @@ if __name__ == '__main__':
     print ("test 23")
     dut = ExampleFIFORecordObjectPipe()
     data=data_2op()
-    test = Test5(dut, test8_resultfn, data=data)
+    test = Test5(dut, resultfn_8, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord23.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1213,7 +1213,7 @@ if __name__ == '__main__':
     print ("test 24")
     dut = FIFOTestRecordAddStageControl()
     data=data_2op()
-    test = Test5(dut, test8_resultfn, data=data)
+    test = Test5(dut, resultfn_8, data=data)
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
              [dut.p.i_data.op1, dut.p.i_data.op2] + \
@@ -1226,7 +1226,7 @@ if __name__ == '__main__':
     print ("test 997")
     dut = ExampleBufPassThruPipe2()
     data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass997.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1238,7 +1238,7 @@ if __name__ == '__main__':
     print ("test 998 (fails, bug)")
     dut = ExampleBufPipe3()
     data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
@@ -1250,7 +1250,7 @@ if __name__ == '__main__':
     print ("test 999 (expected to fail, which is a bug)")
     dut = ExampleBufUnBufPipe()
     data = data_chain1()
-    test = Test5(dut, test9_resultfn, data=data)
+    test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready] + \
