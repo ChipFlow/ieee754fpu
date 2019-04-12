@@ -770,7 +770,8 @@ def iospecfn():
 class FIFOTest16(FIFOControl):
 
     def __init__(self):
-        FIFOControl.__init__(self, 2, iospecfn)
+        stage = PassThroughStage(iospecfn)
+        FIFOControl.__init__(self, 2, stage)
 
 
 ######################################################################
@@ -840,7 +841,8 @@ def iospecfnrecord():
 class FIFOTestRecordControl(FIFOControl):
 
     def __init__(self):
-        FIFOControl.__init__(self, 2, iospecfnrecord)
+        stage = PassThroughStage(iospecfnrecord)
+        FIFOControl.__init__(self, 2, stage)
 
 
 class ExampleFIFORecordObjectPipe(ControlBase):
@@ -869,7 +871,8 @@ def iospecfn24():
 class FIFOTest2x16(FIFOControl):
 
     def __init__(self):
-        FIFOControl.__init__(self, iospecfn2, 2)
+        stage = PassThroughStage(iospecfn2)
+        FIFOControl.__init__(self, 2, stage)
 
 
 ######################################################################

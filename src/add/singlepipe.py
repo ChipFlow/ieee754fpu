@@ -1021,7 +1021,7 @@ class FIFOControl(ControlBase):
         i_data -> fifo.din -> FIFO -> fifo.dout -> o_data
     """
 
-    def __init__(self, depth, iospecfn):
+    def __init__(self, depth, stage):
         """ * iospecfn: specification for incoming and outgoing data
             * depth   : number of entries in the FIFO
 
@@ -1029,7 +1029,6 @@ class FIFOControl(ControlBase):
         """
 
         self.fdepth = depth
-        stage = PassThroughStage(iospecfn)
         ControlBase.__init__(self, stage=stage)
 
     def elaborate(self, platform):
