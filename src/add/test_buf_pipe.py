@@ -877,6 +877,33 @@ class FIFOTestRecordAddStageControl(FIFOControl):
 # Test 25
 ######################################################################
 
+class FIFOTestAdd16(FIFOControl):
+
+    def __init__(self):
+        stage = ExampleStageCls()
+        FIFOControl.__init__(self, 2, stage)
+
+
+class ExampleFIFOAdd2Pipe(ControlBase):
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = FIFOTestAdd16()
+        pipe2 = FIFOTestAdd16()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
+
+######################################################################
+# Test 26
+######################################################################
+
 def iospecfn24():
     return (Signal(16, name="src1"), Signal(16, name="src2"))
 
@@ -1222,6 +1249,18 @@ if __name__ == '__main__':
     with open("test_addrecord24.il", "w") as f:
         f.write(vl)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord24.vcd")
+
+    print ("test 25")
+    dut = ExampleFIFOAdd2Pipe()
+    data = data_chain1()
+    test = Test5(dut, resultfn_9, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_add2pipe25.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data] + [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_add2pipe25.il", "w") as f:
+        f.write(vl)
 
     print ("test 997")
     dut = ExampleBufPassThruPipe2()
