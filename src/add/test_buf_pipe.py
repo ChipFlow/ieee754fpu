@@ -765,10 +765,9 @@ class ExampleBufPassThruPipe(ControlBase):
 ######################################################################
 
 def iospecfn():
-    return Signal(16, name="din")
+    return Signal(16, name="d_in")
 
 class FIFOTest16(FIFOControl):
-
 
     def __init__(self):
         FIFOControl.__init__(self, iospecfn, 2)
@@ -835,7 +834,36 @@ class ExampleRecordHandshakeAddClass(SimpleHandshake):
 # Test 23
 ######################################################################
 
-def iospecfn22():
+def iospecfnrecord():
+    return Example2OpRecord()
+
+class FIFOTestRecordControl(FIFOControl):
+
+    def __init__(self):
+        FIFOControl.__init__(self, iospecfnrecord, 2)
+
+
+class ExampleFIFORecordObjectPipe(ControlBase):
+
+    def elaborate(self, platform):
+        m = ControlBase._elaborate(self, platform)
+
+        pipe1 = FIFOTestRecordControl()
+        pipe2 = ExampleRecordHandshakeAddClass()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
+
+
+######################################################################
+# Test 24
+######################################################################
+
+def iospecfn24():
     return (Signal(16, name="src1"), Signal(16, name="src2"))
 
 class FIFOTest2x16(FIFOControl):
@@ -1152,6 +1180,20 @@ if __name__ == '__main__':
              [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord22.il", "w") as f:
+        f.write(vl)
+
+
+    print ("test 23")
+    dut = ExampleFIFORecordObjectPipe()
+    data=data_2op()
+    test = Test5(dut, test8_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord23.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data.op1, dut.p.i_data.op2] + \
+             [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_addrecord23.il", "w") as f:
         f.write(vl)
 
     print ("test 997")
