@@ -215,17 +215,15 @@ class PrevControl:
             return self.s_o_ready # set dynamically by stage
         return self._o_ready      # return this when not under dynamic control
 
-    def _connect_in(self, prev, direct=False):
+    def _connect_in(self, prev, direct=False, fn=None):
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
-        if direct:
-            i_valid = prev.i_valid
-        else:
-            i_valid = prev.i_valid_test
+        i_valid = prev.i_valid if direct else prev.i_valid_test
+        i_data = fn(prev.i_data) if fn is not None else prev.i_data
         return [self.i_valid.eq(i_valid),
                 prev.o_ready.eq(self.o_ready),
-                eq(self.i_data, prev.i_data),
+                eq(self.i_data, i_data),
                ]
 
     @property
@@ -277,17 +275,15 @@ class NextControl:
                 eq(nxt.i_data, self.o_data),
                ]
 
-    def _connect_out(self, nxt, direct=False):
+    def _connect_out(self, nxt, direct=False, fn=None):
         """ internal helper function to connect stage to an output source.
             do not use to connect stage-to-stage!
         """
-        if direct:
-            i_ready = nxt.i_ready
-        else:
-            i_ready = nxt.i_ready_test
+        i_ready = nxt.i_ready if direct else nxt.i_ready_test
+        o_data = fn(self.o_data) if fn is not None else self.o_data
         return [nxt.o_valid.eq(self.o_valid),
                 self.i_ready.eq(i_ready),
-                eq(nxt.o_data, self.o_data),
+                eq(nxt.o_data, o_data),
                ]
 
 
@@ -1044,31 +1040,31 @@ class FIFOtest(ControlBase):
 
         # XXX TODO: would be nice to do these...
         ## prev: make the FIFO "look" like a PrevControl...
-        #fp = PrevControl()
-        #fp.i_valid = fifo.we
-        #fp._o_ready = fifo.writable
-        #fp.i_data = fifo.din
-        #m.d.comb += fp._connect_in(self.p, True)
+        fp = PrevControl()
+        fp.i_valid = fifo.we
+        fp._o_ready = fifo.writable
+        fp.i_data = fifo.din
+        m.d.comb += fp._connect_in(self.p, True, fn=flatten)
 
         # next: make the FIFO "look" like a NextControl...
-        #fn = NextControl()
-        #fn.o_valid = fifo.readable
-        #fn.i_ready = fifo.re
-        #fn.o_data = fifo.dout
-        ## ... so we can do this!
-        #m.d.comb += fn._connect_out(self.n)
+        fn = NextControl()
+        fn.o_valid = fifo.readable
+        fn.i_ready = fifo.re
+        fn.o_data = fifo.dout
+        # ... so we can do this!
+        m.d.comb += fn._connect_out(self.n, fn=flatten)
 
         # connect previous rdy/valid/data - do flatten on i_data
-        m.d.comb += [fifo.we.eq(self.p.i_valid_test),
-                     self.p.o_ready.eq(fifo.writable),
-                     eq(fifo.din, flatten(self.p.i_data)),
-                   ]
+        #m.d.comb += [fifo.we.eq(self.p.i_valid_test),
+        #             self.p.o_ready.eq(fifo.writable),
+        #             eq(fifo.din, flatten(self.p.i_data)),
+        #           ]
 
         # connect next rdy/valid/data - do flatten on o_data
-        m.d.comb += [self.n.o_valid.eq(fifo.readable),
-                     fifo.re.eq(self.n.i_ready_test),
-                     flatten(self.n.o_data).eq(fifo.dout),
-                   ]
+        #m.d.comb += [self.n.o_valid.eq(fifo.readable),
+        #             fifo.re.eq(self.n.i_ready_test),
+        #             flatten(self.n.o_data).eq(fifo.dout),
+        #           ]
 
         # err... that should be all!
         return m
