@@ -214,7 +214,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                #send = True
+                send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -233,7 +233,7 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 ready = randint(0, stall_range) != 0
-                #ready = True
+                ready = True
                 yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
@@ -770,7 +770,7 @@ def iospecfn():
 class FIFOTest16(FIFOControl):
 
     def __init__(self):
-        FIFOControl.__init__(self, iospecfn, 2)
+        FIFOControl.__init__(self, 2, iospecfn)
 
 
 ######################################################################
@@ -840,7 +840,7 @@ def iospecfnrecord():
 class FIFOTestRecordControl(FIFOControl):
 
     def __init__(self):
-        FIFOControl.__init__(self, iospecfnrecord, 2)
+        FIFOControl.__init__(self, 2, iospecfnrecord)
 
 
 class ExampleFIFORecordObjectPipe(ControlBase):
