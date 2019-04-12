@@ -577,8 +577,8 @@ class TestInputAdd:
 def test8_resultfn(o_data, expected, i, o):
     res = expected.op1 + expected.op2 # these are a TestInputAdd instance
     assert o_data == res, \
-                "%d-%d data %x not match %s\n" \
-                % (i, o, o_data, repr(expected))
+                "%d-%d data %s res %x not match %s\n" \
+                % (i, o, repr(o_data), res, repr(expected))
 
 def data_2op():
         data = []
@@ -863,6 +863,18 @@ class ExampleFIFORecordObjectPipe(ControlBase):
 
 ######################################################################
 # Test 24
+######################################################################
+
+class FIFOTestRecordAddStageControl(FIFOControl):
+
+    def __init__(self):
+        stage = ExampleAddRecordObjectStage()
+        FIFOControl.__init__(self, 2, stage)
+
+
+
+######################################################################
+# Test 25
 ######################################################################
 
 def iospecfn24():
@@ -1185,7 +1197,6 @@ if __name__ == '__main__':
     with open("test_addrecord22.il", "w") as f:
         f.write(vl)
 
-
     print ("test 23")
     dut = ExampleFIFORecordObjectPipe()
     data=data_2op()
@@ -1198,6 +1209,19 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord23.il", "w") as f:
         f.write(vl)
+
+    print ("test 24")
+    dut = FIFOTestRecordAddStageControl()
+    data=data_2op()
+    test = Test5(dut, test8_resultfn, data=data)
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data.op1, dut.p.i_data.op2] + \
+             [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_addrecord24.il", "w") as f:
+        f.write(vl)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord24.vcd")
 
     print ("test 997")
     dut = ExampleBufPassThruPipe2()

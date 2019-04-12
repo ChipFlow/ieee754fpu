@@ -1034,25 +1034,42 @@ class FIFOControl(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
 
-        (fwidth, _) = self.p.i_data.shape()
+        (fwidth, _) = self.n.o_data.shape()
         fifo = SyncFIFO(fwidth, self.fdepth)
         m.submodules.fifo = fifo
 
-        # prev: make the FIFO "look" like a PrevControl...
-        fp = PrevControl()
-        fp.i_valid = fifo.we
-        fp._o_ready = fifo.writable
-        fp.i_data = fifo.din
-        m.d.comb += fp._connect_in(self.p, True, fn=flatten)
+        # store result of processing in combinatorial temporary
+        result = self.stage.ospec()
+        m.d.comb += eq(result, self.stage.process(self.p.i_data))
+
+        # connect previous rdy/valid/data - do flatten on i_data
+        # NOTE: cannot do the PrevControl-looking trick because
+        # of need to process the data.  shaaaame....
+        m.d.comb += [fifo.we.eq(self.p.i_valid_test),
+                     self.p.o_ready.eq(fifo.writable),
+                     eq(fifo.din, flatten(result)),
+                   ]
 
         # next: make the FIFO "look" like a NextControl...
         fn = NextControl()
-        fn.o_valid = fifo.readable
-        fn.i_ready = fifo.re
-        fn.o_data = fifo.dout
-        # ... so we can do this!
-        m.d.comb += fn._connect_out(self.n, fn=flatten)
+        fn.o_valid, fn.i_ready, fn.o_data = fifo.readable, fifo.re, fifo.dout
+        m.d.comb += fn._connect_out(self.n, fn=flatten) # ...so we can do this!
 
         # err... that should be all!
         return m
+
+        # XXX
+        # XXX UNUSED CODE!
+        # XXX
+
+        # prev: make the FIFO "look" like a PrevControl...
+        fp = PrevControl()
+        fp.i_valid, fp._o_ready, fp.i_data = fifo.we, fifo.writable, fifo.din
+        m.d.comb += fp._connect_in(self.p, True, fn=flatten)
+
+        # connect next rdy/valid/data - do flatten on o_data
+        m.d.comb += [self.n.o_valid.eq(fifo.readable),
+                     fifo.re.eq(self.n.i_ready_test),
+                     flatten(self.n.o_data).eq(fifo.dout),
+                   ]
 
