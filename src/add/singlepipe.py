@@ -762,32 +762,32 @@ class SimpleHandshake(ControlBase):
                               +--process->--^
         Truth Table
 
-        Inputs   Temporary  Output
-        -------  ---------- -----
+        Inputs   Temporary  Output Data
+        -------  ---------- -----  ----
         P P N N  PiV& ~NiR&  N P
         i o i o  PoR  NoV    o o
         V R R V              V R
 
         -------   -    -     - -
-        0 0 0 0   0    0    >0 0
-        0 0 0 1   0    1    >1 0
-        0 0 1 0   0    0     0 1
-        0 0 1 1   0    0     0 1
+        0 0 0 0   0    0    >0 0    reg
+        0 0 0 1   0    1    >1 0    reg
+        0 0 1 0   0    0     0 1    process(i_data)
+        0 0 1 1   0    0     0 1    process(i_data)
         -------   -    -     - -
-        0 1 0 0   0    0    >0 0
-        0 1 0 1   0    1    >1 0
-        0 1 1 0   0    0     0 1
-        0 1 1 1   0    0     0 1
+        0 1 0 0   0    0    >0 0    reg
+        0 1 0 1   0    1    >1 0    reg
+        0 1 1 0   0    0     0 1    process(i_data)
+        0 1 1 1   0    0     0 1    process(i_data)
         -------   -    -     - -
-        1 0 0 0   0    0    >0 0
-        1 0 0 1   0    1    >1 0
-        1 0 1 0   0    0     0 1
-        1 0 1 1   0    0     0 1
+        1 0 0 0   0    0    >0 0    reg
+        1 0 0 1   0    1    >1 0    reg
+        1 0 1 0   0    0     0 1    process(i_data)
+        1 0 1 1   0    0     0 1    process(i_data)
         -------   -    -     - -
-        1 1 0 0   1    0     1 0
-        1 1 0 1   1    1     1 0
-        1 1 1 0   1    0     1 1
-        1 1 1 1   1    0     1 1
+        1 1 0 0   1    0     1 0    process(i_data)
+        1 1 0 1   1    1     1 0    process(i_data)
+        1 1 1 0   1    0     1 1    process(i_data)
+        1 1 1 1   1    0     1 1    process(i_data)
         -------   -    -     - -
     """
 
@@ -866,32 +866,32 @@ class UnbufferedPipeline(ControlBase):
 
         Truth Table
 
-        Inputs  Temp  Output
-        -------   -   -----
+        Inputs  Temp  Output  Data
+        -------   -   -----   ----
         P P N N ~NiR&  N P
         i o i o  NoV   o o
         V R R V        V R
 
         -------   -    - -
-        0 0 0 0   0    0 1
-        0 0 0 1   1    1 0
-        0 0 1 0   0    0 1
-        0 0 1 1   0    0 1
+        0 0 0 0   0    0 1    reg
+        0 0 0 1   1    1 0    reg
+        0 0 1 0   0    0 1    reg
+        0 0 1 1   0    0 1    reg
         -------   -    - -
-        0 1 0 0   0    0 1
-        0 1 0 1   1    1 0
-        0 1 1 0   0    0 1
-        0 1 1 1   0    0 1
+        0 1 0 0   0    0 1    reg
+        0 1 0 1   1    1 0    reg
+        0 1 1 0   0    0 1    reg
+        0 1 1 1   0    0 1    reg
         -------   -    - -
-        1 0 0 0   0    1 1
-        1 0 0 1   1    1 0
-        1 0 1 0   0    1 1
-        1 0 1 1   0    1 1
+        1 0 0 0   0    1 1    reg
+        1 0 0 1   1    1 0    reg
+        1 0 1 0   0    1 1    reg
+        1 0 1 1   0    1 1    reg
         -------   -    - -
-        1 1 0 0   0    1 1
-        1 1 0 1   1    1 0
-        1 1 1 0   0    1 1
-        1 1 1 1   0    1 1
+        1 1 0 0   0    1 1    process(i_data)
+        1 1 0 1   1    1 0    process(i_data)
+        1 1 1 0   0    1 1    process(i_data)
+        1 1 1 1   0    1 1    process(i_data)
         -------   -    - -
 
         Note: PoR is *NOT* involved in the above decision-making.
@@ -952,32 +952,32 @@ class UnbufferedPipeline2(ControlBase):
             This is HELD if the output is not ready.  It is updated
             SYNCHRONOUSLY.
 
-        Inputs  Temp  Output
+        Inputs  Temp  Output Data
         -------   -   -----
-        P P N N ~NiR&  N P
+        P P N N ~NiR&  N P   (buf_full)
         i o i o  NoV   o o
         V R R V        V R
 
         -------   -    - -
-        0 0 0 0   0    0 1
-        0 0 0 1   1    1 0
-        0 0 1 0   0    0 1
-        0 0 1 1   0    0 1
+        0 0 0 0   0    0 1   process(i_data)
+        0 0 0 1   1    1 0   reg
+        0 0 1 0   0    0 1   process(i_data)
+        0 0 1 1   0    0 1   process(i_data)
         -------   -    - -
-        0 1 0 0   0    0 1
-        0 1 0 1   1    1 0
-        0 1 1 0   0    0 1
-        0 1 1 1   0    0 1
+        0 1 0 0   0    0 1   process(i_data)
+        0 1 0 1   1    1 0   reg
+        0 1 1 0   0    0 1   process(i_data)
+        0 1 1 1   0    0 1   process(i_data)
         -------   -    - -
-        1 0 0 0   0    1 1
-        1 0 0 1   1    1 0
-        1 0 1 0   0    1 1
-        1 0 1 1   0    1 1
+        1 0 0 0   0    1 1   process(i_data)
+        1 0 0 1   1    1 0   reg
+        1 0 1 0   0    1 1   process(i_data)
+        1 0 1 1   0    1 1   process(i_data)
         -------   -    - -
-        1 1 0 0   0    1 1
-        1 1 0 1   1    1 0
-        1 1 1 0   0    1 1
-        1 1 1 1   0    1 1
+        1 1 0 0   0    1 1   process(i_data)
+        1 1 0 1   1    1 0   reg
+        1 1 1 0   0    1 1   process(i_data)
+        1 1 1 1   0    1 1   process(i_data)
         -------   -    - -
 
         Note: PoR is *NOT* involved in the above decision-making.
