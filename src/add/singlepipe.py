@@ -1025,7 +1025,19 @@ class FIFOControl(ControlBase):
         """ * iospecfn: specification for incoming and outgoing data
             * depth   : number of entries in the FIFO
 
-            NOTE: FPGAs may have trouble with the defaults for SyncFIFO
+            NOTE 1: FPGAs may have trouble with the defaults for SyncFIFO
+
+            NOTE 2: i_data *must* have a shape function.  it can therefore
+                    be a Signal, or a Record, or a RecordObject.
+
+            data is processed (and located) as follows:
+
+            self.p  self.stage temp    fn temp  fn  temp  fp   self.n
+            i_data->process()->result->flatten->din.FIFO.dout->flatten(o_data)
+
+            yes, really: flatten produces a Cat() which can be assigned to.
+            this is how the FIFO gets de-flattened without needing a de-flatten
+            function
         """
 
         self.fdepth = depth
@@ -1034,6 +1046,7 @@ class FIFOControl(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
 
+        # make a FIFO with a signal of equal width to the o_data.
         (fwidth, _) = self.n.o_data.shape()
         fifo = SyncFIFO(fwidth, self.fdepth)
         m.submodules.fifo = fifo
