@@ -29,6 +29,7 @@ from singlepipe import SimpleHandshake
 from singlepipe import PassThroughHandshake
 from singlepipe import PassThroughStage
 from singlepipe import FIFOControl
+from singlepipe import RecordObject
 
 from random import randint, seed
 
@@ -794,6 +795,60 @@ class ExampleFIFOPassThruPipe1(ControlBase):
 
 
 ######################################################################
+# Test 22
+######################################################################
+
+class Example2OpRecord(RecordObject):
+    def __init__(self):
+        RecordObject.__init__(self)
+        self.op1 = Signal(16)
+        self.op2 = Signal(16)
+
+    def eq(self, i):
+        return [self.op1.eq(i.op1), self.op2.eq(i.op2)]
+
+
+class ExampleAddRecordObjectStage(StageCls):
+
+    def ispec(self):
+        """ returns an instance of an Example2OpRecord.
+        """
+        #return Example2OpClass()
+        return Example2OpRecord()
+
+    def ospec(self):
+        """ returns an output signal which will happen to contain the sum
+            of the two inputs
+        """
+        return Signal(16)
+
+    def process(self, i):
+        """ process the input data (sums the values in the tuple) and returns it
+        """
+        return i.op1 + i.op2
+
+
+class ExampleRecordHandshakeAddClass(BufferedHandshake):
+
+    def __init__(self):
+        addstage = ExampleAddRecordObjectStage()
+        BufferedHandshake.__init__(self, stage=addstage)
+
+
+######################################################################
+# Test 23
+######################################################################
+
+def iospecfn22():
+    return (Signal(16, name="src1"), Signal(16, name="src2"))
+
+class FIFOTest2x16(FIFOControl):
+
+    def __init__(self):
+        FIFOControl.__init__(self, iospecfn2, 2)
+
+
+######################################################################
 # Test 997
 ######################################################################
 
@@ -1088,6 +1143,19 @@ if __name__ == '__main__':
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifopass21.il", "w") as f:
+        f.write(vl)
+
+    print ("test 22")
+    dut = ExampleRecordHandshakeAddClass()
+    data=data_2op()
+    test = Test5(dut, test8_resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord22.vcd")
+    ports = [dut.p.i_valid, dut.n.i_ready,
+             dut.n.o_valid, dut.p.o_ready] + \
+             [dut.p.i_data.op1, dut.p.i_data.op2] + \
+             [dut.n.o_data]
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_addrecord22.il", "w") as f:
         f.write(vl)
 
     print ("test 997")
