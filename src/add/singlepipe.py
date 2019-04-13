@@ -166,7 +166,7 @@
 
 from nmigen import Signal, Cat, Const, Mux, Module, Value
 from nmigen.cli import verilog, rtlil
-from nmigen.lib.fifo import SyncFIFO
+from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
 from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record, Layout
 
@@ -1082,11 +1082,16 @@ class FIFOControl(ControlBase):
         i_data -> fifo.din -> FIFO -> fifo.dout -> o_data
     """
 
-    def __init__(self, depth, stage):
-        """ * iospecfn: specification for incoming and outgoing data
-            * depth   : number of entries in the FIFO
+    def __init__(self, depth, stage, fwft=True, buffered=False):
+        """ FIFO Control
+
+            * depth: number of entries in the FIFO
+            * stage: data processing block
+            * fwft : first word fall-thru mode (non-fwft introduces delay)
+            * buffered: use buffered FIFO (introduces extra cycle delay)
 
             NOTE 1: FPGAs may have trouble with the defaults for SyncFIFO
+                    (fwft=True, buffered=False)
 
             NOTE 2: i_data *must* have a shape function.  it can therefore
                     be a Signal, or a Record, or a RecordObject.
@@ -1101,6 +1106,11 @@ class FIFOControl(ControlBase):
             function
         """
 
+        assert not (fwft and buffered), "buffered cannot do fwft"
+        if buffered:
+            depth += 1
+        self.fwft = fwft
+        self.buffered = buffered
         self.fdepth = depth
         ControlBase.__init__(self, stage=stage)
 
@@ -1109,7 +1119,10 @@ class FIFOControl(ControlBase):
 
         # make a FIFO with a signal of equal width to the o_data.
         (fwidth, _) = self.n.o_data.shape()
-        fifo = SyncFIFO(fwidth, self.fdepth)
+        if self.buffered:
+            fifo = SyncFIFOBuffered(fwidth, self.fdepth)
+        else:
+            fifo = SyncFIFO(fwidth, self.fdepth, fwft=self.fwft)
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
@@ -1124,26 +1137,14 @@ class FIFOControl(ControlBase):
                      eq(fifo.din, flatten(result)),
                    ]
 
-        # next: make the FIFO "look" like a NextControl...
-        fn = NextControl()
-        fn.o_valid, fn.i_ready, fn.o_data = fifo.readable, fifo.re, fifo.dout
-        m.d.comb += fn._connect_out(self.n, fn=flatten) # ...so we can do this!
-
-        # err... that should be all!
-        return m
-
-        # XXX
-        # XXX UNUSED CODE!
-        # XXX
-
-        # prev: make the FIFO "look" like a PrevControl...
-        fp = PrevControl()
-        fp.i_valid, fp._o_ready, fp.i_data = fifo.we, fifo.writable, fifo.din
-        m.d.comb += fp._connect_in(self.p, True, fn=flatten)
-
         # connect next rdy/valid/data - do flatten on o_data
-        m.d.comb += [self.n.o_valid.eq(fifo.readable),
+        connections = [self.n.o_valid.eq(fifo.readable),
                      fifo.re.eq(self.n.i_ready_test),
-                     flatten(self.n.o_data).eq(fifo.dout),
                    ]
+        if self.fwft or self.buffered:
+            m.d.comb += connections
+        else:
+            m.d.sync += connections # unbuffered fwft mode needs sync
+        m.d.comb += flatten(self.n.o_data).eq(fifo.dout)
 
+        return m
