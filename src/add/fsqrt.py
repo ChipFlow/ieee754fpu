@@ -15,7 +15,7 @@ function [15:0] sqrt;
     //intermediate signals.
     reg [31:0] a;
     reg [15:0] q;
-    reg [17:0] left,right,r;    
+    reg [17:0] left,right,r;
     integer i;
 begin
     //initialize all the variables.
@@ -26,7 +26,7 @@ begin
     right = 0;  //input to adder/sub
     r = 0;  //remainder
     //run the calculations for 16 iterations.
-    for(i=0;i<16;i=i+1) begin 
+    for(i=0;i<16;i=i+1) begin
         right = {q,r[17],1'b1};
         left = {r[15:0],a[31:30]};
         a = {a[29:0],2'b00};    //left shift by 2 bits.
@@ -34,10 +34,64 @@ begin
             r = left + right;
         else    //subtract if r is positive
             r = left - right;
-        q = {q[14:0],!r[17]};       
+        q = {q[14:0],!r[17]};
     end
     sqrt = q;   //final assignment of output.
 end
 endfunction //end of Function
+
+
+c version (from paper linked from URL)
+
+unsigned squart(D, r) /*Non-Restoring sqrt*/
+    unsigned D; /*D:32-bit unsigned integer to be square rooted */
+    int *r;
+{
+    unsigned Q = 0; /*Q:16-bit unsigned integer (root)*/
+    int R = 0; /*R:17-bit integer (remainder)*/
+    int i;
+    for (i = 15;i>=0;i--) /*for each root bit*/
+    {
+        if (R>=0)
+        { /*new remainder:*/
+            R = R<<2)|((D>>(i+i))&3);
+            R = R-((Q<<2)|1); /*-Q01*/
+        }
+        else
+        { /*new remainder:*/
+            R = R<<2)|((D>>(i+i))&3);
+            R = R+((Q<<2)|3); /*+Q11*/
+        }
+        if (R>=0) Q = Q<<1)|1; /*new Q:*/
+        else Q = Q<<1)|0; /*new Q:*/
+    }
+
+    /*remainder adjusting*/
+    if (R<0) R = R+((Q<<1)|1);
+    *r = R; /*return remainder*/
+    return(Q); /*return root*/
+}
+
+From wikipedia page:
+
+short isqrt(short num) {
+    short res = 0;
+    short bit = 1 << 14; // The second-to-top bit is set: 1 << 30 for 32 bits
+
+    // "bit" starts at the highest power of four <= the argument.
+    while (bit > num)
+        bit >>= 2;
+
+    while (bit != 0) {
+        if (num >= res + bit) {
+            num -= res + bit;
+            res = (res >> 1) + bit;
+        }
+        else
+            res >>= 1;
+        bit >>= 2;
+    }
+    return res;
+}
 
 """
