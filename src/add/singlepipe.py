@@ -628,6 +628,11 @@ class ControlBase:
 
         return eqs
 
+    def _postprocess(self, i):
+        if hasattr(self.stage, "postprocess"):
+            return self.stage.postprocess(i)
+        return i
+
     def set_input(self, i):
         """ helper function to set the input data
         """
@@ -734,14 +739,16 @@ class BufferedHandshake(ControlBase):
 
         # data pass-through conditions
         with self.m.If(npnn):
+            o_data = self._postprocess(result)
             self.m.d.sync += [self.n.o_valid.eq(p_i_valid), # valid if p_valid
-                              eq(self.n.o_data, result),    # update output
+                              eq(self.n.o_data, o_data),    # update output
                              ]
         # buffer flush conditions (NOTE: can override data passthru conditions)
         with self.m.If(nir_por_n): # not stalled
             # Flush the [already processed] buffer to the output port.
+            o_data = self._postprocess(r_data)
             self.m.d.sync += [self.n.o_valid.eq(1),  # reg empty
-                              eq(self.n.o_data, r_data), # flush buffer
+                              eq(self.n.o_data, o_data), # flush buffer
                              ]
         # output ready conditions
         self.m.d.sync += self.p._o_ready.eq(nir_novn | por_pivn)
@@ -811,12 +818,14 @@ class SimpleHandshake(ControlBase):
 
         # previous valid and ready
         with m.If(p_i_valid_p_o_ready):
+            o_data = self._postprocess(result)
             m.d.sync += [r_busy.eq(1),      # output valid
-                         eq(self.n.o_data, result), # update output
+                         eq(self.n.o_data, o_data), # update output
                         ]
         # previous invalid or not ready, however next is accepting
         with m.Elif(n_i_ready):
-            m.d.sync += [eq(self.n.o_data, result)]
+            o_data = self._postprocess(result)
+            m.d.sync += [eq(self.n.o_data, o_data)]
             # TODO: could still send data here (if there was any)
             #m.d.sync += self.n.o_valid.eq(0) # ...so set output invalid
             m.d.sync += r_busy.eq(0) # ...so set output invalid
@@ -917,7 +926,8 @@ class UnbufferedPipeline(ControlBase):
 
         with m.If(pv):
             m.d.sync += eq(r_data, self.stage.process(self.p.i_data))
-        m.d.comb += eq(self.n.o_data, r_data)
+        o_data = self._postprocess(r_data)
+        m.d.comb += eq(self.n.o_data, o_data)
 
         return self.m
 
@@ -997,8 +1007,10 @@ class UnbufferedPipeline2(ControlBase):
         m.d.comb += self.p._o_ready.eq(~buf_full)
         m.d.sync += buf_full.eq(~self.n.i_ready_test & self.n.o_valid)
 
-        odata = Mux(buf_full, buf, self.stage.process(self.p.i_data))
-        m.d.comb += eq(self.n.o_data, odata)
+        o_data = Mux(buf_full, buf, self.stage.process(self.p.i_data))
+        if hasattr(self.stage, "postprocess"):
+            o_data = self.stage.postprocess(o_data)
+        m.d.comb += eq(self.n.o_data, o_data)
         m.d.sync += eq(buf, self.n.o_data)
 
         return self.m
@@ -1051,6 +1063,8 @@ class PassThroughHandshake(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
 
+        r_data = self.stage.ospec() # output type
+
         # temporaries
         p_i_valid = Signal(reset_less=True)
         pvr = Signal(reset_less=True)
@@ -1060,8 +1074,11 @@ class PassThroughHandshake(ControlBase):
         m.d.comb += self.p.o_ready.eq(~self.n.o_valid |  self.n.i_ready_test)
         m.d.sync += self.n.o_valid.eq(p_i_valid       | ~self.p.o_ready)
 
-        odata = Mux(pvr, self.stage.process(self.p.i_data), self.n.o_data)
-        m.d.sync += eq(self.n.o_data, odata)
+        odata = Mux(pvr, self.stage.process(self.p.i_data), r_data)
+        m.d.sync += eq(r_data, odata)
+        if hasattr(self.stage, "postprocess"):
+            r_data = self.stage.postprocess(r_data)
+        m.d.comb += eq(self.n.o_data, r_data)
 
         return m
 
@@ -1145,6 +1162,9 @@ class FIFOControl(ControlBase):
             m.d.comb += connections
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
-        m.d.comb += flatten(self.n.o_data).eq(fifo.dout)
+        o_data = flatten(self.n.o_data).eq(fifo.dout)
+        if hasattr(self.stage, "postprocess"):
+            o_data = self.stage.postprocess(o_data)
+        m.d.comb += o_data
 
         return m

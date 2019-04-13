@@ -608,14 +608,21 @@ class ExampleStageDelayCls(StageCls):
 
     @property
     def d_ready(self):
+        """ data is ready to be accepted when this is true
+        """
         return (self.count == 1)# | (self.count == 3)
         return Const(1)
 
     def d_valid(self, i_ready):
+        """ data is valid at output when this is true
+        """
         return self.count == self.valid_trigger
         return Const(1)
 
     def process(self, i):
+        return i
+
+    def postprocess(self, i):
         """ process the input data and returns it (adds 1)
         """
         return i + 1
