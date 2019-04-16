@@ -25,7 +25,6 @@
 
 from nmigen import Module, Signal, Memory, Mux
 from nmigen.tools import bits_for
-from typing import Tuple, Any, List
 from nmigen.cli import main
 from nmigen.lib.fifo import FIFOInterface
 
@@ -34,7 +33,17 @@ from nmigen.lib.fifo import FIFOInterface
 
 class Queue(FIFOInterface):
     def __init__(self, width, depth, fwft=True, pipe=False):
-        """ din  = enq_data, writable  = enq_ready, we = enq_valid
+        """ Queue (FIFO) with pipe mode and first-write fall-through capability
+
+            * width: width of Queue data in/out
+            * depth: queue depth.  NOTE: may be set to 0 (this is ok)
+            * fwft : first-write, fall-through mode (Chisel Queue "flow" mode)
+            * pipe : pipe mode.  NOTE: this mode can cause unanticipated
+                     problems.  when read is enabled, so is writeable.
+                     therefore if read is enabled, the data ABSOLUTELY MUST
+                     be read.
+
+            din  = enq_data, writable  = enq_ready, we = enq_valid
             dout = deq_data, re = deq_ready, readable = deq_valid
         """
         FIFOInterface.__init__(self, width, depth, fwft)
@@ -45,57 +54,59 @@ class Queue(FIFOInterface):
     def elaborate(self, platform):
         m = Module()
 
+        # set up an SRAM.  XXX bug in Memory: cannot create SRAM of depth 1
         ram = Memory(self.width, self.depth if self.depth > 1 else 2)
-        ram_read = ram.read_port(synchronous=False)
-        ram_write = ram.write_port()
-        ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
+        m.submodules.ram_read = ram_read = ram.read_port(synchronous=False)
+        m.submodules.ram_write = ram_write = ram.write_port()
 
-        enq_ptr = Signal(ptr_width)
-        deq_ptr = Signal(ptr_width)
-        maybe_full = Signal(reset_less=True)
-        do_enq = Signal(reset_less=True)
-        do_deq = Signal(reset_less=True)
+        # intermediaries
+        ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
+        enq_ptr = Signal(ptr_width) # cyclic pointer to "insert" point (wrport)
+        deq_ptr = Signal(ptr_width) # cyclic pointer to "remove" point (rdport)
+        maybe_full = Signal() # not reset_less (set by sync)
 
         # temporaries
+        do_enq = Signal(reset_less=True)
+        do_deq = Signal(reset_less=True)
         ptr_diff = Signal(ptr_width)
         ptr_match = Signal(reset_less=True)
         empty = Signal(reset_less=True)
         full = Signal(reset_less=True)
+        enq_max = Signal(reset_less=True)
+        deq_max = Signal(reset_less=True)
 
-        m.d.comb += [ptr_match.eq(enq_ptr == deq_ptr),
+        m.d.comb += [ptr_match.eq(enq_ptr == deq_ptr), # read-ptr = write-ptr
                      ptr_diff.eq(enq_ptr - deq_ptr),
+                     enq_max.eq(enq_ptr == self.depth - 1),
+                     deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
-                     full.eq(ptr_match & maybe_full)]
+                     full.eq(ptr_match & maybe_full),
+                     do_enq.eq(self.writable & self.we), # write conditions ok
+                     do_deq.eq(self.re & self.readable), # read conditions ok
 
-        m.submodules.ram_read = ram_read
-        m.submodules.ram_write = ram_write
+                     # set readable and writable (NOTE: see pipe mode below)
+                     self.readable.eq(~empty), # cannot read if empty!
+                     self.writable.eq(~full),  # cannot write if full!
 
-        m.d.comb += [do_enq.eq(self.writable & self.we),
-                     do_deq.eq(self.re & self.readable),
+                     # set up memory and connect to input and output
                      ram_write.addr.eq(enq_ptr),
                      ram_write.data.eq(self.din),
-                     ram_write.en.eq(0)]
+                     ram_write.en.eq(do_enq),
+                     ram_read.addr.eq(deq_ptr),
+                     self.dout.eq(ram_read.data) # NOTE: overridden in fwft mode
+                    ]
 
+        # under write conditions, SRAM write-pointer moves on next clock
         with m.If(do_enq):
-            m.d.comb += ram_write.en.eq(1)
-            with m.If(enq_ptr == self.depth - 1):
-                m.d.sync += enq_ptr.eq(0)
-            with m.Else():
-                m.d.sync += enq_ptr.eq(enq_ptr + 1)
+            m.d.sync += enq_ptr.eq(Mux(enq_max, 0, enq_ptr+1))
 
+        # under read conditions, SRAM read-pointer moves on next clock
         with m.If(do_deq):
-            with m.If(deq_ptr == self.depth - 1):
-                m.d.sync += deq_ptr.eq(0)
-            with m.Else():
-                m.d.sync += deq_ptr.eq(deq_ptr + 1)
+            m.d.sync += deq_ptr.eq(Mux(deq_max, 0, deq_ptr+1))
 
+        # if read-but-not-write or write-but-not-read, maybe_full set
         with m.If(do_enq != do_deq):
             m.d.sync += maybe_full.eq(do_enq)
-
-        m.d.comb += [self.readable.eq(~empty),
-                     self.writable.eq(~full),
-                     ram_read.addr.eq(deq_ptr),
-                     self.dout.eq(ram_read.data)]
 
         # first-word fall-through: same as "flow" parameter in Chisel3 Queue
         # basically instead of relying on the Memory characteristics (which
@@ -112,6 +123,7 @@ class Queue(FIFOInterface):
                 with m.If(self.re):
                     m.d.comb += do_enq.eq(0)
 
+        # pipe mode: read-enabled requires writability.
         if self.pipe:
             with m.If(self.re):
                 m.d.comb += self.writable.eq(1)
