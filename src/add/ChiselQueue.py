@@ -131,8 +131,8 @@ class Queue(FIFOInterface):
 
 
 if __name__ == "__main__":
-    reg_stage = Queue(1, 2, pipe=True)
-    break_ready_chain_stage = Queue(1, 2, pipe=True, fwft=True)
+    reg_stage = Queue(1, 1, pipe=True)
+    break_ready_chain_stage = Queue(1, 1, pipe=True, fwft=True)
     m = Module()
     ports = []
 
