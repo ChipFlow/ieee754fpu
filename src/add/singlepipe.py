@@ -172,6 +172,7 @@ from nmigen.hdl.rec import Record, Layout
 
 from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence
+from queue import Queue
 
 
 class RecordObject(Record):
@@ -1139,7 +1140,7 @@ class FIFOControl(ControlBase):
         if self.buffered:
             fifo = SyncFIFOBuffered(fwidth, self.fdepth)
         else:
-            fifo = SyncFIFO(fwidth, self.fdepth, fwft=self.fwft)
+            fifo = Queue(fwidth, self.fdepth, fwft=self.fwft)
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
