@@ -629,7 +629,8 @@ class ControlBase:
 
         return eqs
 
-    def _postprocess(self, i):
+    def _postprocess(self, i): # XXX DISABLED
+        return i # RETURNS INPUT
         if hasattr(self.stage, "postprocess"):
             return self.stage.postprocess(i)
         return i
@@ -932,7 +933,6 @@ class UnbufferedPipeline(ControlBase):
 
         return self.m
 
-
 class UnbufferedPipeline2(ControlBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.
@@ -1009,8 +1009,7 @@ class UnbufferedPipeline2(ControlBase):
         m.d.sync += buf_full.eq(~self.n.i_ready_test & self.n.o_valid)
 
         o_data = Mux(buf_full, buf, self.stage.process(self.p.i_data))
-        if hasattr(self.stage, "postprocess"):
-            o_data = self.stage.postprocess(o_data)
+        o_data = self._postprocess(o_data)
         m.d.comb += eq(self.n.o_data, o_data)
         m.d.sync += eq(buf, self.n.o_data)
 
@@ -1077,8 +1076,7 @@ class PassThroughHandshake(ControlBase):
 
         odata = Mux(pvr, self.stage.process(self.p.i_data), r_data)
         m.d.sync += eq(r_data, odata)
-        if hasattr(self.stage, "postprocess"):
-            r_data = self.stage.postprocess(r_data)
+        r_data = self._postprocess(r_data)
         m.d.comb += eq(self.n.o_data, r_data)
 
         return m
@@ -1101,7 +1099,7 @@ class FIFOControl(ControlBase):
     """
 
     def __init__(self, depth, stage, in_multi=None, stage_ctl=False,
-                                     fwft=True, buffered=False):
+                                     fwft=True, buffered=False, pipe=False):
         """ FIFO Control
 
             * depth: number of entries in the FIFO
@@ -1130,6 +1128,7 @@ class FIFOControl(ControlBase):
             depth += 1
         self.fwft = fwft
         self.buffered = buffered
+        self.pipe = pipe
         self.fdepth = depth
         ControlBase.__init__(self, stage, in_multi, stage_ctl)
 
@@ -1141,7 +1140,7 @@ class FIFOControl(ControlBase):
         if self.buffered:
             fifo = SyncFIFOBuffered(fwidth, self.fdepth)
         else:
-            fifo = Queue(fwidth, self.fdepth, fwft=self.fwft)
+            fifo = Queue(fwidth, self.fdepth, fwft=self.fwft, pipe=self.pipe)
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
@@ -1165,15 +1164,33 @@ class FIFOControl(ControlBase):
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
         o_data = flatten(self.n.o_data).eq(fifo.dout)
-        if hasattr(self.stage, "postprocess"):
-            o_data = self.stage.postprocess(o_data)
+        o_data = self._postprocess(o_data)
         m.d.comb += o_data
 
         return m
 
-"""
+
+# aka "RegStage".
+class UnbufferedPipeline(FIFOControl):
+    def __init__(self, stage, in_multi=None, stage_ctl=False):
+        FIFOControl.__init__(self, 1, stage, in_multi, stage_ctl,
+                                   fwft=True, pipe=False)
+
+# aka "BreakReadyStage" XXX had to set fwft=True to get it to work
+class PassThroughHandshake(FIFOControl):
+    def __init__(self, stage, in_multi=None, stage_ctl=False):
+        FIFOControl.__init__(self, 1, stage, in_multi, stage_ctl,
+                                   fwft=True, pipe=True)
+
+# this is *probably* BufferedHandshake, although test #997 now succeeds.
 class BufferedHandshake(FIFOControl):
     def __init__(self, stage, in_multi=None, stage_ctl=False):
         FIFOControl.__init__(self, 2, stage, in_multi, stage_ctl,
-                                   fwft=True, buffered=False)
-"""
+                                   fwft=True, pipe=False)
+
+
+# this is *probably* SimpleHandshake (note: memory cell size=0)
+class SimpleHandshake(FIFOControl):
+    def __init__(self, stage, in_multi=None, stage_ctl=False):
+        FIFOControl.__init__(self, 0, stage, in_multi, stage_ctl,
+                                   fwft=True, pipe=False)

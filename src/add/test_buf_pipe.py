@@ -214,7 +214,7 @@ class Test5:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                send = True
+                #send = True
                 o_p_ready = yield self.dut.p.o_ready
                 if not o_p_ready:
                     yield
@@ -233,7 +233,7 @@ class Test5:
             stall_range = randint(0, 3)
             for j in range(randint(1,10)):
                 ready = randint(0, stall_range) != 0
-                ready = True
+                #ready = True
                 yield self.dut.n.i_ready.eq(ready)
                 yield
                 o_n_valid = yield self.dut.n.o_valid
@@ -620,9 +620,6 @@ class ExampleStageDelayCls(StageCls):
         return Const(1)
 
     def process(self, i):
-        return i
-
-    def postprocess(self, i):
         """ process the input data and returns it (adds 1)
         """
         return i + 1
@@ -1015,19 +1012,20 @@ class ExampleBufUnBufPipe(ControlBase):
 num_tests = 10
 
 if __name__ == '__main__':
-    print ("test 1")
-    dut = ExampleBufPipe()
-    run_simulation(dut, tbench(dut), vcd_name="test_bufpipe.vcd")
+    if False:
+        print ("test 1")
+        dut = ExampleBufPipe()
+        run_simulation(dut, tbench(dut), vcd_name="test_bufpipe.vcd")
 
-    print ("test 2")
-    dut = ExampleBufPipe2()
-    run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
-    ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
-             [dut.p.i_data] + [dut.n.o_data]
-    vl = rtlil.convert(dut, ports=ports)
-    with open("test_bufpipe2.il", "w") as f:
-        f.write(vl)
+        print ("test 2")
+        dut = ExampleBufPipe2()
+        run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
+        ports = [dut.p.i_valid, dut.n.i_ready,
+                 dut.n.o_valid, dut.p.o_ready] + \
+                 [dut.p.i_data] + [dut.n.o_data]
+        vl = rtlil.convert(dut, ports=ports)
+        with open("test_bufpipe2.il", "w") as f:
+            f.write(vl)
 
 
     print ("test 3")
