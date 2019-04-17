@@ -137,10 +137,10 @@ class Queue(FIFOInterface):
             with m.If(n_i_ready):
                 m.d.comb += p_o_ready.eq(1)
 
-        if self.depth == 1 << len(self.count):  # is depth a power of 2
+        # set the count (available free space), optimise on power-of-two
+        if self.depth == 1 << ptr_width:  # is depth a power of 2
             m.d.comb += self.count.eq(
-                Mux(self.maybe_full & ptr_match, self.depth, 0)
-                | self.ptr_diff)
+                Mux(maybe_full & ptr_match, self.depth, 0) | ptr_diff)
         else:
             m.d.comb += self.count.eq(Mux(ptr_match,
                                           Mux(maybe_full, self.depth, 0),
