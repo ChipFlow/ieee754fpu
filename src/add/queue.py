@@ -59,6 +59,15 @@ class Queue(FIFOInterface):
         m.submodules.ram_read = ram_read = ram.read_port(synchronous=False)
         m.submodules.ram_write = ram_write = ram.write_port()
 
+        # convenience names
+        p_o_ready = self.writable
+        p_i_valid = self.we
+        enq_data = self.din
+
+        n_o_valid = self.readable
+        n_i_ready = self.re
+        deq_data = self.dout
+
         # intermediaries
         ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
         enq_ptr = Signal(ptr_width) # cyclic pointer to "insert" point (wrport)
@@ -81,19 +90,19 @@ class Queue(FIFOInterface):
                      deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
-                     do_enq.eq(self.writable & self.we), # write conditions ok
-                     do_deq.eq(self.re & self.readable), # read conditions ok
+                     do_enq.eq(p_o_ready & p_i_valid), # write conditions ok
+                     do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
 
                      # set readable and writable (NOTE: see pipe mode below)
-                     self.readable.eq(~empty), # cannot read if empty!
-                     self.writable.eq(~full),  # cannot write if full!
+                     n_o_valid.eq(~empty), # cannot read if empty!
+                     p_o_ready.eq(~full),  # cannot write if full!
 
                      # set up memory and connect to input and output
                      ram_write.addr.eq(enq_ptr),
-                     ram_write.data.eq(self.din),
+                     ram_write.data.eq(enq_data),
                      ram_write.en.eq(do_enq),
                      ram_read.addr.eq(deq_ptr),
-                     self.dout.eq(ram_read.data) # NOTE: overridden in fwft mode
+                     deq_data.eq(ram_read.data) # NOTE: overridden in fwft mode
                     ]
 
         # under write conditions, SRAM write-pointer moves on next clock
@@ -115,22 +124,22 @@ class Queue(FIFOInterface):
         # this done combinatorially to give the exact same characteristics
         # as Memory "write-through"... without relying on a changing API
         if self.fwft:
-            with m.If(self.we):
-                m.d.comb += self.readable.eq(1)
+            with m.If(p_i_valid):
+                m.d.comb += n_o_valid.eq(1)
             with m.If(empty):
-                m.d.comb += self.dout.eq(self.din)
+                m.d.comb += deq_data.eq(enq_data)
                 m.d.comb += do_deq.eq(0)
-                with m.If(self.re):
+                with m.If(n_i_ready):
                     m.d.comb += do_enq.eq(0)
 
         # pipe mode: read-enabled requires writability.
         if self.pipe:
-            with m.If(self.re):
-                m.d.comb += self.writable.eq(1)
+            with m.If(n_i_ready):
+                m.d.comb += p_o_ready.eq(1)
 
         if self.depth == 1 << len(self.count):  # is depth a power of 2
             m.d.comb += self.count.eq(
-                Mux(self.maybe_full & self.ptr_match, self.depth, 0)
+                Mux(self.maybe_full & ptr_match, self.depth, 0)
                 | self.ptr_diff)
         else:
             m.d.comb += self.count.eq(Mux(ptr_match,
