@@ -1100,7 +1100,8 @@ class FIFOControl(ControlBase):
         i_data -> fifo.din -> FIFO -> fifo.dout -> o_data
     """
 
-    def __init__(self, depth, stage, fwft=True, buffered=False):
+    def __init__(self, depth, stage, in_multi=None, stage_ctl=False,
+                                     fwft=True, buffered=False):
         """ FIFO Control
 
             * depth: number of entries in the FIFO
@@ -1130,7 +1131,7 @@ class FIFOControl(ControlBase):
         self.fwft = fwft
         self.buffered = buffered
         self.fdepth = depth
-        ControlBase.__init__(self, stage=stage)
+        ControlBase.__init__(self, stage, in_multi, stage_ctl)
 
     def elaborate(self, platform):
         self.m = m = ControlBase._elaborate(self, platform)
@@ -1169,3 +1170,10 @@ class FIFOControl(ControlBase):
         m.d.comb += o_data
 
         return m
+
+"""
+class BufferedHandshake(FIFOControl):
+    def __init__(self, stage, in_multi=None, stage_ctl=False):
+        FIFOControl.__init__(self, 2, stage, in_multi, stage_ctl,
+                                   fwft=True, buffered=False)
+"""

@@ -48,7 +48,7 @@ def check_o_n_valid2(dut, val):
 def tbench(dut):
     #yield dut.i_p_rst.eq(1)
     yield dut.n.i_ready.eq(0)
-    yield dut.p.o_ready.eq(0)
+    #yield dut.p.o_ready.eq(0)
     yield
     yield
     #yield dut.i_p_rst.eq(0)
