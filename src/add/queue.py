@@ -43,13 +43,16 @@ class Queue(FIFOInterface):
                      therefore if read is enabled, the data ABSOLUTELY MUST
                      be read.
 
+            Attributes:
+            * level: available free space (number of unread entries)
+
             din  = enq_data, writable  = enq_ready, we = enq_valid
             dout = deq_data, re = deq_ready, readable = deq_valid
         """
         FIFOInterface.__init__(self, width, depth, fwft)
         self.pipe = pipe
         self.depth = depth
-        self.count = Signal(bits_for(depth))
+        self.level = Signal(bits_for(depth))
 
     def elaborate(self, platform):
         m = Module()
@@ -139,10 +142,10 @@ class Queue(FIFOInterface):
 
         # set the count (available free space), optimise on power-of-two
         if self.depth == 1 << ptr_width:  # is depth a power of 2
-            m.d.comb += self.count.eq(
+            m.d.comb += self.level.eq(
                 Mux(maybe_full & ptr_match, self.depth, 0) | ptr_diff)
         else:
-            m.d.comb += self.count.eq(Mux(ptr_match,
+            m.d.comb += self.level.eq(Mux(ptr_match,
                                           Mux(maybe_full, self.depth, 0),
                                           Mux(deq_ptr > enq_ptr,
                                               self.depth + ptr_diff,
@@ -159,7 +162,7 @@ if __name__ == "__main__":
 
     def queue_ports(queue, name_prefix):
         retval = []
-        for name in ["count",
+        for name in ["level",
                      "dout",
                      "readable",
                      "writable"]:
