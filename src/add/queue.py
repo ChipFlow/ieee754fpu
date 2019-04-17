@@ -135,7 +135,8 @@ class Queue(FIFOInterface):
                 with m.If(n_i_ready):
                     m.d.comb += do_enq.eq(0)
 
-        # pipe mode: read-enabled requires writability.
+        # pipe mode: if next stage says it's ready (readable), we
+        #            *must* declare the input ready (writeable).
         if self.pipe:
             with m.If(n_i_ready):
                 m.d.comb += p_o_ready.eq(1)
