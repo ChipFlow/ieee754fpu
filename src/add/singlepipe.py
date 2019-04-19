@@ -193,6 +193,9 @@ class RecordObject(Record):
             newlayout = {k: (k, v.shape())}
         self.layout.fields.update(newlayout)
 
+    def __iter__(self):
+        for x in self.fields.values():
+            yield x
 
 
 class PrevControl:
@@ -346,7 +349,7 @@ class Visitor2:
     def arrayproxy_iter2(self, ao, ai):
         for p in ai.ports():
             op = getattr(ao, p.name)
-            #print (op, p, p.name)
+            print ("arrayproxy - p", p, p.name)
             yield from self.iterator2(op, p)
 
 class Visitor:
@@ -401,9 +404,25 @@ def eq(o, i):
 
 
 
-def flatten(i):
+def cat(i):
     """ flattens a compound structure recursively using Cat
+
+        NOTE: this does NOT work:
+            from nmigen.tools import flatten
+            res = list(flatten(i))
+
+        the reason is that flatten is not sophisticated enough,
+        and does not support iteration on Record:
+
+          File "nmigen/tools.py", line 12, in flatten
+            for e in i:
+          File "nmigen/hdl/rec.py", line 98, in __getitem__
+            .format(reference, name, ", ".join(self.fields))) from None
+          NameError: Unnamed record does not have a field '0'.
+                     Did you mean one of: sig1, r2, r3?
     """
+    #from nmigen.tools import flatten
+    #res = list(flatten(i))
     res = list(Visitor().iterate(i))
     return Cat(*res)
 
@@ -1096,10 +1115,10 @@ class FIFOControl(ControlBase):
             data is processed (and located) as follows:
 
             self.p  self.stage temp    fn temp  fn  temp  fp   self.n
-            i_data->process()->result->flatten->din.FIFO.dout->flatten(o_data)
+            i_data->process()->result->cat->din.FIFO.dout->cat(o_data)
 
-            yes, really: flatten produces a Cat() which can be assigned to.
-            this is how the FIFO gets de-flattened without needing a de-flatten
+            yes, really: cat produces a Cat() which can be assigned to.
+            this is how the FIFO gets de-catted without needing a de-cat
             function
         """
 
@@ -1127,15 +1146,15 @@ class FIFOControl(ControlBase):
         result = self.stage.ospec()
         m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
-        # connect previous rdy/valid/data - do flatten on i_data
+        # connect previous rdy/valid/data - do cat on i_data
         # NOTE: cannot do the PrevControl-looking trick because
         # of need to process the data.  shaaaame....
         m.d.comb += [fifo.we.eq(self.p.i_valid_test),
                      self.p.o_ready.eq(fifo.writable),
-                     eq(fifo.din, flatten(result)),
+                     eq(fifo.din, cat(result)),
                    ]
 
-        # connect next rdy/valid/data - do flatten on o_data
+        # connect next rdy/valid/data - do cat on o_data
         connections = [self.n.o_valid.eq(fifo.readable),
                      fifo.re.eq(self.n.i_ready_test),
                    ]
@@ -1143,7 +1162,7 @@ class FIFOControl(ControlBase):
             m.d.comb += connections
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
-        o_data = flatten(self.n.o_data).eq(fifo.dout)
+        o_data = cat(self.n.o_data).eq(fifo.dout)
         o_data = self._postprocess(o_data)
         m.d.comb += o_data
 

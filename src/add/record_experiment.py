@@ -3,7 +3,7 @@ from nmigen.hdl.rec import Record, Layout, DIR_NONE
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
-from singlepipe import flatten, RecordObject
+from singlepipe import cat, RecordObject
 
 
 class RecordTest:
@@ -28,7 +28,7 @@ class RecordTest:
         print (self.r1.fields)
         print (self.r1.shape())
         print ("width", len(self.r1))
-        m.d.comb += self.sig123.eq(flatten(self.r1))
+        m.d.comb += self.sig123.eq(cat(self.r1))
 
         return m
 
@@ -65,7 +65,7 @@ class RecordTest2:
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += flatten(self.r1).eq(self.sig123)
+        m.d.comb += cat(self.r1).eq(self.sig123)
 
         return m
 
