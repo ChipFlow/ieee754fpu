@@ -1,6 +1,10 @@
 """ Pipeline and BufferedHandshake implementation, conforming to the same API.
     For multi-input and multi-output variants, see multipipe.
 
+    Associated development bugs:
+    * http://bugs.libre-riscv.org/show_bug.cgi?id=64
+    * http://bugs.libre-riscv.org/show_bug.cgi?id=57
+
     eq:
     --
 
@@ -358,7 +362,7 @@ class Visitor:
         for p in ai.ports():
             op = getattr(ao, p.name)
             #print (op, p, p.name)
-            res.append(fn(op, p))
+            res.append(act.fn(op, p))
         return res
 
 
@@ -384,14 +388,13 @@ def eq(o, i):
     return Eq()(o, i)
 
 
-def flatten(i):
-    """ flattens a compound structure recursively using Cat
+def iterate(i):
+    """ iterate a compound structure recursively and yield data
     """
     if not isinstance(i, Sequence):
         i = [i]
-    res = []
     for ai in i:
-        print ("flatten", ai)
+        print ("iterate", ai)
         if isinstance(ai, Record):
             print ("record", list(ai.layout))
             rres = []
@@ -405,27 +408,20 @@ def flatten(i):
                 else:
                     val = val[field_name] # dictionary-style specification
                 print ("recidx", idx, field_name, field_shape, val)
-                val = flatten(val)
-                print ("recidx flat", idx, val)
-                if isinstance(val, Sequence):
-                    rres += val
-                else:
-                    rres.append(val)
+                yield from flatten(val)
 
         elif isinstance(ai, ArrayProxy) and not isinstance(ai, Value):
-            rres = []
             for p in ai.ports():
-                op = getattr(ai, p.name)
-                #print (op, p, p.name)
-                rres.append(flatten(p))
+                yield from iterate(p)
         else:
-            rres = ai
-        if not isinstance(rres, Sequence):
-            rres = [rres]
-        res += rres
-        print ("flatten res", res)
-    return Cat(*res)
+            yield ai
 
+
+def flatten(i):
+    """ flattens a compound structure recursively using Cat
+    """
+    res = list(iterate(i))
+    return Cat(*res)
 
 
 class StageCls(metaclass=ABCMeta):
@@ -1189,8 +1185,10 @@ class BufferedHandshake(FIFOControl):
                                    fwft=True, pipe=False)
 
 
+"""
 # this is *probably* SimpleHandshake (note: memory cell size=0)
 class SimpleHandshake(FIFOControl):
     def __init__(self, stage, in_multi=None, stage_ctl=False):
         FIFOControl.__init__(self, 0, stage, in_multi, stage_ctl,
                                    fwft=True, pipe=False)
+"""
