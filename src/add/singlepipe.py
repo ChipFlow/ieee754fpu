@@ -292,12 +292,8 @@ class NextControl:
                ]
 
 
-class Visitor:
-    """ a helper routine which identifies if it is being passed a list
-        (or tuple) of objects, or signals, or Records, and calls
-        a visitor function.
-
-        the visiting fn is called when an object is identified.
+class Visitor2:
+    """ a helper class for iterating twin-argument compound data structures.
 
         Record is a special (unusual, recursive) case, where the input may be
         specified as a dictionary (which may contain further dictionaries,
@@ -314,33 +310,28 @@ class Visitor:
         python object, enumerate them, find out the list of Signals that way,
         and assign them.
     """
-    def visit(self, o, i, act):
+    def iterator2(self, o, i):
         if isinstance(o, dict):
-            return self.dict_visit(o, i, act)
+            yield from self.dict_iter2(o, i)
 
-        res = act.prepare()
         if not isinstance(o, Sequence):
             o, i = [o], [i]
         for (ao, ai) in zip(o, i):
             #print ("visit", fn, ao, ai)
             if isinstance(ao, Record):
-                rres = self.record_visit(ao, ai, act)
+                yield from self.record_iter2(ao, ai)
             elif isinstance(ao, ArrayProxy) and not isinstance(ai, Value):
-                rres = self.arrayproxy_visit(ao, ai, act)
+                yield from self.arrayproxy_iter2(ao, ai)
             else:
-                rres = act.fn(ao, ai)
-            res += rres
-        return res
+                yield (ao, ai)
 
-    def dict_visit(self, o, i, act):
-        res = act.prepare()
+    def dict_iter2(self, o, i):
         for (k, v) in o.items():
-            print ("d-eq", v, i[k])
-            res.append(act.fn(v, i[k]))
+            print ("d-iter", v, i[k])
+            yield (v, i[k])
         return res
 
-    def record_visit(self, ao, ai, act):
-        res = act.prepare()
+    def record_iter2(self, ao, ai):
         for idx, (field_name, field_shape, _) in enumerate(ao.layout):
             if isinstance(field_shape, Layout):
                 val = ai.fields
@@ -350,34 +341,49 @@ class Visitor:
                 val = getattr(val, field_name)
             else:
                 val = val[field_name] # dictionary-style specification
-            val = self.visit(ao.fields[field_name], val, act)
-            if isinstance(val, Sequence):
-                res += val
-            else:
-                res.append(val)
-        return res
+            yield from self.iterator2(ao.fields[field_name], val)
 
-    def arrayproxy_visit(self, ao, ai, act):
-        res = act.prepare()
+    def arrayproxy_iter2(self, ao, ai):
         for p in ai.ports():
             op = getattr(ao, p.name)
             #print (op, p, p.name)
-            res.append(act.fn(op, p))
-        return res
+            yield from self.iterator2(op, p)
 
+class Visitor:
+    """ a helper class for iterating single-argument compound data structures.
+        similar to Visitor2.
+    """
+    def iterate(self, i):
+        """ iterate a compound structure recursively using yield
+        """
+        if not isinstance(i, Sequence):
+            i = [i]
+        for ai in i:
+            print ("iterate", ai)
+            if isinstance(ai, Record):
+                print ("record", list(ai.layout))
+                yield from self.record_iter(ai)
+            elif isinstance(ai, ArrayProxy) and not isinstance(ai, Value):
+                yield from self.array_iter(ai)
+            else:
+                yield ai
 
-class Eq(Visitor):
-    def __init__(self):
-        self.res = []
-    def prepare(self):
-        return []
-    def fn(self, o, i):
-        rres = o.eq(i)
-        if not isinstance(rres, Sequence):
-            rres = [rres]
-        return rres
-    def __call__(self, o, i):
-        return self.visit(o, i, self)
+    def record_iter(self, ai):
+        for idx, (field_name, field_shape, _) in enumerate(ai.layout):
+            if isinstance(field_shape, Layout):
+                val = ai.fields
+            else:
+                val = ai
+            if hasattr(val, field_name): # check for attribute
+                val = getattr(val, field_name)
+            else:
+                val = val[field_name] # dictionary-style specification
+            print ("recidx", idx, field_name, field_shape, val)
+            yield from self.iterate(val)
+
+    def array_iter(self, ai):
+        for p in ai.ports():
+            yield from self.iterate(p)
 
 
 def eq(o, i):
@@ -385,42 +391,20 @@ def eq(o, i):
         passed a list (or tuple) of objects, or signals, or Records, and calls
         the objects' eq function.
     """
-    return Eq()(o, i)
+    res = []
+    for (ao, ai) in Visitor2().iterator2(o, i):
+        rres = ao.eq(ai)
+        if not isinstance(rres, Sequence):
+            rres = [rres]
+        res += rres
+    return res
 
-
-def iterate(i):
-    """ iterate a compound structure recursively and yield data
-    """
-    if not isinstance(i, Sequence):
-        i = [i]
-    for ai in i:
-        print ("iterate", ai)
-        if isinstance(ai, Record):
-            print ("record", list(ai.layout))
-            rres = []
-            for idx, (field_name, field_shape, _) in enumerate(ai.layout):
-                if isinstance(field_shape, Layout):
-                    val = ai.fields
-                else:
-                    val = ai
-                if hasattr(val, field_name): # check for attribute
-                    val = getattr(val, field_name)
-                else:
-                    val = val[field_name] # dictionary-style specification
-                print ("recidx", idx, field_name, field_shape, val)
-                yield from flatten(val)
-
-        elif isinstance(ai, ArrayProxy) and not isinstance(ai, Value):
-            for p in ai.ports():
-                yield from iterate(p)
-        else:
-            yield ai
 
 
 def flatten(i):
     """ flattens a compound structure recursively using Cat
     """
-    res = list(iterate(i))
+    res = list(Visitor().iterate(i))
     return Cat(*res)
 
 
