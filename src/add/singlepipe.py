@@ -687,8 +687,12 @@ class ControlBase:
         """
         return eq(self.p.i_data, i)
 
+    def __iter__(self):
+        yield from self.p
+        yield from self.n
+
     def ports(self):
-        return self.p.ports() + self.n.ports()
+        return list(self)
 
     def _elaborate(self, platform):
         """ handles case where stage has dynamic ready/valid functions
