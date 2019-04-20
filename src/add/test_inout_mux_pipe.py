@@ -13,10 +13,18 @@ from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMultiOutPipeline, CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
-from singlepipe import SimpleHandshake
+from singlepipe import SimpleHandshake, RecordObject
 
 
-class PassData: # (Value):
+class PassData2(RecordObject):
+    def __init__(self):
+        RecordObject.__init__(self)
+        self.mid = Signal(2, reset_less=True)
+        self.idx = Signal(8, reset_less=True)
+        self.data = Signal(16, reset_less=True)
+
+
+class PassData:
     def __init__(self):
         self.mid = Signal(2, reset_less=True)
         self.idx = Signal(8, reset_less=True)

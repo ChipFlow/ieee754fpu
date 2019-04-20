@@ -184,13 +184,18 @@ class RecordObject(Record):
         Record.__init__(self, layout=layout or [], name=None)
 
     def __setattr__(self, k, v):
-        if k in dir(Record) or "fields" not in self.__dict__:
+        #print (dir(Record))
+        if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
+           k in dir(Record) or "fields" not in self.__dict__):
             return object.__setattr__(self, k, v)
         self.fields[k] = v
+        #print ("RecordObject setattr", k, v)
         if isinstance(v, Record):
             newlayout = {k: (k, v.layout)}
-        else:
+        elif isinstance(v, Value):
             newlayout = {k: (k, v.shape())}
+        else:
+            newlayout = {k: (k, shape(v))}
         self.layout.fields.update(newlayout)
 
     def __iter__(self):
@@ -428,9 +433,9 @@ class Visitor:
         if not isinstance(i, Sequence):
             i = [i]
         for ai in i:
-            print ("iterate", ai)
+            #print ("iterate", ai)
             if isinstance(ai, Record):
-                print ("record", list(ai.layout))
+                #print ("record", list(ai.layout))
                 yield from self.record_iter(ai)
             elif isinstance(ai, ArrayProxy) and not isinstance(ai, Value):
                 yield from self.array_iter(ai)
@@ -447,7 +452,7 @@ class Visitor:
                 val = getattr(val, field_name)
             else:
                 val = val[field_name] # dictionary-style specification
-            print ("recidx", idx, field_name, field_shape, val)
+            #print ("recidx", idx, field_name, field_shape, val)
             yield from self.iterate(val)
 
     def array_iter(self, ai):
@@ -470,10 +475,10 @@ def eq(o, i):
 
 
 def shape(i):
-    print ("shape", i)
+    #print ("shape", i)
     r = 0
     for part in list(i):
-        print ("shape?", part)
+        #print ("shape?", part)
         s, _ = part.shape()
         r += s
     return r, False
@@ -1244,8 +1249,10 @@ class BufferedHandshake(FIFOControl):
                                    fwft=True, pipe=False)
 
 
+"""
 # this is *probably* SimpleHandshake (note: memory cell size=0)
 class SimpleHandshake(FIFOControl):
     def __init__(self, stage, in_multi=None, stage_ctl=False):
         FIFOControl.__init__(self, 0, stage, in_multi, stage_ctl,
                                    fwft=True, pipe=False)
+"""
