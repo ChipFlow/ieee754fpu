@@ -1063,8 +1063,6 @@ if __name__ == '__main__':
     dut = ExampleAddRecordPipe()
     data=data_dict()
     test = Test5(dut, resultfn_7, data=data)
-    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
-
     ports = [dut.p.i_valid, dut.n.i_ready,
              dut.n.o_valid, dut.p.o_ready,
              dut.p.i_data.src1, dut.p.i_data.src2,
@@ -1072,6 +1070,7 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=ports)
     with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
+    run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord.vcd")
 
     print ("test 8")
     dut = ExampleBufPipeAddClass()
