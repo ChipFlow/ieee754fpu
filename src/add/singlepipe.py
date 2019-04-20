@@ -334,6 +334,25 @@ class Visitor2:
             yield (v, i[k])
         return res
 
+    def _not_quite_working_with_all_unit_tests_record_iter2(self, ao, ai):
+        print ("record_iter2", ao, ai, type(ao), type(ai))
+        if isinstance(ai, Value):
+            if isinstance(ao, Sequence):
+                ao, ai = [ao], [ai]
+            for o, i in zip(ao, ai):
+                yield (o, i)
+            return
+        for idx, (field_name, field_shape, _) in enumerate(ao.layout):
+            if isinstance(field_shape, Layout):
+                val = ai.fields
+            else:
+                val = ai
+            if hasattr(val, field_name): # check for attribute
+                val = getattr(val, field_name)
+            else:
+                val = val[field_name] # dictionary-style specification
+            yield from self.iterator2(ao.fields[field_name], val)
+
     def record_iter2(self, ao, ai):
         for idx, (field_name, field_shape, _) in enumerate(ao.layout):
             if isinstance(field_shape, Layout):
@@ -351,6 +370,7 @@ class Visitor2:
             op = getattr(ao, p.name)
             print ("arrayproxy - p", p, p.name)
             yield from self.iterator2(op, p)
+
 
 class Visitor:
     """ a helper class for iterating single-argument compound data structures.
@@ -403,27 +423,12 @@ def eq(o, i):
     return res
 
 
-
 def cat(i):
     """ flattens a compound structure recursively using Cat
-
-        NOTE: this does NOT work:
-            from nmigen.tools import flatten
-            res = list(flatten(i))
-
-        the reason is that flatten is not sophisticated enough,
-        and does not support iteration on Record:
-
-          File "nmigen/tools.py", line 12, in flatten
-            for e in i:
-          File "nmigen/hdl/rec.py", line 98, in __getitem__
-            .format(reference, name, ", ".join(self.fields))) from None
-          NameError: Unnamed record does not have a field '0'.
-                     Did you mean one of: sig1, r2, r3?
     """
-    #from nmigen.tools import flatten
-    #res = list(flatten(i))
-    res = list(Visitor().iterate(i))
+    from nmigen.tools import flatten
+    #res = list(flatten(i)) # works (as of nmigen commit f22106e5) HOWEVER...
+    res = list(Visitor().iterate(i)) # needed because input may be a sequence
     return Cat(*res)
 
 
