@@ -197,6 +197,9 @@ class RecordObject(Record):
         for x in self.fields.values():
             yield x
 
+    def ports(self):
+        return list(self)
+
 
 class PrevControl:
     """ contains signals that come *from* the previous stage (both in and out)
