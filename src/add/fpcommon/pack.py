@@ -8,23 +8,15 @@ from nmigen.cli import main, verilog
 from fpbase import FPNumOut
 from fpbase import FPState
 from fpcommon.roundz import FPRoundData
+from singlepipe import Object
 
 
-class FPPackData:
+class FPPackData(Object):
 
     def __init__(self, width, id_wid):
+        Object.__init__(self)
         self.z = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
-
-    def __iter__(self):
-        yield self.z
-        yield self.mid
-
-    def eq(self, i):
-        return [self.z.eq(i.z), self.mid.eq(i.mid)]
-
-    def ports(self):
-        return list(self)
 
 
 class FPPackMod:

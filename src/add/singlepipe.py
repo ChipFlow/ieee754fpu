@@ -179,6 +179,36 @@ from collections.abc import Sequence
 from queue import Queue
 
 
+class Object:
+    def __init__(self):
+        self.fields = {}
+
+    def __setattr__(self, k, v):
+        print ("kv", k, v)
+        if (k.startswith('_') or k in ["fields", "name", "src_loc"] or
+           k in dir(Object) or "fields" not in self.__dict__):
+            return object.__setattr__(self, k, v)
+        self.fields[k] = v
+
+    def __getattr__(self, k):
+        if k in self.fields:
+            return self.fields[k]
+        return object.__getattr__(self, k)
+
+    def __iter__(self):
+        for x in self.fields.values():
+            yield x
+
+    def eq(self, inp):
+        res = []
+        for (o, i) in zip(self, inp):
+            res.append(eq(o, i))
+        return res
+
+    def ports(self):
+        return list(self)
+
+
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
         Record.__init__(self, layout=layout or [], name=None)
