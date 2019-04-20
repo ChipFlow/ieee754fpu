@@ -68,28 +68,13 @@ class MultiInControlBase:
         """
         return eq(self.p[idx].i_data, i)
 
+    def __iter__(self):
+        for p in self.p:
+            yield from p
+        yield from self.n
+
     def ports(self):
-        res = []
-        for i in range(len(self.p)):
-            p = self.p[i]
-            res += [p.i_valid, p.o_ready]
-            if hasattr(p.i_data, "ports"):
-                res += p.i_data.ports()
-            else:
-                rres = p.i_data
-                if not isinstance(rres, Sequence):
-                    rres = [rres]
-                res += rres
-        n = self.n
-        res += [n.i_ready, n.o_valid]
-        if hasattr(n.o_data, "ports"):
-            res += n.o_data.ports()
-        else:
-            rres = n.o_data
-            if not isinstance(rres, Sequence):
-                rres = [rres]
-            res += rres
-        return res
+        return list(self)
 
 
 class MultiOutControlBase:
@@ -139,21 +124,13 @@ class MultiOutControlBase:
         """
         return eq(self.p.i_data, i)
 
-    def ports(self):
-        res = [self.p.i_valid, self.p.o_ready]
-        if hasattr(self.p.i_data, "ports"):
-            res += self.p.i_data.ports()
-        else:
-            res += self.p.i_data
+    def __iter__(self):
+        yield from self.p
+        for n in self.n:
+            yield from n
 
-        for i in range(len(self.n)):
-            n = self.n[i]
-            res += [n.i_ready, n.o_valid]
-            if hasattr(n.o_data, "ports"):
-                res += n.o_data.ports()
-            else:
-                res += n.o_data
-        return res
+    def ports(self):
+        return list(self)
 
 
 class CombMultiOutPipeline(MultiOutControlBase):
