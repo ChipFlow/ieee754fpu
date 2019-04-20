@@ -14,6 +14,13 @@ class FPAddStage1Data:
         self.of = Overflow()
         self.mid = Signal(id_wid, reset_less=True)
 
+    def __iter__(self):
+        yield from self.z
+        yield self.out_do_z
+        yield self.oz
+        yield from self.of
+        yield self.mid
+
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.of.eq(i.of), self.mid.eq(i.mid)]

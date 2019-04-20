@@ -145,6 +145,11 @@ class FPNumBase:
     def _is_denormalised(self):
         return (self.exp_n126) & (self.m_msbzero)
 
+    def __iter__(self):
+        yield self.s
+        yield self.e
+        yield self.m
+
     def eq(self, inp):
         return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
 
@@ -540,6 +545,12 @@ class Overflow:
         self.m0 = Signal(reset_less=True)        # mantissa zero bit
 
         self.roundz = Signal(reset_less=True)
+
+    def __iter__(self):
+        yield self.guard
+        yield self.round_bit
+        yield self.sticky
+        yield self.m0
 
     def eq(self, inp):
         return [self.guard.eq(inp.guard),

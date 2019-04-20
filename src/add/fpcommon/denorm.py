@@ -20,6 +20,14 @@ class FPSCData:
         self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
+    def __iter__(self):
+        yield from self.a
+        yield from self.b
+        yield from self.z
+        yield self.oz
+        yield self.out_do_z
+        yield self.mid
+
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]

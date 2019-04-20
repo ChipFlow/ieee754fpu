@@ -5,13 +5,17 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMuxOutPipe
-from singlepipe import SimpleHandshake
+from singlepipe import SimpleHandshake, PassThroughHandshake
 
 
 class PassInData:
     def __init__(self):
         self.mid = Signal(2, reset_less=True)
         self.data = Signal(16, reset_less=True)
+
+    def __iter__(self):
+        yield self.mid
+        yield self.data
 
     def eq(self, i):
         return [self.mid.eq(i.mid), self.data.eq(i.data)]
@@ -43,9 +47,9 @@ class PassThroughDataStage:
 
 
 
-class PassThroughPipe(SimpleHandshake):
+class PassThroughPipe(PassThroughHandshake):
     def __init__(self):
-        SimpleHandshake.__init__(self, PassThroughDataStage())
+        PassThroughHandshake.__init__(self, PassThroughDataStage())
 
 
 
@@ -233,8 +237,8 @@ class TestSyncToPriorityPipe:
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules += self.pipe
-        m.submodules += self.muxpipe
+        m.submodules.pipe = self.pipe
+        m.submodules.muxpipe = self.muxpipe
         m.d.comb += self.pipe.n.connect_to_next(self.muxpipe.p)
         return m
 

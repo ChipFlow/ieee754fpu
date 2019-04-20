@@ -22,8 +22,10 @@ class PassData: # (Value):
         self.idx = Signal(8, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
-    def _rhs_signals(self):
-        return self.ports()
+    def __iter__(self):
+        yield self.mid
+        yield self.idx
+        yield self.data
 
     def shape(self):
         bits, sign = 0, False
@@ -36,7 +38,7 @@ class PassData: # (Value):
         return [self.mid.eq(i.mid), self.idx.eq(i.idx), self.data.eq(i.data)]
 
     def ports(self):
-        return [self.mid, self.idx, self.data]
+        return list(self)
 
 
 class PassThroughStage:

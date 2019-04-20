@@ -16,11 +16,15 @@ class FPPackData:
         self.z = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
 
+    def __iter__(self):
+        yield self.z
+        yield self.mid
+
     def eq(self, i):
         return [self.z.eq(i.z), self.mid.eq(i.mid)]
 
     def ports(self):
-        return [self.z, self.mid]
+        return list(self)
 
 
 class FPPackMod:

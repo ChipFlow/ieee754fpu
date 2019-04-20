@@ -466,6 +466,16 @@ def eq(o, i):
     return res
 
 
+def shape(i):
+    print ("shape", i)
+    r = 0
+    for part in list(i):
+        print ("shape?", part)
+        s, _ = part.shape()
+        r += s
+    return r, False
+
+
 def cat(i):
     """ flattens a compound structure recursively using Cat
     """
@@ -698,6 +708,8 @@ class ControlBase:
         """ handles case where stage has dynamic ready/valid functions
         """
         m = Module()
+        m.submodules.p = self.p
+        m.submodules.n = self.n
 
         if self.stage is not None and hasattr(self.stage, "setup"):
             self.stage.setup(m, self.p.i_data)
@@ -1176,7 +1188,7 @@ class FIFOControl(ControlBase):
         self.m = m = ControlBase._elaborate(self, platform)
 
         # make a FIFO with a signal of equal width to the o_data.
-        (fwidth, _) = self.n.o_data.shape()
+        (fwidth, _) = shape(self.n.o_data)
         if self.buffered:
             fifo = SyncFIFOBuffered(fwidth, self.fdepth)
         else:
@@ -1229,10 +1241,8 @@ class BufferedHandshake(FIFOControl):
                                    fwft=True, pipe=False)
 
 
-"""
 # this is *probably* SimpleHandshake (note: memory cell size=0)
 class SimpleHandshake(FIFOControl):
     def __init__(self, stage, in_multi=None, stage_ctl=False):
         FIFOControl.__init__(self, 0, stage, in_multi, stage_ctl,
                                    fwft=True, pipe=False)
-"""
