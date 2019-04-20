@@ -263,15 +263,18 @@ class PrevControl:
                 self.o_ready.eq(i.o_ready),
                 self.i_valid.eq(i.i_valid)]
 
-    def ports(self):
-        res = [self.i_valid, self.o_ready]
+    def __iter__(self):
+        yield self.i_valid
+        yield self.o_ready
         if hasattr(self.i_data, "ports"):
-            res += self.i_data.ports()
+            yield from self.i_data.ports()
         elif isinstance(self.i_data, Sequence):
-            res += self.i_data
+            yield from self.i_data
         else:
-            res.append(self.i_data)
-        return res
+            yield self.i_data
+
+    def ports(self):
+        return list(self)
 
 
 class NextControl:
@@ -321,15 +324,18 @@ class NextControl:
         m.d.comb += self.trigger.eq(self.i_ready_test & self.o_valid)
         return m
 
-    def ports(self):
-        res = [self.i_ready, self.o_valid]
+    def __iter__(self):
+        yield self.i_ready
+        yield self.o_valid
         if hasattr(self.o_data, "ports"):
-            res += self.o_data.ports()
+            yield from self.o_data.ports()
         elif isinstance(self.o_data, Sequence):
-            res += self.o_data
+            yield from self.o_data
         else:
-            res.append(self.o_data)
-        return res
+            yield self.o_data
+
+    def ports(self):
+        return list(self)
 
 
 class Visitor2:
