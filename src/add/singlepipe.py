@@ -650,12 +650,16 @@ class ControlBase:
                ]
         if hasattr(self.p.i_data, "ports"):
             res += self.p.i_data.ports()
-        else:
+        elif isinstance(self.p.i_data, Sequence):
             res += self.p.i_data
+        else:
+            res.append(self.p.i_data)
         if hasattr(self.n.o_data, "ports"):
             res += self.n.o_data.ports()
-        else:
+        elif isinstance(self.n.o_data, Sequence):
             res += self.n.o_data
+        else:
+            res.append(self.n.o_data)
         return res
 
     def _elaborate(self, platform):
