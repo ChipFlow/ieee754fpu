@@ -214,6 +214,7 @@ class PrevControl:
         self.i_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
             self.s_o_ready = Signal(name="p_s_o_rdy") # prev   <<out self
+        self.trigger = Signal(reset_less=True)
 
     @property
     def o_ready(self):
@@ -254,14 +255,13 @@ class PrevControl:
 
     def elaborate(self, platform):
         m = Module()
-        self.trigger = Signal(reset_less=True)
         m.d.comb += self.trigger.eq(self.i_valid_test & self.o_ready)
         return m
 
     def eq(self, i):
-        return [self.i_data.eq(inp.i_data),
-                self.o_ready.eq(inp.o_ready),
-                self.i_valid.eq(inp.i_valid)]
+        return [self.i_data.eq(i.i_data),
+                self.o_ready.eq(i.o_ready),
+                self.i_valid.eq(i.i_valid)]
 
     def ports(self):
         res = [self.i_valid, self.o_ready]
@@ -287,6 +287,7 @@ class NextControl:
         self.o_data = None # XXX MUST BE ADDED BY USER
         #if self.stage_ctl:
         self.d_valid = Signal(reset=1) # INTERNAL (data valid)
+        self.trigger = Signal(reset_less=True)
 
     @property
     def i_ready_test(self):
@@ -317,7 +318,6 @@ class NextControl:
 
     def elaborate(self, platform):
         m = Module()
-        self.trigger = Signal(reset_less=True)
         m.d.comb += self.trigger.eq(self.i_ready_test & self.o_valid)
         return m
 

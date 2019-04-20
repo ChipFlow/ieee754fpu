@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog, rtlil
 from nmigen.compat.sim import run_simulation
 
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
+from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, FPBase, FPState
 from singlepipe import eq, SimpleHandshake, ControlBase
 from test_buf_pipe import data_chain2, Test5
 
@@ -18,9 +18,9 @@ class FPDIV(FPBase):
         FPBase.__init__(self)
         self.width = width
 
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
-        self.out_z = FPOp(width)
+        self.in_a  = FPOpIn(width)
+        self.in_b  = FPOpIn(width)
+        self.out_z = FPOpOut(width)
 
         self.states = []
 
@@ -49,7 +49,7 @@ class FPDIV(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "add_1")
-                m.d.sync += eq([a, self.in_a.ack], res)
+                m.d.sync += eq([a, self.in_a.o_ready], res)
 
             with m.State("add_1"):
                 m.next = "pack"
@@ -98,11 +98,11 @@ class FPDIVPipe(ControlBase):
         m.submodules.fpdiv = self.fpdiv
 
         # see if connecting to stb/ack works
-        m.d.comb += self.p.o_ready.eq(self.fpdiv.in_a.ack)
-        m.d.comb += self.fpdiv.in_a.stb.eq(self.p.i_valid_test)
+        m.d.comb += self.p.o_ready.eq(self.fpdiv.in_a.o_ready)
+        m.d.comb += self.fpdiv.in_a.i_valid.eq(self.p.i_valid_test)
 
-        m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.stb)
-        m.d.comb += self.fpdiv.out_z.ack.eq(self.n.i_ready_test)
+        m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.o_valid)
+        m.d.comb += self.fpdiv.out_z.i_ready.eq(self.n.i_ready_test)
         m.d.comb += self.n.o_data.eq(self.fpdiv.out_z.v)
 
         return m

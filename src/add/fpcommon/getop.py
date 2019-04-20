@@ -7,7 +7,7 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
+from fpbase import FPNumIn, FPNumOut, FPOpIn, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 from singlepipe import (ControlBase, StageChain, SimpleHandshake,
                         PassThroughStage)
@@ -19,13 +19,14 @@ from fpbase import FPState
 
 class FPGetOpMod:
     def __init__(self, width):
-        self.in_op = FPOp(width)
+        self.in_op = FPOpIn(width)
         self.out_op = Signal(width)
         self.out_decode = Signal(reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_decode.eq((self.in_op.ack) & (self.in_op.stb))
+        m.d.comb += self.out_decode.eq((self.in_op.o_ready) & \
+                                       (self.in_op.i_valid_test))
         m.submodules.get_op_in = self.in_op
         #m.submodules.get_op_out = self.out_op
         with m.If(self.out_decode):
@@ -58,11 +59,11 @@ class FPGetOp(FPState):
         with m.If(self.out_decode):
             m.next = self.out_state
             m.d.sync += [
-                self.in_op.ack.eq(0),
+                self.in_op.o_ready.eq(0),
                 self.out_op.eq(self.mod.out_op)
             ]
         with m.Else():
-            m.d.sync += self.in_op.ack.eq(1)
+            m.d.sync += self.in_op.o_ready.eq(1)
 
 
 class FPNumBase2Ops:

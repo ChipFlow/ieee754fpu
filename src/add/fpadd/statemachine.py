@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPOp
+from fpbase import FPOpIn, FPOpOut
 from fpbase import Trigger
 from singlepipe import (StageChain, SimpleHandshake)
 
@@ -31,7 +31,7 @@ from fpadd.addstages import FPAddAlignSingleAdd
 
 class FPOpData:
     def __init__(self, width, id_wid):
-        self.z = FPOp(width)
+        self.z = FPOpOut(width)
         self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
@@ -202,13 +202,13 @@ class FPADDBase(FPState):
                      self.in_t.ack.eq(self.mod.in_t.ack),
                      self.o.mid.eq(self.mod.o.mid),
                      self.o.z.v.eq(self.mod.o.z.v),
-                     self.o.z.stb.eq(self.mod.o.z.stb),
-                     self.mod.o.z.ack.eq(self.o.z.ack),
+                     self.o.z.o_valid.eq(self.mod.o.z.o_valid),
+                     self.mod.o.z.i_ready.eq(self.o.z.i_ready_test),
                     ]
 
         m.d.sync += self.add_stb.eq(add_stb)
         m.d.sync += self.add_ack.eq(0) # sets to zero when not in active state
-        m.d.sync += self.o.z.ack.eq(0) # likewise
+        m.d.sync += self.o.z.i_ready.eq(0) # likewise
         #m.d.sync += self.in_t.stb.eq(0)
 
         m.submodules.fpadd = self.mod
@@ -230,7 +230,7 @@ class FPADDBase(FPState):
             with m.Else():
                 m.d.sync += [self.add_ack.eq(0),
                              self.in_t.stb.eq(0),
-                             self.o.z.ack.eq(1),
+                             self.o.z.i_ready.eq(1),
                             ]
         with m.Else():
             # done: acknowledge, and write out id and value
@@ -288,8 +288,8 @@ class FPADD(FPID):
 
         rs = []
         for i in range(rs_sz):
-            in_a  = FPOp(width)
-            in_b  = FPOp(width)
+            in_a  = FPOpIn(width)
+            in_b  = FPOpIn(width)
             in_a.name = "in_a_%d" % i
             in_b.name = "in_b_%d" % i
             rs.append((in_a, in_b))
@@ -297,7 +297,7 @@ class FPADD(FPID):
 
         res = []
         for i in range(rs_sz):
-            out_z = FPOp(width)
+            out_z = FPOpOut(width)
             out_z.name = "out_z_%d" % i
             res.append(out_z)
         self.res = Array(res)

@@ -7,6 +7,7 @@ from math import log
 from operator import or_
 from functools import reduce
 
+from singlepipe import PrevControl, NextControl
 from pipeline import ObjectProxy
 
 
@@ -479,12 +480,12 @@ class Trigger:
         return [self.stb, self.ack]
 
 
-class FPOp(Trigger):
+class FPOpIn(PrevControl):
     def __init__(self, width):
-        Trigger.__init__(self)
+        PrevControl.__init__(self)
         self.width = width
-
-        self.v   = Signal(width)
+        self.v = Signal(width)
+        self.i_data = self.v
 
     def chain_inv(self, in_op, extra=None):
         stb = in_op.stb
@@ -504,14 +505,31 @@ class FPOp(Trigger):
                 in_op.ack.eq(self.ack), # send ACK
                ]
 
-    def eq(self, inp):
-        return [self.v.eq(inp.v),
-                self.stb.eq(inp.stb),
-                self.ack.eq(inp.ack)
+
+class FPOpOut(NextControl):
+    def __init__(self, width):
+        NextControl.__init__(self)
+        self.width = width
+        self.v = Signal(width)
+        self.o_data = self.v
+
+    def chain_inv(self, in_op, extra=None):
+        stb = in_op.stb
+        if extra is not None:
+            stb = stb & extra
+        return [self.v.eq(in_op.v),          # receive value
+                self.stb.eq(stb),      # receive STB
+                in_op.ack.eq(~self.ack), # send ACK
                ]
 
-    def ports(self):
-        return [self.v, self.stb, self.ack]
+    def chain_from(self, in_op, extra=None):
+        stb = in_op.stb
+        if extra is not None:
+            stb = stb & extra
+        return [self.v.eq(in_op.v),          # receive value
+                self.stb.eq(stb),      # receive STB
+                in_op.ack.eq(self.ack), # send ACK
+               ]
 
 
 class Overflow:
@@ -551,7 +569,7 @@ class FPBase:
         """
         res = v.decode2(m)
         ack = Signal()
-        with m.If((op.ack) & (op.stb)):
+        with m.If((op.o_ready) & (op.i_valid_test)):
             m.next = next_state
             # op is latched in from FPNumIn class on same ack/stb
             m.d.comb += ack.eq(0)
@@ -661,11 +679,11 @@ class FPBase:
         m.d.sync += [
           out_z.v.eq(z.v)
         ]
-        with m.If(out_z.stb & out_z.ack):
-            m.d.sync += out_z.stb.eq(0)
+        with m.If(out_z.o_valid & out_z.i_ready_test):
+            m.d.sync += out_z.o_valid.eq(0)
             m.next = next_state
         with m.Else():
-            m.d.sync += out_z.stb.eq(1)
+            m.d.sync += out_z.o_valid.eq(1)
 
 
 class FPState(FPBase):
