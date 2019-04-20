@@ -13,7 +13,7 @@ from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMultiOutPipeline, CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
-from singlepipe import SimpleHandshake, RecordObject
+from singlepipe import SimpleHandshake, RecordObject, Object
 
 
 class PassData2(RecordObject):
@@ -24,29 +24,13 @@ class PassData2(RecordObject):
         self.data = Signal(16, reset_less=True)
 
 
-class PassData:
+class PassData(Object):
     def __init__(self):
+        Object.__init__(self)
         self.mid = Signal(2, reset_less=True)
         self.idx = Signal(8, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
-    def __iter__(self):
-        yield self.mid
-        yield self.idx
-        yield self.data
-
-    def shape(self):
-        bits, sign = 0, False
-        for elem_bits, elem_sign in (elem.shape() for elem in self.ports()):
-            bits = max(bits, elem_bits + elem_sign)
-            sign = max(sign, elem_sign)
-        return bits, sign
-
-    def eq(self, i):
-        return [self.mid.eq(i.mid), self.idx.eq(i.idx), self.data.eq(i.data)]
-
-    def ports(self):
-        return list(self)
 
 
 class PassThroughStage:

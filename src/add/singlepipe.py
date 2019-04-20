@@ -175,13 +175,14 @@ from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record, Layout
 
 from abc import ABCMeta, abstractmethod
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterable
+from collections import OrderedDict
 from queue import Queue
 
 
 class Object:
     def __init__(self):
-        self.fields = {}
+        self.fields = OrderedDict()
 
     def __setattr__(self, k, v):
         print ("kv", k, v)
@@ -191,18 +192,31 @@ class Object:
         self.fields[k] = v
 
     def __getattr__(self, k):
-        if k in self.fields:
+        if k in self.__dict__:
+            return object.__getattr__(self, k)
+        try:
             return self.fields[k]
-        return object.__getattr__(self, k)
+        except KeyError as e:
+            raise AttributeError(e)
 
     def __iter__(self):
         for x in self.fields.values():
-            yield x
+            if isinstance(x, Iterable):
+                yield from x
+            else:
+                yield x
 
     def eq(self, inp):
         res = []
-        for (o, i) in zip(self, inp):
-            res.append(eq(o, i))
+        for (k, o) in self.fields.items():
+            i = getattr(inp, k)
+            print ("eq", o, i)
+            rres = o.eq(i)
+            if isinstance(rres, Sequence):
+                res += rres
+            else:
+                res.append(rres)
+        print (res)
         return res
 
     def ports(self):
@@ -230,7 +244,10 @@ class RecordObject(Record):
 
     def __iter__(self):
         for x in self.fields.values():
-            yield x
+            if isinstance(x, Iterable):
+                yield from x
+            else:
+                yield x
 
     def ports(self):
         return list(self)
