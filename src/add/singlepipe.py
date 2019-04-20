@@ -252,6 +252,27 @@ class PrevControl:
 
         return i_valid
 
+    def elaborate(self, platform):
+        m = Module()
+        self.trigger = Signal(reset_less=True)
+        m.d.comb += self.trigger.eq(self.i_valid_test & self.o_ready)
+        return m
+
+    def eq(self, i):
+        return [self.i_data.eq(inp.i_data),
+                self.o_ready.eq(inp.o_ready),
+                self.i_valid.eq(inp.i_valid)]
+
+    def ports(self):
+        res = [self.i_valid, self.o_ready]
+        if hasattr(self.i_data, "ports"):
+            res += self.i_data.ports()
+        elif isinstance(self.i_data, Sequence):
+            res += self.i_data
+        else:
+            res.append(self.i_data)
+        return res
+
 
 class NextControl:
     """ contains the signals that go *to* the next stage (both in and out)
@@ -293,6 +314,22 @@ class NextControl:
                 self.i_ready.eq(i_ready),
                 eq(o_data, self.o_data),
                ]
+
+    def elaborate(self, platform):
+        m = Module()
+        self.trigger = Signal(reset_less=True)
+        m.d.comb += self.trigger.eq(self.i_ready_test & self.o_valid)
+        return m
+
+    def ports(self):
+        res = [self.i_ready, self.o_valid]
+        if hasattr(self.o_data, "ports"):
+            res += self.o_data.ports()
+        elif isinstance(self.o_data, Sequence):
+            res += self.o_data
+        else:
+            res.append(self.o_data)
+        return res
 
 
 class Visitor2:
@@ -645,22 +682,7 @@ class ControlBase:
         return eq(self.p.i_data, i)
 
     def ports(self):
-        res = [self.p.i_valid, self.n.i_ready,
-                self.n.o_valid, self.p.o_ready,
-               ]
-        if hasattr(self.p.i_data, "ports"):
-            res += self.p.i_data.ports()
-        elif isinstance(self.p.i_data, Sequence):
-            res += self.p.i_data
-        else:
-            res.append(self.p.i_data)
-        if hasattr(self.n.o_data, "ports"):
-            res += self.n.o_data.ports()
-        elif isinstance(self.n.o_data, Sequence):
-            res += self.n.o_data
-        else:
-            res.append(self.n.o_data)
-        return res
+        return self.p.ports() + self.n.ports()
 
     def _elaborate(self, platform):
         """ handles case where stage has dynamic ready/valid functions
