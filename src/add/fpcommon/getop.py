@@ -10,7 +10,7 @@ from math import log
 from fpbase import FPNumIn, FPNumOut, FPOpIn, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
 from singlepipe import (ControlBase, StageChain, SimpleHandshake,
-                        PassThroughStage)
+                        PassThroughStage, PrevControl)
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
@@ -96,12 +96,13 @@ class FPADDBaseData:
         return [self.a, self.b, self.mid]
 
 
-class FPGet2OpMod(Trigger):
+class FPGet2OpMod(PrevControl):
     def __init__(self, width, id_wid):
-        Trigger.__init__(self)
+        PrevControl.__init__(self)
         self.width = width
         self.id_wid = id_wid
-        self.i = self.ispec()
+        self.i_data = self.ispec()
+        self.i = self.i_data
         self.o = self.ospec()
 
     def ispec(self):
@@ -114,10 +115,10 @@ class FPGet2OpMod(Trigger):
         return self.o
 
     def elaborate(self, platform):
-        m = Trigger.elaborate(self, platform)
+        m = PrevControl.elaborate(self, platform)
         with m.If(self.trigger):
             m.d.comb += [
-                self.o.eq(self.i),
+                self.o.eq(self.i_data),
             ]
         return m
 
@@ -144,15 +145,15 @@ class FPGet2Op(FPState):
     def trigger_setup(self, m, in_stb, in_ack):
         """ links stb/ack
         """
-        m.d.comb += self.mod.stb.eq(in_stb)
-        m.d.comb += in_ack.eq(self.mod.ack)
+        m.d.comb += self.mod.i_valid.eq(in_stb)
+        m.d.comb += in_ack.eq(self.mod.o_ready)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.get_ops = self.mod
         m.d.comb += self.mod.i.eq(i)
-        m.d.comb += self.out_ack.eq(self.mod.ack)
+        m.d.comb += self.out_ack.eq(self.mod.o_ready)
         m.d.comb += self.out_decode.eq(self.mod.trigger)
 
     def process(self, i):
@@ -162,10 +163,10 @@ class FPGet2Op(FPState):
         with m.If(self.out_decode):
             m.next = self.out_state
             m.d.sync += [
-                self.mod.ack.eq(0),
+                self.mod.o_ready.eq(0),
                 self.o.eq(self.mod.o),
             ]
         with m.Else():
-            m.d.sync += self.mod.ack.eq(1)
+            m.d.sync += self.mod.o_ready.eq(1)
 
 
