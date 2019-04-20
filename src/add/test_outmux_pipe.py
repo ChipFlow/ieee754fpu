@@ -5,23 +5,14 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 from multipipe import CombMuxOutPipe
-from singlepipe import SimpleHandshake, PassThroughHandshake
+from singlepipe import SimpleHandshake, PassThroughHandshake, RecordObject
 
 
-class PassInData:
+class PassInData(RecordObject):
     def __init__(self):
+        RecordObject.__init__(self)
         self.mid = Signal(2, reset_less=True)
         self.data = Signal(16, reset_less=True)
-
-    def __iter__(self):
-        yield self.mid
-        yield self.data
-
-    def eq(self, i):
-        return [self.mid.eq(i.mid), self.data.eq(i.data)]
-
-    def ports(self):
-        return [self.mid, self.data]
 
 
 class PassThroughStage:
