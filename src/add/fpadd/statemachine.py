@@ -312,7 +312,7 @@ class FPADD(FPID):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
-        m.submodules += self.rs
+        #m.submodules += self.rs
 
         in_a = self.rs[0][0]
         in_b = self.rs[0][1]
