@@ -72,7 +72,7 @@ class FPADDBaseMod:
         self.states.append(state)
         return state
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()
