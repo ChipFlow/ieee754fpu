@@ -1,0 +1,127 @@
+# IEEE Floating Point Divider (Single Precision)
+# Copyright (C) Jonathan P Dawson 2013
+# 2013-12-12
+
+from nmigen import Module, Signal, Const, Cat
+from nmigen.cli import main, verilog, rtlil
+from nmigen.compat.sim import run_simulation
+
+
+from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
+from singlepipe import eq, SimpleHandshake, ControlBase
+from test_buf_pipe import data_chain2, Test5
+
+
+class FPDIV(FPBase):
+
+    def __init__(self, width):
+        FPBase.__init__(self)
+        self.width = width
+
+        self.in_a  = FPOp(width)
+        self.in_b  = FPOp(width)
+        self.out_z = FPOp(width)
+
+        self.states = []
+
+    def add_state(self, state):
+        self.states.append(state)
+        return state
+
+    def elaborate(self, platform=None):
+        """ creates the HDL code-fragment for FPDiv
+        """
+        m = Module()
+
+        # Latches
+        a = FPNumIn(None, self.width, False)
+        z = FPNumOut(self.width, False)
+
+        m.submodules.in_a = a
+        m.submodules.z = z
+
+        m.d.comb += a.v.eq(self.in_a.v)
+
+        with m.FSM() as fsm:
+
+            # ******
+            # gets operand a
+
+            with m.State("get_a"):
+                res = self.get_op(m, self.in_a, a, "add_1")
+                m.d.sync += eq([a, self.in_a.ack], res)
+
+            with m.State("add_1"):
+                m.next = "pack"
+                m.d.sync += [
+                    z.s.eq(a.s), # sign
+                    z.e.eq(a.e), # exponent
+                    z.m.eq(a.m + 1), # mantissa
+                ]
+
+            # ******
+            # pack stage
+
+            with m.State("pack"):
+                self.pack(m, z, "put_z")
+
+            # ******
+            # put_z stage
+
+            with m.State("put_z"):
+                self.put_z(m, z, self.out_z, "get_a")
+
+        return m
+
+class FPDIVPipe(ControlBase):
+
+    def __init__(self, width):
+        self.width = width
+        self.fpdiv = FPDIV(width=width)
+        ControlBase.__init__(self, self)
+
+    def ispec(self):
+        return Signal(self.width, name="a")
+
+    def ospec(self):
+        return Signal(self.width, name="z")
+
+    def setup(self, m, i):
+        m.d.comb += self.fpdiv.in_a.v.eq(i) # connect input
+
+    def process(self, i):
+        return self.fpdiv.out_z.v # return z output
+
+    def elaborate(self, platform):
+        self.m = m = ControlBase._elaborate(self, platform)
+
+        m.submodules.fpdiv = self.fpdiv
+
+        # see if connecting to stb/ack works
+        m.d.comb += self.p.o_ready.eq(self.fpdiv.in_a.ack)
+        m.d.comb += self.fpdiv.in_a.stb.eq(self.p.i_valid_test)
+
+        m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.stb)
+        m.d.comb += self.fpdiv.out_z.ack.eq(self.n.i_ready_test)
+        m.d.comb += self.n.o_data.eq(self.fpdiv.out_z.v)
+
+        return m
+
+def resultfn(o_data, expected, i, o):
+    res = expected + 1
+    assert o_data == res, \
+                "%d-%d received data %x not match expected %x\n" \
+                % (i, o, o_data, res)
+
+
+if __name__ == "__main__":
+    dut = FPDIVPipe(width=16)
+    data = data_chain2()
+    ports = dut.ports()
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_fsm_experiment.il", "w") as f:
+        f.write(vl)
+    test = Test5(dut, resultfn, data=data)
+    run_simulation(dut, [test.send, test.rcv],
+                    vcd_name="test_fsm_experiment.vcd")
+
