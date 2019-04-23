@@ -14,7 +14,7 @@
 
 """
 
-from nmigen import Module, Signal, Mux, Const
+from nmigen import Module, Signal, Mux, Const, Elaboratable
 from nmigen.hdl.rec import Record
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
@@ -297,7 +297,7 @@ class ExampleBufPipe2(ControlBase):
     """
 
     def elaborate(self, platform):
-        m = Module()
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = ExampleBufPipe()
         pipe2 = ExampleBufPipe()
@@ -342,7 +342,7 @@ def resultfn_9(o_data, expected, i, o):
 # Test 6 and 10
 ######################################################################
 
-class SetLessThan:
+class SetLessThan(Elaboratable):
     def __init__(self, width, signed):
         self.m = Module()
         self.src1 = Signal((width, signed), name="src1")
@@ -377,7 +377,7 @@ class LTStage(StageCls):
         return self.o
 
 
-class LTStageDerived(SetLessThan, StageCls):
+class LTStageDerived(SetLessThan, StageCls, Elaboratable):
     """ special version of a nmigen module where the module is also a stage
 
         shows that you don't actually need to combinatorially connect
@@ -591,7 +591,7 @@ def data_2op():
 # Test 12
 ######################################################################
 
-class ExampleStageDelayCls(StageCls):
+class ExampleStageDelayCls(StageCls, Elaboratable):
     """ an example of how to use the buffered pipeline, in a static class
         fashion
     """
@@ -691,7 +691,7 @@ class ExampleBufModeAdd1Pipe(SimpleHandshake):
 class ExampleBufModeUnBufPipe(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = ExampleBufModeAdd1Pipe()
         pipe2 = ExampleBufAdd1Pipe()
@@ -748,7 +748,7 @@ class ExamplePassAdd1Pipe(PassThroughHandshake):
 class ExampleBufPassThruPipe(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         # XXX currently fails: any other permutation works fine.
         # p1=u,p2=b ok p1=u,p2=u ok p1=b,p2=b ok
@@ -785,7 +785,7 @@ class FIFOTest16(FIFOControl):
 class ExampleFIFOPassThruPipe1(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = FIFOTest16()
         pipe2 = ExamplePassAdd1Pipe()
@@ -852,7 +852,7 @@ class FIFOTestRecordControl(FIFOControl):
 class ExampleFIFORecordObjectPipe(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = FIFOTestRecordControl()
         pipe2 = ExampleRecordHandshakeAddClass()
@@ -891,7 +891,7 @@ class FIFOTestAdd16(FIFOControl):
 class ExampleFIFOAdd2Pipe(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = FIFOTestAdd16()
         pipe2 = FIFOTestAdd16()
@@ -925,7 +925,7 @@ class FIFOTest2x16(FIFOControl):
 class ExampleBufPassThruPipe2(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         # XXX currently fails: any other permutation works fine.
         # p1=u,p2=b ok p1=u,p2=u ok p1=b,p2=b ok
@@ -953,7 +953,7 @@ class ExampleBufPipe3(ControlBase):
     """
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         pipe1 = ExampleBufDelayedPipe()
         pipe2 = ExampleBufPipe()
@@ -987,7 +987,7 @@ class ExampleUnBufAdd1Pipe(UnbufferedPipeline):
 class ExampleBufUnBufPipe(ControlBase):
 
     def elaborate(self, platform):
-        m = ControlBase._elaborate(self, platform)
+        m = ControlBase.elaborate(self, platform)
 
         # XXX currently fails: any other permutation works fine.
         # p1=u,p2=b ok p1=u,p2=u ok p1=b,p2=b ok

@@ -11,7 +11,7 @@ class MultiShiftModL:
         self.b = Signal(self.ms.smax)
         self.x = Signal(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         m.d.comb += self.x.eq(self.ms.lshift(self.a, self.b))
@@ -25,7 +25,7 @@ class MultiShiftModR:
         self.b = Signal(self.ms.smax)
         self.x = Signal(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         m.d.comb += self.x.eq(self.ms.rshift(self.a, self.b))
@@ -39,7 +39,7 @@ class MultiShiftModRMod:
         self.b = Signal(self.ms.smax)
         self.x = Signal(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         m.submodules += self.ms
@@ -56,7 +56,7 @@ class MultiShiftRMergeMod:
         self.b = Signal(self.ms.smax)
         self.x = Signal(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         m.submodules += self.ms

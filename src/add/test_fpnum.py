@@ -9,7 +9,7 @@ class FPNumModShiftMulti:
         self.a = FPNum(width)
         self.ediff = Signal((self.a.e_width, True))
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         #m.d.sync += self.a.decode(self.a.v)

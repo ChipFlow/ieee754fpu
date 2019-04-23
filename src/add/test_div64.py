@@ -9,7 +9,7 @@ class ORGate:
         self.b = Signal()
         self.x = Signal()
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
         m.d.comb += self.x.eq(self.a | self.b)

@@ -43,7 +43,7 @@ class FPDIV(FPBase):
         self.states.append(state)
         return state
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         """ creates the HDL code-fragment for FPDiv
         """
         m = Module()

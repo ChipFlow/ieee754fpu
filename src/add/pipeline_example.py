@@ -79,7 +79,7 @@ class PipeModule:
         self.m = Module()
         self.p = ObjectBasedPipelineExample(self.m)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         return self.m
 
 
@@ -88,7 +88,7 @@ class PipelineStageExample:
     def __init__(self):
         self._loopback = Signal(4, name="loopback")
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
 
@@ -116,7 +116,7 @@ class PipelineStageObjectExample:
     def __init__(self):
         self.loopback = Signal(4)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
 
@@ -165,7 +165,7 @@ class PipelineStageObjectExample2:
     def __init__(self):
         self._loopback = Signal(4)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
 
         m = Module()
 

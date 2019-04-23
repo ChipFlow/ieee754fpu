@@ -23,7 +23,7 @@
 # TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS, OR
 # MODIFICATIONS.
 
-from nmigen import Module, Signal, Memory, Mux
+from nmigen import Module, Signal, Memory, Mux, Elaboratable
 from nmigen.tools import bits_for
 from nmigen.cli import main
 from nmigen.lib.fifo import FIFOInterface
@@ -31,7 +31,7 @@ from nmigen.lib.fifo import FIFOInterface
 # translated from https://github.com/freechipsproject/chisel3/blob/a4a29e29c3f1eed18f851dcf10bdc845571dfcb6/src/main/scala/chisel3/util/Decoupled.scala#L185   # noqa
 
 
-class Queue(FIFOInterface):
+class Queue(FIFOInterface, Elaboratable):
     def __init__(self, width, depth, fwft=True, pipe=False):
         """ Queue (FIFO) with pipe mode and first-write fall-through capability
 

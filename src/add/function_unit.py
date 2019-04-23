@@ -25,7 +25,7 @@ class FunctionUnit:
             fus.append(rs)
         self.fus = Array(fus)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         """ creates the HDL code-fragment for ReservationStationRow
         """
         m = Module()

@@ -21,7 +21,7 @@ class FPADD(FPBase):
         self.in_b  = FPOp(width)
         self.out_z = FPOp(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         """ creates the HDL code-fragment for FPAdd
         """
         m = Module()

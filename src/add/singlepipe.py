@@ -168,7 +168,7 @@
     https://github.com/ZipCPU/dbgbus/blob/master/hexbus/rtl/hbdeword.v
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module, Value
+from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
 from nmigen.hdl.ast import ArrayProxy
@@ -253,7 +253,7 @@ class RecordObject(Record):
         return list(self)
 
 
-class PrevControl:
+class PrevControl(Elaboratable):
     """ contains signals that come *from* the previous stage (both in and out)
         * i_valid: previous stage indicating all incoming data is valid.
                    may be a multi-bit signal, where all bits are required
@@ -332,7 +332,7 @@ class PrevControl:
         return list(self)
 
 
-class NextControl:
+class NextControl(Elaboratable):
     """ contains the signals that go *to* the next stage (both in and out)
         * o_valid: output indicating to next stage that data is valid
         * i_ready: input from next stage indicating that it can accept data
@@ -650,7 +650,7 @@ class StageChain(StageCls):
         return self.o # conform to Stage API: return last-loop output
 
 
-class ControlBase:
+class ControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
     def __init__(self, stage=None, in_multi=None, stage_ctl=False):
@@ -759,7 +759,7 @@ class ControlBase:
     def ports(self):
         return list(self)
 
-    def _elaborate(self, platform):
+    def elaborate(self, platform):
         """ handles case where stage has dynamic ready/valid functions
         """
         m = Module()
@@ -813,7 +813,7 @@ class BufferedHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = ControlBase._elaborate(self, platform)
+        self.m = ControlBase.elaborate(self, platform)
 
         result = self.stage.ospec()
         r_data = self.stage.ospec()
@@ -908,7 +908,7 @@ class SimpleHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         r_busy = Signal()
         result = self.stage.ospec()
@@ -1016,7 +1016,7 @@ class UnbufferedPipeline(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
         r_data = self.stage.ospec() # output type
@@ -1102,7 +1102,7 @@ class UnbufferedPipeline2(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         buf_full = Signal() # is data valid or not
         buf = self.stage.ospec() # output type
@@ -1168,7 +1168,7 @@ class PassThroughHandshake(ControlBase):
     """
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         r_data = self.stage.ospec() # output type
 
@@ -1240,7 +1240,7 @@ class FIFOControl(ControlBase):
         ControlBase.__init__(self, stage, in_multi, stage_ctl)
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         # make a FIFO with a signal of equal width to the o_data.
         (fwidth, _) = shape(self.n.o_data)

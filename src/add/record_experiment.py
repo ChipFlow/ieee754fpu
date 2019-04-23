@@ -1,4 +1,4 @@
-from nmigen import Module, Signal, Mux, Const
+from nmigen import Module, Signal, Mux, Const, Elaboratable
 from nmigen.hdl.rec import Record, Layout, DIR_NONE
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
@@ -51,7 +51,7 @@ def testbench(dut):
 
 
 
-class RecordTest2:
+class RecordTest2(Elaboratable):
 
     def __init__(self):
         self.r1 = RecordObject()

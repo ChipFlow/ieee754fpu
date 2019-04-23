@@ -20,7 +20,7 @@ class ReservationStationRow:
         self.id_wid = id_wid
         self.out_z = Signal(width)
 
-    def get_fragment(self, platform=None):
+    def elaborate(self, platform=None):
         """ creates the HDL code-fragment for ReservationStationRow
         """
         m = Module()
