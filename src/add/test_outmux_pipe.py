@@ -1,6 +1,6 @@
 from random import randint
 from math import log
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
@@ -122,7 +122,7 @@ class TestPriorityMuxPipe(CombMuxOutPipe):
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
 
-class TestSyncToPriorityPipe:
+class TestSyncToPriorityPipe(Elaboratable):
     def __init__(self):
         self.num_rows = 4
         self.pipe = PassThroughPipe()
