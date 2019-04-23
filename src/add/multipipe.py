@@ -11,7 +11,7 @@
 """
 
 from math import log
-from nmigen import Signal, Cat, Const, Mux, Module, Array
+from nmigen import Signal, Cat, Const, Mux, Module, Array, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.hdl.rec import Record, Layout
@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from example_buf_pipe import eq, NextControl, PrevControl, ExampleStage
 
 
-class MultiInControlBase:
+class MultiInControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
     def __init__(self, in_multi=None, p_len=1):
@@ -68,6 +68,13 @@ class MultiInControlBase:
         """
         return eq(self.p[idx].i_data, i)
 
+    def elaborate(self, platform):
+        m = Module()
+        for i, p in enumerate(self.p):
+            setattr(m.submodules, "p%d" % i, p)
+        m.submodules.n = self.n
+        return m
+
     def __iter__(self):
         for p in self.p:
             yield from p
@@ -77,7 +84,7 @@ class MultiInControlBase:
         return list(self)
 
 
-class MultiOutControlBase:
+class MultiOutControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
     def __init__(self, n_len=1, in_multi=None):
@@ -119,6 +126,13 @@ class MultiOutControlBase:
             return self.n[idx]._connect_out(nxt.n)
         return self.n[idx]._connect_out(nxt.n[nxt_idx])
 
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.p = self.p
+        for i, n in enumerate(self.n):
+            setattr(m.submodules, "n%d" % i, n)
+        return m
+
     def set_input(self, i):
         """ helper function to set the input data
         """
@@ -153,7 +167,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
             self.n[i].o_data = stage.ospec() # output type
 
     def elaborate(self, platform):
-        m = Module()
+        m = MultiOutControlBase.elaborate(self, platform)
 
         if hasattr(self.n_mux, "elaborate"): # TODO: identify submodule?
             m.submodules += self.n_mux
@@ -213,7 +227,7 @@ class CombMultiInPipeline(MultiInControlBase):
         self.n.o_data = stage.ospec()
 
     def elaborate(self, platform):
-        m = Module()
+        m = MultiInControlBase.elaborate(self, platform)
 
         m.submodules += self.p_mux
 
@@ -278,7 +292,7 @@ class CombMuxOutPipe(CombMultiOutPipeline):
 
 
 
-class InputPriorityArbiter:
+class InputPriorityArbiter(Elaboratable):
     """ arbitration module for Input-Mux pipe, baed on PriorityEncoder
     """
     def __init__(self, pipe, num_rows):

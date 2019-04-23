@@ -7,7 +7,7 @@
 
 from random import randint
 from math import log
-from nmigen import Module, Signal, Cat, Value
+from nmigen import Module, Signal, Cat, Value, Elaboratable
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
@@ -183,7 +183,7 @@ class TestMuxOutPipe(CombMuxOutPipe):
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
 
-class TestInOutPipe:
+class TestInOutPipe(Elaboratable):
     def __init__(self, num_rows=4):
         self.num_rows = num_rows
         self.inpipe = TestPriorityMuxPipe(num_rows) # fan-in (combinatorial)
