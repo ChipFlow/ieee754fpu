@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat 
+from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumBase
@@ -24,7 +24,7 @@ class FPAddStage0Data:
                 self.tot.eq(i.tot), self.mid.eq(i.mid)]
 
 
-class FPAddStage0Mod:
+class FPAddStage0Mod(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

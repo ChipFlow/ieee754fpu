@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
@@ -11,7 +11,7 @@ from fpcommon.postcalc import FPAddStage1Data
 from fpadd.add0 import FPAddStage0Data
 
 
-class FPAddStage1Mod(FPState):
+class FPAddStage1Mod(FPState, Elaboratable):
     """ Second stage of add: preparation for normalisation.
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """

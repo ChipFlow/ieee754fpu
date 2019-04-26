@@ -37,7 +37,8 @@ class FPNormToPack(FPState, SimpleHandshake):
         rmod = FPRoundMod(self.width, self.id_wid)
         cmod = FPCorrectionsMod(self.width, self.id_wid)
         pmod = FPPackMod(self.width, self.id_wid)
-        chain = StageChain([nmod, rmod, cmod, pmod])
+        stages = [nmod, rmod, cmod, pmod]
+        chain = StageChain(stages)
         chain.setup(m, i)
         self.out_z = pmod.ospec()
 

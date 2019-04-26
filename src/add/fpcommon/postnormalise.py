@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux
+from nmigen import Module, Signal, Cat, Mux, Elaboratable
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
@@ -27,7 +27,7 @@ class FPNorm1Data:
                 self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
 
 
-class FPNorm1ModSingle:
+class FPNorm1ModSingle(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumOut
@@ -19,7 +19,7 @@ class FPPackData(Object):
         self.mid = Signal(id_wid, reset_less=True)
 
 
-class FPPackMod:
+class FPPackMod(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

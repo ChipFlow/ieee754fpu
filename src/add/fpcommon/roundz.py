@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumBase
@@ -23,7 +23,7 @@ class FPRoundData:
                 self.mid.eq(i.mid)]
 
 
-class FPRoundMod:
+class FPRoundMod(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

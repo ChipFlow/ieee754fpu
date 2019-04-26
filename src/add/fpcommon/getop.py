@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array, Const
+from nmigen import Module, Signal, Cat, Mux, Array, Const, Elaboratable
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
@@ -17,7 +17,7 @@ from multipipe import PriorityCombMuxInPipe
 from fpbase import FPState
 
 
-class FPGetOpMod:
+class FPGetOpMod(Elaboratable):
     def __init__(self, width):
         self.in_op = FPOpIn(width)
         self.out_op = Signal(width)

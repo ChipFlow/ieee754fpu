@@ -2,13 +2,13 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module
+from nmigen import Module, Elaboratable
 from nmigen.cli import main, verilog
 from fpbase import FPState
 from fpcommon.roundz import FPRoundData
 
 
-class FPCorrectionsMod:
+class FPCorrectionsMod(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

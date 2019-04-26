@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Signal, Cat, Const, Mux, Module
+from nmigen import Signal, Cat, Const, Mux, Module, Elaboratable
 from math import log
 from operator import or_
 from functools import reduce
@@ -60,7 +60,7 @@ class MultiShift:
         return res
 
 
-class FPNumBase:
+class FPNumBase: #(Elaboratable):
     """ Floating-point Base Number Class
     """
     def __init__(self, width, m_extra=True):
@@ -214,7 +214,7 @@ class FPNumOut(FPNumBase):
         return self.create2(s, self.N127, self.mzero)
 
 
-class MultiShiftRMerge:
+class MultiShiftRMerge(Elaboratable):
     """ shifts down (right) and merges lower bits into m[0].
         m[0] is the "sticky" bit, basically
     """
@@ -257,7 +257,7 @@ class MultiShiftRMerge:
         return m
 
 
-class FPNumShift(FPNumBase):
+class FPNumShift(FPNumBase, Elaboratable):
     """ Floating-point Number Class for shifting
     """
     def __init__(self, mainm, op, inv, width, m_extra=True):
@@ -464,7 +464,7 @@ class FPNumIn(FPNumBase):
                 self.m.eq(sm.lshift(self.m, maxslen))
                ]
 
-class Trigger:
+class Trigger(Elaboratable):
     def __init__(self):
 
         self.stb = Signal(reset=0)
@@ -537,7 +537,7 @@ class FPOpOut(NextControl):
                ]
 
 
-class Overflow:
+class Overflow(Elaboratable):
     def __init__(self):
         self.guard = Signal(reset_less=True)     # tot[2]
         self.round_bit = Signal(reset_less=True) # tot[1]
