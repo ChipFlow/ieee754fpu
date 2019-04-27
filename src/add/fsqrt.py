@@ -1,7 +1,5 @@
 def sqrt(num):
 
-    num = 6
-
     res = 0
     bit = 1 << 14
 
