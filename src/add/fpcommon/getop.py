@@ -25,7 +25,7 @@ class FPGetOpMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_decode.eq((self.in_op.o_ready) & \
+        m.d.comb += self.out_decode.eq((self.in_op.ready_o) & \
                                        (self.in_op.i_valid_test))
         m.submodules.get_op_in = self.in_op
         #m.submodules.get_op_out = self.out_op
@@ -59,11 +59,11 @@ class FPGetOp(FPState):
         with m.If(self.out_decode):
             m.next = self.out_state
             m.d.sync += [
-                self.in_op.o_ready.eq(0),
+                self.in_op.ready_o.eq(0),
                 self.out_op.eq(self.mod.out_op)
             ]
         with m.Else():
-            m.d.sync += self.in_op.o_ready.eq(1)
+            m.d.sync += self.in_op.ready_o.eq(1)
 
 
 class FPNumBase2Ops:
@@ -146,14 +146,14 @@ class FPGet2Op(FPState):
         """ links stb/ack
         """
         m.d.comb += self.mod.i_valid.eq(in_stb)
-        m.d.comb += in_ack.eq(self.mod.o_ready)
+        m.d.comb += in_ack.eq(self.mod.ready_o)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
         m.submodules.get_ops = self.mod
         m.d.comb += self.mod.i.eq(i)
-        m.d.comb += self.out_ack.eq(self.mod.o_ready)
+        m.d.comb += self.out_ack.eq(self.mod.ready_o)
         m.d.comb += self.out_decode.eq(self.mod.trigger)
 
     def process(self, i):
@@ -163,10 +163,10 @@ class FPGet2Op(FPState):
         with m.If(self.out_decode):
             m.next = self.out_state
             m.d.sync += [
-                self.mod.o_ready.eq(0),
+                self.mod.ready_o.eq(0),
                 self.o.eq(self.mod.o),
             ]
         with m.Else():
-            m.d.sync += self.mod.o_ready.eq(1)
+            m.d.sync += self.mod.ready_o.eq(1)
 
 

@@ -132,7 +132,7 @@
 
     input acceptance conditions are when:
         * incoming previous-stage strobe (p.i_valid) is HIGH
-        * outgoing previous-stage ready   (p.o_ready) is LOW
+        * outgoing previous-stage ready   (p.ready_o) is LOW
 
     output transmission conditions are when:
         * outgoing next-stage strobe (n.o_valid) is HIGH
@@ -268,26 +268,26 @@ class PrevControl(Elaboratable):
         * i_valid: previous stage indicating all incoming data is valid.
                    may be a multi-bit signal, where all bits are required
                    to be asserted to indicate "valid".
-        * o_ready: output to next stage indicating readiness to accept data
+        * ready_o: output to next stage indicating readiness to accept data
         * i_data : an input - added by the user of this class
     """
 
     def __init__(self, i_width=1, stage_ctl=False):
         self.stage_ctl = stage_ctl
         self.i_valid = Signal(i_width, name="p_i_valid") # prev   >>in  self
-        self._o_ready = Signal(name="p_o_ready") # prev   <<out self
+        self._ready_o = Signal(name="p_ready_o") # prev   <<out self
         self.i_data = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
-            self.s_o_ready = Signal(name="p_s_o_rdy") # prev   <<out self
+            self.s_ready_o = Signal(name="p_s_o_rdy") # prev   <<out self
         self.trigger = Signal(reset_less=True)
 
     @property
-    def o_ready(self):
+    def ready_o(self):
         """ public-facing API: indicates (externally) that stage is ready
         """
         if self.stage_ctl:
-            return self.s_o_ready # set dynamically by stage
-        return self._o_ready      # return this when not under dynamic control
+            return self.s_ready_o # set dynamically by stage
+        return self._ready_o      # return this when not under dynamic control
 
     def _connect_in(self, prev, direct=False, fn=None):
         """ internal helper function to connect stage to an input source.
@@ -296,7 +296,7 @@ class PrevControl(Elaboratable):
         i_valid = prev.i_valid if direct else prev.i_valid_test
         i_data = fn(prev.i_data) if fn is not None else prev.i_data
         return [self.i_valid.eq(i_valid),
-                prev.o_ready.eq(self.o_ready),
+                prev.ready_o.eq(self.ready_o),
                 eq(self.i_data, i_data),
                ]
 
@@ -314,23 +314,23 @@ class PrevControl(Elaboratable):
         # when stage indicates not ready, incoming data
         # must "appear" to be not ready too
         if self.stage_ctl:
-            i_valid = i_valid & self.s_o_ready
+            i_valid = i_valid & self.s_ready_o
 
         return i_valid
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.trigger.eq(self.i_valid_test & self.o_ready)
+        m.d.comb += self.trigger.eq(self.i_valid_test & self.ready_o)
         return m
 
     def eq(self, i):
         return [self.i_data.eq(i.i_data),
-                self.o_ready.eq(i.o_ready),
+                self.ready_o.eq(i.ready_o),
                 self.i_valid.eq(i.i_valid)]
 
     def __iter__(self):
         yield self.i_valid
-        yield self.o_ready
+        yield self.ready_o
         if hasattr(self.i_data, "ports"):
             yield from self.i_data.ports()
         elif isinstance(self.i_data, Sequence):
@@ -369,7 +369,7 @@ class NextControl(Elaboratable):
             use this when connecting stage-to-stage
         """
         return [nxt.i_valid.eq(self.o_valid),
-                self.i_ready.eq(nxt.o_ready),
+                self.i_ready.eq(nxt.ready_o),
                 eq(nxt.i_data, self.o_data),
                ]
 
@@ -785,7 +785,7 @@ class ControlBase(Elaboratable):
             return m
 
         # intercept the previous (outgoing) "ready", combine with stage ready
-        m.d.comb += self.p.s_o_ready.eq(self.p._o_ready & self.stage.d_ready)
+        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & self.stage.d_ready)
 
         # intercept the next (incoming) "ready" and combine it with data valid
         sdv = self.stage.d_valid(self.n.i_ready)
@@ -802,7 +802,7 @@ class BufferedHandshake(ControlBase):
         Argument: stage.  see Stage API above
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
-        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.ready_o <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
                             process --->----^
@@ -843,19 +843,19 @@ class BufferedHandshake(ControlBase):
         self.m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      o_n_validn.eq(~self.n.o_valid),
                      n_i_ready.eq(self.n.i_ready_test),
-                     nir_por.eq(n_i_ready & self.p._o_ready),
-                     nir_por_n.eq(n_i_ready & ~self.p._o_ready),
+                     nir_por.eq(n_i_ready & self.p._ready_o),
+                     nir_por_n.eq(n_i_ready & ~self.p._ready_o),
                      nir_novn.eq(n_i_ready | o_n_validn),
                      nirn_novn.eq(~n_i_ready & o_n_validn),
                      npnn.eq(nir_por | nirn_novn),
-                     por_pivn.eq(self.p._o_ready & ~p_i_valid)
+                     por_pivn.eq(self.p._ready_o & ~p_i_valid)
         ]
 
         # store result of processing in combinatorial temporary
         self.m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # if not in stall condition, update the temporary register
-        with self.m.If(self.p.o_ready): # not stalled
+        with self.m.If(self.p.ready_o): # not stalled
             self.m.d.sync += eq(r_data, result) # update buffer
 
         # data pass-through conditions
@@ -872,7 +872,7 @@ class BufferedHandshake(ControlBase):
                               eq(self.n.o_data, o_data), # flush buffer
                              ]
         # output ready conditions
-        self.m.d.sync += self.p._o_ready.eq(nir_novn | por_pivn)
+        self.m.d.sync += self.p._ready_o.eq(nir_novn | por_pivn)
 
         return self.m
 
@@ -884,7 +884,7 @@ class SimpleHandshake(ControlBase):
         Argument: stage.  see Stage API above
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
-        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.ready_o <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
                               +--process->--^
@@ -927,18 +927,18 @@ class SimpleHandshake(ControlBase):
 
         # establish some combinatorial temporaries
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
-        p_i_valid_p_o_ready = Signal(reset_less=True)
+        p_i_valid_p_ready_o = Signal(reset_less=True)
         p_i_valid = Signal(reset_less=True)
         m.d.comb += [p_i_valid.eq(self.p.i_valid_test),
                      n_i_ready.eq(self.n.i_ready_test),
-                     p_i_valid_p_o_ready.eq(p_i_valid & self.p.o_ready),
+                     p_i_valid_p_ready_o.eq(p_i_valid & self.p.ready_o),
         ]
 
         # store result of processing in combinatorial temporary
         m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # previous valid and ready
-        with m.If(p_i_valid_p_o_ready):
+        with m.If(p_i_valid_p_ready_o):
             o_data = self._postprocess(result)
             m.d.sync += [r_busy.eq(1),      # output valid
                          eq(self.n.o_data, o_data), # update output
@@ -953,7 +953,7 @@ class SimpleHandshake(ControlBase):
 
         m.d.comb += self.n.o_valid.eq(r_busy)
         # if next is ready, so is previous
-        m.d.comb += self.p._o_ready.eq(n_i_ready)
+        m.d.comb += self.p._ready_o.eq(n_i_ready)
 
         return self.m
 
@@ -973,7 +973,7 @@ class UnbufferedPipeline(ControlBase):
         Argument: stage.  see Stage API, above
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
-        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.ready_o <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |
                             r_data        result
@@ -1038,11 +1038,11 @@ class UnbufferedPipeline(ControlBase):
         pv = Signal(reset_less=True)
         buf_full = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
+        m.d.comb += pv.eq(self.p.i_valid & self.p.ready_o)
         m.d.comb += buf_full.eq(~self.n.i_ready_test & data_valid)
 
         m.d.comb += self.n.o_valid.eq(data_valid)
-        m.d.comb += self.p._o_ready.eq(~data_valid | self.n.i_ready_test)
+        m.d.comb += self.p._ready_o.eq(~data_valid | self.n.i_ready_test)
         m.d.sync += data_valid.eq(p_i_valid | buf_full)
 
         with m.If(pv):
@@ -1067,7 +1067,7 @@ class UnbufferedPipeline2(ControlBase):
         Argument: stage.  see Stage API, above
 
         stage-1   p.i_valid >>in   stage   n.o_valid out>>   stage+1
-        stage-1   p.o_ready <<out  stage   n.i_ready <<in    stage+1
+        stage-1   p.ready_o <<out  stage   n.i_ready <<in    stage+1
         stage-1   p.i_data  >>in   stage   n.o_data  out>>   stage+1
                               |             |    |
                               +- process-> buf <-+
@@ -1124,7 +1124,7 @@ class UnbufferedPipeline2(ControlBase):
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
 
         m.d.comb += self.n.o_valid.eq(buf_full | p_i_valid)
-        m.d.comb += self.p._o_ready.eq(~buf_full)
+        m.d.comb += self.p._ready_o.eq(~buf_full)
         m.d.sync += buf_full.eq(~self.n.i_ready_test & self.n.o_valid)
 
         o_data = Mux(buf_full, buf, self.stage.process(self.p.i_data))
@@ -1188,10 +1188,10 @@ class PassThroughHandshake(ControlBase):
         p_i_valid = Signal(reset_less=True)
         pvr = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        m.d.comb += pvr.eq(p_i_valid & self.p.o_ready)
+        m.d.comb += pvr.eq(p_i_valid & self.p.ready_o)
 
-        m.d.comb += self.p.o_ready.eq(~self.n.o_valid |  self.n.i_ready_test)
-        m.d.sync += self.n.o_valid.eq(p_i_valid       | ~self.p.o_ready)
+        m.d.comb += self.p.ready_o.eq(~self.n.o_valid |  self.n.i_ready_test)
+        m.d.sync += self.n.o_valid.eq(p_i_valid       | ~self.p.ready_o)
 
         odata = Mux(pvr, self.stage.process(self.p.i_data), r_data)
         m.d.sync += eq(r_data, odata)
@@ -1270,7 +1270,7 @@ class FIFOControl(ControlBase):
         # NOTE: cannot do the PrevControl-looking trick because
         # of need to process the data.  shaaaame....
         m.d.comb += [fifo.we.eq(self.p.i_valid_test),
-                     self.p.o_ready.eq(fifo.writable),
+                     self.p.ready_o.eq(fifo.writable),
                      eq(fifo.din, cat(result)),
                    ]
 

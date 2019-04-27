@@ -69,10 +69,10 @@ class OutputTest:
             yield rs.i_data.data.eq(op2)
             yield rs.i_data.mid.eq(mid)
             yield
-            o_p_ready = yield rs.o_ready
+            o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
-                o_p_ready = yield rs.o_ready
+                o_p_ready = yield rs.ready_o
 
             print ("send", mid, i, hex(op2))
 
@@ -139,7 +139,7 @@ class TestSyncToPriorityPipe(Elaboratable):
         return m
 
     def ports(self):
-        res = [self.p.i_valid, self.p.o_ready] + \
+        res = [self.p.i_valid, self.p.ready_o] + \
                 self.p.i_data.ports()
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid] + \

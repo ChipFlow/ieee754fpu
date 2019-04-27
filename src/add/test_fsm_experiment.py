@@ -49,7 +49,7 @@ class FPDIV(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "add_1")
-                m.d.sync += eq([a, self.in_a.o_ready], res)
+                m.d.sync += eq([a, self.in_a.ready_o], res)
 
             with m.State("add_1"):
                 m.next = "pack"
@@ -98,7 +98,7 @@ class FPDIVPipe(ControlBase):
         m.submodules.fpdiv = self.fpdiv
 
         # see if connecting to stb/ack works
-        m.d.comb += self.p.o_ready.eq(self.fpdiv.in_a.o_ready)
+        m.d.comb += self.p.ready_o.eq(self.fpdiv.in_a.ready_o)
         m.d.comb += self.fpdiv.in_a.i_valid.eq(self.p.i_valid_test)
 
         m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.o_valid)

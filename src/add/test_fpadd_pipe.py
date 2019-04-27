@@ -43,10 +43,10 @@ class InputTest:
             yield rs.i_data.b.eq(op2)
             yield rs.i_data.mid.eq(mid)
             yield
-            o_p_ready = yield rs.o_ready
+            o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
-                o_p_ready = yield rs.o_ready
+                o_p_ready = yield rs.ready_o
 
             fop1 = Float32(op1)
             fop2 = Float32(op2)

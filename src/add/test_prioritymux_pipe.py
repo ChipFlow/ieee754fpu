@@ -136,10 +136,10 @@ class InputTest:
             yield rs.i_data.idx.eq(i)
             yield rs.i_data.mid.eq(mid)
             yield
-            o_p_ready = yield rs.o_ready
+            o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
-                o_p_ready = yield rs.o_ready
+                o_p_ready = yield rs.ready_o
 
             print ("send", mid, i, hex(op2))
 

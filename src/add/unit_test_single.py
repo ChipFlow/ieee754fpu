@@ -46,7 +46,7 @@ def get_rs_case(dut, a, b, mid):
     yield
     yield
     yield
-    a_ack = (yield in_a.o_ready)
+    a_ack = (yield in_a.ready_o)
     assert a_ack == 0
 
     yield in_a.i_valid.eq(0)
@@ -55,7 +55,7 @@ def get_rs_case(dut, a, b, mid):
     yield in_b.i_valid.eq(1)
     yield
     yield
-    b_ack = (yield in_b.o_ready)
+    b_ack = (yield in_b.ready_o)
     assert b_ack == 0
 
     yield in_b.i_valid.eq(0)
@@ -92,7 +92,7 @@ def get_case(dut, a, b, mid):
     yield
     yield
     yield
-    a_ack = (yield dut.in_a.o_ready)
+    a_ack = (yield dut.in_a.ready_o)
     assert a_ack == 0
 
     yield dut.in_a.i_valid.eq(0)
@@ -101,7 +101,7 @@ def get_case(dut, a, b, mid):
     yield dut.in_b.i_valid.eq(1)
     yield
     yield
-    b_ack = (yield dut.in_b.o_ready)
+    b_ack = (yield dut.in_b.ready_o)
     assert b_ack == 0
 
     yield dut.in_b.i_valid.eq(0)

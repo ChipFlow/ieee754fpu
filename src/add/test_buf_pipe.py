@@ -48,7 +48,7 @@ def check_o_n_valid2(dut, val):
 def tbench(dut):
     #yield dut.i_p_rst.eq(1)
     yield dut.n.i_ready.eq(0)
-    #yield dut.p.o_ready.eq(0)
+    #yield dut.p.ready_o.eq(0)
     yield
     yield
     #yield dut.i_p_rst.eq(0)
@@ -84,7 +84,7 @@ def tbench(dut):
 def tbench2(dut):
     #yield dut.p.i_rst.eq(1)
     yield dut.n.i_ready.eq(0)
-    #yield dut.p.o_ready.eq(0)
+    #yield dut.p.ready_o.eq(0)
     yield
     yield
     #yield dut.p.i_rst.eq(0)
@@ -141,7 +141,7 @@ class Test3:
                     send = True
                 else:
                     send = randint(0, send_range) != 0
-                o_p_ready = yield self.dut.p.o_ready
+                o_p_ready = yield self.dut.p.ready_o
                 if not o_p_ready:
                     yield
                     continue
@@ -215,7 +215,7 @@ class Test5:
                 else:
                     send = randint(0, send_range) != 0
                 #send = True
-                o_p_ready = yield self.dut.p.o_ready
+                o_p_ready = yield self.dut.p.ready_o
                 if not o_p_ready:
                     yield
                     continue
@@ -269,7 +269,7 @@ def tbench4(dut):
         stall = randint(0, 3) != 0
         send = randint(0, 5) != 0
         yield dut.n.i_ready.eq(stall)
-        o_p_ready = yield dut.p.o_ready
+        o_p_ready = yield dut.p.ready_o
         if o_p_ready:
             if send and i != len(data):
                 yield dut.p.i_valid.eq(1)
@@ -1022,7 +1022,7 @@ if __name__ == '__main__':
         dut = ExampleBufPipe2()
         run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
         ports = [dut.p.i_valid, dut.n.i_ready,
-                 dut.n.o_valid, dut.p.o_ready] + \
+                 dut.n.o_valid, dut.p.ready_o] + \
                  [dut.p.i_data] + [dut.n.o_data]
         vl = rtlil.convert(dut, ports=ports)
         with open("test_bufpipe2.il", "w") as f:
@@ -1054,7 +1054,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_ltcomb6.vcd")
 
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              list(dut.p.i_data) + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltcomb_pipe.il", "w") as f:
@@ -1065,7 +1065,7 @@ if __name__ == '__main__':
     data=data_dict()
     test = Test5(dut, resultfn_7, data=data)
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready,
+             dut.n.o_valid, dut.p.ready_o,
              dut.p.i_data.src1, dut.p.i_data.src2,
              dut.n.o_data.src1, dut.n.o_data.src2]
     vl = rtlil.convert(dut, ports=ports)
@@ -1082,7 +1082,7 @@ if __name__ == '__main__':
     print ("test 9")
     dut = ExampleBufPipeChain2()
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipechain2.il", "w") as f:
@@ -1114,7 +1114,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe12.il", "w") as f:
@@ -1126,7 +1126,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe13.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe13.il", "w") as f:
@@ -1138,7 +1138,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf15.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf15.il", "w") as f:
@@ -1150,7 +1150,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf16.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf16.il", "w") as f:
@@ -1162,7 +1162,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe17.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe17.il", "w") as f:
@@ -1174,7 +1174,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_identical, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_passthru18.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_passthru18.il", "w") as f:
@@ -1186,7 +1186,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass19.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass19.il", "w") as f:
@@ -1198,7 +1198,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_identical, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifo20.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifo20.il", "w") as f:
@@ -1210,7 +1210,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_12, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifopass21.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifopass21.il", "w") as f:
@@ -1222,7 +1222,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_8, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord22.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data.op1, dut.p.i_data.op2] + \
              [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
@@ -1235,7 +1235,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_8, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord23.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data.op1, dut.p.i_data.op2] + \
              [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
@@ -1247,7 +1247,7 @@ if __name__ == '__main__':
     data=data_2op()
     test = Test5(dut, resultfn_8, data=data)
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data.op1, dut.p.i_data.op2] + \
              [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
@@ -1261,7 +1261,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_add2pipe25.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_add2pipe25.il", "w") as f:
@@ -1273,7 +1273,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass997.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass997.il", "w") as f:
@@ -1285,7 +1285,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe14.il", "w") as f:
@@ -1297,7 +1297,7 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_9, data=data)
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
     ports = [dut.p.i_valid, dut.n.i_ready,
-             dut.n.o_valid, dut.p.o_ready] + \
+             dut.n.o_valid, dut.p.ready_o] + \
              [dut.p.i_data] + [dut.n.o_data]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf999.il", "w") as f:

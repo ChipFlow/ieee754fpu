@@ -71,14 +71,14 @@ class FPDIV(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "get_b")
-                m.d.sync += eq([a, self.in_a.o_ready], res)
+                m.d.sync += eq([a, self.in_a.ready_o], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
                 res = self.get_op(m, self.in_b, b, "special_cases")
-                m.d.sync += eq([b, self.in_b.o_ready], res)
+                m.d.sync += eq([b, self.in_b.ready_o], res)
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised

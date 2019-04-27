@@ -6,7 +6,7 @@
 
     Multi-output is simple (pretty much identical to UnbufferedPipeline),
     and the selection is just a mux.  The only proviso (difference) being:
-    the outputs not being selected have to have their o_ready signals
+    the outputs not being selected have to have their ready_o signals
     DEASSERTED.
 """
 
@@ -184,14 +184,14 @@ class CombMultiOutPipeline(MultiOutControlBase):
         p_i_valid = Signal(reset_less=True)
         pv = Signal(reset_less=True)
         m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        m.d.comb += pv.eq(self.p.i_valid & self.p.o_ready)
+        m.d.comb += pv.eq(self.p.i_valid & self.p.ready_o)
 
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
             m.d.comb += self.n[i].o_valid.eq(0)
         data_valid = self.n[mid].o_valid
-        m.d.comb += self.p.o_ready.eq(~data_valid | self.n[mid].i_ready)
+        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[mid].i_ready)
         m.d.comb += data_valid.eq(p_i_valid | \
                                     (~self.n[mid].i_ready & data_valid))
         with m.If(pv):
@@ -258,9 +258,9 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_i_readyn[i].eq(1)
             m.d.comb += p_i_valid[i].eq(0)
-            m.d.comb += self.p[i].o_ready.eq(0)
+            m.d.comb += self.p[i].ready_o.eq(0)
         m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
-        m.d.comb += self.p[mid].o_ready.eq(~data_valid[mid] | self.n.i_ready)
+        m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.i_ready)
         m.d.comb += n_i_readyn[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
         av = []
@@ -273,7 +273,7 @@ class CombMultiInPipeline(MultiInControlBase):
 
         for i in range(p_len):
             vr = Signal(reset_less=True)
-            m.d.comb += vr.eq(self.p[i].i_valid & self.p[i].o_ready)
+            m.d.comb += vr.eq(self.p[i].i_valid & self.p[i].ready_o)
             with m.If(vr):
                 m.d.comb += eq(r_data[i], self.p[i].i_data)
 

@@ -63,7 +63,7 @@ class Queue(FIFOInterface, Elaboratable):
         m.submodules.ram_write = ram_write = ram.write_port()
 
         # convenience names
-        p_o_ready = self.writable
+        p_ready_o = self.writable
         p_i_valid = self.we
         enq_data = self.din
 
@@ -93,12 +93,12 @@ class Queue(FIFOInterface, Elaboratable):
                      deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
-                     do_enq.eq(p_o_ready & p_i_valid), # write conditions ok
+                     do_enq.eq(p_ready_o & p_i_valid), # write conditions ok
                      do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
 
                      # set readable and writable (NOTE: see pipe mode below)
                      n_o_valid.eq(~empty), # cannot read if empty!
-                     p_o_ready.eq(~full),  # cannot write if full!
+                     p_ready_o.eq(~full),  # cannot write if full!
 
                      # set up memory and connect to input and output
                      ram_write.addr.eq(enq_ptr),
@@ -139,7 +139,7 @@ class Queue(FIFOInterface, Elaboratable):
         #            *must* declare the input ready (writeable).
         if self.pipe:
             with m.If(n_i_ready):
-                m.d.comb += p_o_ready.eq(1)
+                m.d.comb += p_ready_o.eq(1)
 
         # set the count (available free space), optimise on power-of-two
         if self.depth == 1 << ptr_width:  # is depth a power of 2
