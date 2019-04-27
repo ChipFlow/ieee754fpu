@@ -19,7 +19,6 @@ class FPDIV(FPBase):
         self.width = width
 
         self.in_a  = FPOpIn(width)
-        self.in_b  = FPOpIn(width)
         self.out_z = FPOpOut(width)
 
         self.states = []
@@ -37,7 +36,9 @@ class FPDIV(FPBase):
         a = FPNumIn(None, self.width, False)
         z = FPNumOut(self.width, False)
 
-        m.submodules.in_a = a
+        m.submodules.in_a = self.in_a
+        m.submodules.out_z = self.out_z
+        m.submodules.a = a
         m.submodules.z = z
 
         m.d.comb += a.v.eq(self.in_a.v)
