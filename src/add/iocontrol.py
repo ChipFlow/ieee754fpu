@@ -339,10 +339,21 @@ class StageChain(StageCls):
         * output of second goes into input into third (etc. etc.)
         * the output of this class will be the output of the last stage
 
+        NOTE: whilst this is very similar to ControlBase.connect(), it is
+        *really* important to appreciate that StageChain is pure
+        combinatorial and bypasses (does not involve, at all, ready/valid
+        signalling of any kind).
+
+        ControlBase.connect on the other hand respects, connects, and uses
+        ready/valid signalling.
+
         Arguments:
 
         * :chain: a chain of combinatorial blocks conforming to the Stage API
-                  NOTE: this may be an EMPTY list (or tuple, or iterable).
+                  NOTE: StageChain.ispec and ospect have to have something
+                  to return (beginning and end specs of the chain),
+                  therefore the chain argument must be non-zero length
+
         * :specallocate: if set, new input and output data will be allocated
                          and connected (eq'd) to each chained Stage.
                          in some cases if this is not done, the nmigen warning
@@ -354,13 +365,18 @@ class StageChain(StageCls):
         (inter-chain) dependencies, unless you really know what you are doing.
     """
     def __init__(self, chain, specallocate=False):
+        assert len(chain > 0), "stage chain must be non-zero length"
         self.chain = chain
         self.specallocate = specallocate
 
     def ispec(self):
+        """ returns the ispec of the first of the chain
+        """
         return _spec(self.chain[0].ispec, "chainin")
 
     def ospec(self):
+        """ returns the ospec of the last of the chain
+        """
         return _spec(self.chain[-1].ospec, "chainout")
 
     def _specallocate_setup(self, m, i):
