@@ -25,11 +25,11 @@ class FPPutZ(FPState):
         m.d.sync += [
           self.out_z.z.v.eq(self.in_z)
         ]
-        with m.If(self.out_z.z.o_valid & self.out_z.z.i_ready_test):
-            m.d.sync += self.out_z.z.o_valid.eq(0)
+        with m.If(self.out_z.z.valid_o & self.out_z.z.ready_i_test):
+            m.d.sync += self.out_z.z.valid_o.eq(0)
             m.next = self.to_state
         with m.Else():
-            m.d.sync += self.out_z.z.o_valid.eq(1)
+            m.d.sync += self.out_z.z.valid_o.eq(1)
 
 
 class FPPutZIdx(FPState):
@@ -46,15 +46,15 @@ class FPPutZIdx(FPState):
     def action(self, m):
         outz_stb = Signal(reset_less=True)
         outz_ack = Signal(reset_less=True)
-        m.d.comb += [outz_stb.eq(self.out_zs[self.in_mid].o_valid),
-                     outz_ack.eq(self.out_zs[self.in_mid].i_ready_test),
+        m.d.comb += [outz_stb.eq(self.out_zs[self.in_mid].valid_o),
+                     outz_ack.eq(self.out_zs[self.in_mid].ready_i_test),
                     ]
         m.d.sync += [
           self.out_zs[self.in_mid].v.eq(self.in_z.v)
         ]
         with m.If(outz_stb & outz_ack):
-            m.d.sync += self.out_zs[self.in_mid].o_valid.eq(0)
+            m.d.sync += self.out_zs[self.in_mid].valid_o.eq(0)
             m.next = self.to_state
         with m.Else():
-            m.d.sync += self.out_zs[self.in_mid].o_valid.eq(1)
+            m.d.sync += self.out_zs[self.in_mid].valid_o.eq(1)
 

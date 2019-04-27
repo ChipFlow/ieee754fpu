@@ -91,10 +91,10 @@ class OutputTest:
             count += 1
             assert count != 2000, "timeout: too long"
             n = self.dut.n[mid]
-            yield n.i_ready.eq(1)
+            yield n.ready_i.eq(1)
             yield
-            o_n_valid = yield n.o_valid
-            i_n_ready = yield n.i_ready
+            o_n_valid = yield n.valid_o
+            i_n_ready = yield n.ready_i
             if not o_n_valid or not i_n_ready:
                 continue
 
@@ -110,7 +110,7 @@ class OutputTest:
                 stall_range = randint(0, 3)
             stall = randint(0, stall_range) != 0
             if stall:
-                yield n.i_ready.eq(0)
+                yield n.ready_i.eq(0)
                 for i in range(stall_range):
                     yield
 
@@ -142,7 +142,7 @@ class TestSyncToPriorityPipe(Elaboratable):
         res = [self.p.valid_i, self.p.ready_o] + \
                 self.p.i_data.ports()
         for i in range(len(self.n)):
-            res += [self.n[i].i_ready, self.n[i].o_valid] + \
+            res += [self.n[i].ready_i, self.n[i].valid_o] + \
                     [self.n[i].o_data]
                     #self.n[i].o_data.ports()
         return res

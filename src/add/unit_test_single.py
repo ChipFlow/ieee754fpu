@@ -60,16 +60,16 @@ def get_rs_case(dut, a, b, mid):
 
     yield in_b.valid_i.eq(0)
 
-    yield out_z.i_ready.eq(1)
+    yield out_z.ready_i.eq(1)
 
     while True:
-        out_z_stb = (yield out_z.o_valid)
+        out_z_stb = (yield out_z.valid_o)
         if not out_z_stb:
             yield
             continue
         vout_z = yield out_z.v
         #out_mid = yield dut.ids.out_mid
-        yield out_z.i_ready.eq(0)
+        yield out_z.ready_i.eq(0)
         yield
         break
 
@@ -106,16 +106,16 @@ def get_case(dut, a, b, mid):
 
     yield dut.in_b.valid_i.eq(0)
 
-    yield dut.out_z.i_ready.eq(1)
+    yield dut.out_z.ready_i.eq(1)
 
     while True:
-        out_z_stb = (yield dut.out_z.o_valid)
+        out_z_stb = (yield dut.out_z.valid_o)
         if not out_z_stb:
             yield
             continue
         out_z = yield dut.out_z.v
         #out_mid = yield dut.out_mid
-        yield dut.out_z.i_ready.eq(0)
+        yield dut.out_z.ready_i.eq(0)
         yield
         break
 

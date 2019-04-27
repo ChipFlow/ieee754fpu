@@ -690,11 +690,11 @@ class FPBase:
         m.d.sync += [
           out_z.v.eq(z.v)
         ]
-        with m.If(out_z.o_valid & out_z.i_ready_test):
-            m.d.sync += out_z.o_valid.eq(0)
+        with m.If(out_z.valid_o & out_z.ready_i_test):
+            m.d.sync += out_z.valid_o.eq(0)
             m.next = next_state
         with m.Else():
-            m.d.sync += out_z.o_valid.eq(1)
+            m.d.sync += out_z.valid_o.eq(1)
 
 
 class FPState(FPBase):

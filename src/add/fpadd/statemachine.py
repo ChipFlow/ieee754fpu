@@ -206,13 +206,13 @@ class FPADDBase(FPState):
                      self.in_t.ack.eq(self.mod.in_t.ack),
                      self.o.mid.eq(self.mod.o.mid),
                      self.o.z.v.eq(self.mod.o.z.v),
-                     self.o.z.o_valid.eq(self.mod.o.z.o_valid),
-                     self.mod.o.z.i_ready.eq(self.o.z.i_ready_test),
+                     self.o.z.valid_o.eq(self.mod.o.z.valid_o),
+                     self.mod.o.z.ready_i.eq(self.o.z.ready_i_test),
                     ]
 
         m.d.sync += self.add_stb.eq(add_stb)
         m.d.sync += self.add_ack.eq(0) # sets to zero when not in active state
-        m.d.sync += self.o.z.i_ready.eq(0) # likewise
+        m.d.sync += self.o.z.ready_i.eq(0) # likewise
         #m.d.sync += self.in_t.stb.eq(0)
 
         m.submodules.fpadd = self.mod
@@ -234,7 +234,7 @@ class FPADDBase(FPState):
             with m.Else():
                 m.d.sync += [self.add_ack.eq(0),
                              self.in_t.stb.eq(0),
-                             self.o.z.i_ready.eq(1),
+                             self.o.z.ready_i.eq(1),
                             ]
         with m.Else():
             # done: acknowledge, and write out id and value

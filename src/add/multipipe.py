@@ -189,11 +189,11 @@ class CombMultiOutPipeline(MultiOutControlBase):
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
-            m.d.comb += self.n[i].o_valid.eq(0)
-        data_valid = self.n[mid].o_valid
-        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[mid].i_ready)
+            m.d.comb += self.n[i].valid_o.eq(0)
+        data_valid = self.n[mid].valid_o
+        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[mid].ready_i)
         m.d.comb += data_valid.eq(p_valid_i | \
-                                    (~self.n[mid].i_ready & data_valid))
+                                    (~self.n[mid].ready_i & data_valid))
         with m.If(pv):
             m.d.comb += eq(r_data, self.p.i_data)
         m.d.comb += eq(self.n[mid].o_data, self.stage.process(r_data))
@@ -235,41 +235,41 @@ class CombMultiInPipeline(MultiInControlBase):
         r_data = []
         data_valid = []
         p_valid_i = []
-        n_i_readyn = []
+        n_ready_in = []
         p_len = len(self.p)
         for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
             data_valid.append(Signal(name="data_valid", reset_less=True))
             p_valid_i.append(Signal(name="p_valid_i", reset_less=True))
-            n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
+            n_ready_in.append(Signal(name="n_ready_in", reset_less=True))
             if hasattr(self.stage, "setup"):
                 self.stage.setup(m, r)
         if len(r_data) > 1:
             r_data = Array(r_data)
             p_valid_i = Array(p_valid_i)
-            n_i_readyn = Array(n_i_readyn)
+            n_ready_in = Array(n_ready_in)
             data_valid = Array(data_valid)
 
         nirn = Signal(reset_less=True)
-        m.d.comb += nirn.eq(~self.n.i_ready)
+        m.d.comb += nirn.eq(~self.n.ready_i)
         mid = self.p_mux.m_id
         for i in range(p_len):
             m.d.comb += data_valid[i].eq(0)
-            m.d.comb += n_i_readyn[i].eq(1)
+            m.d.comb += n_ready_in[i].eq(1)
             m.d.comb += p_valid_i[i].eq(0)
             m.d.comb += self.p[i].ready_o.eq(0)
         m.d.comb += p_valid_i[mid].eq(self.p_mux.active)
-        m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.i_ready)
-        m.d.comb += n_i_readyn[mid].eq(nirn & data_valid[mid])
+        m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.ready_i)
+        m.d.comb += n_ready_in[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
         av = []
         for i in range(p_len):
             av.append(data_valid[i])
         anyvalid = Cat(*av)
-        m.d.comb += self.n.o_valid.eq(anyvalid.bool())
+        m.d.comb += self.n.valid_o.eq(anyvalid.bool())
         m.d.comb += data_valid[mid].eq(p_valid_i[mid] | \
-                                    (n_i_readyn[mid] & data_valid[mid]))
+                                    (n_ready_in[mid] & data_valid[mid]))
 
         for i in range(p_len):
             vr = Signal(reset_less=True)

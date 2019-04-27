@@ -67,8 +67,8 @@ class Queue(FIFOInterface, Elaboratable):
         p_valid_i = self.we
         enq_data = self.din
 
-        n_o_valid = self.readable
-        n_i_ready = self.re
+        n_valid_o = self.readable
+        n_ready_i = self.re
         deq_data = self.dout
 
         # intermediaries
@@ -94,10 +94,10 @@ class Queue(FIFOInterface, Elaboratable):
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
                      do_enq.eq(p_ready_o & p_valid_i), # write conditions ok
-                     do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
+                     do_deq.eq(n_ready_i & n_valid_o), # read conditions ok
 
                      # set readable and writable (NOTE: see pipe mode below)
-                     n_o_valid.eq(~empty), # cannot read if empty!
+                     n_valid_o.eq(~empty), # cannot read if empty!
                      p_ready_o.eq(~full),  # cannot write if full!
 
                      # set up memory and connect to input and output
@@ -128,17 +128,17 @@ class Queue(FIFOInterface, Elaboratable):
         # as Memory "write-through"... without relying on a changing API
         if self.fwft:
             with m.If(p_valid_i):
-                m.d.comb += n_o_valid.eq(1)
+                m.d.comb += n_valid_o.eq(1)
             with m.If(empty):
                 m.d.comb += deq_data.eq(enq_data)
                 m.d.comb += do_deq.eq(0)
-                with m.If(n_i_ready):
+                with m.If(n_ready_i):
                     m.d.comb += do_enq.eq(0)
 
         # pipe mode: if next stage says it's ready (readable), we
         #            *must* declare the input ready (writeable).
         if self.pipe:
-            with m.If(n_i_ready):
+            with m.If(n_ready_i):
                 m.d.comb += p_ready_o.eq(1)
 
         # set the count (available free space), optimise on power-of-two

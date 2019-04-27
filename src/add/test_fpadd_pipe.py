@@ -79,13 +79,13 @@ class InputTest:
             #stall_range = randint(0, 3)
             #for j in range(randint(1,10)):
             #    stall = randint(0, stall_range) != 0
-            #    yield self.dut.n[0].i_ready.eq(stall)
+            #    yield self.dut.n[0].ready_i.eq(stall)
             #    yield
             n = self.dut.n[mid]
-            yield n.i_ready.eq(1)
+            yield n.ready_i.eq(1)
             yield
-            o_n_valid = yield n.o_valid
-            i_n_ready = yield n.i_ready
+            o_n_valid = yield n.valid_o
+            i_n_ready = yield n.ready_i
             if not o_n_valid or not i_n_ready:
                 continue
 

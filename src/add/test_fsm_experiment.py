@@ -101,8 +101,8 @@ class FPDIVPipe(ControlBase):
         m.d.comb += self.p.ready_o.eq(self.fpdiv.in_a.ready_o)
         m.d.comb += self.fpdiv.in_a.valid_i.eq(self.p.valid_i_test)
 
-        m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.o_valid)
-        m.d.comb += self.fpdiv.out_z.i_ready.eq(self.n.i_ready_test)
+        m.d.comb += self.n.valid_o.eq(self.fpdiv.out_z.valid_o)
+        m.d.comb += self.fpdiv.out_z.ready_i.eq(self.n.ready_i_test)
         m.d.comb += self.n.o_data.eq(self.fpdiv.out_z.v)
 
         return m
