@@ -215,14 +215,14 @@ class BufferedHandshake(ControlBase):
 
         # data pass-through conditions
         with self.m.If(npnn):
-            data_o = self._postprocess(result)
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
             self.m.d.sync += [self.n.valid_o.eq(p_valid_i), # valid if p_valid
                               nmoperator.eq(self.n.data_o, data_o), # update out
                              ]
         # buffer flush conditions (NOTE: can override data passthru conditions)
         with self.m.If(nir_por_n): # not stalled
             # Flush the [already processed] buffer to the output port.
-            data_o = self._postprocess(r_data)
+            data_o = self._postprocess(r_data) # XXX TBD, does nothing right now
             self.m.d.sync += [self.n.valid_o.eq(1),  # reg empty
                               nmoperator.eq(self.n.data_o, data_o), # flush
                              ]
@@ -294,13 +294,13 @@ class SimpleHandshake(ControlBase):
 
         # previous valid and ready
         with m.If(p_valid_i_p_ready_o):
-            data_o = self._postprocess(result)
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
             m.d.sync += [r_busy.eq(1),      # output valid
                          nmoperator.eq(self.n.data_o, data_o), # update output
                         ]
         # previous invalid or not ready, however next is accepting
         with m.Elif(n_ready_i):
-            data_o = self._postprocess(result)
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
             m.d.sync += [nmoperator.eq(self.n.data_o, data_o)]
             # TODO: could still send data here (if there was any)
             #m.d.sync += self.n.valid_o.eq(0) # ...so set output invalid
@@ -402,7 +402,7 @@ class UnbufferedPipeline(ControlBase):
 
         with m.If(pv):
             m.d.sync += nmoperator.eq(r_data, self.stage.process(self.p.data_i))
-        data_o = self._postprocess(r_data)
+        data_o = self._postprocess(r_data) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, data_o)
 
         return self.m
@@ -483,7 +483,7 @@ class UnbufferedPipeline2(ControlBase):
         m.d.sync += buf_full.eq(~self.n.ready_i_test & self.n.valid_o)
 
         data_o = Mux(buf_full, buf, self.stage.process(self.p.data_i))
-        data_o = self._postprocess(data_o)
+        data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, data_o)
         m.d.sync += nmoperator.eq(buf, self.n.data_o)
 
@@ -491,8 +491,12 @@ class UnbufferedPipeline2(ControlBase):
 
 
 class PassThroughStage(StageCls):
-    """ a pass-through stage which has its input data spec equal to its output,
-        and "passes through" its data from input to output.
+    """ a pass-through stage with its input data spec identical to its output,
+        and "passes through" its data from input to output (does nothing).
+
+        use this basically to explicitly make any data spec Stage-compliant.
+        (many APIs would potentially use a static "wrap" method in e.g.
+         StageCls to achieve a similar effect)
     """
     def __init__(self, iospecfn):
         self.iospecfn = iospecfn
@@ -550,7 +554,7 @@ class PassThroughHandshake(ControlBase):
 
         odata = Mux(pvr, self.stage.process(self.p.data_i), r_data)
         m.d.sync += nmoperator.eq(r_data, odata)
-        r_data = self._postprocess(r_data)
+        r_data = self._postprocess(r_data) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, r_data)
 
         return m
@@ -638,7 +642,7 @@ class FIFOControl(ControlBase):
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
         data_o = nmoperator.cat(self.n.data_o).eq(fifo.dout)
-        data_o = self._postprocess(data_o)
+        data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += data_o
 
         return m
