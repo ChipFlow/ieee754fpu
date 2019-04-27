@@ -360,11 +360,12 @@ class LTStage(StageCls):
     def __init__(self):
         self.slt = SetLessThan(16, True)
 
-    def ispec(self):
-        return (Signal(16, name="sig1"), Signal(16, "sig2"))
+    def ispec(self, name):
+        return (Signal(16, name="%s_sig1" % name),
+                Signal(16, name="%s_sig2" % name))
 
-    def ospec(self):
-        return Signal(16, "out")
+    def ospec(self, name):
+        return Signal(16, "%s_out" % name)
 
     def setup(self, m, i):
         self.o = Signal(16)

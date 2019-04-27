@@ -178,6 +178,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence, Iterable
 from collections import OrderedDict
 from queue import Queue
+import inspect
 
 
 class Object:
@@ -251,6 +252,15 @@ class RecordObject(Record):
 
     def ports(self):
         return list(self)
+
+
+def _spec(fn, name=None):
+    if name is None:
+        return fn()
+    varnames = dict(inspect.getmembers(fn.__code__))['co_varnames']
+    if 'name' in varnames:
+        return fn(name=name)
+    return fn()
 
 
 class PrevControl(Elaboratable):
@@ -616,20 +626,22 @@ class StageChain(StageCls):
         self.specallocate = specallocate
 
     def ispec(self):
-        return self.chain[0].ispec()
+        return _spec(self.chain[0].ispec, "chainin")
 
     def ospec(self):
-        return self.chain[-1].ospec()
+        return _spec(self.chain[-1].ospec, "chainout")
 
     def _specallocate_setup(self, m, i):
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
-            o = self.chain[idx].ospec()     # last assignment survives
+            ofn = self.chain[idx].ospec     # last assignment survives
+            o = _spec(ofn, 'chainin%d' % idx)
             m.d.comb += eq(o, c.process(i)) # process input into "o"
             if idx == len(self.chain)-1:
                 break
-            i = self.chain[idx+1].ispec()   # new input on next loop
+            i = self.chain[idx+1].ispec     # new input on next loop
+            i = _spec(ifn, 'chainin%d' % idx+1)
             m.d.comb += eq(i, o)            # assign to next input
         return o                            # last loop is the output
 
@@ -671,8 +683,8 @@ class ControlBase(Elaboratable):
 
         # set up the input and output data
         if stage is not None:
-            self.p.i_data = stage.ispec() # input type
-            self.n.o_data = stage.ospec()
+            self.p.i_data = _spec(stage.ispec, "i_data") # input type
+            self.n.o_data = _spec(stage.ospec, "o_data") # output type
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -731,12 +743,12 @@ class ControlBase(Elaboratable):
 
         # connect front of chain to ourselves
         front = pipechain[0]
-        self.p.i_data = front.stage.ispec()
+        self.p.i_data = _spec(front.stage.ispec, "chainin")
         eqs += front._connect_in(self)
 
         # connect end of chain to ourselves
         end = pipechain[-1]
-        self.n.o_data = end.stage.ospec()
+        self.n.o_data = _spec(end.stage.ospec, "chainout")
         eqs += end._connect_out(self)
 
         return eqs
@@ -815,8 +827,8 @@ class BufferedHandshake(ControlBase):
     def elaborate(self, platform):
         self.m = ControlBase.elaborate(self, platform)
 
-        result = self.stage.ospec()
-        r_data = self.stage.ospec()
+        result = _spec(self.stage.ospec, "r_tmp")
+        r_data = _spec(self.stage.ospec, "r_data")
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
@@ -911,7 +923,7 @@ class SimpleHandshake(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         r_busy = Signal()
-        result = self.stage.ospec()
+        result = _spec(self.stage.ospec, "r_tmp")
 
         # establish some combinatorial temporaries
         n_i_ready = Signal(reset_less=True, name="n_i_rdy_data")
@@ -1019,7 +1031,7 @@ class UnbufferedPipeline(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
-        r_data = self.stage.ospec() # output type
+        r_data = _spec(self.stage.ospec, "r_tmp") # output type
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
@@ -1105,7 +1117,7 @@ class UnbufferedPipeline2(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         buf_full = Signal() # is data valid or not
-        buf = self.stage.ospec() # output type
+        buf = _spec(self.stage.ospec, "r_tmp") # output type
 
         # some temporaries
         p_i_valid = Signal(reset_less=True)
@@ -1170,7 +1182,7 @@ class PassThroughHandshake(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
 
-        r_data = self.stage.ospec() # output type
+        r_data = _spec(self.stage.ospec, "r_tmp") # output type
 
         # temporaries
         p_i_valid = Signal(reset_less=True)
@@ -1251,7 +1263,7 @@ class FIFOControl(ControlBase):
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
-        result = self.stage.ospec()
+        result = _spec(self.stage.ospec, "r_temp")
         m.d.comb += eq(result, self.stage.process(self.p.i_data))
 
         # connect previous rdy/valid/data - do cat on i_data
