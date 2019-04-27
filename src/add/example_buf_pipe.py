@@ -1,9 +1,10 @@
 """ Pipeline and BufferedHandshake examples
 """
 
+from nmoperator import eq
 from singlepipe import (PrevControl, NextControl, ControlBase,
                         StageCls, Stage, StageChain,
-                        BufferedHandshake, UnbufferedPipeline, eq)
+                        BufferedHandshake, UnbufferedPipeline)
 
 from nmigen import Signal, Module
 from nmigen.cli import verilog, rtlil

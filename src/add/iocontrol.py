@@ -59,7 +59,7 @@ from collections.abc import Sequence, Iterable
 from collections import OrderedDict
 import inspect
 
-from nmoperator import eq, cat, shape
+import nmoperator
 
 
 class Object:
@@ -121,7 +121,7 @@ class RecordObject(Record):
         elif isinstance(v, Value):
             newlayout = {k: (k, v.shape())}
         else:
-            newlayout = {k: (k, shape(v))}
+            newlayout = {k: (k, nmoperator.shape(v))}
         self.layout.fields.update(newlayout)
 
     def __iter__(self):
@@ -178,7 +178,7 @@ class PrevControl(Elaboratable):
         data_i = fn(prev.data_i) if fn is not None else prev.data_i
         return [self.valid_i.eq(valid_i),
                 prev.ready_o.eq(self.ready_o),
-                eq(self.data_i, data_i),
+                nmoperator.eq(self.data_i, data_i),
                ]
 
     @property
@@ -251,7 +251,7 @@ class NextControl(Elaboratable):
         """
         return [nxt.valid_i.eq(self.valid_o),
                 self.ready_i.eq(nxt.ready_o),
-                eq(nxt.data_i, self.data_o),
+                nmoperator.eq(nxt.data_i, self.data_o),
                ]
 
     def _connect_out(self, nxt, direct=False, fn=None):
@@ -262,7 +262,7 @@ class NextControl(Elaboratable):
         data_o = fn(nxt.data_o) if fn is not None else nxt.data_o
         return [nxt.valid_o.eq(self.valid_o),
                 self.ready_i.eq(ready_i),
-                eq(data_o, self.data_o),
+                nmoperator.eq(data_o, self.data_o),
                ]
 
     def elaborate(self, platform):
@@ -365,7 +365,7 @@ class StageChain(StageCls):
         (inter-chain) dependencies, unless you really know what you are doing.
     """
     def __init__(self, chain, specallocate=False):
-        assert len(chain > 0), "stage chain must be non-zero length"
+        assert len(chain) > 0, "stage chain must be non-zero length"
         self.chain = chain
         self.specallocate = specallocate
 
@@ -386,12 +386,12 @@ class StageChain(StageCls):
                 c.setup(m, i)               # stage may have some module stuff
             ofn = self.chain[idx].ospec     # last assignment survives
             o = _spec(ofn, 'chainin%d' % idx)
-            m.d.comb += eq(o, c.process(i)) # process input into "o"
+            m.d.comb += nmoperator.eq(o, c.process(i)) # process input into "o"
             if idx == len(self.chain)-1:
                 break
             ifn = self.chain[idx+1].ispec   # new input on next loop
             i = _spec(ifn, 'chainin%d' % (idx+1))
-            m.d.comb += eq(i, o)            # assign to next input
+            m.d.comb += nmoperator.eq(i, o) # assign to next input
         return o                            # last loop is the output
 
     def _noallocate_setup(self, m, i):
@@ -495,7 +495,7 @@ class ControlBase(Elaboratable):
             * a list of eq assignments that will need to be added in
               an elaborate() to m.d.comb
         """
-        assert len(pipechain > 0), "pipechain must be non-zero length"
+        assert len(pipechain) > 0, "pipechain must be non-zero length"
         eqs = [] # collated list of assignment statements
 
         # connect inter-chain
@@ -525,7 +525,7 @@ class ControlBase(Elaboratable):
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p.data_i, i)
+        return nmoperator.eq(self.p.data_i, i)
 
     def __iter__(self):
         yield from self.p

@@ -8,7 +8,8 @@ from nmigen import tracer
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
 from contextlib import contextmanager
 
-from singlepipe import eq, StageCls, ControlBase, BufferedHandshake
+from nmoperator import eq
+from singlepipe import StageCls, ControlBase, BufferedHandshake
 from singlepipe import UnbufferedPipeline
 
 
