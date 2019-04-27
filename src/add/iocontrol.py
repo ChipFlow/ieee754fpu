@@ -56,6 +56,11 @@
     Also has an extremely useful "connect" function that can be used to
     connect a chain of pipelines and present the exact same prev/next
     ready/valid/data API.
+
+    Note: pipelines basically do not become pipelines as such until
+    handed to a derivative of ControlBase.  ControlBase itself is *not*
+    strictly considered a pipeline class.  Wishbone and AXI4 (master or
+    slave) could be derived from ControlBase, for example.
 """
 
 from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
@@ -158,16 +163,16 @@ class PrevControl(Elaboratable):
                    may be a multi-bit signal, where all bits are required
                    to be asserted to indicate "valid".
         * ready_o: output to next stage indicating readiness to accept data
-        * data_i : an input - added by the user of this class
+        * data_i : an input - MUST be added by the USER of this class
     """
 
     def __init__(self, i_width=1, stage_ctl=False):
         self.stage_ctl = stage_ctl
         self.valid_i = Signal(i_width, name="p_valid_i") # prev   >>in  self
-        self._ready_o = Signal(name="p_ready_o") # prev   <<out self
+        self._ready_o = Signal(name="p_ready_o")         # prev   <<out self
         self.data_i = None # XXX MUST BE ADDED BY USER
         if stage_ctl:
-            self.s_ready_o = Signal(name="p_s_o_rdy") # prev   <<out self
+            self.s_ready_o = Signal(name="p_s_o_rdy")    # prev   <<out self
         self.trigger = Signal(reset_less=True)
 
     @property
@@ -235,7 +240,7 @@ class NextControl(Elaboratable):
     """ contains the signals that go *to* the next stage (both in and out)
         * valid_o: output indicating to next stage that data is valid
         * ready_i: input from next stage indicating that it can accept data
-        * data_o : an output - added by the user of this class
+        * data_o : an output - MUST be added by the USER of this class
     """
     def __init__(self, stage_ctl=False):
         self.stage_ctl = stage_ctl
