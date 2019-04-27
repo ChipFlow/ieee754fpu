@@ -338,6 +338,20 @@ class StageChain(StageCls):
         * output of first stage goes into input of second
         * output of second goes into input into third (etc. etc.)
         * the output of this class will be the output of the last stage
+
+        Arguments:
+
+        * :chain: a chain of combinatorial blocks conforming to the Stage API
+                  NOTE: this may be an EMPTY list (or tuple, or iterable).
+        * :specallocate: if set, new input and output data will be allocated
+                         and connected (eq'd) to each chained Stage.
+                         in some cases if this is not done, the nmigen warning
+                         "driving from two sources, module is being flattened"
+                         will be issued.
+
+        NOTE: do NOT use StageChain with combinatorial blocks that have
+        side-effects (state-based / clock-based input) or conditional
+        (inter-chain) dependencies, unless you really know what you are doing.
     """
     def __init__(self, chain, specallocate=False):
         self.chain = chain
@@ -350,6 +364,7 @@ class StageChain(StageCls):
         return _spec(self.chain[-1].ospec, "chainout")
 
     def _specallocate_setup(self, m, i):
+        o = i # in case chain is empty
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
@@ -364,6 +379,7 @@ class StageChain(StageCls):
         return o                            # last loop is the output
 
     def _noallocate_setup(self, m, i):
+        o = i # in case chain is empty
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
