@@ -5,6 +5,8 @@
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64
     * http://bugs.libre-riscv.org/show_bug.cgi?id=57
 
+    Important: see Stage API (iocontrol.py) in combination with below
+
     RecordBasedStage:
     ----------------
 
@@ -575,21 +577,18 @@ class FIFOControl(ControlBase):
 
         data_i -> fifo.din -> FIFO -> fifo.dout -> data_o
     """
-
     def __init__(self, depth, stage, in_multi=None, stage_ctl=False,
                                      fwft=True, buffered=False, pipe=False):
         """ FIFO Control
 
-            * depth: number of entries in the FIFO
-            * stage: data processing block
-            * fwft : first word fall-thru mode (non-fwft introduces delay)
-            * buffered: use buffered FIFO (introduces extra cycle delay)
+            * :depth:    number of entries in the FIFO
+            * :stage:    data processing block
+            * :fwft:     first word fall-thru mode (non-fwft introduces delay)
+            * :buffered: use buffered FIFO (introduces extra cycle delay)
 
             NOTE 1: FPGAs may have trouble with the defaults for SyncFIFO
-                    (fwft=True, buffered=False)
-
-            NOTE 2: data_i *must* have a shape function.  it can therefore
-                    be a Signal, or a Record, or a RecordObject.
+                    (fwft=True, buffered=False).  XXX TODO: fix this by
+                    using Queue in all cases instead.
 
             data is processed (and located) as follows:
 
@@ -633,12 +632,12 @@ class FIFOControl(ControlBase):
                      nmoperator.eq(fifo.din, nmoperator.cat(result)),
                    ]
 
-        # connect next rdy/valid/data - do cat on data_o
+        # connect next rdy/valid/data - do cat on data_o (further below)
         connections = [self.n.valid_o.eq(fifo.readable),
-                     fifo.re.eq(self.n.ready_i_test),
-                   ]
+                       fifo.re.eq(self.n.ready_i_test),
+                      ]
         if self.fwft or self.buffered:
-            m.d.comb += connections
+            m.d.comb += connections # combinatorial on next ready/valid
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
         data_o = nmoperator.cat(self.n.data_o).eq(fifo.dout)
