@@ -66,7 +66,7 @@ class InputTest:
         for i in range(self.tlen):
             op2 = self.di[mid][i]
             rs = dut.p[mid]
-            yield rs.i_valid.eq(1)
+            yield rs.valid_i.eq(1)
             yield rs.i_data.data.eq(op2)
             yield rs.i_data.idx.eq(i)
             yield rs.i_data.mid.eq(mid)
@@ -78,12 +78,12 @@ class InputTest:
 
             print ("send", mid, i, hex(op2))
 
-            yield rs.i_valid.eq(0)
+            yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.i_valid.eq(0)
+        yield rs.valid_i.eq(0)
         yield
 
         print ("send ended", mid)
@@ -157,7 +157,7 @@ class OutputTest:
             op2 = self.di[i][0]
             mid = self.di[i][1]
             rs = dut.p
-            yield rs.i_valid.eq(1)
+            yield rs.valid_i.eq(1)
             yield rs.i_data.data.eq(op2)
             yield rs.i_data.mid.eq(mid)
             yield
@@ -168,12 +168,12 @@ class OutputTest:
 
             print ("send", mid, i, hex(op2))
 
-            yield rs.i_valid.eq(0)
+            yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.i_valid.eq(0)
+        yield rs.valid_i.eq(0)
 
 
 class TestMuxOutPipe(CombMuxOutPipe):

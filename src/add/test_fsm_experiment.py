@@ -99,7 +99,7 @@ class FPDIVPipe(ControlBase):
 
         # see if connecting to stb/ack works
         m.d.comb += self.p.ready_o.eq(self.fpdiv.in_a.ready_o)
-        m.d.comb += self.fpdiv.in_a.i_valid.eq(self.p.i_valid_test)
+        m.d.comb += self.fpdiv.in_a.valid_i.eq(self.p.valid_i_test)
 
         m.d.comb += self.n.o_valid.eq(self.fpdiv.out_z.o_valid)
         m.d.comb += self.fpdiv.out_z.i_ready.eq(self.n.i_ready_test)

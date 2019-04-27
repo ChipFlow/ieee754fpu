@@ -580,7 +580,7 @@ class FPBase:
         """
         res = v.decode2(m)
         ack = Signal()
-        with m.If((op.ready_o) & (op.i_valid_test)):
+        with m.If((op.ready_o) & (op.valid_i_test)):
             m.next = next_state
             # op is latched in from FPNumIn class on same ack/stb
             m.d.comb += ack.eq(0)

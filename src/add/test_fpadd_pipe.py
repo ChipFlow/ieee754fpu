@@ -38,7 +38,7 @@ class InputTest:
         for i in range(self.tlen):
             op1, op2 = self.di[mid][i]
             rs = dut.p[mid]
-            yield rs.i_valid.eq(1)
+            yield rs.valid_i.eq(1)
             yield rs.i_data.a.eq(op1)
             yield rs.i_data.b.eq(op2)
             yield rs.i_data.mid.eq(mid)
@@ -54,12 +54,12 @@ class InputTest:
             print ("send", mid, i, hex(op1), hex(op2), hex(res.bits),
                            fop1, fop2, res)
 
-            yield rs.i_valid.eq(0)
+            yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.i_valid.eq(0)
+        yield rs.valid_i.eq(0)
         yield
 
         print ("send ended", mid)

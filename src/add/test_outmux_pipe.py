@@ -65,7 +65,7 @@ class OutputTest:
             op2 = self.di[i][0]
             mid = self.di[i][1]
             rs = dut.p
-            yield rs.i_valid.eq(1)
+            yield rs.valid_i.eq(1)
             yield rs.i_data.data.eq(op2)
             yield rs.i_data.mid.eq(mid)
             yield
@@ -76,12 +76,12 @@ class OutputTest:
 
             print ("send", mid, i, hex(op2))
 
-            yield rs.i_valid.eq(0)
+            yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
 
-        yield rs.i_valid.eq(0)
+        yield rs.valid_i.eq(0)
 
     def rcv(self, mid):
         out_i = 0
@@ -139,7 +139,7 @@ class TestSyncToPriorityPipe(Elaboratable):
         return m
 
     def ports(self):
-        res = [self.p.i_valid, self.p.ready_o] + \
+        res = [self.p.valid_i, self.p.ready_o] + \
                 self.p.i_data.ports()
         for i in range(len(self.n)):
             res += [self.n[i].i_ready, self.n[i].o_valid] + \

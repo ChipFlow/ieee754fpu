@@ -181,10 +181,10 @@ class CombMultiOutPipeline(MultiOutControlBase):
         mid = self.n_mux.m_id
 
         # temporaries
-        p_i_valid = Signal(reset_less=True)
+        p_valid_i = Signal(reset_less=True)
         pv = Signal(reset_less=True)
-        m.d.comb += p_i_valid.eq(self.p.i_valid_test)
-        m.d.comb += pv.eq(self.p.i_valid & self.p.ready_o)
+        m.d.comb += p_valid_i.eq(self.p.valid_i_test)
+        m.d.comb += pv.eq(self.p.valid_i & self.p.ready_o)
 
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
@@ -192,7 +192,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
             m.d.comb += self.n[i].o_valid.eq(0)
         data_valid = self.n[mid].o_valid
         m.d.comb += self.p.ready_o.eq(~data_valid | self.n[mid].i_ready)
-        m.d.comb += data_valid.eq(p_i_valid | \
+        m.d.comb += data_valid.eq(p_valid_i | \
                                     (~self.n[mid].i_ready & data_valid))
         with m.If(pv):
             m.d.comb += eq(r_data, self.p.i_data)
@@ -234,20 +234,20 @@ class CombMultiInPipeline(MultiInControlBase):
         # need an array of buffer registers conforming to *input* spec
         r_data = []
         data_valid = []
-        p_i_valid = []
+        p_valid_i = []
         n_i_readyn = []
         p_len = len(self.p)
         for i in range(p_len):
             r = self.stage.ispec() # input type
             r_data.append(r)
             data_valid.append(Signal(name="data_valid", reset_less=True))
-            p_i_valid.append(Signal(name="p_i_valid", reset_less=True))
+            p_valid_i.append(Signal(name="p_valid_i", reset_less=True))
             n_i_readyn.append(Signal(name="n_i_readyn", reset_less=True))
             if hasattr(self.stage, "setup"):
                 self.stage.setup(m, r)
         if len(r_data) > 1:
             r_data = Array(r_data)
-            p_i_valid = Array(p_i_valid)
+            p_valid_i = Array(p_valid_i)
             n_i_readyn = Array(n_i_readyn)
             data_valid = Array(data_valid)
 
@@ -257,9 +257,9 @@ class CombMultiInPipeline(MultiInControlBase):
         for i in range(p_len):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_i_readyn[i].eq(1)
-            m.d.comb += p_i_valid[i].eq(0)
+            m.d.comb += p_valid_i[i].eq(0)
             m.d.comb += self.p[i].ready_o.eq(0)
-        m.d.comb += p_i_valid[mid].eq(self.p_mux.active)
+        m.d.comb += p_valid_i[mid].eq(self.p_mux.active)
         m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.i_ready)
         m.d.comb += n_i_readyn[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
@@ -268,12 +268,12 @@ class CombMultiInPipeline(MultiInControlBase):
             av.append(data_valid[i])
         anyvalid = Cat(*av)
         m.d.comb += self.n.o_valid.eq(anyvalid.bool())
-        m.d.comb += data_valid[mid].eq(p_i_valid[mid] | \
+        m.d.comb += data_valid[mid].eq(p_valid_i[mid] | \
                                     (n_i_readyn[mid] & data_valid[mid]))
 
         for i in range(p_len):
             vr = Signal(reset_less=True)
-            m.d.comb += vr.eq(self.p[i].i_valid & self.p[i].ready_o)
+            m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
             with m.If(vr):
                 m.d.comb += eq(r_data[i], self.p[i].i_data)
 
@@ -313,9 +313,9 @@ class InputPriorityArbiter(Elaboratable):
         # connect priority encoder
         in_ready = []
         for i in range(self.num_rows):
-            p_i_valid = Signal(reset_less=True)
-            m.d.comb += p_i_valid.eq(self.pipe.p[i].i_valid_test)
-            in_ready.append(p_i_valid)
+            p_valid_i = Signal(reset_less=True)
+            m.d.comb += p_valid_i.eq(self.pipe.p[i].valid_i_test)
+            in_ready.append(p_valid_i)
         m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
         m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)
         m.d.comb += self.m_id.eq(pe.o)       # output one active input

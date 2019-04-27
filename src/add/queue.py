@@ -64,7 +64,7 @@ class Queue(FIFOInterface, Elaboratable):
 
         # convenience names
         p_ready_o = self.writable
-        p_i_valid = self.we
+        p_valid_i = self.we
         enq_data = self.din
 
         n_o_valid = self.readable
@@ -93,7 +93,7 @@ class Queue(FIFOInterface, Elaboratable):
                      deq_max.eq(deq_ptr == self.depth - 1),
                      empty.eq(ptr_match & ~maybe_full),
                      full.eq(ptr_match & maybe_full),
-                     do_enq.eq(p_ready_o & p_i_valid), # write conditions ok
+                     do_enq.eq(p_ready_o & p_valid_i), # write conditions ok
                      do_deq.eq(n_i_ready & n_o_valid), # read conditions ok
 
                      # set readable and writable (NOTE: see pipe mode below)
@@ -127,7 +127,7 @@ class Queue(FIFOInterface, Elaboratable):
         # this done combinatorially to give the exact same characteristics
         # as Memory "write-through"... without relying on a changing API
         if self.fwft:
-            with m.If(p_i_valid):
+            with m.If(p_valid_i):
                 m.d.comb += n_o_valid.eq(1)
             with m.If(empty):
                 m.d.comb += deq_data.eq(enq_data)

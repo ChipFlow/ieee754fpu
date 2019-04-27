@@ -26,7 +26,7 @@ class FPGetOpMod(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_decode.eq((self.in_op.ready_o) & \
-                                       (self.in_op.i_valid_test))
+                                       (self.in_op.valid_i_test))
         m.submodules.get_op_in = self.in_op
         #m.submodules.get_op_out = self.out_op
         with m.If(self.out_decode):
@@ -145,7 +145,7 @@ class FPGet2Op(FPState):
     def trigger_setup(self, m, in_stb, in_ack):
         """ links stb/ack
         """
-        m.d.comb += self.mod.i_valid.eq(in_stb)
+        m.d.comb += self.mod.valid_i.eq(in_stb)
         m.d.comb += in_ack.eq(self.mod.ready_o)
 
     def setup(self, m, i):
