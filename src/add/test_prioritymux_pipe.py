@@ -132,9 +132,9 @@ class InputTest:
             op2 = self.di[mid][i]
             rs = dut.p[mid]
             yield rs.valid_i.eq(1)
-            yield rs.i_data.data.eq(op2)
-            yield rs.i_data.idx.eq(i)
-            yield rs.i_data.mid.eq(mid)
+            yield rs.data_i.data.eq(op2)
+            yield rs.data_i.idx.eq(i)
+            yield rs.data_i.mid.eq(mid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
@@ -174,9 +174,9 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            mid = yield n.o_data.mid
-            out_i = yield n.o_data.idx
-            out_v = yield n.o_data.data
+            mid = yield n.data_o.mid
+            out_i = yield n.data_o.idx
+            out_v = yield n.data_o.data
 
             print ("recv", mid, out_i, hex(out_v))
 

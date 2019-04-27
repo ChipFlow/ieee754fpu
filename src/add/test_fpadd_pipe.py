@@ -39,9 +39,9 @@ class InputTest:
             op1, op2 = self.di[mid][i]
             rs = dut.p[mid]
             yield rs.valid_i.eq(1)
-            yield rs.i_data.a.eq(op1)
-            yield rs.i_data.b.eq(op2)
-            yield rs.i_data.mid.eq(mid)
+            yield rs.data_i.a.eq(op1)
+            yield rs.data_i.b.eq(op2)
+            yield rs.data_i.mid.eq(mid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
@@ -89,8 +89,8 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            out_mid = yield n.o_data.mid
-            out_z = yield n.o_data.z
+            out_mid = yield n.data_o.mid
+            out_z = yield n.data_o.z
 
             out_i = 0
 

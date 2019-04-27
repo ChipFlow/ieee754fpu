@@ -101,8 +101,8 @@ class FPGet2OpMod(PrevControl):
         PrevControl.__init__(self)
         self.width = width
         self.id_wid = id_wid
-        self.i_data = self.ispec()
-        self.i = self.i_data
+        self.data_i = self.ispec()
+        self.i = self.data_i
         self.o = self.ospec()
 
     def ispec(self):
@@ -118,7 +118,7 @@ class FPGet2OpMod(PrevControl):
         m = PrevControl.elaborate(self, platform)
         with m.If(self.trigger):
             m.d.comb += [
-                self.o.eq(self.i_data),
+                self.o.eq(self.data_i),
             ]
         return m
 

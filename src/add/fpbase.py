@@ -490,7 +490,7 @@ class FPOpIn(PrevControl):
         PrevControl.__init__(self)
         self.width = width
         self.v = Signal(width)
-        self.i_data = self.v
+        self.data_i = self.v
 
     def chain_inv(self, in_op, extra=None):
         stb = in_op.stb
@@ -516,7 +516,7 @@ class FPOpOut(NextControl):
         NextControl.__init__(self)
         self.width = width
         self.v = Signal(width)
-        self.o_data = self.v
+        self.data_o = self.v
 
     def chain_inv(self, in_op, extra=None):
         stb = in_op.stb

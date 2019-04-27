@@ -53,24 +53,24 @@ def tbench(dut):
     yield
     #yield dut.i_p_rst.eq(0)
     yield dut.n.ready_i.eq(1)
-    yield dut.p.i_data.eq(5)
+    yield dut.p.data_i.eq(5)
     yield dut.p.valid_i.eq(1)
     yield
 
-    yield dut.p.i_data.eq(7)
+    yield dut.p.data_i.eq(7)
     yield from check_o_n_valid(dut, 0) # effects of i_p_valid delayed
     yield
     yield from check_o_n_valid(dut, 1) # ok *now* i_p_valid effect is felt
 
-    yield dut.p.i_data.eq(2)
+    yield dut.p.data_i.eq(2)
     yield
     yield dut.n.ready_i.eq(0) # begin going into "stall" (next stage says ready)
-    yield dut.p.i_data.eq(9)
+    yield dut.p.data_i.eq(9)
     yield
     yield dut.p.valid_i.eq(0)
-    yield dut.p.i_data.eq(12)
+    yield dut.p.data_i.eq(12)
     yield
-    yield dut.p.i_data.eq(32)
+    yield dut.p.data_i.eq(32)
     yield dut.n.ready_i.eq(1)
     yield
     yield from check_o_n_valid(dut, 1) # buffer still needs to output
@@ -89,25 +89,25 @@ def tbench2(dut):
     yield
     #yield dut.p.i_rst.eq(0)
     yield dut.n.ready_i.eq(1)
-    yield dut.p.i_data.eq(5)
+    yield dut.p.data_i.eq(5)
     yield dut.p.valid_i.eq(1)
     yield
 
-    yield dut.p.i_data.eq(7)
+    yield dut.p.data_i.eq(7)
     yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
     yield
     yield from check_o_n_valid2(dut, 0) # effects of i_p_valid delayed 2 clocks
 
-    yield dut.p.i_data.eq(2)
+    yield dut.p.data_i.eq(2)
     yield
     yield from check_o_n_valid2(dut, 1) # ok *now* i_p_valid effect is felt
     yield dut.n.ready_i.eq(0) # begin going into "stall" (next stage says ready)
-    yield dut.p.i_data.eq(9)
+    yield dut.p.data_i.eq(9)
     yield
     yield dut.p.valid_i.eq(0)
-    yield dut.p.i_data.eq(12)
+    yield dut.p.data_i.eq(12)
     yield
-    yield dut.p.i_data.eq(32)
+    yield dut.p.data_i.eq(32)
     yield dut.n.ready_i.eq(1)
     yield
     yield from check_o_n_valid2(dut, 1) # buffer still needs to output
@@ -147,7 +147,7 @@ class Test3:
                     continue
                 if send and self.i != len(self.data):
                     yield self.dut.p.valid_i.eq(1)
-                    yield self.dut.p.i_data.eq(self.data[self.i])
+                    yield self.dut.p.data_i.eq(self.data[self.i])
                     self.i += 1
                 else:
                     yield self.dut.p.valid_i.eq(0)
@@ -164,16 +164,16 @@ class Test3:
                 i_n_ready = yield self.dut.n.ready_i_test
                 if not o_n_valid or not i_n_ready:
                     continue
-                o_data = yield self.dut.n.o_data
-                self.resultfn(o_data, self.data[self.o], self.i, self.o)
+                data_o = yield self.dut.n.data_o
+                self.resultfn(data_o, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
                     break
 
-def resultfn_3(o_data, expected, i, o):
-    assert o_data == expected + 1, \
+def resultfn_3(data_o, expected, i, o):
+    assert data_o == expected + 1, \
                 "%d-%d data %x not match %x\n" \
-                % (i, o, o_data, expected)
+                % (i, o, data_o, expected)
 
 def data_placeholder():
         data = []
@@ -240,23 +240,23 @@ class Test5:
                 i_n_ready = yield self.dut.n.ready_i_test
                 if not o_n_valid or not i_n_ready:
                     continue
-                if isinstance(self.dut.n.o_data, Record):
-                    o_data = {}
-                    dod = self.dut.n.o_data
+                if isinstance(self.dut.n.data_o, Record):
+                    data_o = {}
+                    dod = self.dut.n.data_o
                     for k, v in dod.fields.items():
-                        o_data[k] = yield v
+                        data_o[k] = yield v
                 else:
-                    o_data = yield self.dut.n.o_data
-                self.resultfn(o_data, self.data[self.o], self.i, self.o)
+                    data_o = yield self.dut.n.data_o
+                self.resultfn(data_o, self.data[self.o], self.i, self.o)
                 self.o += 1
                 if self.o == len(self.data):
                     break
 
-def resultfn_5(o_data, expected, i, o):
+def resultfn_5(data_o, expected, i, o):
     res = expected[0] + expected[1]
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d data %x not match %s\n" \
-                % (i, o, o_data, repr(expected))
+                % (i, o, data_o, repr(expected))
 
 def tbench4(dut):
     data = []
@@ -273,7 +273,7 @@ def tbench4(dut):
         if o_p_ready:
             if send and i != len(data):
                 yield dut.p.valid_i.eq(1)
-                yield dut.p.i_data.eq(data[i])
+                yield dut.p.data_i.eq(data[i])
                 i += 1
             else:
                 yield dut.p.valid_i.eq(0)
@@ -281,9 +281,9 @@ def tbench4(dut):
         o_n_valid = yield dut.n.valid_o
         i_n_ready = yield dut.n.ready_i_test
         if o_n_valid and i_n_ready:
-            o_data = yield dut.n.o_data
-            assert o_data == data[o] + 2, "%d-%d data %x not match %x\n" \
-                                        % (i, o, o_data, data[o])
+            data_o = yield dut.n.data_o
+            assert data_o == data[o] + 2, "%d-%d data %x not match %x\n" \
+                                        % (i, o, data_o, data[o])
             o += 1
             if o == len(data):
                 break
@@ -331,11 +331,11 @@ def data_chain2():
         return data
 
 
-def resultfn_9(o_data, expected, i, o):
+def resultfn_9(data_o, expected, i, o):
     res = expected + 2
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d received data %x not match expected %x\n" \
-                % (i, o, o_data, res)
+                % (i, o, data_o, res)
 
 
 ######################################################################
@@ -422,11 +422,11 @@ class ExampleLTBufferedPipeDerived(BufferedHandshake):
         BufferedHandshake.__init__(self, stage)
 
 
-def resultfn_6(o_data, expected, i, o):
+def resultfn_6(data_o, expected, i, o):
     res = 1 if expected[0] < expected[1] else 0
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d data %x not match %s\n" \
-                % (i, o, o_data, repr(expected))
+                % (i, o, data_o, repr(expected))
 
 
 ######################################################################
@@ -492,11 +492,11 @@ class ExampleAddRecordPipe(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, stage)
 
 
-def resultfn_7(o_data, expected, i, o):
+def resultfn_7(data_o, expected, i, o):
     res = (expected['src1'] + 1, expected['src2'] + 1)
-    assert o_data['src1'] == res[0] and o_data['src2'] == res[1], \
+    assert data_o['src1'] == res[0] and data_o['src2'] == res[1], \
                 "%d-%d data %s not match %s\n" \
-                % (i, o, repr(o_data), repr(expected))
+                % (i, o, repr(data_o), repr(expected))
 
 
 class ExampleAddRecordPlaceHolderPipe(UnbufferedPipeline):
@@ -508,12 +508,12 @@ class ExampleAddRecordPlaceHolderPipe(UnbufferedPipeline):
         UnbufferedPipeline.__init__(self, stage)
 
 
-def resultfn_test11(o_data, expected, i, o):
+def resultfn_test11(data_o, expected, i, o):
     res1 = expected.src1 + 1
     res2 = expected.src2 + 1
-    assert o_data['src1'] == res1 and o_data['src2'] == res2, \
+    assert data_o['src1'] == res1 and data_o['src2'] == res2, \
                 "%d-%d data %s not match %s\n" \
-                % (i, o, repr(o_data), repr(expected))
+                % (i, o, repr(data_o), repr(expected))
 
 
 ######################################################################
@@ -575,11 +575,11 @@ class TestInputAdd:
         self.op2 = op2
 
 
-def resultfn_8(o_data, expected, i, o):
+def resultfn_8(data_o, expected, i, o):
     res = expected.op1 + expected.op2 # these are a TestInputAdd instance
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d data %s res %x not match %s\n" \
-                % (i, o, repr(o_data), res, repr(expected))
+                % (i, o, repr(data_o), res, repr(expected))
 
 def data_2op():
         data = []
@@ -652,11 +652,11 @@ def data_chain1():
         return data
 
 
-def resultfn_12(o_data, expected, i, o):
+def resultfn_12(data_o, expected, i, o):
     res = expected + 1
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d data %x not match %x\n" \
-                % (i, o, o_data, res)
+                % (i, o, data_o, res)
 
 
 ######################################################################
@@ -728,11 +728,11 @@ class PassThroughTest(PassThroughHandshake):
         stage = PassThroughStage(self.iospecfn)
         PassThroughHandshake.__init__(self, stage)
 
-def resultfn_identical(o_data, expected, i, o):
+def resultfn_identical(data_o, expected, i, o):
     res = expected
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d data %x not match %x\n" \
-                % (i, o, o_data, res)
+                % (i, o, data_o, res)
 
 
 ######################################################################
@@ -1023,7 +1023,7 @@ if __name__ == '__main__':
         run_simulation(dut, tbench2(dut), vcd_name="test_bufpipe2.vcd")
         ports = [dut.p.valid_i, dut.n.ready_i,
                  dut.n.valid_o, dut.p.ready_o] + \
-                 [dut.p.i_data] + [dut.n.o_data]
+                 [dut.p.data_i] + [dut.n.data_o]
         vl = rtlil.convert(dut, ports=ports)
         with open("test_bufpipe2.il", "w") as f:
             f.write(vl)
@@ -1055,7 +1055,7 @@ if __name__ == '__main__':
 
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             list(dut.p.i_data) + [dut.n.o_data]
+             list(dut.p.data_i) + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_ltcomb_pipe.il", "w") as f:
         f.write(vl)
@@ -1066,8 +1066,8 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_7, data=data)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o,
-             dut.p.i_data.src1, dut.p.i_data.src2,
-             dut.n.o_data.src1, dut.n.o_data.src2]
+             dut.p.data_i.src1, dut.p.data_i.src2,
+             dut.n.data_o.src1, dut.n.data_o.src2]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_recordcomb_pipe.il", "w") as f:
         f.write(vl)
@@ -1083,7 +1083,7 @@ if __name__ == '__main__':
     dut = ExampleBufPipeChain2()
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipechain2.il", "w") as f:
         f.write(vl)
@@ -1115,7 +1115,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe12.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe12.il", "w") as f:
         f.write(vl)
@@ -1127,7 +1127,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe13.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe13.il", "w") as f:
         f.write(vl)
@@ -1139,7 +1139,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf15.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf15.il", "w") as f:
         f.write(vl)
@@ -1151,7 +1151,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf16.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf16.il", "w") as f:
         f.write(vl)
@@ -1163,7 +1163,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_unbufpipe17.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_unbufpipe17.il", "w") as f:
         f.write(vl)
@@ -1175,7 +1175,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_passthru18.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_passthru18.il", "w") as f:
         f.write(vl)
@@ -1187,7 +1187,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass19.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass19.il", "w") as f:
         f.write(vl)
@@ -1199,7 +1199,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifo20.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifo20.il", "w") as f:
         f.write(vl)
@@ -1211,7 +1211,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_fifopass21.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_fifopass21.il", "w") as f:
         f.write(vl)
@@ -1223,8 +1223,8 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord22.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data.op1, dut.p.i_data.op2] + \
-             [dut.n.o_data]
+             [dut.p.data_i.op1, dut.p.data_i.op2] + \
+             [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord22.il", "w") as f:
         f.write(vl)
@@ -1236,8 +1236,8 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_addrecord23.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data.op1, dut.p.i_data.op2] + \
-             [dut.n.o_data]
+             [dut.p.data_i.op1, dut.p.data_i.op2] + \
+             [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord23.il", "w") as f:
         f.write(vl)
@@ -1248,8 +1248,8 @@ if __name__ == '__main__':
     test = Test5(dut, resultfn_8, data=data)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data.op1, dut.p.i_data.op2] + \
-             [dut.n.o_data]
+             [dut.p.data_i.op1, dut.p.data_i.op2] + \
+             [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_addrecord24.il", "w") as f:
         f.write(vl)
@@ -1262,7 +1262,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_add2pipe25.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_add2pipe25.il", "w") as f:
         f.write(vl)
@@ -1274,7 +1274,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpass997.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpass997.il", "w") as f:
         f.write(vl)
@@ -1286,7 +1286,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufpipe14.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufpipe14.il", "w") as f:
         f.write(vl)
@@ -1298,7 +1298,7 @@ if __name__ == '__main__':
     run_simulation(dut, [test.send, test.rcv], vcd_name="test_bufunbuf999.vcd")
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.i_data] + [dut.n.o_data]
+             [dut.p.data_i] + [dut.n.data_o]
     vl = rtlil.convert(dut, ports=ports)
     with open("test_bufunbuf999.il", "w") as f:
         f.write(vl)

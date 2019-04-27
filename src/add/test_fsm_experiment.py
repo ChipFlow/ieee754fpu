@@ -104,15 +104,15 @@ class FPDIVPipe(ControlBase):
 
         m.d.comb += self.n.valid_o.eq(self.fpdiv.out_z.valid_o)
         m.d.comb += self.fpdiv.out_z.ready_i.eq(self.n.ready_i_test)
-        m.d.comb += self.n.o_data.eq(self.fpdiv.out_z.v)
+        m.d.comb += self.n.data_o.eq(self.fpdiv.out_z.v)
 
         return m
 
-def resultfn(o_data, expected, i, o):
+def resultfn(data_o, expected, i, o):
     res = expected + 1
-    assert o_data == res, \
+    assert data_o == res, \
                 "%d-%d received data %x not match expected %x\n" \
-                % (i, o, o_data, res)
+                % (i, o, data_o, res)
 
 
 if __name__ == "__main__":

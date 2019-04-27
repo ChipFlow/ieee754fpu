@@ -32,8 +32,8 @@ class MultiInControlBase(Elaboratable):
             * n: contains ready/valid to the next stage
 
             User must also:
-            * add i_data members to PrevControl and
-            * add o_data member  to NextControl
+            * add data_i members to PrevControl and
+            * add data_o member  to NextControl
         """
         # set up input and output IO ACK (prev/next ready/valid)
         p = []
@@ -66,7 +66,7 @@ class MultiInControlBase(Elaboratable):
     def set_input(self, i, idx=0):
         """ helper function to set the input data
         """
-        return eq(self.p[idx].i_data, i)
+        return eq(self.p[idx].data_i, i)
 
     def elaborate(self, platform):
         m = Module()
@@ -96,8 +96,8 @@ class MultiOutControlBase(Elaboratable):
             * n: contains ready/valid to the next stages PLURAL
 
             User must also:
-            * add i_data member to PrevControl and
-            * add o_data members to NextControl
+            * add data_i member to PrevControl and
+            * add data_o members to NextControl
         """
 
         # set up input and output IO ACK (prev/next ready/valid)
@@ -136,7 +136,7 @@ class MultiOutControlBase(Elaboratable):
     def set_input(self, i):
         """ helper function to set the input data
         """
-        return eq(self.p.i_data, i)
+        return eq(self.p.data_i, i)
 
     def __iter__(self):
         yield from self.p
@@ -152,8 +152,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         Attributes:
         -----------
-        p.i_data : stage input data (non-array).  shaped according to ispec
-        n.o_data : stage output data array.       shaped according to ospec
+        p.data_i : stage input data (non-array).  shaped according to ispec
+        n.data_o : stage output data array.       shaped according to ospec
     """
 
     def __init__(self, stage, n_len, n_mux):
@@ -162,9 +162,9 @@ class CombMultiOutPipeline(MultiOutControlBase):
         self.n_mux = n_mux
 
         # set up the input and output data
-        self.p.i_data = stage.ispec() # input type
+        self.p.data_i = stage.ispec() # input type
         for i in range(n_len):
-            self.n[i].o_data = stage.ospec() # output type
+            self.n[i].data_o = stage.ospec() # output type
 
     def elaborate(self, platform):
         m = MultiOutControlBase.elaborate(self, platform)
@@ -195,8 +195,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
         m.d.comb += data_valid.eq(p_valid_i | \
                                     (~self.n[mid].ready_i & data_valid))
         with m.If(pv):
-            m.d.comb += eq(r_data, self.p.i_data)
-        m.d.comb += eq(self.n[mid].o_data, self.stage.process(r_data))
+            m.d.comb += eq(r_data, self.p.data_i)
+        m.d.comb += eq(self.n[mid].data_o, self.stage.process(r_data))
 
         return m
 
@@ -206,9 +206,9 @@ class CombMultiInPipeline(MultiInControlBase):
 
         Attributes:
         -----------
-        p.i_data : StageInput, shaped according to ispec
+        p.data_i : StageInput, shaped according to ispec
             The pipeline input
-        p.o_data : StageOutput, shaped according to ospec
+        p.data_o : StageOutput, shaped according to ospec
             The pipeline output
         r_data : input_shape according to ispec
             A temporary (buffered) copy of a prior (valid) input.
@@ -223,8 +223,8 @@ class CombMultiInPipeline(MultiInControlBase):
 
         # set up the input and output data
         for i in range(p_len):
-            self.p[i].i_data = stage.ispec() # input type
-        self.n.o_data = stage.ospec()
+            self.p[i].data_i = stage.ispec() # input type
+        self.n.data_o = stage.ospec()
 
     def elaborate(self, platform):
         m = MultiInControlBase.elaborate(self, platform)
@@ -275,9 +275,9 @@ class CombMultiInPipeline(MultiInControlBase):
             vr = Signal(reset_less=True)
             m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
             with m.If(vr):
-                m.d.comb += eq(r_data[i], self.p[i].i_data)
+                m.d.comb += eq(r_data[i], self.p[i].data_i)
 
-        m.d.comb += eq(self.n.o_data, self.stage.process(r_data[mid]))
+        m.d.comb += eq(self.n.data_o, self.stage.process(r_data[mid]))
 
         return m
 
@@ -288,7 +288,7 @@ class CombMuxOutPipe(CombMultiOutPipeline):
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
 
         # HACK: n-mux is also the stage... so set the muxid equal to input mid
-        stage.m_id = self.p.i_data.mid
+        stage.m_id = self.p.data_i.mid
 
 
 
