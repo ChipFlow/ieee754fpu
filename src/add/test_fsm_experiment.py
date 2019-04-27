@@ -93,7 +93,7 @@ class FPDIVPipe(ControlBase):
         return self.fpdiv.out_z.v # return z output
 
     def elaborate(self, platform):
-        self.m = m = ControlBase._elaborate(self, platform)
+        self.m = m = ControlBase.elaborate(self, platform)
 
         m.submodules.fpdiv = self.fpdiv
 
