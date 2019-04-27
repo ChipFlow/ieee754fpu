@@ -9,6 +9,14 @@
 
     stage requires compliance with a strict API that may be
     implemented in several means, including as a static class.
+
+    Stage Blocks really must be combinatorial blocks.  It would be ok
+    to have input come in from sync'd sources (clock-driven) however by
+    doing so they would no longer be deterministic, and chaining such
+    blocks with such side-effects together could result in unexpected,
+    unpredictable, unreproduceable behaviour.
+    So generally to be avoided, then unless you know what you are doing.
+
     the methods of a stage instance must be as follows:
 
     * ispec() - Input data format specification
