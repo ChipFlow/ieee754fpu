@@ -378,7 +378,7 @@ class LTStage(StageCls):
         return self.o
 
 
-class LTStageDerived(SetLessThan, StageCls, Elaboratable):
+class LTStageDerived(SetLessThan, StageCls):
     """ special version of a nmigen module where the module is also a stage
 
         shows that you don't actually need to combinatorially connect
