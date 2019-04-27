@@ -26,8 +26,10 @@ class FPADDBasePipe(ControlBase):
         self.pipe2 = FPAddAlignSingleAdd(width, id_wid)
         self.pipe3 = FPNormToPack(width, id_wid)
 
+        self._eqs = self.connect([self.pipe1, self.pipe2, self.pipe3])
+
     def elaborate(self, platform):
-        m = Module()
+        m = ControlBase.elaborate(self, platform)
         m.submodules.scnorm = self.pipe1
         m.submodules.addalign = self.pipe2
         m.submodules.normpack = self.pipe3
