@@ -640,8 +640,8 @@ class StageChain(StageCls):
             m.d.comb += eq(o, c.process(i)) # process input into "o"
             if idx == len(self.chain)-1:
                 break
-            i = self.chain[idx+1].ispec     # new input on next loop
-            i = _spec(ifn, 'chainin%d' % idx+1)
+            ifn = self.chain[idx+1].ispec   # new input on next loop
+            i = _spec(ifn, 'chainin%d' % (idx+1))
             m.d.comb += eq(i, o)            # assign to next input
         return o                            # last loop is the output
 
