@@ -1,11 +1,23 @@
 def sqrt(num):
+
+    num = 6
+
+    res = 0
+    bit = 1 << 14
+
+    while (bit > num):
+        bit >>= 2
+
+    while (bit != 0):
+        if (num >= res + bit):
+            num -= res + bit
+            res = (res >> 1) + bit
+        
+        else:
+            res >>= 1;
+        bit >>= 2;
     
-   num ** (1/2)
-
-   return num
-
-
-
+    return res
 
 """
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
