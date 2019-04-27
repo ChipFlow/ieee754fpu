@@ -537,7 +537,7 @@ class FPOpOut(NextControl):
                ]
 
 
-class Overflow(Elaboratable):
+class Overflow: #(Elaboratable):
     def __init__(self):
         self.guard = Signal(reset_less=True)     # tot[2]
         self.round_bit = Signal(reset_less=True) # tot[1]
