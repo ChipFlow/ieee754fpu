@@ -397,7 +397,9 @@ class StageChain(StageCls):
 
 
 class ControlBase(Elaboratable):
-    """ Common functions for Pipeline API
+    """ Common functions for Pipeline API.  Note: a "pipeline stage" only
+        exists (conceptually) when a ControlBase derivative is handed
+        a Stage (combinatorial block)
     """
     def __init__(self, stage=None, in_multi=None, stage_ctl=False):
         """ Base class containing ready/valid/data to previous and next stages
@@ -466,7 +468,18 @@ class ControlBase(Elaboratable):
             Thus it becomes possible to build up larger chains recursively.
             More complex chains (multi-input, multi-output) will have to be
             done manually.
+
+            Argument:
+
+            * :pipechain: - a sequence of ControlBase-derived classes
+                            (must be one or more in length)
+
+            Returns:
+
+            * a list of eq assignments that will need to be added in
+              an elaborate() to m.d.comb
         """
+        assert len(pipechain > 0), "pipechain must be non-zero length"
         eqs = [] # collated list of assignment statements
 
         # connect inter-chain
@@ -526,5 +539,4 @@ class ControlBase(Elaboratable):
         m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
 
         return m
-
 
