@@ -11,8 +11,8 @@ def sqrt(num):
             num -= res + bit
             res = (res >> 1) + bit
         else:
-            res >>= 1;
-        bit >>= 2;
+            res >>= 1
+        bit >>= 2
 
     return res
 
