@@ -343,13 +343,14 @@ class Stage(metaclass=ABCMeta):
 class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
-        combinatorial chain.
+        combinatorial chain, to create one giant combinatorial block.
 
         the end result basically conforms to the exact same Stage API.
 
         * input to this class will be the input of the first stage
         * output of first stage goes into input of second
-        * output of second goes into input into third (etc. etc.)
+        * output of second goes into input into third
+        * ... (etc. etc.)
         * the output of this class will be the output of the last stage
 
         NOTE: whilst this is very similar to ControlBase.connect(), it is
