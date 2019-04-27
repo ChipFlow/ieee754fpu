@@ -480,6 +480,7 @@ class ExampleAddRecordPlaceHolderStage(StageCls):
         return o
 
 
+# a dummy class that may have stuff assigned to instances once created
 class PlaceHolder: pass
 
 
@@ -547,7 +548,7 @@ class ExampleAddClassStage(StageCls):
         """ returns an output signal which will happen to contain the sum
             of the two inputs
         """
-        return Signal(16)
+        return Signal(16, name="add2_out")
 
     def process(self, i):
         """ process the input data (sums the values in the tuple) and returns it

@@ -19,17 +19,26 @@
 
     the methods of a stage instance must be as follows:
 
-    * ispec() - Input data format specification
-                returns an object or a list or tuple of objects, or
-                a Record, each object having an "eq" function which
-                takes responsibility for copying by assignment all
-                sub-objects
-    * ospec() - Output data format specification
-                requirements as for ospec
-    * process(m, i) - Processes an ispec-formatted object
+    * ispec() - Input data format specification.  Takes a bit of explaining.
+                The requirements are: something that eventually derives from
+                nmigen Value must be returned *OR* an iterator or iterable
+                or sequence (list, tuple etc.) or generator must *yield*
+                thing(s) that (eventually) derive from the nmigen Value
+                class.  Complex to state, very simple in practice:
+                see test_buf_pipe.py for over 25 working examples.
+
+    * ospec() - Output data format specification.
+                requirements identical to ispec
+
+    * process(m, i) - Processes an ispec-formatted object/sequence
                 returns a combinatorial block of a result that
-                may be assigned to the output, by way of the "eq"
-                function
+                may be assigned to the output, by way of the "nmoperator.eq"
+                function.  Note that what is returned here can be
+                extremely flexible.  Even a dictionary can be returned
+                as long as it has fields that match precisely with the
+                Record into which its values is intended to be assigned.
+                Again: see example unit tests for details.
+
     * setup(m, i) - Optional function for setting up submodules
                 may be used for more complex stages, to link
                 the input (i) to submodules.  must take responsibility
@@ -40,7 +49,8 @@
     Both StageCls (for use with non-static classes) and Stage (for use
     by static classes) are abstract classes from which, for convenience
     and as a courtesy to other developers, anything conforming to the
-    Stage API may *choose* to derive.
+    Stage API may *choose* to derive.  See Liskov Substitution Principle:
+    https://en.wikipedia.org/wiki/Liskov_substitution_principle
 
     StageChain:
     ----------
