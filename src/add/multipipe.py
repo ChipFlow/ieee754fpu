@@ -15,6 +15,7 @@ from nmigen import Signal, Cat, Const, Mux, Module, Array, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.hdl.rec import Record, Layout
+from iocontrol import _spec
 
 from collections.abc import Sequence
 
@@ -162,9 +163,10 @@ class CombMultiOutPipeline(MultiOutControlBase):
         self.n_mux = n_mux
 
         # set up the input and output data
-        self.p.data_i = stage.ispec() # input type
+        self.p.data_i = _spec(stage.ispec, 'data_i') # input type
         for i in range(n_len):
-            self.n[i].data_o = stage.ospec() # output type
+            name = 'data_o_%d' % i
+            self.n[i].data_o = _spec(stage.ospec, name) # output type
 
     def elaborate(self, platform):
         m = MultiOutControlBase.elaborate(self, platform)
@@ -173,7 +175,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
             m.submodules += self.n_mux
 
         # need buffer register conforming to *input* spec
-        r_data = self.stage.ispec() # input type
+        r_data = _spec(self.stage.ispec, 'r_data') # input type
         if hasattr(self.stage, "setup"):
             self.stage.setup(m, r_data)
 
@@ -223,8 +225,9 @@ class CombMultiInPipeline(MultiInControlBase):
 
         # set up the input and output data
         for i in range(p_len):
-            self.p[i].data_i = stage.ispec() # input type
-        self.n.data_o = stage.ospec()
+            name = 'data_i_%d' % i
+            self.p[i].data_i = _spec(stage.ispec, name) # input type
+        self.n.data_o = _spec(stage.ospec, 'data_o')
 
     def elaborate(self, platform):
         m = MultiInControlBase.elaborate(self, platform)
@@ -238,7 +241,8 @@ class CombMultiInPipeline(MultiInControlBase):
         n_ready_in = []
         p_len = len(self.p)
         for i in range(p_len):
-            r = self.stage.ispec() # input type
+            name = 'r_%d' % i
+            r = _spec(self.stage.ispec, name) # input type
             r_data.append(r)
             data_valid.append(Signal(name="data_valid", reset_less=True))
             p_valid_i.append(Signal(name="p_valid_i", reset_less=True))
