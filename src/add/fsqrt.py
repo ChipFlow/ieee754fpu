@@ -97,6 +97,10 @@ if __name__ == '__main__':
             print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
 
 """
+
+Notes:
+https://pdfs.semanticscholar.org/5060/4e9aff0e37089c4ab9a376c3f35761ffe28b.pdf
+
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
 //
 
