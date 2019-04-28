@@ -48,9 +48,8 @@ def main(mantissa, exponent):
     if exponent & 1 != 0:
         return sqrt(mantissa << 1), # shift mantissa up
                 ((exponent - 1) / 2) # subtract 1 from exp to compensate
-    else:
-        return sqrt(mantissa),      # mantissa as-is
-                (exponent / 2)       # no compensating needed on exp
+    return sqrt(mantissa),      # mantissa as-is
+           (exponent / 2)       # no compensating needed on exp
 
 for Q in range(1, int(1e7)):
     print(Q, sqrt(Q), sqrtsimple(Q), int(Q**0.5))
