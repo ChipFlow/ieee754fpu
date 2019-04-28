@@ -436,7 +436,55 @@ class StageChain(StageCls):
         return self.o # conform to Stage API: return last-loop output
 
 
-class ControlBase(Elaboratable):
+class StageHandler(Elaboratable):
+    """ Stage handling class
+    """
+    def __init__(self, ctrl, stage):
+        """
+        """
+        if stage is not None:
+            self.new_data(self, self, "data")
+
+    @property
+    def data_r(self):
+        return self.stage.process(self.p.data_i)
+
+    def _postprocess(self, i): # XXX DISABLED
+        return i # RETURNS INPUT
+        if hasattr(self.stage, "postprocess"):
+            return self.stage.postprocess(i)
+        return i
+
+    def new_data(self, p, n, name):
+        """ allocates new data_i and data_o
+        """
+        self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
+        self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
+
+    def elaborate(self, platform):
+        """ handles case where stage has dynamic ready/valid functions
+        """
+        m = Module()
+        m.submodules.p = self.p
+        m.submodules.n = self.n
+
+        if self.stage is not None and hasattr(self.stage, "setup"):
+            self.stage.setup(m, self.p.data_i)
+
+        if not self.p.stage_ctl:
+            return m
+
+        # intercept the previous (outgoing) "ready", combine with stage ready
+        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & self.stage.d_ready)
+
+        # intercept the next (incoming) "ready" and combine it with data valid
+        sdv = self.stage.d_valid(self.n.ready_i)
+        m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
+
+        return m
+
+
+class ControlBase(StageHandler):
     """ Common functions for Pipeline API.  Note: a "pipeline stage" only
         exists (conceptually) when a ControlBase derivative is handed
         a Stage (combinatorial block)
@@ -457,10 +505,7 @@ class ControlBase(Elaboratable):
         self.p = PrevControl(in_multi, stage_ctl)
         self.n = NextControl(stage_ctl)
 
-        # set up the input and output data
-        if stage is not None:
-            self.p.data_i = _spec(stage.ispec, "data_i") # input type
-            self.n.data_o = _spec(stage.ospec, "data_o") # output type
+        StageHandler.__init__(self, self, stage)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -528,27 +573,14 @@ class ControlBase(Elaboratable):
             pipe2 = pipechain[i+1]
             eqs += pipe1.connect_to_next(pipe2)
 
-        # connect front of chain to ourselves
+        # connect front and back of chain to ourselves
         front = pipechain[0]
-        self.p.data_i = _spec(front.stage.ispec, "chainin")
-        eqs += front._connect_in(self)
-
-        # connect end of chain to ourselves
         end = pipechain[-1]
-        self.n.data_o = _spec(end.stage.ospec, "chainout")
+        self.new_data(front, end, "chain") # NOTE: REPLACES existing data
+        eqs += front._connect_in(self)
         eqs += end._connect_out(self)
 
         return eqs
-
-    @property
-    def data_r(self):
-        return self.stage.process(self.p.data_i)
-
-    def _postprocess(self, i): # XXX DISABLED
-        return i # RETURNS INPUT
-        if hasattr(self.stage, "postprocess"):
-            return self.stage.postprocess(i)
-        return i
 
     def set_input(self, i):
         """ helper function to set the input data
@@ -561,26 +593,4 @@ class ControlBase(Elaboratable):
 
     def ports(self):
         return list(self)
-
-    def elaborate(self, platform):
-        """ handles case where stage has dynamic ready/valid functions
-        """
-        m = Module()
-        m.submodules.p = self.p
-        m.submodules.n = self.n
-
-        if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.data_i)
-
-        if not self.p.stage_ctl:
-            return m
-
-        # intercept the previous (outgoing) "ready", combine with stage ready
-        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & self.stage.d_ready)
-
-        # intercept the next (incoming) "ready" and combine it with data valid
-        sdv = self.stage.d_valid(self.n.ready_i)
-        m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
-
-        return m
 
