@@ -44,6 +44,7 @@ def sqrt(num):
         r = R
     return Q
 
+
 def main(mantissa, exponent):
     if exponent & 1 != 0:
         return sqrt(mantissa << 1), # shift mantissa up
@@ -51,10 +52,13 @@ def main(mantissa, exponent):
     return sqrt(mantissa),      # mantissa as-is
            (exponent / 2)       # no compensating needed on exp
 
-for Q in range(1, int(1e7)):
-    print(Q, sqrt(Q), sqrtsimple(Q), int(Q**0.5))
-    assert int(Q**0.5) == sqrtsimple(Q), "Q sqrtsimpl fail %d" % Q
-    assert int(Q**0.5) == sqrt(Q), "Q sqrt fail %d" % Q
+
+if __name__ == '__main__':
+    for Q in range(1, int(1e7)):
+        print(Q, sqrt(Q), sqrtsimple(Q), int(Q**0.5))
+        assert int(Q**0.5) == sqrtsimple(Q), "Q sqrtsimpl fail %d" % Q
+        assert int(Q**0.5) == sqrt(Q), "Q sqrt fail %d" % Q
+
 """
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
 //
