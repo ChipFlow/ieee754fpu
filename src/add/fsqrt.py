@@ -45,6 +45,21 @@ def sqrt(num):
     return Q
 
 
+# grabbed these from unit_test_single (convenience, this is just experimenting)
+
+def get_mantissa(x):
+    return 0x7fffff & x
+
+def get_exponent(x):
+    return ((x & 0x7f800000) >> 23) - 127
+
+def set_exponent(x, e):
+    return (x & ~0x7f800000) | ((e+127) << 23)
+
+def get_sign(x):
+    return ((x & 0x80000000) >> 31)
+
+
 def main(mantissa, exponent):
     if exponent & 1 != 0:
         return sqrt(mantissa << 1), # shift mantissa up
