@@ -1,3 +1,4 @@
+# XXX DO NOT USE, fails on num=65536.  wark-wark...
 def sqrtsimple(num):
     res = 0
     bit = 1 << 14
@@ -16,7 +17,6 @@ def sqrtsimple(num):
     return res
 
 
-# XXX DO NOT USE, fails on num=65536.  wark-wark...
 def sqrt(num):
     D = num # D is input (from num)
     Q = 0
