@@ -540,6 +540,10 @@ class ControlBase(Elaboratable):
 
         return eqs
 
+    @property
+    def data(self):
+        return self.stage.process(self.p.data_i)
+
     def _postprocess(self, i): # XXX DISABLED
         return i # RETURNS INPUT
         if hasattr(self.stage, "postprocess"):
