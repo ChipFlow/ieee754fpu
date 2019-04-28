@@ -1,10 +1,10 @@
 # XXX DO NOT USE, fails on num=65536.  wark-wark...
 def sqrtsimple(num):
     res = 0
-    bit = 1 << 14
+    bit = 1
 
-    while (bit > num):
-        bit >>= 2
+    while (bit < num):
+        bit <<= 2
 
     while (bit != 0):
         if (num >= res + bit):
