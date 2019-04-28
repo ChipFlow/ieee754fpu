@@ -1,5 +1,4 @@
-def sqrt(num):
-    """
+def sqrtsimple(num):
     res = 0
     bit = 1 << 14
 
@@ -15,13 +14,14 @@ def sqrt(num):
         bit >>= 2
 
     return res
-    """
-    r = None
-    D = None
+
+
+def sqrt(num):
+    D = num # D is input (from num)
     Q = 0
     R = 0
-    for i in range(15):
-        i -= 1
+    r = 0 # remainder
+    for i in range(15, -1, -1): # negative ranges are weird...
 
         if (R>=0):
         
@@ -45,8 +45,8 @@ def sqrt(num):
     return Q
 
 
-for Q in range(1,20):
-    print(sqrt(Q))
+for Q in range(1, 26):
+    print(sqrt(Q), sqrtsimple(Q))
 
 """
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
