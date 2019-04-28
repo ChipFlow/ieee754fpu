@@ -209,7 +209,7 @@ class BufferedHandshake(ControlBase):
         ]
 
         # store result of processing in combinatorial temporary
-        self.m.d.comb += nmoperator.eq(result, self.data)
+        self.m.d.comb += nmoperator.eq(result, self.data_r)
 
         # if not in stall condition, update the temporary register
         with self.m.If(self.p.ready_o): # not stalled
@@ -292,7 +292,7 @@ class SimpleHandshake(ControlBase):
         ]
 
         # store result of processing in combinatorial temporary
-        m.d.comb += nmoperator.eq(result, self.data)
+        m.d.comb += nmoperator.eq(result, self.data_r)
 
         # previous valid and ready
         with m.If(p_valid_i_p_ready_o):
@@ -403,7 +403,7 @@ class UnbufferedPipeline(ControlBase):
         m.d.sync += data_valid.eq(p_valid_i | buf_full)
 
         with m.If(pv):
-            m.d.sync += nmoperator.eq(r_data, self.data)
+            m.d.sync += nmoperator.eq(r_data, self.data_r)
         data_o = self._postprocess(r_data) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, data_o)
 
@@ -484,7 +484,7 @@ class UnbufferedPipeline2(ControlBase):
         m.d.comb += self.p._ready_o.eq(~buf_full)
         m.d.sync += buf_full.eq(~self.n.ready_i_test & self.n.valid_o)
 
-        data_o = Mux(buf_full, buf, self.data)
+        data_o = Mux(buf_full, buf, self.data_r)
         data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, data_o)
         m.d.sync += nmoperator.eq(buf, self.n.data_o)
@@ -554,7 +554,7 @@ class PassThroughHandshake(ControlBase):
         m.d.comb += self.p.ready_o.eq(~self.n.valid_o |  self.n.ready_i_test)
         m.d.sync += self.n.valid_o.eq(p_valid_i       | ~self.p.ready_o)
 
-        odata = Mux(pvr, self.data, r_data)
+        odata = Mux(pvr, self.data_r, r_data)
         m.d.sync += nmoperator.eq(r_data, odata)
         r_data = self._postprocess(r_data) # XXX TBD, does nothing right now
         m.d.comb += nmoperator.eq(self.n.data_o, r_data)
@@ -622,7 +622,7 @@ class FIFOControl(ControlBase):
 
         # store result of processing in combinatorial temporary
         result = _spec(self.stage.ospec, "r_temp")
-        m.d.comb += nmoperator.eq(result, self.data)
+        m.d.comb += nmoperator.eq(result, self.data_r)
 
         # connect previous rdy/valid/data - do cat on data_i
         # NOTE: cannot do the PrevControl-looking trick because

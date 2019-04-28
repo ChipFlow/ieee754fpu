@@ -541,7 +541,7 @@ class ControlBase(Elaboratable):
         return eqs
 
     @property
-    def data(self):
+    def data_r(self):
         return self.stage.process(self.p.data_i)
 
     def _postprocess(self, i): # XXX DISABLED
