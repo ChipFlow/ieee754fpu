@@ -83,15 +83,18 @@ def main(mantissa, exponent):
 
 
 if __name__ == '__main__':
+
+    # quick test up to 1000 of two sqrt functions
     for Q in range(1, int(1e4)):
         print(Q, sqrt(Q), sqrtsimple(Q), int(Q**0.5))
         assert int(Q**0.5) == sqrtsimple(Q), "Q sqrtsimpl fail %d" % Q
         assert int(Q**0.5) == sqrt(Q), "Q sqrt fail %d" % Q
 
-
-    for e in range(25):
-        for m in range(25):
-            print(main(m, e))
+    # quick mantissa/exponent demo
+    for e in range(26):
+        for m in range(26):
+            ms, es = main(m, e)
+            print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
 
 """
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
