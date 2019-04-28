@@ -105,7 +105,7 @@ class Object:
             raise AttributeError(e)
 
     def __iter__(self):
-        for x in self.fields.values():
+        for x in self.fields.values():  # OrderedDict so order is preserved
             if isinstance(x, Iterable):
                 yield from x
             else:
@@ -124,7 +124,7 @@ class Object:
         print (res)
         return res
 
-    def ports(self):
+    def ports(self): # being called "keys" would be much better
         return list(self)
 
 
@@ -148,13 +148,13 @@ class RecordObject(Record):
         self.layout.fields.update(newlayout)
 
     def __iter__(self):
-        for x in self.fields.values():
+        for x in self.fields.values(): # remember: fields is an OrderedDict
             if isinstance(x, Iterable):
-                yield from x
+                yield from x           # a bit like flatten (nmigen.tools)
             else:
                 yield x
 
-    def ports(self):
+    def ports(self): # would be better being called "keys"
         return list(self)
 
 
