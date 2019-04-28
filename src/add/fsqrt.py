@@ -16,6 +16,7 @@ def sqrtsimple(num):
     return res
 
 
+# XXX DO NOT USE, fails on num=65536.  wark-wark...
 def sqrt(num):
     D = num # D is input (from num)
     Q = 0
@@ -59,6 +60,8 @@ def set_exponent(x, e):
 def get_sign(x):
     return ((x & 0x80000000) >> 31)
 
+# main function, takes mantissa and exponent as separate arguments
+# returns a tuple, sqrt'd mantissa, sqrt'd exponent
 
 def main(mantissa, exponent):
     if exponent & 1 != 0:
