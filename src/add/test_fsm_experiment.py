@@ -2,17 +2,18 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Const, Cat
+from nmigen import Module, Signal, Const, Cat, Elaboratable
 from nmigen.cli import main, verilog, rtlil
 from nmigen.compat.sim import run_simulation
 
 
 from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, FPBase, FPState
-from singlepipe import eq, SimpleHandshake, ControlBase
+from nmoperator import eq
+from singlepipe import SimpleHandshake, ControlBase
 from test_buf_pipe import data_chain2, Test5
 
 
-class FPDIV(FPBase):
+class FPDIV(FPBase, Elaboratable):
 
     def __init__(self, width):
         FPBase.__init__(self)
