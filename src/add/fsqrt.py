@@ -60,6 +60,17 @@ def set_exponent(x, e):
 def get_sign(x):
     return ((x & 0x80000000) >> 31)
 
+# convert FP32 to s/e/m
+def create_fp32(s, e, m):
+    """ receive sign, exponent, mantissa, return FP32 """
+    return set_exponent((s << 31) | get_mantissa(m))
+
+# convert s/e/m to FP32
+def decode_fp32(x):
+    """ receive FP32, return sign, exponent, mantissa """
+    return get_sign(x), get_exponent(x), get_mantissa(x)
+
+
 # main function, takes mantissa and exponent as separate arguments
 # returns a tuple, sqrt'd mantissa, sqrt'd exponent
 
