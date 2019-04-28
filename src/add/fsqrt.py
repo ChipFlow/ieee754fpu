@@ -76,10 +76,10 @@ def decode_fp32(x):
 
 def main(mantissa, exponent):
     if exponent & 1 != 0:
-        return sqrt(mantissa << 1), # shift mantissa up
-                ((exponent - 1) / 2) # subtract 1 from exp to compensate
-    return sqrt(mantissa),      # mantissa as-is
-           (exponent / 2)       # no compensating needed on exp
+        return sqrt(mantissa << 1), ((exponent - 1) / 2) # shift mantissa up
+ # subtract 1 from exp to compensate
+    return sqrt(mantissa), (exponent / 2)        # mantissa as-is
+                # no compensating needed on exp
 
 
 if __name__ == '__main__':
@@ -88,6 +88,10 @@ if __name__ == '__main__':
         assert int(Q**0.5) == sqrtsimple(Q), "Q sqrtsimpl fail %d" % Q
         assert int(Q**0.5) == sqrt(Q), "Q sqrt fail %d" % Q
 
+
+    for e in range(25):
+        for m in range(25):
+            print(main(m, e))
 """
 //This is the main code of integer sqrt function found here:http://verilogcodes.blogspot.com/2017/11/a-verilog-function-for-finding-square-root.html
 //
