@@ -178,7 +178,8 @@ class StageHelper(Stage):
     def new_specs(self, name):
         """ allocates new ispec and ospec pair
         """
-        return self.ispec("%s_i" % name), self.ospec("%s_o" % name)
+        return (_spec(self.ispec, "%s_i" % name),
+                _spec(self.ospec, "%s_o" % name))
 
     def process(self, i):
         if self.stage and hasattr(self.stage, "process"):

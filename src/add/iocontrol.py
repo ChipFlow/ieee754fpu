@@ -262,26 +262,28 @@ class NextControl(Elaboratable):
             return self.ready_i & self.d_valid
         return self.ready_i
 
-    def connect_to_next(self, nxt):
+    def connect_to_next(self, nxt, do_data=True):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
             use this when connecting stage-to-stage
         """
-        return [nxt.valid_i.eq(self.valid_o),
-                self.ready_i.eq(nxt.ready_o),
-                nmoperator.eq(nxt.data_i, self.data_o),
-               ]
+        res = [nxt.valid_i.eq(self.valid_o),
+               self.ready_i.eq(nxt.ready_o)]
+        if do_data:
+            res.append(nmoperator.eq(nxt.data_i, self.data_o))
+        return res
 
-    def _connect_out(self, nxt, direct=False, fn=None):
+    def _connect_out(self, nxt, direct=False, fn=None, do_data=True):
         """ internal helper function to connect stage to an output source.
             do not use to connect stage-to-stage!
         """
         ready_i = nxt.ready_i if direct else nxt.ready_i_test
+        res = [nxt.valid_o.eq(self.valid_o),
+               self.ready_i.eq(ready_i)]
+        if not do_data:
+            return res
         data_o = fn(nxt.data_o) if fn is not None else nxt.data_o
-        return [nxt.valid_o.eq(self.valid_o),
-                self.ready_i.eq(ready_i),
-                nmoperator.eq(data_o, self.data_o),
-               ]
+        return res + [nmoperator.eq(data_o, self.data_o)]
 
     def elaborate(self, platform):
         m = Module()
