@@ -410,7 +410,6 @@ class StageChain(StageCls):
         return _spec(self.chain[-1].ospec, "chainout")
 
     def _specallocate_setup(self, m, i):
-        o = i # in case chain is empty
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
@@ -425,7 +424,6 @@ class StageChain(StageCls):
         return o                            # last loop is the output
 
     def _noallocate_setup(self, m, i):
-        o = i # in case chain is empty
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
