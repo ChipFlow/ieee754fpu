@@ -440,9 +440,13 @@ class StageChain(StageCls):
         return self.o # conform to Stage API: return last-loop output
 
 
-class StageHelper:
+class StageHelper(Stage):
     """ a convenience wrapper around something that is Stage-API-compliant.
         (that "something" may be a static class, for example).
+
+        StageHelper happens to also be compliant with the Stage API,
+        except that all the "optional" functions are provided
+        (hence the designation "convenience wrapper")
     """
     def __init__(self, stage):
         self.stage = stage
@@ -574,27 +578,27 @@ class ControlBase(StageHelper, Elaboratable):
 
         # connect inter-chain
         for i in range(len(pipechain)-1):
-            pipe1 = pipechain[i]
-            pipe2 = pipechain[i+1]
-            eqs += pipe1.connect_to_next(pipe2)
+            pipe1 = pipechain[i]                # earlier
+            pipe2 = pipechain[i+1]              # later (by 1)
+            eqs += pipe1.connect_to_next(pipe2) # earlier n to later p
 
         # connect front and back of chain to ourselves
-        front = pipechain[0]
-        end = pipechain[-1]
+        front = pipechain[0]                # first in chain
+        end = pipechain[-1]                 # last in chain
         self._new_data(front, end, "chain") # NOTE: REPLACES existing data
-        eqs += front._connect_in(self)
-        eqs += end._connect_out(self)
+        eqs += front._connect_in(self)      # front p to our p
+        eqs += end._connect_out(self)       # end n   to out n
 
         return eqs
 
     def set_input(self, i):
-        """ helper function to set the input data
+        """ helper function to set the input data (used in unit tests)
         """
         return nmoperator.eq(self.p.data_i, i)
 
     def __iter__(self):
-        yield from self.p
-        yield from self.n
+        yield from self.p # yields ready/valid/data (data also gets yielded)
+        yield from self.n # ditto
 
     def ports(self):
         return list(self)
