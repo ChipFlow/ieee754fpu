@@ -10,6 +10,11 @@
     stage requires compliance with a strict API that may be
     implemented in several means, including as a static class.
 
+    Stages do not HOLD data, and they definitely do not contain
+    signalling (ready/valid).  They do however specify the FORMAT
+    of the incoming and outgoing data, and they provide a means to
+    PROCESS that data (from incoming format to outgoing format).
+
     Stage Blocks really must be combinatorial blocks.  It would be ok
     to have input come in from sync'd sources (clock-driven) however by
     doing so they would no longer be deterministic, and chaining such
@@ -23,14 +28,15 @@
                 The requirements are: something that eventually derives from
                 nmigen Value must be returned *OR* an iterator or iterable
                 or sequence (list, tuple etc.) or generator must *yield*
-                thing(s) that (eventually) derive from the nmigen Value
-                class.  Complex to state, very simple in practice:
-                see test_buf_pipe.py for over 25 working examples.
+                thing(s) that (eventually) derive from the nmigen Value class.
+
+                Complex to state, very simple in practice:
+                see test_buf_pipe.py for over 25 worked examples.
 
     * ospec() - Output data format specification.
-                requirements identical to ispec
+                format requirements identical to ispec.
 
-    * process(m, i) - Processes an ispec-formatted object/sequence
+    * process(m, i) - Optional function for processing ispec-formatted data.
                 returns a combinatorial block of a result that
                 may be assigned to the output, by way of the "nmoperator.eq"
                 function.  Note that what is returned here can be
@@ -39,7 +45,7 @@
                 Record into which its values is intended to be assigned.
                 Again: see example unit tests for details.
 
-    * setup(m, i) - Optional function for setting up submodules
+    * setup(m, i) - Optional function for setting up submodules.
                 may be used for more complex stages, to link
                 the input (i) to submodules.  must take responsibility
                 for adding those submodules to the module (m).
@@ -321,8 +327,8 @@ class StageCls(metaclass=ABCMeta):
     def ospec(self): pass       # REQUIRED
     #@abstractmethod
     #def setup(self, m, i): pass # OPTIONAL
-    @abstractmethod
-    def process(self, i): pass  # REQUIRED
+    #@abstractmethod
+    #def process(self, i): pass  # REQUIRED
 
 
 class Stage(metaclass=ABCMeta):
@@ -345,9 +351,9 @@ class Stage(metaclass=ABCMeta):
     #@abstractmethod
     #def setup(m, i): pass
 
-    @staticmethod
-    @abstractmethod
-    def process(i): pass
+    #@staticmethod
+    #@abstractmethod
+    #def process(i): pass
 
 
 class StageChain(StageCls):
@@ -544,7 +550,9 @@ class ControlBase(Elaboratable):
 
     @property
     def data_r(self):
-        return self.stage.process(self.p.data_i)
+        if self.stage and hasattr(self.stage, "process"):
+            return self.stage.process(self.p.data_i)
+        return self.p.data_i
 
     def _postprocess(self, i): # XXX DISABLED
         return i # RETURNS INPUT

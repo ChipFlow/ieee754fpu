@@ -500,11 +500,9 @@ class PassThroughStage(StageCls):
         (many APIs would potentially use a static "wrap" method in e.g.
          StageCls to achieve a similar effect)
     """
-    def __init__(self, iospecfn):
-        self.iospecfn = iospecfn
+    def __init__(self, iospecfn): self.iospecfn = iospecfn
     def ispec(self): return self.iospecfn()
     def ospec(self): return self.iospecfn()
-    def process(self, i): return i
 
 
 class PassThroughHandshake(ControlBase):
