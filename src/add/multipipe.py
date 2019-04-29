@@ -15,7 +15,7 @@ from nmigen import Signal, Cat, Const, Mux, Module, Array, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.hdl.rec import Record, Layout
-from iocontrol import _spec
+from stageapi import _spec
 
 from collections.abc import Sequence
 
@@ -168,6 +168,11 @@ class CombMultiOutPipeline(MultiOutControlBase):
             name = 'data_o_%d' % i
             self.n[i].data_o = _spec(stage.ospec, name) # output type
 
+    def process(self, i):
+        if hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
+
     def elaborate(self, platform):
         m = MultiOutControlBase.elaborate(self, platform)
 
@@ -198,7 +203,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
                                     (~self.n[mid].ready_i & data_valid))
         with m.If(pv):
             m.d.comb += eq(r_data, self.p.data_i)
-        m.d.comb += eq(self.n[mid].data_o, self.stage.process(r_data))
+        m.d.comb += eq(self.n[mid].data_o, self.process(r_data))
 
         return m
 
@@ -228,6 +233,11 @@ class CombMultiInPipeline(MultiInControlBase):
             name = 'data_i_%d' % i
             self.p[i].data_i = _spec(stage.ispec, name) # input type
         self.n.data_o = _spec(stage.ospec, 'data_o')
+
+    def process(self, i):
+        if hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
 
     def elaborate(self, platform):
         m = MultiInControlBase.elaborate(self, platform)
@@ -281,7 +291,7 @@ class CombMultiInPipeline(MultiInControlBase):
             with m.If(vr):
                 m.d.comb += eq(r_data[i], self.p[i].data_i)
 
-        m.d.comb += eq(self.n.data_o, self.stage.process(r_data[mid]))
+        m.d.comb += eq(self.n.data_o, self.process(r_data[mid]))
 
         return m
 
