@@ -96,8 +96,8 @@ def fsqrt_test(x):
     s, e, m = decode_fp32(xbits)
     print("x decode", s, e, m, hex(m))
 
-    m |= 1<<24 # set top bit (the missing "1" from mantissa)
-    m <<= 24
+    m |= 1<<23 # set top bit (the missing "1" from mantissa)
+    m <<= 25
 
     sm, se = main(m, e)
     sm >>= 1
