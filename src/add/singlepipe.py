@@ -130,7 +130,6 @@
 
 from nmigen import Signal, Mux, Module, Elaboratable
 from nmigen.cli import verilog, rtlil
-from nmigen.lib.fifo import SyncFIFOBuffered
 from nmigen.hdl.rec import Record
 
 from queue import Queue
@@ -729,12 +728,11 @@ class RegisterPipeline(UnbufferedPipeline):
 class FIFOControl(ControlBase):
     """ FIFO Control.  Uses Queue to store data, coincidentally
         happens to have same valid/ready signalling as Stage API.
-        (TODO: remove use of SyncFIFOBuffered)
 
         data_i -> fifo.din -> FIFO -> fifo.dout -> data_o
     """
     def __init__(self, depth, stage, in_multi=None, stage_ctl=False,
-                                     fwft=True, buffered=False, pipe=False):
+                                     fwft=True, pipe=False):
         """ FIFO Control
 
             * :depth:    number of entries in the FIFO
@@ -755,12 +753,7 @@ class FIFOControl(ControlBase):
             this is how the FIFO gets de-catted without needing a de-cat
             function
         """
-
-        assert not (fwft and buffered), "buffered cannot do fwft"
-        if buffered:
-            depth += 1
         self.fwft = fwft
-        self.buffered = buffered
         self.pipe = pipe
         self.fdepth = depth
         ControlBase.__init__(self, stage, in_multi, stage_ctl)
@@ -770,10 +763,7 @@ class FIFOControl(ControlBase):
 
         # make a FIFO with a signal of equal width to the data_o.
         (fwidth, _) = nmoperator.shape(self.n.data_o)
-        if self.buffered:
-            fifo = SyncFIFOBuffered(fwidth, self.fdepth)
-        else:
-            fifo = Queue(fwidth, self.fdepth, fwft=self.fwft, pipe=self.pipe)
+        fifo = Queue(fwidth, self.fdepth, fwft=self.fwft, pipe=self.pipe)
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
@@ -792,7 +782,7 @@ class FIFOControl(ControlBase):
         connections = [self.n.valid_o.eq(fifo.readable),
                        fifo.re.eq(self.n.ready_i_test),
                       ]
-        if self.fwft or self.buffered:
+        if self.fwft:
             m.d.comb += connections # combinatorial on next ready/valid
         else:
             m.d.sync += connections # unbuffered fwft mode needs sync
