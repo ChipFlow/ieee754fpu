@@ -28,20 +28,20 @@ def sqrt(num):
     for i in range(15, -1, -1): # negative ranges are weird...
 
         if (R>=0):
-        
+
             R = (R<<2)|((D>>(i+i))&3)
             R = R-((Q<<2)|1) #/*-Q01*/
-         
+
         else:
 
             R = (R<<2)|((D>>(i+i))&3)
             R = R+((Q<<2)|3) #/*+Q11*/
-        
+
         if (R>=0):
             Q = (Q<<1)|1 #/*new Q:*/
         else:
             Q = (Q<<1)|0 #/*new Q:*/
-    
+
 
     if (R<0):
         R = R+((Q<<1)|1)
@@ -99,13 +99,14 @@ if __name__ == '__main__':
             ms, es = main(m, e)
             print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
 
+    x = Float32(1234.123456789)
+    xbits = x.bits
 
+    print (x, type(x))
+    print (xbits, type(xbits))
+    s, e, m = decode_fp32(xbits)
+    print(s, e, m, hex(m))
 
-x = Float32(1234.123456789)
-xbits = x.bits
-    
-
-print(decode_fp32(x))
 """
 
 Notes:
