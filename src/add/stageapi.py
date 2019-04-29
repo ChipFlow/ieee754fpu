@@ -221,8 +221,8 @@ class StageHelper(Stage):
         (that "something" may be a static class, for example).
 
         StageHelper happens to also be compliant with the Stage API,
-        except that all the "optional" functions are provided
-        (hence the designation "convenience wrapper")
+        it differs from the stage that it wraps in that all the "optional"
+        functions are provided (hence the designation "convenience wrapper")
     """
     def __init__(self, stage):
         self.stage = stage
