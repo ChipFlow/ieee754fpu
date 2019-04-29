@@ -221,14 +221,27 @@ class StageHelper(Stage):
     """
     def __init__(self, stage):
         self.stage = stage
+        self._ispecfn = None
+        self._ospecfn = None
+        if stage is not None:
+            self.set_specs(self, self)
 
     def ospec(self, name):
-        assert self.stage is not None
-        return _spec(self.stage.ospec, name)
+        assert self._ospecfn is not None
+        return _spec(self._ospecfn, name)
 
     def ispec(self, name):
-        assert self.stage is not None
-        return _spec(self.stage.ispec, name)
+        assert self._ispecfn is not None
+        return _spec(self._ispecfn, name)
+
+    def set_specs(self, p, n):
+        self._ispecfn = p.stage.ispec
+        self._ospecfn = n.stage.ospec
+
+    def new_specs(self, name):
+        """ allocates new ispec and ospec pair
+        """
+        return self.ispec("%s_i" % name), self.ospec("%s_o" % name)
 
     def process(self, i):
         if self.stage and hasattr(self.stage, "process"):

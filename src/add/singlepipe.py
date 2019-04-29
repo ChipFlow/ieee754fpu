@@ -198,13 +198,12 @@ class ControlBase(StageHelper, Elaboratable):
 
         # set up the input and output data
         if stage is not None:
-            self._new_data(self, self, "data")
+            self._new_data("data")
 
-    def _new_data(self, p, n, name):
+    def _new_data(self, name):
         """ allocates new data_i and data_o
         """
-        self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
-        self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
+        self.p.data_i, self.n.data_o = self.new_specs(name)
 
     @property
     def data_r(self):
@@ -280,7 +279,8 @@ class ControlBase(StageHelper, Elaboratable):
         # connect front and back of chain to ourselves
         front = pipechain[0]                # first in chain
         end = pipechain[-1]                 # last in chain
-        self._new_data(front, end, "chain") # NOTE: REPLACES existing data
+        self.set_specs(front, end) # NOTE: REPLACES existing data
+        self._new_data("chain") # NOTE: REPLACES existing data
         eqs += front._connect_in(self)      # front p to our p
         eqs += end._connect_out(self)       # end n   to out n
 
