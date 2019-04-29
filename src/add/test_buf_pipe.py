@@ -635,8 +635,8 @@ class ExampleStageDelayCls(StageCls, Elaboratable):
 class ExampleBufDelayedPipe(BufferedHandshake):
 
     def __init__(self):
-        stage = ExampleStageDelayCls(valid_trigger=2)
-        BufferedHandshake.__init__(self, stage, stage_ctl=True)
+        self.stage = ExampleStageDelayCls(valid_trigger=2)
+        BufferedHandshake.__init__(self, self.stage, stage_ctl=True)
 
     def elaborate(self, platform):
         m = BufferedHandshake.elaborate(self, platform)
@@ -667,8 +667,8 @@ def resultfn_12(data_o, expected, i, o):
 class ExampleUnBufDelayedPipe(BufferedHandshake):
 
     def __init__(self):
-        stage = ExampleStageDelayCls(valid_trigger=3)
-        BufferedHandshake.__init__(self, stage, stage_ctl=True)
+        self.stage = ExampleStageDelayCls(valid_trigger=3)
+        BufferedHandshake.__init__(self, self.stage, stage_ctl=True)
 
     def elaborate(self, platform):
         m = BufferedHandshake.elaborate(self, platform)

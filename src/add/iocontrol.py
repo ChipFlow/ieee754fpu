@@ -436,18 +436,19 @@ class StageChain(StageCls):
         return self.o # conform to Stage API: return last-loop output
 
 
-class StageHandler(Elaboratable):
-    """ Stage handling class
+class StageHandler: # (Elaboratable):
+    """ Stage handling (wrapper) class: makes e.g. static classes "real"
+        (instances) and provides a way to allocate data_i and data_o
     """
-    def __init__(self, ctrl, stage):
-        """
-        """
-        if stage is not None:
-            self.new_data(self, self, "data")
+    def __init__(self, stage): self.stage = stage
+    def ispec(self, name): return _spec(self.stage.ispec, name)
+    def ospec(self, name): return _spec(self.stage.ospec, name)
+    def process(self, i): return self.stage.process(i)
 
-    @property
-    def data_r(self):
-        return self.stage.process(self.p.data_i)
+    def setup(self, m, i):
+        if self.stage is None or not hasattr(self.stage, "setup"):
+            return
+        self.stage.setup(m, i)
 
     def _postprocess(self, i): # XXX DISABLED
         return i # RETURNS INPUT
@@ -458,33 +459,11 @@ class StageHandler(Elaboratable):
     def new_data(self, p, n, name):
         """ allocates new data_i and data_o
         """
-        self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
-        self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
-
-    def elaborate(self, platform):
-        """ handles case where stage has dynamic ready/valid functions
-        """
-        m = Module()
-        m.submodules.p = self.p
-        m.submodules.n = self.n
-
-        if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.data_i)
-
-        if not self.p.stage_ctl:
-            return m
-
-        # intercept the previous (outgoing) "ready", combine with stage ready
-        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & self.stage.d_ready)
-
-        # intercept the next (incoming) "ready" and combine it with data valid
-        sdv = self.stage.d_valid(self.n.ready_i)
-        m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
-
-        return m
+        return (_spec(p.stage.ispec, "%s_i" % name),
+                _spec(n.stage.ospec, "%s_o" % name))
 
 
-class ControlBase(StageHandler):
+class ControlBase(StageHandler, Elaboratable):
     """ Common functions for Pipeline API.  Note: a "pipeline stage" only
         exists (conceptually) when a ControlBase derivative is handed
         a Stage (combinatorial block)
@@ -499,13 +478,22 @@ class ControlBase(StageHandler):
             * add data_i member to PrevControl (p) and
             * add data_o member to NextControl (n)
         """
-        self.stage = stage
-
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, stage_ctl)
         self.n = NextControl(stage_ctl)
 
-        StageHandler.__init__(self, self, stage)
+        self.sh = StageHandler(stage)
+        if stage is not None:
+            self.new_data(self, self, "data")
+
+    def new_data(self, p, n, name):
+        """ allocates new data_i and data_o
+        """
+        self.p.data_i, self.n.data_o = self.sh.new_data(p.sh, n.sh, name)
+
+    @property
+    def data_r(self):
+        return self.sh.process(self.p.data_i)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -581,6 +569,29 @@ class ControlBase(StageHandler):
         eqs += end._connect_out(self)
 
         return eqs
+
+    def elaborate(self, platform):
+        """ handles case where stage has dynamic ready/valid functions
+        """
+        m = Module()
+        m.submodules.p = self.p
+        m.submodules.n = self.n
+
+        self.sh.setup(m, self.p.data_i)
+
+        if not self.p.stage_ctl:
+            return m
+
+        stage = self.sh.stage
+
+        # intercept the previous (outgoing) "ready", combine with stage ready
+        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & stage.d_ready)
+
+        # intercept the next (incoming) "ready" and combine it with data valid
+        sdv = stage.d_valid(self.n.ready_i)
+        m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
+
+        return m
 
     def set_input(self, i):
         """ helper function to set the input data
