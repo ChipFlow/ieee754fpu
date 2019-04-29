@@ -97,13 +97,16 @@ def fsqrt_test(x):
     print("x decode", s, e, m, hex(m))
 
     m |= 1<<23 # set top bit (the missing "1" from mantissa)
-    m <<= 25
+    m <<= 27
 
     sm, se = main(m, e)
-    sm >>= 1
+    lowbits = sm & 0x3
+    sm >>= 2
     sm = get_mantissa(sm)
     #sm += 2
-    print("our  sqrt", s, se, sm, hex(sm), bin(sm))
+    print("our  sqrt", s, se, sm, hex(sm), bin(sm), "lowbits", lowbits)
+    if lowbits >= 2:
+        print ("probably needs rounding (+1 on mantissa)")
 
     sq_xbits = sq_test.bits
     s, e, m = decode_fp32(sq_xbits)
@@ -133,6 +136,10 @@ if __name__ == '__main__':
     x = Float32(8.0)
     fsqrt_test(x)
     x = Float32(8.5)
+    fsqrt_test(x)
+    x = Float32(3.14159265358979323)
+    fsqrt_test(x)
+    x = Float32(12.99392923123123)
     fsqrt_test(x)
 
 """
