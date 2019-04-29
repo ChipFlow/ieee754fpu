@@ -35,13 +35,16 @@ class Queue(FIFOInterface, Elaboratable):
     def __init__(self, width, depth, fwft=True, pipe=False):
         """ Queue (FIFO) with pipe mode and first-write fall-through capability
 
-            * width: width of Queue data in/out
-            * depth: queue depth.  NOTE: may be set to 0 (this is ok)
-            * fwft : first-write, fall-through mode (Chisel Queue "flow" mode)
-            * pipe : pipe mode.  NOTE: this mode can cause unanticipated
-                     problems.  when read is enabled, so is writeable.
-                     therefore if read is enabled, the data ABSOLUTELY MUST
-                     be read.
+            * :width: width of Queue data in/out
+            * :depth: queue depth.  NOTE: may be set to 0 (this is ok)
+            * :fwft : first-write, fall-through mode (Chisel Queue "flow" mode)
+            * :pipe : pipe mode.  NOTE: this mode can cause unanticipated
+                      problems.  when read is enabled, so is writeable.
+                      therefore if read is enabled, the data ABSOLUTELY MUST
+                      be read.
+
+            fwft mode = True basically means that the data may be transferred
+            combinatorially from input to output.
 
             Attributes:
             * level: available free space (number of unread entries)

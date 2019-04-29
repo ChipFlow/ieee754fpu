@@ -735,14 +735,20 @@ class FIFOControl(ControlBase):
                                      fwft=True, pipe=False):
         """ FIFO Control
 
-            * :depth:    number of entries in the FIFO
-            * :stage:    data processing block
-            * :fwft:     first word fall-thru mode (non-fwft introduces delay)
-            * :buffered: use buffered FIFO (introduces extra cycle delay)
+            * :depth: number of entries in the FIFO
+            * :stage: data processing block
+            * :fwft:  first word fall-thru mode (non-fwft introduces delay)
+            * :pipe:  specifies pipe mode.
 
-            NOTE 1: FPGAs may have trouble with the defaults for SyncFIFO
-                    (fwft=True, buffered=False).  XXX TODO: fix this by
-                    using Queue in all cases instead.
+            when fwft = True it indicates that transfers may occur
+            combinatorially through stage processing in the same clock cycle.
+            This requires that the Stage be a Moore FSM:
+            https://en.wikipedia.org/wiki/Moore_machine
+
+            when fwft = False it indicates that all output signals are
+            produced only from internal registers or memory, i.e. that the
+            Stage is a Mealy FSM:
+            https://en.wikipedia.org/wiki/Mealy_machine
 
             data is processed (and located) as follows:
 
