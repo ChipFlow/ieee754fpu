@@ -356,37 +356,6 @@ class Stage(metaclass=ABCMeta):
     #def process(i): pass
 
 
-class StageHelper:
-    """ a convenience wrapper around something that is Stage-API-compliant.
-        (that "something" may be a static class, for example).
-    """
-    def __init__(self, stage):
-        self.stage = stage
-
-    def ospec(self, name):
-        assert self.stage is not None
-        return _spec(self.stage.ospec, name)
-
-    def ispec(self, name):
-        assert self.stage is not None
-        return _spec(self.stage.ispec, name)
-
-    def process(self, i):
-        if self.stage and hasattr(self.stage, "process"):
-            return self.stage.process(i)
-        return i
-
-    def setup(self, m, i):
-        if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, i)
-
-    def _postprocess(self, i): # XXX DISABLED
-        return i # RETURNS INPUT
-        if hasattr(self.stage, "postprocess"):
-            return self.stage.postprocess(i)
-        return i
-
-
 class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
@@ -471,6 +440,37 @@ class StageChain(StageCls):
 
     def process(self, i):
         return self.o # conform to Stage API: return last-loop output
+
+
+class StageHelper:
+    """ a convenience wrapper around something that is Stage-API-compliant.
+        (that "something" may be a static class, for example).
+    """
+    def __init__(self, stage):
+        self.stage = stage
+
+    def ospec(self, name):
+        assert self.stage is not None
+        return _spec(self.stage.ospec, name)
+
+    def ispec(self, name):
+        assert self.stage is not None
+        return _spec(self.stage.ispec, name)
+
+    def process(self, i):
+        if self.stage and hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
+
+    def setup(self, m, i):
+        if self.stage is not None and hasattr(self.stage, "setup"):
+            self.stage.setup(m, i)
+
+    def _postprocess(self, i): # XXX DISABLED
+        return i # RETURNS INPUT
+        if hasattr(self.stage, "postprocess"):
+            return self.stage.postprocess(i)
+        return i
 
 
 class ControlBase(StageHelper, Elaboratable):
