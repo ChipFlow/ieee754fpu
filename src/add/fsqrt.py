@@ -107,6 +107,9 @@ if __name__ == '__main__':
     s, e, m = decode_fp32(xbits)
     print(s, e, m, hex(m))
 
+    sq_test = x.sqrt()
+    e, m = decode_fp32(sq_test)
+    print(main(e, m))
 """
 
 Notes:
