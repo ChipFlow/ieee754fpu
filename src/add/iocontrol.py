@@ -328,7 +328,7 @@ class StageCls(metaclass=ABCMeta):
     #@abstractmethod
     #def setup(self, m, i): pass # OPTIONAL
     #@abstractmethod
-    #def process(self, i): pass  # REQUIRED
+    #def process(self, i): pass  # OPTIONAL
 
 
 class Stage(metaclass=ABCMeta):
