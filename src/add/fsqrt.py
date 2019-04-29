@@ -108,12 +108,12 @@ if __name__ == '__main__':
     print(s, e, m, hex(m))
 
     se, sm = main(e, m)
-    print("our sqrt", se, sm, hex(sm))
+    print("our  sqrt", s, se, sm, hex(sm), bin(sm))
 
     sq_test = x.sqrt()
     sq_xbits = sq_test.bits
     s, e, m = decode_fp32(sq_xbits)
-    print ("sf16 sqrt", s, e, m, hex(m))
+    print ("sf32 sqrt", s, e, m, hex(m), bin(m))
 """
 
 Notes:
