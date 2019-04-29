@@ -356,6 +356,37 @@ class Stage(metaclass=ABCMeta):
     #def process(i): pass
 
 
+class StageHelper:
+    """ a convenience wrapper around something that is Stage-API-compliant.
+        (that "something" may be a static class, for example).
+    """
+    def __init__(self, stage):
+        self.stage = stage
+
+    def ospec(self, name):
+        assert self.stage is not None
+        return _spec(self.stage.ospec, name)
+
+    def ispec(self, name):
+        assert self.stage is not None
+        return _spec(self.stage.ispec, name)
+
+    def process(self, i):
+        if self.stage and hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
+
+    def setup(self, m, i):
+        if self.stage is not None and hasattr(self.stage, "setup"):
+            self.stage.setup(m, i)
+
+    def _postprocess(self, i): # XXX DISABLED
+        return i # RETURNS INPUT
+        if hasattr(self.stage, "postprocess"):
+            return self.stage.postprocess(i)
+        return i
+
+
 class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
@@ -442,7 +473,7 @@ class StageChain(StageCls):
         return self.o # conform to Stage API: return last-loop output
 
 
-class ControlBase(Elaboratable):
+class ControlBase(StageHelper, Elaboratable):
     """ Common functions for Pipeline API.  Note: a "pipeline stage" only
         exists (conceptually) when a ControlBase derivative is handed
         a Stage (combinatorial block)
@@ -457,7 +488,7 @@ class ControlBase(Elaboratable):
             * add data_i member to PrevControl (p) and
             * add data_o member to NextControl (n)
         """
-        self.stage = stage
+        StageHelper.__init__(self, stage)
 
         # set up input and output IO ACK (prev/next ready/valid)
         self.p = PrevControl(in_multi, stage_ctl)
@@ -472,6 +503,10 @@ class ControlBase(Elaboratable):
         """
         self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
         self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
+
+    @property
+    def data_r(self):
+        return self.process(self.p.data_i)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -548,18 +583,6 @@ class ControlBase(Elaboratable):
 
         return eqs
 
-    @property
-    def data_r(self):
-        if self.stage and hasattr(self.stage, "process"):
-            return self.stage.process(self.p.data_i)
-        return self.p.data_i
-
-    def _postprocess(self, i): # XXX DISABLED
-        return i # RETURNS INPUT
-        if hasattr(self.stage, "postprocess"):
-            return self.stage.postprocess(i)
-        return i
-
     def set_input(self, i):
         """ helper function to set the input data
         """
@@ -579,8 +602,7 @@ class ControlBase(Elaboratable):
         m.submodules.p = self.p
         m.submodules.n = self.n
 
-        if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, self.p.data_i)
+        self.setup(m, self.p.data_i)
 
         if not self.p.stage_ctl:
             return m
