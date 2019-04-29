@@ -459,8 +459,13 @@ class ControlBase(Elaboratable):
 
         # set up the input and output data
         if stage is not None:
-            self.p.data_i = _spec(stage.ispec, "data_i") # input type
-            self.n.data_o = _spec(stage.ospec, "data_o") # output type
+            self._new_data(self, self, "data")
+
+    def _new_data(self, p, n, name):
+        """ allocates new data_i and data_o
+        """
+        self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
+        self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
 
     def connect_to_next(self, nxt):
         """ helper function to connect to the next stage data/valid/ready.
@@ -528,14 +533,11 @@ class ControlBase(Elaboratable):
             pipe2 = pipechain[i+1]
             eqs += pipe1.connect_to_next(pipe2)
 
-        # connect front of chain to ourselves
+        # connect front and back of chain to ourselves
         front = pipechain[0]
-        self.p.data_i = _spec(front.stage.ispec, "chainin")
-        eqs += front._connect_in(self)
-
-        # connect end of chain to ourselves
         end = pipechain[-1]
-        self.n.data_o = _spec(end.stage.ospec, "chainout")
+        self._new_data(front, end, "chain") # NOTE: REPLACES existing data
+        eqs += front._connect_in(self)
         eqs += end._connect_out(self)
 
         return eqs
