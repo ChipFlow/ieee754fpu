@@ -1,11 +1,10 @@
-""" Pipeline and BufferedHandshake implementation, conforming to the same API.
-    For multi-input and multi-output variants, see multipipe.
+""" Pipeline API.  For multi-input and multi-output variants, see multipipe.
 
     Associated development bugs:
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64
     * http://bugs.libre-riscv.org/show_bug.cgi?id=57
 
-    Important: see Stage API (iocontrol.py) in combination with below
+    Important: see Stage API (stageapi.py) in combination with below
 
     RecordBasedStage:
     ----------------
@@ -270,6 +269,7 @@ class ControlBase(StageHelper, Elaboratable):
               an elaborate() to m.d.comb
         """
         assert len(pipechain) > 0, "pipechain must be non-zero length"
+        assert self.stage is None, "do not use connect with a stage"
         eqs = [] # collated list of assignment statements
 
         # connect inter-chain
