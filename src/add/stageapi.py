@@ -173,7 +173,7 @@ class StageChain(StageCls):
     def __init__(self, chain, specallocate=False):
         assert len(chain) > 0, "stage chain must be non-zero length"
         self.chain = chain
-        self.specallocate = specallocate
+        self.setup = self._sa_setup if specallocate else self._na_setup
 
     def ispec(self):
         """ returns the ispec of the first of the chain
@@ -185,7 +185,7 @@ class StageChain(StageCls):
         """
         return _spec(self.chain[-1].ospec, "chainout")
 
-    def _specallocate_setup(self, m, i):
+    def _sa_setup(self, m, i):
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
@@ -197,20 +197,16 @@ class StageChain(StageCls):
             ifn = self.chain[idx+1].ispec   # new input on next loop
             i = _spec(ifn, 'chainin%d' % (idx+1))
             m.d.comb += nmoperator.eq(i, o) # assign to next input
-        return o                            # last loop is the output
+        self.o = o
+        return self.o                       # last loop is the output
 
-    def _noallocate_setup(self, m, i):
+    def _na_setup(self, m, i):
         for (idx, c) in enumerate(self.chain):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
             i = o = c.process(i)            # store input into "o"
-        return o                            # last loop is the output
-
-    def setup(self, m, i):
-        if self.specallocate:
-            self.o = self._specallocate_setup(m, i)
-        else:
-            self.o = self._noallocate_setup(m, i)
+        self.o = o
+        return self.o                       # last loop is the output
 
     def process(self, i):
         return self.o # conform to Stage API: return last-loop output
