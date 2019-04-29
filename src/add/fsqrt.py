@@ -1,3 +1,6 @@
+from sfpy import Float32
+
+
 # XXX DO NOT USE, fails on num=65536.  wark-wark...
 def sqrtsimple(num):
     res = 0
@@ -96,6 +99,13 @@ if __name__ == '__main__':
             ms, es = main(m, e)
             print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
 
+
+
+x = Float32(1234.123456789)
+xbits = x.bits
+    
+
+print(decode_fp32(x))
 """
 
 Notes:
