@@ -279,7 +279,7 @@ class ControlBase(StageHelper, Elaboratable):
         # connect front and back of chain to ourselves
         front = pipechain[0]                # first in chain
         end = pipechain[-1]                 # last in chain
-        self.set_specs(front, end) # NOTE: REPLACES existing data
+        self.set_specs(front, end) # sets up ispec/ospec functions
         self._new_data("chain") # NOTE: REPLACES existing data
         eqs += front._connect_in(self)      # front p to our p
         eqs += end._connect_out(self)       # end n   to out n

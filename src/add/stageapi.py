@@ -155,8 +155,14 @@ class StageHelper(Stage):
         return _spec(self._ispecfn, name)
 
     def set_specs(self, p, n):
-        self._ispecfn = p.stage.ispec
-        self._ospecfn = n.stage.ospec
+        """ sets up the ispecfn and ospecfn for getting input and output data
+        """
+        if hasattr(p, "stage"):
+            p = p.stage
+        if hasattr(n, "stage"):
+            n = n.stage
+        self._ispecfn = p.ispec
+        self._ospecfn = n.ospec
 
     def new_specs(self, name):
         """ allocates new ispec and ospec pair
@@ -179,7 +185,7 @@ class StageHelper(Stage):
         return i
 
 
-class StageChain(StageCls):
+class StageChain(StageHelper):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
         combinatorial chain, to create one giant combinatorial block.
@@ -220,17 +226,9 @@ class StageChain(StageCls):
     def __init__(self, chain, specallocate=False):
         assert len(chain) > 0, "stage chain must be non-zero length"
         self.chain = chain
+        StageHelper.__init__(self, None)
         self.setup = self._sa_setup if specallocate else self._na_setup
-
-    def ispec(self):
-        """ returns the ispec of the first of the chain
-        """
-        return _spec(self.chain[0].ispec, "chainin")
-
-    def ospec(self):
-        """ returns the ospec of the last of the chain
-        """
-        return _spec(self.chain[-1].ospec, "chainout")
+        self.set_specs(self.chain[0], self.chain[-1])
 
     def _sa_setup(self, m, i):
         for (idx, c) in enumerate(self.chain):
