@@ -131,17 +131,15 @@
 
 from nmigen import Signal, Mux, Module, Elaboratable
 from nmigen.cli import verilog, rtlil
-from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
-from nmigen.hdl.ast import ArrayProxy
+from nmigen.lib.fifo import SyncFIFOBuffered
 from nmigen.hdl.rec import Record
 
 from queue import Queue
 import inspect
 
-import nmoperator
 from iocontrol import (PrevControl, NextControl, Object, RecordObject)
-from stageapi import (_spec, StageCls, Stage,
-                       StageChain, StageHelper)
+from stageapi import (_spec, StageCls, Stage, StageChain, StageHelper)
+import nmoperator
                       
 
 class RecordBasedStage(Stage):
@@ -729,8 +727,9 @@ class RegisterPipeline(UnbufferedPipeline):
 
 
 class FIFOControl(ControlBase):
-    """ FIFO Control.  Uses SyncFIFO to store data, coincidentally
+    """ FIFO Control.  Uses Queue to store data, coincidentally
         happens to have same valid/ready signalling as Stage API.
+        (TODO: remove use of SyncFIFOBuffered)
 
         data_i -> fifo.din -> FIFO -> fifo.dout -> data_o
     """
