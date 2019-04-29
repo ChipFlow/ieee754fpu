@@ -80,6 +80,13 @@ import nmoperator
 
 
 def _spec(fn, name=None):
+    """ useful function that determines if "fn" has an argument "name".
+        if so, fn(name) is called otherwise fn() is called.
+
+        means that ispec and ospec can be declared with *or without*
+        a name argument.  normally it would be necessary to have
+        "ispec(name=None)" to achieve the same effect.
+    """
     if name is None:
         return fn()
     varnames = dict(inspect.getmembers(fn.__code__))['co_varnames']
