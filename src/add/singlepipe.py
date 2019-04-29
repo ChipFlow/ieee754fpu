@@ -27,6 +27,18 @@
     StageChain, however when passed to UnbufferedPipeline they
     can be used to introduce a single clock delay.
 
+    ControlBase:
+    -----------
+
+    The base class for pipelines.  Contains previous and next ready/valid/data.
+    Also has an extremely useful "connect" function that can be used to
+    connect a chain of pipelines and present the exact same prev/next
+    ready/valid/data API.
+
+    Note: pipelines basically do not become pipelines as such until
+    handed to a derivative of ControlBase.  ControlBase itself is *not*
+    strictly considered a pipeline class.  Wishbone and AXI4 (master or
+    slave) could be derived from ControlBase, for example.
     UnbufferedPipeline:
     ------------------
 
@@ -121,7 +133,7 @@ from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
 from nmigen.hdl.ast import ArrayProxy
-from nmigen.hdl.rec import Record, Layout
+from nmigen.hdl.rec import Record
 
 from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence, Iterable
@@ -130,10 +142,160 @@ from queue import Queue
 import inspect
 
 import nmoperator
-from iocontrol import (Object, RecordObject, _spec,
-                       PrevControl, NextControl, StageCls, Stage,
-                       ControlBase, StageChain)
+from iocontrol import (Object, RecordObject)
+from stageapi import (_spec, PrevControl, NextControl, StageCls, Stage,
+                       StageChain, StageHelper)
                       
+
+
+class ControlBase(StageHelper, Elaboratable):
+    """ Common functions for Pipeline API.  Note: a "pipeline stage" only
+        exists (conceptually) when a ControlBase derivative is handed
+        a Stage (combinatorial block)
+
+        NOTE: ControlBase derives from StageHelper, making it accidentally
+        compliant with the Stage API.  Using those functions directly
+        *BYPASSES* a ControlBase instance ready/valid signalling, which
+        clearly should not be done without a really, really good reason.
+    """
+    def __init__(self, stage=None, in_multi=None, stage_ctl=False):
+        """ Base class containing ready/valid/data to previous and next stages
+
+            * p: contains ready/valid to the previous stage
+            * n: contains ready/valid to the next stage
+
+            Except when calling Controlbase.connect(), user must also:
+            * add data_i member to PrevControl (p) and
+            * add data_o member to NextControl (n)
+            Calling ControlBase._new_data is a good way to do that.
+        """
+        StageHelper.__init__(self, stage)
+
+        # set up input and output IO ACK (prev/next ready/valid)
+        self.p = PrevControl(in_multi, stage_ctl)
+        self.n = NextControl(stage_ctl)
+
+        # set up the input and output data
+        if stage is not None:
+            self._new_data(self, self, "data")
+
+    def _new_data(self, p, n, name):
+        """ allocates new data_i and data_o
+        """
+        self.p.data_i = _spec(p.stage.ispec, "%s_i" % name)
+        self.n.data_o = _spec(n.stage.ospec, "%s_o" % name)
+
+    @property
+    def data_r(self):
+        return self.process(self.p.data_i)
+
+    def connect_to_next(self, nxt):
+        """ helper function to connect to the next stage data/valid/ready.
+        """
+        return self.n.connect_to_next(nxt.p)
+
+    def _connect_in(self, prev):
+        """ internal helper function to connect stage to an input source.
+            do not use to connect stage-to-stage!
+        """
+        return self.p._connect_in(prev.p)
+
+    def _connect_out(self, nxt):
+        """ internal helper function to connect stage to an output source.
+            do not use to connect stage-to-stage!
+        """
+        return self.n._connect_out(nxt.n)
+
+    def connect(self, pipechain):
+        """ connects a chain (list) of Pipeline instances together and
+            links them to this ControlBase instance:
+
+                      in <----> self <---> out
+                       |                   ^
+                       v                   |
+                    [pipe1, pipe2, pipe3, pipe4]
+                       |    ^  |    ^  |     ^
+                       v    |  v    |  v     |
+                     out---in out--in out---in
+
+            Also takes care of allocating data_i/data_o, by looking up
+            the data spec for each end of the pipechain.  i.e It is NOT
+            necessary to allocate self.p.data_i or self.n.data_o manually:
+            this is handled AUTOMATICALLY, here.
+
+            Basically this function is the direct equivalent of StageChain,
+            except that unlike StageChain, the Pipeline logic is followed.
+
+            Just as StageChain presents an object that conforms to the
+            Stage API from a list of objects that also conform to the
+            Stage API, an object that calls this Pipeline connect function
+            has the exact same pipeline API as the list of pipline objects
+            it is called with.
+
+            Thus it becomes possible to build up larger chains recursively.
+            More complex chains (multi-input, multi-output) will have to be
+            done manually.
+
+            Argument:
+
+            * :pipechain: - a sequence of ControlBase-derived classes
+                            (must be one or more in length)
+
+            Returns:
+
+            * a list of eq assignments that will need to be added in
+              an elaborate() to m.d.comb
+        """
+        assert len(pipechain) > 0, "pipechain must be non-zero length"
+        eqs = [] # collated list of assignment statements
+
+        # connect inter-chain
+        for i in range(len(pipechain)-1):
+            pipe1 = pipechain[i]                # earlier
+            pipe2 = pipechain[i+1]              # later (by 1)
+            eqs += pipe1.connect_to_next(pipe2) # earlier n to later p
+
+        # connect front and back of chain to ourselves
+        front = pipechain[0]                # first in chain
+        end = pipechain[-1]                 # last in chain
+        self._new_data(front, end, "chain") # NOTE: REPLACES existing data
+        eqs += front._connect_in(self)      # front p to our p
+        eqs += end._connect_out(self)       # end n   to out n
+
+        return eqs
+
+    def set_input(self, i):
+        """ helper function to set the input data (used in unit tests)
+        """
+        return nmoperator.eq(self.p.data_i, i)
+
+    def __iter__(self):
+        yield from self.p # yields ready/valid/data (data also gets yielded)
+        yield from self.n # ditto
+
+    def ports(self):
+        return list(self)
+
+    def elaborate(self, platform):
+        """ handles case where stage has dynamic ready/valid functions
+        """
+        m = Module()
+        m.submodules.p = self.p
+        m.submodules.n = self.n
+
+        self.setup(m, self.p.data_i)
+
+        if not self.p.stage_ctl:
+            return m
+
+        # intercept the previous (outgoing) "ready", combine with stage ready
+        m.d.comb += self.p.s_ready_o.eq(self.p._ready_o & self.stage.d_ready)
+
+        # intercept the next (incoming) "ready" and combine it with data valid
+        sdv = self.stage.d_valid(self.n.ready_i)
+        m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
+
+        return m
 
 class RecordBasedStage(Stage):
     """ convenience class which provides a Records-based layout.
