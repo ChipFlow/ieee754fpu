@@ -85,6 +85,27 @@ def main(mantissa, exponent):
     return sqrt(mantissa), (exponent >> 1)
 
 
+def fsqrt_test(x):
+
+    xbits = x.bits
+    print ("x", x, type(x))
+    sq_test = x.sqrt()
+    print ("sqrt", sq_test)
+
+    print (xbits, type(xbits))
+    s, e, m = decode_fp32(xbits)
+    print("x decode", s, e, m, hex(m))
+
+    #m |= 1<<23
+
+    sm, se = main(m, e)
+    print("our  sqrt", s, se, sm, hex(sm), bin(sm))
+
+    sq_xbits = sq_test.bits
+    s, e, m = decode_fp32(sq_xbits)
+    print ("sf32 sqrt", s, e, m, hex(m), bin(m))
+    print ()
+
 if __name__ == '__main__':
 
     # quick test up to 1000 of two sqrt functions
@@ -100,20 +121,10 @@ if __name__ == '__main__':
             print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
 
     x = Float32(1234.123456789)
-    xbits = x.bits
+    fsqrt_test(x)
+    x = Float32(8.0)
+    fsqrt_test(x)
 
-    print (x, type(x))
-    print (xbits, type(xbits))
-    s, e, m = decode_fp32(xbits)
-    print(s, e, m, hex(m))
-
-    se, sm = main(e, m)
-    print("our  sqrt", s, se, sm, hex(sm), bin(sm))
-
-    sq_test = x.sqrt()
-    sq_xbits = sq_test.bits
-    s, e, m = decode_fp32(sq_xbits)
-    print ("sf32 sqrt", s, e, m, hex(m), bin(m))
 """
 
 Notes:
