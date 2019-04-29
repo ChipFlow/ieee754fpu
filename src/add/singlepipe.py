@@ -184,8 +184,8 @@ class BufferedHandshake(ControlBase):
     def elaborate(self, platform):
         self.m = ControlBase.elaborate(self, platform)
 
-        result = _spec(self.sh.ospec, "r_tmp")
-        r_data = _spec(self.sh.ospec, "r_data")
+        result = _spec(self.stage.ospec, "r_tmp")
+        r_data = _spec(self.stage.ospec, "r_data")
 
         # establish some combinatorial temporaries
         o_n_validn = Signal(reset_less=True)
@@ -280,7 +280,7 @@ class SimpleHandshake(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         r_busy = Signal()
-        result = _spec(self.sh.ospec, "r_tmp")
+        result = _spec(self.stage.ospec, "r_tmp")
 
         # establish some combinatorial temporaries
         n_ready_i = Signal(reset_less=True, name="n_i_rdy_data")
@@ -388,7 +388,7 @@ class UnbufferedPipeline(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         data_valid = Signal() # is data valid or not
-        r_data = _spec(self.sh.ospec, "r_tmp") # output type
+        r_data = _spec(self.stage.ospec, "r_tmp") # output type
 
         # some temporaries
         p_valid_i = Signal(reset_less=True)
@@ -474,7 +474,7 @@ class UnbufferedPipeline2(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         buf_full = Signal() # is data valid or not
-        buf = _spec(self.sh.ospec, "r_tmp") # output type
+        buf = _spec(self.stage.ospec, "r_tmp") # output type
 
         # some temporaries
         p_valid_i = Signal(reset_less=True)
@@ -543,7 +543,7 @@ class PassThroughHandshake(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
 
-        r_data = _spec(self.sh.ospec, "r_tmp") # output type
+        r_data = _spec(self.stage.ospec, "r_tmp") # output type
 
         # temporaries
         p_valid_i = Signal(reset_less=True)
@@ -621,7 +621,7 @@ class FIFOControl(ControlBase):
         m.submodules.fifo = fifo
 
         # store result of processing in combinatorial temporary
-        result = _spec(self.sh.ospec, "r_temp")
+        result = _spec(self.stage.ospec, "r_temp")
         m.d.comb += nmoperator.eq(result, self.data_r)
 
         # connect previous rdy/valid/data - do cat on data_i
