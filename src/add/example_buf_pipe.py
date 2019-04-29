@@ -2,6 +2,7 @@
 """
 
 from nmoperator import eq
+from iocontrol import (PrevControl, NextControl)
 from singlepipe import (PrevControl, NextControl, ControlBase,
                         StageCls, Stage, StageChain,
                         BufferedHandshake, UnbufferedPipeline)

@@ -139,8 +139,8 @@ from queue import Queue
 import inspect
 
 import nmoperator
-from iocontrol import (Object, RecordObject)
-from stageapi import (_spec, PrevControl, NextControl, StageCls, Stage,
+from iocontrol import (PrevControl, NextControl, Object, RecordObject)
+from stageapi import (_spec, StageCls, Stage,
                        StageChain, StageHelper)
                       
 
