@@ -73,13 +73,7 @@
     all the optional bits.
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
-from nmigen.cli import verilog, rtlil
-from nmigen.hdl.rec import Record
-
 from abc import ABCMeta, abstractmethod
-from collections.abc import Sequence, Iterable
-from collections import OrderedDict
 import inspect
 
 from iocontrol import PrevControl, NextControl
