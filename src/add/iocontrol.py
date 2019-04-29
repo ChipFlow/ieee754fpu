@@ -477,6 +477,11 @@ class ControlBase(StageHelper, Elaboratable):
     """ Common functions for Pipeline API.  Note: a "pipeline stage" only
         exists (conceptually) when a ControlBase derivative is handed
         a Stage (combinatorial block)
+
+        NOTE: ControlBase derives from StageHelper, making it accidentally
+        compliant with the Stage API.  Using those functions directly
+        *BYPASSES* a ControlBase instance ready/valid signalling, which
+        clearly should not be done without a really, really good reason.
     """
     def __init__(self, stage=None, in_multi=None, stage_ctl=False):
         """ Base class containing ready/valid/data to previous and next stages
@@ -487,6 +492,7 @@ class ControlBase(StageHelper, Elaboratable):
             Except when calling Controlbase.connect(), user must also:
             * add data_i member to PrevControl (p) and
             * add data_o member to NextControl (n)
+            Calling ControlBase._new_data is a good way to do that.
         """
         StageHelper.__init__(self, stage)
 
