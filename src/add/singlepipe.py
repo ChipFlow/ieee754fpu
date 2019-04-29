@@ -129,15 +129,12 @@
     https://github.com/ZipCPU/dbgbus/blob/master/hexbus/rtl/hbdeword.v
 """
 
-from nmigen import Signal, Cat, Const, Mux, Module, Value, Elaboratable
+from nmigen import Signal, Mux, Module, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.fifo import SyncFIFO, SyncFIFOBuffered
 from nmigen.hdl.ast import ArrayProxy
 from nmigen.hdl.rec import Record
 
-from abc import ABCMeta, abstractmethod
-from collections.abc import Sequence, Iterable
-from collections import OrderedDict
 from queue import Queue
 import inspect
 
@@ -146,6 +143,34 @@ from iocontrol import (Object, RecordObject)
 from stageapi import (_spec, PrevControl, NextControl, StageCls, Stage,
                        StageChain, StageHelper)
                       
+
+class RecordBasedStage(Stage):
+    """ convenience class which provides a Records-based layout.
+        honestly it's a lot easier just to create a direct Records-based
+        class (see ExampleAddRecordStage)
+    """
+    def __init__(self, in_shape, out_shape, processfn, setupfn=None):
+        self.in_shape = in_shape
+        self.out_shape = out_shape
+        self.__process = processfn
+        self.__setup = setupfn
+    def ispec(self): return Record(self.in_shape)
+    def ospec(self): return Record(self.out_shape)
+    def process(seif, i): return self.__process(i)
+    def setup(seif, m, i): return self.__setup(m, i)
+
+
+class PassThroughStage(StageCls):
+    """ a pass-through stage with its input data spec identical to its output,
+        and "passes through" its data from input to output (does nothing).
+
+        use this basically to explicitly make any data spec Stage-compliant.
+        (many APIs would potentially use a static "wrap" method in e.g.
+         StageCls to achieve a similar effect)
+    """
+    def __init__(self, iospecfn): self.iospecfn = iospecfn
+    def ispec(self): return self.iospecfn()
+    def ospec(self): return self.iospecfn()
 
 
 class ControlBase(StageHelper, Elaboratable):
@@ -296,21 +321,6 @@ class ControlBase(StageHelper, Elaboratable):
         m.d.comb += self.n.d_valid.eq(self.n.ready_i & sdv)
 
         return m
-
-class RecordBasedStage(Stage):
-    """ convenience class which provides a Records-based layout.
-        honestly it's a lot easier just to create a direct Records-based
-        class (see ExampleAddRecordStage)
-    """
-    def __init__(self, in_shape, out_shape, processfn, setupfn=None):
-        self.in_shape = in_shape
-        self.out_shape = out_shape
-        self.__process = processfn
-        self.__setup = setupfn
-    def ispec(self): return Record(self.in_shape)
-    def ospec(self): return Record(self.out_shape)
-    def process(seif, i): return self.__process(i)
-    def setup(seif, m, i): return self.__setup(m, i)
 
 
 class BufferedHandshake(ControlBase):
@@ -652,19 +662,6 @@ class UnbufferedPipeline2(ControlBase):
         m.d.sync += nmoperator.eq(buf, self.n.data_o)
 
         return self.m
-
-
-class PassThroughStage(StageCls):
-    """ a pass-through stage with its input data spec identical to its output,
-        and "passes through" its data from input to output (does nothing).
-
-        use this basically to explicitly make any data spec Stage-compliant.
-        (many APIs would potentially use a static "wrap" method in e.g.
-         StageCls to achieve a similar effect)
-    """
-    def __init__(self, iospecfn): self.iospecfn = iospecfn
-    def ispec(self): return self.iospecfn()
-    def ospec(self): return self.iospecfn()
 
 
 class PassThroughHandshake(ControlBase):
