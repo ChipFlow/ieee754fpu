@@ -76,7 +76,6 @@
 from abc import ABCMeta, abstractmethod
 import inspect
 
-from iocontrol import PrevControl, NextControl
 import nmoperator
 
 
