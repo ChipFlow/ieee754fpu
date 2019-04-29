@@ -131,6 +131,54 @@ class Stage(metaclass=ABCMeta):
     #def process(i): pass
 
 
+class StageHelper(Stage):
+    """ a convenience wrapper around something that is Stage-API-compliant.
+        (that "something" may be a static class, for example).
+
+        StageHelper happens to also be compliant with the Stage API,
+        it differs from the stage that it wraps in that all the "optional"
+        functions are provided (hence the designation "convenience wrapper")
+    """
+    def __init__(self, stage):
+        self.stage = stage
+        self._ispecfn = None
+        self._ospecfn = None
+        if stage is not None:
+            self.set_specs(self, self)
+
+    def ospec(self, name):
+        assert self._ospecfn is not None
+        return _spec(self._ospecfn, name)
+
+    def ispec(self, name):
+        assert self._ispecfn is not None
+        return _spec(self._ispecfn, name)
+
+    def set_specs(self, p, n):
+        self._ispecfn = p.stage.ispec
+        self._ospecfn = n.stage.ospec
+
+    def new_specs(self, name):
+        """ allocates new ispec and ospec pair
+        """
+        return self.ispec("%s_i" % name), self.ospec("%s_o" % name)
+
+    def process(self, i):
+        if self.stage and hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
+
+    def setup(self, m, i):
+        if self.stage is not None and hasattr(self.stage, "setup"):
+            self.stage.setup(m, i)
+
+    def _postprocess(self, i): # XXX DISABLED
+        return i # RETURNS INPUT
+        if hasattr(self.stage, "postprocess"):
+            return self.stage.postprocess(i)
+        return i
+
+
 class StageChain(StageCls):
     """ pass in a list of stages, and they will automatically be
         chained together via their input and output specs into a
@@ -210,51 +258,4 @@ class StageChain(StageCls):
     def process(self, i):
         return self.o # conform to Stage API: return last-loop output
 
-
-class StageHelper(Stage):
-    """ a convenience wrapper around something that is Stage-API-compliant.
-        (that "something" may be a static class, for example).
-
-        StageHelper happens to also be compliant with the Stage API,
-        it differs from the stage that it wraps in that all the "optional"
-        functions are provided (hence the designation "convenience wrapper")
-    """
-    def __init__(self, stage):
-        self.stage = stage
-        self._ispecfn = None
-        self._ospecfn = None
-        if stage is not None:
-            self.set_specs(self, self)
-
-    def ospec(self, name):
-        assert self._ospecfn is not None
-        return _spec(self._ospecfn, name)
-
-    def ispec(self, name):
-        assert self._ispecfn is not None
-        return _spec(self._ispecfn, name)
-
-    def set_specs(self, p, n):
-        self._ispecfn = p.stage.ispec
-        self._ospecfn = n.stage.ospec
-
-    def new_specs(self, name):
-        """ allocates new ispec and ospec pair
-        """
-        return self.ispec("%s_i" % name), self.ospec("%s_o" % name)
-
-    def process(self, i):
-        if self.stage and hasattr(self.stage, "process"):
-            return self.stage.process(i)
-        return i
-
-    def setup(self, m, i):
-        if self.stage is not None and hasattr(self.stage, "setup"):
-            self.stage.setup(m, i)
-
-    def _postprocess(self, i): # XXX DISABLED
-        return i # RETURNS INPUT
-        if hasattr(self.stage, "postprocess"):
-            return self.stage.postprocess(i)
-        return i
 
