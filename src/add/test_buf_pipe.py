@@ -790,12 +790,14 @@ class ExampleFIFOPassThruPipe1(ControlBase):
         m = ControlBase.elaborate(self, platform)
 
         pipe1 = FIFOTest16()
-        pipe2 = ExamplePassAdd1Pipe()
+        pipe2 = FIFOTest16()
+        pipe3 = ExamplePassAdd1Pipe()
 
         m.submodules.pipe1 = pipe1
         m.submodules.pipe2 = pipe2
+        m.submodules.pipe3 = pipe3
 
-        m.d.comb += self.connect([pipe1, pipe2])
+        m.d.comb += self.connect([pipe1, pipe2, pipe3])
 
         return m
 
