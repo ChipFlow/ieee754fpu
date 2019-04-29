@@ -15,12 +15,16 @@
     of the incoming and outgoing data, and they provide a means to
     PROCESS that data (from incoming format to outgoing format).
 
-    Stage Blocks really must be combinatorial blocks.  It would be ok
-    to have input come in from sync'd sources (clock-driven) however by
-    doing so they would no longer be deterministic, and chaining such
-    blocks with such side-effects together could result in unexpected,
-    unpredictable, unreproduceable behaviour.
+    Stage Blocks really should be combinatorial blocks (Moore FSMs).
+    It would be ok to have input come in from sync'd sources
+    (clock-driven, Mealy FSMs) however by doing so they would no longer
+    be deterministic, and chaining such blocks with such side-effects
+    together could result in unexpected, unpredictable, unreproduceable
+    behaviour.
+
     So generally to be avoided, then unless you know what you are doing.
+    https://en.wikipedia.org/wiki/Moore_machine
+    https://en.wikipedia.org/wiki/Mealy_machine
 
     the methods of a stage instance must be as follows:
 
