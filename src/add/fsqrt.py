@@ -25,7 +25,7 @@ def sqrt(num):
     Q = 0
     R = 0
     r = 0 # remainder
-    for i in range(15, -1, -1): # negative ranges are weird...
+    for i in range(64, -1, -1): # negative ranges are weird...
 
         if (R>=0):
 
@@ -96,9 +96,13 @@ def fsqrt_test(x):
     s, e, m = decode_fp32(xbits)
     print("x decode", s, e, m, hex(m))
 
-    #m |= 1<<23
+    m |= 1<<24 # set top bit (the missing "1" from mantissa)
+    m <<= 24
 
     sm, se = main(m, e)
+    sm >>= 1
+    sm = get_mantissa(sm)
+    #sm += 2
     print("our  sqrt", s, se, sm, hex(sm), bin(sm))
 
     sq_xbits = sq_test.bits
@@ -122,7 +126,13 @@ if __name__ == '__main__':
 
     x = Float32(1234.123456789)
     fsqrt_test(x)
+    x = Float32(32.1)
+    fsqrt_test(x)
+    x = Float32(16.0)
+    fsqrt_test(x)
     x = Float32(8.0)
+    fsqrt_test(x)
+    x = Float32(8.5)
     fsqrt_test(x)
 
 """
