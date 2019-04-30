@@ -15,6 +15,7 @@ from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
 from fpbase import FPState
+import nmoperator
 
 
 class FPGetOpMod(Elaboratable):
@@ -53,7 +54,7 @@ class FPGetOp(FPState):
         """ links module to inputs and outputs
         """
         setattr(m.submodules, self.state_from, self.mod)
-        m.d.comb += self.mod.in_op.eq(in_op)
+        m.d.comb += nmoperator.eq(self.mod.in_op, in_op)
         m.d.comb += self.out_decode.eq(self.mod.out_decode)
 
     def action(self, m):

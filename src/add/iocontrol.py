@@ -224,7 +224,7 @@ class PrevControl(Elaboratable):
         return m
 
     def eq(self, i):
-        return [self.data_i.eq(i.data_i),
+        return [nmoperator.eq(self.data_i, i.data_i),
                 self.ready_o.eq(i.ready_o),
                 self.valid_i.eq(i.valid_i)]
 
