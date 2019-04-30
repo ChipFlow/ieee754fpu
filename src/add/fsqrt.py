@@ -23,30 +23,24 @@ def sqrtsimple(num):
 def sqrt(num):
     D = num # D is input (from num)
     Q = 0
-    R = 0
-    r = 0 # remainder
+    R = 0 # remainder
     for i in range(64, -1, -1): # negative ranges are weird...
 
-        if (R>=0):
+        R = (R<<2)|((D>>(i+i))&3)
 
-            R = (R<<2)|((D>>(i+i))&3)
-            R = R-((Q<<2)|1) #/*-Q01*/
-
+        if R >= 0:
+            R -= ((Q<<2)|1) # -Q01
         else:
+            R += ((Q<<2)|3) # +Q11
 
-            R = (R<<2)|((D>>(i+i))&3)
-            R = R+((Q<<2)|3) #/*+Q11*/
+        Q <<= 1
+        if R >= 0:
+            Q |= 1 # new Q
 
-        if (R>=0):
-            Q = (Q<<1)|1 #/*new Q:*/
-        else:
-            Q = (Q<<1)|0 #/*new Q:*/
+    if R < 0:
+        R = R + ((Q<<1)|1)
 
-
-    if (R<0):
-        R = R+((Q<<1)|1)
-        r = R
-    return Q, r
+    return Q, R
 
 
 # grabbed these from unit_test_single (convenience, this is just experimenting)
