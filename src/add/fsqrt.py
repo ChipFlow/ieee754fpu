@@ -46,7 +46,7 @@ def sqrt(num):
     if (R<0):
         R = R+((Q<<1)|1)
         r = R
-    return Q
+    return Q, r
 
 
 # grabbed these from unit_test_single (convenience, this is just experimenting)
@@ -80,9 +80,10 @@ def decode_fp32(x):
 def main(mantissa, exponent):
     if exponent & 1 != 0:
         # shift mantissa up, subtract 1 from exp to compensate
-        return sqrt(mantissa << 1), (exponent - 1) >> 1
-    # mantissa as-is, no compensating needed on exp
-    return sqrt(mantissa), (exponent >> 1)
+        mantissa <<= 1
+        exponent -= 1
+    m, r = sqrt(mantissa)
+    return m, r, exponent >> 1
 
 
 def fsqrt_test(x):
@@ -99,12 +100,13 @@ def fsqrt_test(x):
     m |= 1<<23 # set top bit (the missing "1" from mantissa)
     m <<= 27
 
-    sm, se = main(m, e)
+    sm, sr, se = main(m, e)
     lowbits = sm & 0x3
     sm >>= 2
     sm = get_mantissa(sm)
     #sm += 2
-    print("our  sqrt", s, se, sm, hex(sm), bin(sm), "lowbits", lowbits)
+    print("our  sqrt", s, se, sm, hex(sm), bin(sm), "lowbits", lowbits,
+                                                    "rem", hex(sr))
     if lowbits >= 2:
         print ("probably needs rounding (+1 on mantissa)")
 
@@ -119,13 +121,13 @@ if __name__ == '__main__':
     for Q in range(1, int(1e4)):
         print(Q, sqrt(Q), sqrtsimple(Q), int(Q**0.5))
         assert int(Q**0.5) == sqrtsimple(Q), "Q sqrtsimpl fail %d" % Q
-        assert int(Q**0.5) == sqrt(Q), "Q sqrt fail %d" % Q
+        assert int(Q**0.5) == sqrt(Q)[0], "Q sqrt fail %d" % Q
 
     # quick mantissa/exponent demo
     for e in range(26):
         for m in range(26):
-            ms, es = main(m, e)
-            print("m:%d e:%d sqrt: m:%d e:%d" % (m, e, ms, es))
+            ms, mr, es = main(m, e)
+            print("m:%d e:%d sqrt: m:%d-%d e:%d" % (m, e, ms, mr, es))
 
     x = Float32(1234.123456789)
     fsqrt_test(x)
@@ -140,6 +142,8 @@ if __name__ == '__main__':
     x = Float32(3.14159265358979323)
     fsqrt_test(x)
     x = Float32(12.99392923123123)
+    fsqrt_test(x)
+    x = Float32(0.123456)
     fsqrt_test(x)
 
 """
