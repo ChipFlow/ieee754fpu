@@ -182,6 +182,7 @@ if __name__ == "__main__":
             m.d.comb += port.eq(signal)
             retval.append(signal)
         return retval
+
     m.submodules.reg_stage = reg_stage
     ports += queue_ports(reg_stage, "reg_stage_")
     m.submodules.break_ready_chain_stage = break_ready_chain_stage
