@@ -778,12 +778,12 @@ class FIFOControl(ControlBase):
             m.d.comb += nmoperator.eq(result, self.process(data_i))
             return nmoperator.cat(result)
 
-        ## prev: make the FIFO "look" like a PrevControl...
+        ## prev: make the FIFO (Queue object) "look" like a PrevControl...
         m.submodules.fp = fp = PrevControl()
         fp.valid_i, fp._ready_o, fp.data_i = fifo.we, fifo.writable, fifo.din
         m.d.comb += fp._connect_in(self.p, fn=processfn)
 
-        # next: make the FIFO "look" like a NextControl...
+        # next: make the FIFO (Queue object) "look" like a NextControl...
         m.submodules.fn = fn = NextControl()
         fn.valid_o, fn.ready_i, fn.data_o  = fifo.readable, fifo.re, fifo.dout
         connections = fn._connect_out(self.n, fn=nmoperator.cat)
@@ -794,7 +794,7 @@ class FIFOControl(ControlBase):
             m.d.comb += connections[:2] # combinatorial on next ready/valid
         else:
             m.d.sync += connections[:2]  # unbuffered fwft mode needs sync
-        data_o = connections[2]
+        data_o = connections[2] # get the data
         data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += data_o
 
