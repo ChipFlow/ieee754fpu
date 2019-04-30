@@ -772,27 +772,29 @@ class FIFOControl(ControlBase):
         fifo = Queue(fwidth, self.fdepth, fwft=self.fwft, pipe=self.pipe)
         m.submodules.fifo = fifo
 
-        # store result of processing in combinatorial temporary
-        result = _spec(self.stage.ospec, "r_temp")
-        m.d.comb += nmoperator.eq(result, self.data_r)
+        def processfn(data_i):
+            # store result of processing in combinatorial temporary
+            result = _spec(self.stage.ospec, "r_temp")
+            m.d.comb += nmoperator.eq(result, self.process(data_i))
+            return nmoperator.cat(result)
 
-        # connect previous rdy/valid/data - do cat on data_i
-        # NOTE: cannot do the PrevControl-looking trick because
-        # of need to process the data.  shaaaame....
-        m.d.comb += [fifo.we.eq(self.p.valid_i_test),
-                     self.p.ready_o.eq(fifo.writable),
-                     nmoperator.eq(fifo.din, nmoperator.cat(result)),
-                   ]
+        ## prev: make the FIFO "look" like a PrevControl...
+        m.submodules.fp = fp = PrevControl()
+        fp.valid_i, fp._ready_o, fp.data_i = fifo.we, fifo.writable, fifo.din
+        m.d.comb += fp._connect_in(self.p, fn=processfn)
 
-        # connect next rdy/valid/data - do cat on data_o (further below)
-        connections = [self.n.valid_o.eq(fifo.readable),
-                       fifo.re.eq(self.n.ready_i_test),
-                      ]
+        # next: make the FIFO "look" like a NextControl...
+        m.submodules.fn = fn = NextControl()
+        fn.valid_o, fn.ready_i, fn.data_o  = fifo.readable, fifo.re, fifo.dout
+        connections = fn._connect_out(self.n, fn=nmoperator.cat)
+
+        # ok ok so we can't just do the ready/valid eqs straight:
+        # first 2 from connections are the ready/valid, 3rd is data.
         if self.fwft:
-            m.d.comb += connections # combinatorial on next ready/valid
+            m.d.comb += connections[:2] # combinatorial on next ready/valid
         else:
-            m.d.sync += connections # unbuffered fwft mode needs sync
-        data_o = nmoperator.cat(self.n.data_o).eq(fifo.dout)
+            m.d.sync += connections[:2]  # unbuffered fwft mode needs sync
+        data_o = connections[2]
         data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += data_o
 
