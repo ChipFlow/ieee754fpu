@@ -793,7 +793,7 @@ class FIFOControl(ControlBase):
         if self.fwft:
             m.d.comb += connections[:2] # combinatorial on next ready/valid
         else:
-            m.d.sync += connections[:2]  # unbuffered fwft mode needs sync
+            m.d.sync += connections[:2]  # non-fwft mode needs sync
         data_o = connections[2] # get the data
         data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += data_o
