@@ -140,6 +140,16 @@ if __name__ == '__main__':
     x = Float32(0.123456)
     fsqrt_test(x)
 
+
+#normalization function
+def normalise(s, m, e):
+    if (lowbits >= 2):
+        m += 1
+    if get_mantissa(m) == ((1<<24)-1):
+        e += 1
+
+
+
 """
 
 Notes:
