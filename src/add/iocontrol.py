@@ -188,16 +188,17 @@ class PrevControl(Elaboratable):
             return self.s_ready_o # set dynamically by stage
         return self._ready_o      # return this when not under dynamic control
 
-    def _connect_in(self, prev, direct=False, fn=None):
+    def _connect_in(self, prev, direct=False, fn=None, do_data=True):
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
         valid_i = prev.valid_i if direct else prev.valid_i_test
+        res = [self.valid_i.eq(valid_i),
+               prev.ready_o.eq(self.ready_o)]
+        if do_data is False:
+            return res
         data_i = fn(prev.data_i) if fn is not None else prev.data_i
-        return [self.valid_i.eq(valid_i),
-                prev.ready_o.eq(self.ready_o),
-                nmoperator.eq(self.data_i, data_i),
-               ]
+        return res + [nmoperator.eq(self.data_i, data_i)]
 
     @property
     def valid_i_test(self):
