@@ -22,7 +22,7 @@ def sqrtsimple(num):
 
 def sqrt(num):
     D = num # D is input (from num)
-    Q = 0
+    Q = 0 # quotient
     R = 0 # remainder
     for i in range(64, -1, -1): # negative ranges are weird...
 
