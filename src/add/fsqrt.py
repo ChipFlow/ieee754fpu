@@ -80,6 +80,15 @@ def main(mantissa, exponent):
     return m, r, exponent >> 1
 
 
+#normalization function
+def normalise(s, m, e, lowbits):
+    if (lowbits >= 2):
+        m += 1
+    if get_mantissa(m) == ((1<<24)-1):
+        e += 1
+    return s, m, e
+
+
 def fsqrt_test(x):
 
     xbits = x.bits
@@ -99,6 +108,9 @@ def fsqrt_test(x):
     sm >>= 2
     sm = get_mantissa(sm)
     #sm += 2
+
+    s, sm, se = normalise(s, sm, se, lowbits)
+
     print("our  sqrt", s, se, sm, hex(sm), bin(sm), "lowbits", lowbits,
                                                     "rem", hex(sr))
     if lowbits >= 2:
@@ -140,13 +152,6 @@ if __name__ == '__main__':
     x = Float32(0.123456)
     fsqrt_test(x)
 
-
-#normalization function
-def normalise(s, m, e):
-    if (lowbits >= 2):
-        m += 1
-    if get_mantissa(m) == ((1<<24)-1):
-        e += 1
 
 
 
