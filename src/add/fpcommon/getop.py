@@ -20,6 +20,7 @@ from fpbase import FPState
 class FPGetOpMod(Elaboratable):
     def __init__(self, width):
         self.in_op = FPOpIn(width)
+        self.in_op.data_i = Signal(width)
         self.out_op = Signal(width)
         self.out_decode = Signal(reset_less=True)
 

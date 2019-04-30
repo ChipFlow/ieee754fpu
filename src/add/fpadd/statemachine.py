@@ -32,6 +32,7 @@ from fpadd.addstages import FPAddAlignSingleAdd
 class FPOpData:
     def __init__(self, width, id_wid):
         self.z = FPOpOut(width)
+        self.z.data_o = Signal(width)
         self.mid = Signal(id_wid, reset_less=True)
 
     def __iter__(self):
@@ -294,6 +295,8 @@ class FPADD(FPID):
         for i in range(rs_sz):
             in_a  = FPOpIn(width)
             in_b  = FPOpIn(width)
+            in_a.data_i = Signal(width)
+            in_b.data_i = Signal(width)
             in_a.name = "in_a_%d" % i
             in_b.name = "in_b_%d" % i
             rs.append((in_a, in_b))
@@ -302,6 +305,7 @@ class FPADD(FPID):
         res = []
         for i in range(rs_sz):
             out_z = FPOpOut(width)
+            out_z.data_o = Signal(width)
             out_z.name = "out_z_%d" % i
             res.append(out_z)
         self.res = Array(res)
