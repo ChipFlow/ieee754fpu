@@ -61,10 +61,10 @@ class OutputTest:
             self.do[mid].append(data)
 
     def send(self):
-        for i in range(self.tlen * dut.num_rows):
+        for i in range(self.tlen * self.dut.num_rows):
             op2 = self.di[i][0]
             mid = self.di[i][1]
-            rs = dut.p
+            rs = self.dut.p
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.mid.eq(mid)
@@ -148,7 +148,7 @@ class TestSyncToPriorityPipe(Elaboratable):
         return res
 
 
-if __name__ == '__main__':
+def test1():
     dut = TestSyncToPriorityPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_outmux_pipe.il", "w") as f:
@@ -160,3 +160,5 @@ if __name__ == '__main__':
                          test.send()],
                    vcd_name="test_outmux_pipe.vcd")
 
+if __name__ == '__main__':
+    test1()
