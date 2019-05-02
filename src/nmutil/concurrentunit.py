@@ -1,6 +1,12 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+""" concurrent unit from mitch alsup augmentations to 6600 scoreboard
+
+    * data fans in
+    * data goes through a pipeline
+    * results fan back out.
+
+    the output data format has to have a member "mid", which is used
+    as the array index on fan-out
+"""
 
 from math import log
 from nmigen import Module
@@ -13,6 +19,7 @@ from nmutil.multipipe import PriorityCombMuxInPipe
 
 def num_bits(n):
     return int(log(n) / log(2))
+
 
 class FPADDInMuxPipe(PriorityCombMuxInPipe):
     def __init__(self, num_rows, iospecfn):
