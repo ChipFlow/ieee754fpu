@@ -21,7 +21,7 @@ class PassData:
         return [self.mid, self.idx, self.data]
 
 
-def testbench(dut):
+def tbench(dut):
     stb = yield dut.out_op.stb
     assert stb == 0
     ack = yield dut.out_op.ack
@@ -208,7 +208,7 @@ if __name__ == '__main__':
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_inputgroup_multi.il", "w") as f:
         f.write(vl)
-    #run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")
+    #run_simulation(dut, tbench(dut), vcd_name="test_inputgroup.vcd")
 
     test = InputTest(dut)
     run_simulation(dut, [test.send(1), test.send(0),
