@@ -7,11 +7,11 @@
 from singlepipe import StageChain, SimpleHandshake
 
 from fpbase import FPState, FPID
-from fpcommon.postcalc import FPAddStage1Data
-from fpcommon.postnormalise import FPNorm1ModSingle
-from fpcommon.roundz import FPRoundMod
-from fpcommon.corrections import FPCorrectionsMod
-from fpcommon.pack import FPPackData, FPPackMod
+from .postcalc import FPAddStage1Data
+from .postnormalise import FPNorm1ModSingle
+from .roundz import FPRoundMod
+from .corrections import FPCorrectionsMod
+from .pack import FPPackData, FPPackMod
 
 
 class FPNormToPack(FPState, SimpleHandshake):

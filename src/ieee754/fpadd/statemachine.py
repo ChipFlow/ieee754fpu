@@ -11,22 +11,22 @@ from fpbase import Trigger
 from singlepipe import (StageChain, SimpleHandshake)
 
 from fpbase import FPState, FPID
-from fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
-from fpcommon.denorm import (FPSCData, FPAddDeNorm)
-from fpcommon.postcalc import FPAddStage1Data
-from fpcommon.postnormalise import (FPNorm1Data,
+from ieee754.fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
+from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNorm)
+from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postnormalise import (FPNorm1Data,
                             FPNorm1Single, FPNorm1Multi)
-from fpcommon.roundz import (FPRoundData, FPRound)
-from fpcommon.corrections import FPCorrections
-from fpcommon.pack import (FPPackData, FPPackMod, FPPack)
-from fpcommon.normtopack import FPNormToPack
-from fpcommon.putz import (FPPutZ, FPPutZIdx)
+from ieee754.fpcommon.roundz import (FPRoundData, FPRound)
+from ieee754.fpcommon.corrections import FPCorrections
+from ieee754.fpcommon.pack import (FPPackData, FPPackMod, FPPack)
+from ieee754.fpcommon.normtopack import FPNormToPack
+from ieee754.fpcommon.putz import (FPPutZ, FPPutZIdx)
 
-from fpadd.specialcases import (FPAddSpecialCases, FPAddSpecialCasesDeNorm)
-from fpadd.align import (FPAddAlignMulti, FPAddAlignSingle)
-from fpadd.add0 import (FPAddStage0Data, FPAddStage0)
-from fpadd.add1 import (FPAddStage1Mod, FPAddStage1)
-from fpadd.addstages import FPAddAlignSingleAdd
+from .specialcases import (FPAddSpecialCases, FPAddSpecialCasesDeNorm)
+from .align import (FPAddAlignMulti, FPAddAlignSingle)
+from .add0 import (FPAddStage0Data, FPAddStage0)
+from .add1 import (FPAddStage1Mod, FPAddStage1)
+from .addstages import FPAddAlignSingleAdd
 
 
 class FPOpData:

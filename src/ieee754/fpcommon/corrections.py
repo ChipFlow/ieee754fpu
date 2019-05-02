@@ -5,7 +5,7 @@
 from nmigen import Module, Elaboratable
 from nmigen.cli import main, verilog
 from fpbase import FPState
-from fpcommon.roundz import FPRoundData
+from .roundz import FPRoundData
 
 
 class FPCorrectionsMod(Elaboratable):

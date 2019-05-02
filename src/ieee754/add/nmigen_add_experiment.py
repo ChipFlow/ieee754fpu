@@ -3,8 +3,8 @@
 # 2013-12-12
 
 from nmigen.cli import main, verilog
-from fpadd.statemachine import FPADDBase, FPADD
-from fpadd.pipeline import FPADDMuxInOut
+from ieee754.fpadd.statemachine import FPADDBase, FPADD
+from ieee754.fpadd.pipeline import FPADDMuxInOut
 
 if __name__ == "__main__":
     if True:

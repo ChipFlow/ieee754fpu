@@ -7,8 +7,8 @@ from nmigen.cli import main, verilog
 from math import log
 
 from fpbase import FPState
-from fpcommon.postcalc import FPAddStage1Data
-from fpadd.add0 import FPAddStage0Data
+from ieee754.fpcommon.postcalc import FPAddStage1Data
+from .add0 import FPAddStage0Data
 
 
 class FPAddStage1Mod(FPState, Elaboratable):

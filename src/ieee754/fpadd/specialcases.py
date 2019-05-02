@@ -10,8 +10,8 @@ from fpbase import FPNumDecode
 from singlepipe import SimpleHandshake, StageChain
 
 from fpbase import FPState, FPID
-from fpcommon.getop import FPADDBaseData
-from fpcommon.denorm import (FPSCData, FPAddDeNormMod)
+from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
 
 class FPAddSpecialCasesMod:

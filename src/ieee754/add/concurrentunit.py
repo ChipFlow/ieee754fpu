@@ -10,12 +10,12 @@ from singlepipe import PassThroughStage
 from multipipe import CombMuxOutPipe
 from multipipe import PriorityCombMuxInPipe
 
-from fpcommon.getop import FPADDBaseData
-from fpcommon.denorm import FPSCData
-from fpcommon.pack import FPPackData
-from fpcommon.normtopack import FPNormToPack
-from fpadd.specialcases import FPAddSpecialCasesDeNorm
-from fpadd.addstages import FPAddAlignSingleAdd
+from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.pack import FPPackData
+from ieee754.fpcommon.normtopack import FPNormToPack
+from ieee754.fpadd.specialcases import FPAddSpecialCasesDeNorm
+from ieee754.fpadd.addstages import FPAddAlignSingleAdd
 
 
 def num_bits(n):

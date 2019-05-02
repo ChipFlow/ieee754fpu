@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumBase
 from fpbase import FPState
-from fpcommon.denorm import FPSCData
+from ieee754.fpcommon.denorm import FPSCData
 
 
 class FPAddStage0Data:

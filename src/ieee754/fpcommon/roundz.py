@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumBase
 from fpbase import FPState
-from fpcommon.postnormalise import FPNorm1Data
+from .postnormalise import FPNorm1Data
 
 
 class FPRoundData:
