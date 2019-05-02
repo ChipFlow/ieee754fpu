@@ -5,8 +5,10 @@
 from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, Overflow, FPBase, FPState
-from nmutil.singlepipe import eq
+from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
+                                     FPOpOut, Overflow, FPBase, FPState)
+from nmutil.nmoperator import eq
+
 
 class Div:
     def __init__(self, width):
