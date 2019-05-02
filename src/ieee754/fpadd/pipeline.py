@@ -8,6 +8,7 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
 from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
+from nmutil.concurrentunit import ReservationStations, num_bits
 
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
@@ -16,7 +17,6 @@ from ieee754.fpcommon.normtopack import FPNormToPack
 from .specialcases import FPAddSpecialCasesDeNorm
 from .addstages import FPAddAlignSingleAdd
 
-from concurrentunit import ReservationStations, num_bits
 
 
 class FPADDBasePipe(ControlBase):
