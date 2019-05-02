@@ -125,9 +125,8 @@ def run_corner_cases(dut, count, op):
     print (count, "vectors passed")
 
 
-def run_edge_cases(dut, count, op):
+def run_edge_cases(dut, count, op, maxcount=10, num_loops=1000):
     maxint16 = 1<<16
-    maxcount = 10
     #edge cases
     stimulus_a = [0x8000 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
@@ -202,7 +201,7 @@ def run_edge_cases(dut, count, op):
     print (count, "vectors passed")
 
     #seed(0)
-    for i in range(100000):
+    for i in range(num_loops):
         stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
         stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
         yield from run_test(dut, stimulus_a, stimulus_b, op)

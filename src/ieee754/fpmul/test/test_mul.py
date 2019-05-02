@@ -14,7 +14,7 @@ from ieee754.fpcommon.test.unit_test_single import (get_mantissa, get_exponent, 
                                 run_edge_cases, run_corner_cases)
 
 
-def tbench(dut):
+def tbench(dut, maxcount, num_loops):
     yield from check_case(dut, 0x40000000, 0x40000000, 0x40800000)
     yield from check_case(dut, 0x41400000, 0x40A00000, 0x42700000)
 
@@ -30,12 +30,13 @@ def tbench(dut):
     print (count, "vectors passed")
 
     yield from run_corner_cases(dut, count, mul, get_case)
-    yield from run_edge_cases(dut, count, mul, get_case)
+    yield from run_edge_cases(dut, count, mul, get_case, maxcount, num_loops)
 
 
-def test1():
+def test1(maxcount=10, num_loops=5):
     dut = FPMUL(width=32)
-    run_simulation(dut, tbench(dut), vcd_name="test_mul.vcd")
+    run_simulation(dut, tbench(dut, maxcount, num_loops),
+                        vcd_name="test_mul.vcd")
 
 if __name__ == '__main__':
-    test1()
+    test1(maxcount=1000, num_loops=1000)
