@@ -5,8 +5,8 @@
 from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumOut
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPNumOut
+from ieee754.fpcommon.fpbase import FPState
 from .roundz import FPRoundData
 from nmutil.singlepipe import Object
 

@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, Overflow, FPBase, FPState
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, Overflow, FPBase, FPState
 from nmutil.singlepipe import eq
 
 class Div:

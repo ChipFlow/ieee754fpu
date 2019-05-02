@@ -6,7 +6,7 @@
 
 from nmutil.singlepipe import StageChain, SimpleHandshake
 
-from fpbase import FPState, FPID
+from ieee754.fpcommon.fpbase import FPState, FPID
 from .postcalc import FPAddStage1Data
 from .postnormalise import FPNorm1ModSingle
 from .roundz import FPRoundMod

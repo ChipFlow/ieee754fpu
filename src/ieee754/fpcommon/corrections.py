@@ -4,7 +4,7 @@
 
 from nmigen import Module, Elaboratable
 from nmigen.cli import main, verilog
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState
 from .roundz import FPRoundData
 
 

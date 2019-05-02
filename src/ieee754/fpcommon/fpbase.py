@@ -8,7 +8,7 @@ from operator import or_
 from functools import reduce
 
 from nmutil.singlepipe import PrevControl, NextControl
-from pipeline import ObjectProxy
+from nmutil.pipeline import ObjectProxy
 
 
 class MultiShiftR:

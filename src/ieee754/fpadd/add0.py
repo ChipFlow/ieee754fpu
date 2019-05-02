@@ -5,8 +5,8 @@
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumBase
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPNumBase
+from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 
 

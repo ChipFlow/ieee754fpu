@@ -1,7 +1,7 @@
 from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
 from fpcommon.getop import FPGetOp
 from nmutil.singlepipe import eq
 

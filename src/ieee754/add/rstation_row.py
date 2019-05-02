@@ -2,8 +2,8 @@ from nmigen import Signal, Cat, Const, Mux, Module
 
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
-from fpbase import MultiShiftRMerge
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPNumBase
+from ieee754.fpcommon.fpbase import MultiShiftRMerge
 
 class ReservationStationRow:
 

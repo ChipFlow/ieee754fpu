@@ -6,11 +6,11 @@ from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPOpIn, FPOpOut
-from fpbase import Trigger
+from ieee754.fpcommon.fpbase import FPOpIn, FPOpOut
+from ieee754.fpcommon.fpbase import Trigger
 from nmutil.singlepipe import (StageChain, SimpleHandshake)
 
-from fpbase import FPState, FPID
+from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNorm)
 from ieee754.fpcommon.postcalc import FPAddStage1Data

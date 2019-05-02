@@ -4,7 +4,7 @@
 
 from nmigen import Signal
 from nmigen.cli import main, verilog
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState
 
 
 class FPPutZ(FPState):

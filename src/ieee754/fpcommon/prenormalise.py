@@ -7,10 +7,10 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import Overflow, FPNumBase
-from fpbase import MultiShiftRMerge
+from ieee754.fpcommon.fpbase import Overflow, FPNumBase
+from ieee754.fpcommon.fpbase import MultiShiftRMerge
 
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState
 
 
 class FPNormaliseModSingle:

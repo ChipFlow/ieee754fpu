@@ -5,9 +5,9 @@
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from fpbase import FPNumOut, FPNumIn, FPNumBase
-from fpbase import MultiShiftRMerge
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPNumOut, FPNumIn, FPNumBase
+from ieee754.fpcommon.fpbase import MultiShiftRMerge
+from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 
 

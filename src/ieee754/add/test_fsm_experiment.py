@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog, rtlil
 from nmigen.compat.sim import run_simulation
 
 
-from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, FPBase, FPState
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, FPBase, FPState
 from nmutil.nmoperator import eq
 from nmutil.singlepipe import SimpleHandshake, ControlBase
 from test_buf_pipe import data_chain2, Test5

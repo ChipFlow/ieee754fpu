@@ -10,13 +10,6 @@ from nmutil.singlepipe import PassThroughStage
 from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
 
-from ieee754.fpcommon.getop import FPADDBaseData
-from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.pack import FPPackData
-from ieee754.fpcommon.normtopack import FPNormToPack
-from ieee754.fpadd.specialcases import FPAddSpecialCasesDeNorm
-from ieee754.fpadd.addstages import FPAddAlignSingleAdd
-
 
 def num_bits(n):
     return int(log(n) / log(2))

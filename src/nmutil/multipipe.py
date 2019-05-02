@@ -19,7 +19,8 @@ from nmutil.stageapi import _spec
 
 from collections.abc import Sequence
 
-from example_buf_pipe import eq, NextControl, PrevControl, ExampleStage
+from .nmoperator import eq
+from .iocontrol import NextControl, PrevControl
 
 
 class MultiInControlBase(Elaboratable):
@@ -352,6 +353,7 @@ class PriorityCombMuxInPipe(CombMultiInPipeline):
 
 if __name__ == '__main__':
 
+    from nmutil.test.example_buf_pipe import ExampleStage
     dut = PriorityCombMuxInPipe(ExampleStage)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_combpipe.il", "w") as f:

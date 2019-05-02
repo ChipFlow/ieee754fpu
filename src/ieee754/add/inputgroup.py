@@ -2,7 +2,7 @@ from nmigen import Module, Signal, Cat, Array, Const
 from nmigen.lib.coding import PriorityEncoder
 from math import log
 
-from fpbase import Trigger
+from ieee754.fpcommon.fpbase import Trigger
 
 
 class FPGetSyncOpsMod:

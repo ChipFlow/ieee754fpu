@@ -8,7 +8,7 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import (StageChain, SimpleHandshake,
                         PassThroughStage)
 
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from .align import FPAddAlignSingleMod

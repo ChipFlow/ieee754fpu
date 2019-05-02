@@ -2,7 +2,7 @@ from random import randint
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 
-from fpbase import MultiShift, MultiShiftR, MultiShiftRMerge
+from ieee754.fpcommon.fpbase import MultiShift, MultiShiftR, MultiShiftRMerge
 
 class MultiShiftModL:
     def __init__(self, width):

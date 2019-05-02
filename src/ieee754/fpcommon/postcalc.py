@@ -3,7 +3,7 @@
 # 2013-12-12
 
 from nmigen import Signal
-from fpbase import Overflow, FPNumBase
+from ieee754.fpcommon.fpbase import Overflow, FPNumBase
 
 class FPAddStage1Data:
 

@@ -6,10 +6,10 @@ from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPNumDecode
+from ieee754.fpcommon.fpbase import FPNumDecode
 from nmutil.singlepipe import SimpleHandshake, StageChain
 
-from fpbase import FPState, FPID
+from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 

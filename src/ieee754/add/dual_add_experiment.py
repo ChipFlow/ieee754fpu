@@ -2,7 +2,7 @@ from nmigen import *
 from nmigen.cli import main
 
 from nmigen_add_experiment import FPADD
-from fpbase import FPOp
+from ieee754.fpcommon.fpbase import FPOp
 
 
 class Adder:

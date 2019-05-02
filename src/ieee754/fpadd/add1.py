@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
-from fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from .add0 import FPAddStage0Data
 
