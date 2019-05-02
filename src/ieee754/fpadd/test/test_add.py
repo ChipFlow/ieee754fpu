@@ -11,7 +11,7 @@ from ieee754.fpcommon.test.unit_test_single import (get_mantissa, get_exponent,
                                 match, get_rs_case, check_rs_case, run_fpunit,
                                 run_edge_cases, run_corner_cases)
 
-def testbench(dut):
+def tbench(dut, maxcount, num_loops):
     yield from check_rs_case(dut, 0x36093399, 0x7f6a12f1, 0x7f6a12f1)
     yield from check_rs_case(dut, 0x006CE3EE, 0x806CE3EC, 0x00000002)
     yield from check_rs_case(dut, 0x00000047, 0x80000048, 0x80000001)
@@ -71,9 +71,12 @@ def testbench(dut):
     print (count, "vectors passed")
 
     yield from run_corner_cases(dut, count, add, get_rs_case)
-    yield from run_edge_cases(dut, count, add, get_rs_case)
+    yield from run_edge_cases(dut, count, add, get_rs_case, maxcount, num_loops)
+
+def test1(maxcount=10, num_loops=5):
+    dut = FPADD(width=32, id_wid=5, single_cycle=True)
+    run_simulation(dut, tbench(dut, maxcount, num_loops),
+                        vcd_name="test_add.vcd")
 
 if __name__ == '__main__':
-    dut = FPADD(width=32, id_wid=5, single_cycle=True)
-    run_simulation(dut, testbench(dut), vcd_name="test_add.vcd")
-
+    test1(maxcount=1000, num_loops=1000)
