@@ -107,9 +107,11 @@ class FPADDBaseMod:
 
         sc = self.add_state(FPAddSpecialCases(self.width, self.id_wid))
         sc.setup(m, a, b, self.in_mid)
+        m.submodules.sc = sc
 
         dn = self.add_state(FPAddDeNorm(self.width, self.id_wid))
         dn.setup(m, a, b, sc.in_mid)
+        m.submodules.dn = dn
 
         if self.single_cycle:
             alm = self.add_state(FPAddAlignSingle(self.width, self.id_wid))
@@ -117,12 +119,15 @@ class FPADDBaseMod:
         else:
             alm = self.add_state(FPAddAlignMulti(self.width, self.id_wid))
             alm.setup(m, dn.out_a, dn.out_b, dn.in_mid)
+        m.submodules.alm = alm
 
         add0 = self.add_state(FPAddStage0(self.width, self.id_wid))
         add0.setup(m, alm.out_a, alm.out_b, alm.in_mid)
+        m.submodules.add0 = add0
 
         add1 = self.add_state(FPAddStage1(self.width, self.id_wid))
         add1.setup(m, add0.out_tot, add0.out_z, add0.in_mid)
+        m.submodules.add1 = add1
 
         if self.single_cycle:
             n1 = self.add_state(FPNorm1Single(self.width, self.id_wid))
@@ -158,9 +163,12 @@ class FPADDBaseMod:
         chainlist = [get, sc, alm, n1]
         chain = StageChain(chainlist, specallocate=True)
         chain.setup(m, self.i)
+        m.submodules.sc = sc
+        m.submodules.alm = alm
+        m.submodules.n1 = n1
 
         for mod in chainlist:
-            sc = self.add_state(mod)
+            self.add_state(mod)
 
         ppz = self.add_state(FPPutZ("pack_put_z", n1.out_z.z, self.o,
                                     n1.out_z.mid, self.o.mid))
