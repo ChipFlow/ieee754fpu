@@ -130,7 +130,7 @@ class InputTest:
     def send(self, mid):
         for i in range(self.tlen):
             op2 = self.di[mid][i]
-            rs = dut.p[mid]
+            rs = self.dut.p[mid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
@@ -202,8 +202,7 @@ class TestPriorityMuxPipe(PriorityCombMuxInPipe):
         stage = PassThroughStage(iospecfn)
         PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
 
-
-if __name__ == '__main__':
+def test1():
     dut = TestPriorityMuxPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_inputgroup_multi.il", "w") as f:
@@ -216,3 +215,5 @@ if __name__ == '__main__':
                          test.rcv()],
                    vcd_name="test_inputgroup_multi.vcd")
 
+if __name__ == '__main__':
+    test1()
