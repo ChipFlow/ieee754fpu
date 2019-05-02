@@ -14,8 +14,11 @@ class FPMUL(FPBase):
         self.width = width
 
         self.in_a  = FPOpIn(width)
+        self.in_a.data_i = Signal(width)
         self.in_b  = FPOpIn(width)
+        self.in_b.data_i = Signal(width)
         self.out_z = FPOpOut(width)
+        self.out_z.data_o = Signal(width)
 
         self.states = []
 
@@ -52,14 +55,14 @@ class FPMUL(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "get_b")
-                m.d.sync += eq([a, self.in_a.ack], res)
+                m.d.sync += eq([a, self.in_a.ready_o], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
                 res = self.get_op(m, self.in_b, b, "special_cases")
-                m.d.sync += eq([b, self.in_b.ack], res)
+                m.d.sync += eq([b, self.in_b.ready_o], res)
 
             # ******
             # special cases
