@@ -1,9 +1,10 @@
 from nmigen import Module, Signal, Cat, Mux, Array, Const
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
-from fpcommon.getop import FPGetOp
-from nmutil.singlepipe import eq
+from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
+                                     FPOpOut, Overflow, FPBase, FPState)
+from ieee754.fpcommon.getop import FPGetOp
+from nmutil.nmoperator import eq
 
 
 class FPMUL(FPBase):
@@ -12,9 +13,9 @@ class FPMUL(FPBase):
         FPBase.__init__(self)
         self.width = width
 
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
-        self.out_z = FPOp(width)
+        self.in_a  = FPOpIn(width)
+        self.in_b  = FPOpIn(width)
+        self.out_z = FPOpOut(width)
 
         self.states = []
 
