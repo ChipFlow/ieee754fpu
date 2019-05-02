@@ -2,3 +2,5 @@
 *.py?
 .*.sw?
 __pycache__
+*.v
+*.il
