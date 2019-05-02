@@ -11,7 +11,7 @@ from nmigen import Module, Signal, Cat, Value
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from nmigen_add_experiment import (FPADDMuxInOut,)
+from ieee754.fpadd.nmigen_add_experiment import (FPADDMuxInOut,)
 
 from sfpy import Float32
 
