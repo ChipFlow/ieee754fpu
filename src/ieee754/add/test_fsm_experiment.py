@@ -10,7 +10,7 @@ from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
                                      FPOpOut, FPBase)
 from nmutil.nmoperator import eq
 from nmutil.singlepipe import SimpleHandshake, ControlBase
-from test_buf_pipe import data_chain2, Test5
+from nmutil.test.test_buf_pipe import data_chain2, Test5
 
 
 class FPDIV(FPBase, Elaboratable):
