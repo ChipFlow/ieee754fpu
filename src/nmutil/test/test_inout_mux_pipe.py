@@ -65,7 +65,7 @@ class InputTest:
     def send(self, mid):
         for i in range(self.tlen):
             op2 = self.di[mid][i]
-            rs = dut.p[mid]
+            rs = self.dut.p[mid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
@@ -212,7 +212,7 @@ class TestInOutPipe(Elaboratable):
         return self._ports
 
 
-if __name__ == '__main__':
+def test1():
     dut = TestInOutPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_inoutmux_pipe.il", "w") as f:
@@ -227,3 +227,5 @@ if __name__ == '__main__':
                         ],
                    vcd_name="test_inoutmux_pipe.vcd")
 
+if __name__ == '__main__':
+    test1()
