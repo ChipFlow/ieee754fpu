@@ -37,7 +37,7 @@ class InputTest:
     def send(self, mid):
         for i in range(self.tlen):
             op1, op2 = self.di[mid][i]
-            rs = dut.p[mid]
+            rs = self.dut.p[mid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.a.eq(op1)
             yield rs.data_i.b.eq(op2)
@@ -108,8 +108,7 @@ class InputTest:
         print ("recv ended", mid)
 
 
-
-if __name__ == '__main__':
+def test1():
     dut = FPADDMuxInOut(32, 4)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_fpadd_pipe.il", "w") as f:
@@ -124,3 +123,5 @@ if __name__ == '__main__':
                         ],
                    vcd_name="test_fpadd_pipe.vcd")
 
+if __name__ == '__main__':
+    test1()
