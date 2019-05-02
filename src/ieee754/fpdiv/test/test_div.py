@@ -10,7 +10,7 @@ from nmigen_div_experiment import FPDIV
 
 from unit_test_single import (get_mantissa, get_exponent, get_sign, is_nan,
                                 is_inf, is_pos_inf, is_neg_inf,
-                                match, get_case, check_case, run_test,
+                                match, get_case, check_case, run_fpunit,
                                 run_edge_cases, run_corner_cases)
 
 
@@ -33,7 +33,7 @@ def testbench(dut):
     #regression tests
     stimulus_a = [0xbf9b1e94, 0x34082401, 0x5e8ef81, 0x5c75da81, 0x2b017]
     stimulus_b = [0xc038ed3a, 0xb328cd45, 0x114f3db, 0x2f642a39, 0xff3807ab]
-    yield from run_test(dut, stimulus_a, stimulus_b, truediv, get_case)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, truediv, get_case)
     count += len(stimulus_a)
     print (count, "vectors passed")
 

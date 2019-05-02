@@ -130,7 +130,7 @@ def check_case(dut, a, b, z, mid=None):
     assert out_mid == mid, "Output mid 0x%x != expected 0x%x" % (out_mid, mid)
 
 
-def run_test(dut, stimulus_a, stimulus_b, op, get_case_fn):
+def run_fpunit(dut, stimulus_a, stimulus_b, op, get_case_fn):
 
     expected_responses = []
     actual_responses = []
@@ -191,13 +191,13 @@ def run_corner_cases(dut, count, op, get_case_fn):
     from itertools import permutations
     stimulus_a = [i[0] for i in permutations(corner_cases, 2)]
     stimulus_b = [i[1] for i in permutations(corner_cases, 2)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
-def run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn):
-    yield from run_test(dut, stimulus_a, stimulus_b, op, get_case_fn)
-    yield from run_test(dut, stimulus_b, stimulus_a, op, get_case_fn)
+def run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn):
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit(dut, stimulus_b, stimulus_a, op, get_case_fn)
 
 def run_cases(dut, count, op, fixed_num, maxcount, get_case_fn):
     if isinstance(fixed_num, int):
@@ -208,35 +208,35 @@ def run_cases(dut, count, op, fixed_num, maxcount, get_case_fn):
         report = "random"
 
     stimulus_b = [randint(0, 1<<32) for i in range(maxcount)]
-    yield from run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed 2^32", report)
 
     # non-canonical NaNs.
     stimulus_b = [set_exponent(randint(0, 1<<32), 128) \
                         for i in range(maxcount)]
-    yield from run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed Non-Canonical NaN", report)
 
     # -127
     stimulus_b = [set_exponent(randint(0, 1<<32), -127) \
                         for i in range(maxcount)]
-    yield from run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed exp=-127", report)
 
     # nearly zero
     stimulus_b = [set_exponent(randint(0, 1<<32), -126) \
                         for i in range(maxcount)]
-    yield from run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed exp=-126", report)
 
     # nearly inf
     stimulus_b = [set_exponent(randint(0, 1<<32), 127) \
                         for i in range(maxcount)]
-    yield from run_test_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
+    yield from run_fpunit_2(dut, stimulus_a, stimulus_b, op, get_case_fn)
     count += len(stimulus_a)
     print (count, "vectors passed exp=127", report)
 

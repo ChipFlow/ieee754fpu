@@ -67,7 +67,7 @@ def check_case(dut, a, b, z):
     assert out_z == z, "Output z 0x%x not equal to expected 0x%x" % (out_z, z)
 
 
-def run_test(dut, stimulus_a, stimulus_b, op):
+def run_fpunit(dut, stimulus_a, stimulus_b, op):
 
     expected_responses = []
     actual_responses = []
@@ -120,7 +120,7 @@ def run_corner_cases(dut, count, op):
     from itertools import permutations
     stimulus_a = [i[0] for i in permutations(corners, 2)]
     stimulus_b = [i[1] for i in permutations(corners, 2)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
@@ -130,73 +130,73 @@ def run_edge_cases(dut, count, op, maxcount=10, num_loops=1000):
     #edge cases
     stimulus_a = [0x8000 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x0000 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x8000 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x0000 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x7800 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0xF800 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x7800 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0xF800 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0x7C00 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_a = [0xFC00 for i in range(maxcount)]
     stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0x7C00 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
     stimulus_b = [0xFC00 for i in range(maxcount)]
     stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
-    yield from run_test(dut, stimulus_a, stimulus_b, op)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
@@ -204,7 +204,7 @@ def run_edge_cases(dut, count, op, maxcount=10, num_loops=1000):
     for i in range(num_loops):
         stimulus_a = [randint(0, maxint16-1) for i in range(maxcount)]
         stimulus_b = [randint(0, maxint16-1) for i in range(maxcount)]
-        yield from run_test(dut, stimulus_a, stimulus_b, op)
+        yield from run_fpunit(dut, stimulus_a, stimulus_b, op)
         count += maxcount
         print (count, "random vectors passed")
 

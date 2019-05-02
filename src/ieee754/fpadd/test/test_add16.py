@@ -7,7 +7,7 @@ from nmigen_add_experiment import FPADD
 
 from unit_test_half import (get_mantissa, get_exponent, get_sign, is_nan,
                                 is_inf, is_pos_inf, is_neg_inf,
-                                match, get_case, check_case, run_test,
+                                match, get_case, check_case, run_fpunit,
                                 run_edge_cases, run_corner_cases)
 
 def testbench(dut):
@@ -31,7 +31,7 @@ def testbench(dut):
     #regression tests
     stimulus_a = [ 0x8000, 0x8000 ]
     stimulus_b = [ 0x0000, 0xfc01 ]
-    yield from run_test(dut, stimulus_a, stimulus_b, add)
+    yield from run_fpunit(dut, stimulus_a, stimulus_b, add)
     count += len(stimulus_a)
     print (count, "vectors passed")
 
