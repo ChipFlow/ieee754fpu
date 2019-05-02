@@ -4,7 +4,7 @@
 
 #from nmigen.cli import main, verilog
 
-from singlepipe import StageChain, SimpleHandshake
+from nmutil.singlepipe import StageChain, SimpleHandshake
 
 from fpbase import FPState, FPID
 from .postcalc import FPAddStage1Data

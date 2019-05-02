@@ -5,9 +5,9 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
-from multipipe import CombMuxOutPipe
-from multipipe import PriorityCombMuxInPipe
+from nmutil.singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
+from nmutil.multipipe import CombMuxOutPipe
+from nmutil.multipipe import PriorityCombMuxInPipe
 
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData

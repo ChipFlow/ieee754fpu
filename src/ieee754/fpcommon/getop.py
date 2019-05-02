@@ -9,13 +9,13 @@ from math import log
 
 from fpbase import FPNumIn, FPNumOut, FPOpIn, Overflow, FPBase, FPNumBase
 from fpbase import MultiShiftRMerge, Trigger
-from singlepipe import (ControlBase, StageChain, SimpleHandshake,
+from nmutil.singlepipe import (ControlBase, StageChain, SimpleHandshake,
                         PassThroughStage, PrevControl)
-from multipipe import CombMuxOutPipe
-from multipipe import PriorityCombMuxInPipe
+from nmutil.multipipe import CombMuxOutPipe
+from nmutil.multipipe import PriorityCombMuxInPipe
 
 from fpbase import FPState
-import nmoperator
+from nmutil import nmoperator
 
 
 class FPGetOpMod(Elaboratable):

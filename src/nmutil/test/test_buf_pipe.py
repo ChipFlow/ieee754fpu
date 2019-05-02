@@ -24,12 +24,12 @@ from example_buf_pipe import ExamplePipeline, UnbufferedPipeline
 from example_buf_pipe import ExampleStageCls
 from example_buf_pipe import PrevControl, NextControl, BufferedHandshake
 from example_buf_pipe import StageChain, ControlBase, StageCls
-from singlepipe import UnbufferedPipeline2
-from singlepipe import SimpleHandshake
-from singlepipe import PassThroughHandshake
-from singlepipe import PassThroughStage
-from singlepipe import FIFOControl
-from singlepipe import RecordObject
+from nmutil.singlepipe import UnbufferedPipeline2
+from nmutil.singlepipe import SimpleHandshake
+from nmutil.singlepipe import PassThroughHandshake
+from nmutil.singlepipe import PassThroughStage
+from nmutil.singlepipe import FIFOControl
+from nmutil.singlepipe import RecordObject
 
 from random import randint, seed
 

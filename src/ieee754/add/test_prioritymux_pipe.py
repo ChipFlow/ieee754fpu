@@ -4,8 +4,8 @@ from nmigen import Module, Signal, Cat
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from singlepipe import PassThroughStage
-from multipipe import (CombMultiInPipeline, PriorityCombMuxInPipe)
+from nmutil.singlepipe import PassThroughStage
+from nmutil.multipipe import (CombMultiInPipeline, PriorityCombMuxInPipe)
 
 
 class PassData:

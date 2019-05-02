@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Const, Cat
 from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, Overflow, FPBase, FPState
-from singlepipe import eq
+from nmutil.singlepipe import eq
 
 class Div:
     def __init__(self, width):

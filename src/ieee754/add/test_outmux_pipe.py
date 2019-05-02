@@ -4,8 +4,8 @@ from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from multipipe import CombMuxOutPipe
-from singlepipe import SimpleHandshake, PassThroughHandshake, RecordObject
+from nmutil.multipipe import CombMuxOutPipe
+from nmutil.singlepipe import SimpleHandshake, PassThroughHandshake, RecordObject
 
 
 class PassInData(RecordObject):

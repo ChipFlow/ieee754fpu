@@ -3,7 +3,7 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase, FPState
 from fpcommon.getop import FPGetOp
-from singlepipe import eq
+from nmutil.singlepipe import eq
 
 
 class FPMUL(FPBase):

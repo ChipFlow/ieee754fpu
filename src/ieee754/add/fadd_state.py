@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 
 from fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
 
-from singlepipe import eq
+from nmutil.singlepipe import eq
 
 
 class FPADD(FPBase):

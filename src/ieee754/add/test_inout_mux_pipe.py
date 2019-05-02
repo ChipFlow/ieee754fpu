@@ -11,9 +11,9 @@ from nmigen import Module, Signal, Cat, Value, Elaboratable
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from multipipe import CombMultiOutPipeline, CombMuxOutPipe
-from multipipe import PriorityCombMuxInPipe
-from singlepipe import SimpleHandshake, RecordObject, Object
+from nmutil.multipipe import CombMultiOutPipeline, CombMuxOutPipe
+from nmutil.multipipe import PriorityCombMuxInPipe
+from nmutil.singlepipe import SimpleHandshake, RecordObject, Object
 
 
 class PassData2(RecordObject):

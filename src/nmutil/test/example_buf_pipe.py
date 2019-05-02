@@ -1,9 +1,9 @@
 """ Pipeline and BufferedHandshake examples
 """
 
-from nmoperator import eq
-from iocontrol import (PrevControl, NextControl)
-from singlepipe import (PrevControl, NextControl, ControlBase,
+from nmutil.nmoperator import eq
+from nmutil.iocontrol import (PrevControl, NextControl)
+from nmutil.singlepipe import (PrevControl, NextControl, ControlBase,
                         StageCls, Stage, StageChain,
                         BufferedHandshake, UnbufferedPipeline)
 

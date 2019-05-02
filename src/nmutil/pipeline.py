@@ -8,9 +8,9 @@ from nmigen import tracer
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
 from contextlib import contextmanager
 
-from nmoperator import eq
-from singlepipe import StageCls, ControlBase, BufferedHandshake
-from singlepipe import UnbufferedPipeline
+from nmutil.nmoperator import eq
+from nmutil.singlepipe import StageCls, ControlBase, BufferedHandshake
+from nmutil.singlepipe import UnbufferedPipeline
 
 
 # The following example shows how pyrtl can be used to make some interesting

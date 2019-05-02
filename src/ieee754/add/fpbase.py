@@ -7,7 +7,7 @@ from math import log
 from operator import or_
 from functools import reduce
 
-from singlepipe import PrevControl, NextControl
+from nmutil.singlepipe import PrevControl, NextControl
 from pipeline import ObjectProxy
 
 

@@ -18,7 +18,7 @@ from nmigen.hdl.rec import Record, Layout
 from abc import ABCMeta, abstractmethod
 from collections.abc import Sequence, Iterable
 from collections import OrderedDict
-from queue import Queue
+from nmutil.queue import Queue
 import inspect
 
 

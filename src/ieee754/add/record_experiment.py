@@ -3,7 +3,7 @@ from nmigen.hdl.rec import Record, Layout, DIR_NONE
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen.compat.fhdl.bitcontainer import value_bits_sign
-from singlepipe import cat, RecordObject
+from nmutil.singlepipe import cat, RecordObject
 
 
 class RecordTest:

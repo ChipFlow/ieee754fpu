@@ -5,7 +5,7 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from singlepipe import (StageChain, SimpleHandshake,
+from nmutil.singlepipe import (StageChain, SimpleHandshake,
                         PassThroughStage)
 
 from fpbase import FPState

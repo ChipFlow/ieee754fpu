@@ -80,7 +80,7 @@
 from abc import ABCMeta, abstractmethod
 import inspect
 
-import nmoperator
+from nmutil import nmoperator
 
 
 def _spec(fn, name=None):

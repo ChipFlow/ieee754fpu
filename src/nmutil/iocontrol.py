@@ -86,7 +86,7 @@ from nmigen.hdl.rec import Record
 from collections.abc import Sequence, Iterable
 from collections import OrderedDict
 
-import nmoperator
+from nmutil import nmoperator
 
 
 class Object:

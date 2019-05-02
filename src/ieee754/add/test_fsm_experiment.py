@@ -8,8 +8,8 @@ from nmigen.compat.sim import run_simulation
 
 
 from fpbase import FPNumIn, FPNumOut, FPOpIn, FPOpOut, FPBase, FPState
-from nmoperator import eq
-from singlepipe import SimpleHandshake, ControlBase
+from nmutil.nmoperator import eq
+from nmutil.singlepipe import SimpleHandshake, ControlBase
 from test_buf_pipe import data_chain2, Test5
 
 

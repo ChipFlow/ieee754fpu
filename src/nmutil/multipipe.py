@@ -15,7 +15,7 @@ from nmigen import Signal, Cat, Const, Mux, Module, Array, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.lib.coding import PriorityEncoder
 from nmigen.hdl.rec import Record, Layout
-from stageapi import _spec
+from nmutil.stageapi import _spec
 
 from collections.abc import Sequence
 

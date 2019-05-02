@@ -132,12 +132,12 @@ from nmigen import Signal, Mux, Module, Elaboratable
 from nmigen.cli import verilog, rtlil
 from nmigen.hdl.rec import Record
 
-from queue import Queue
+from nmutil.queue import Queue
 import inspect
 
-from iocontrol import (PrevControl, NextControl, Object, RecordObject)
-from stageapi import (_spec, StageCls, Stage, StageChain, StageHelper)
-import nmoperator
+from nmutil.iocontrol import (PrevControl, NextControl, Object, RecordObject)
+from nmutil.stageapi import (_spec, StageCls, Stage, StageChain, StageHelper)
+from nmutil import nmoperator
                       
 
 class RecordBasedStage(Stage):

@@ -8,7 +8,7 @@ from nmigen.cli import main, verilog
 from fpbase import FPNumOut
 from fpbase import FPState
 from .roundz import FPRoundData
-from singlepipe import Object
+from nmutil.singlepipe import Object
 
 
 class FPPackData(Object):

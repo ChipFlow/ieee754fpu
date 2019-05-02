@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 from math import log
 
 from fpbase import FPNumDecode
-from singlepipe import SimpleHandshake, StageChain
+from nmutil.singlepipe import SimpleHandshake, StageChain
 
 from fpbase import FPState, FPID
 from ieee754.fpcommon.getop import FPADDBaseData
