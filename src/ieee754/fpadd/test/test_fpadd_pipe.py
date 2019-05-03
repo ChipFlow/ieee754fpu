@@ -1,127 +1,26 @@
-""" key strategic example showing how to do multi-input fan-in into a
-    multi-stage pipeline, then multi-output fanout.
-
-    the multiplex ID from the fan-in is passed in to the pipeline, preserved,
-    and used as a routing ID on the fanout.
+""" test of FPADDMuxInOut
 """
 
-from random import randint
-from math import log
-from nmigen import Module, Signal, Cat, Value
-from nmigen.compat.sim import run_simulation
-from nmigen.cli import verilog, rtlil
+from ieee754.fpadd.pipeline import (FPADDMuxInOut,)
+from ieee754.fpcommon.test.fpmux import runfp
 
-from ieee754.fpadd.nmigen_add_experiment import (FPADDMuxInOut,)
+from sfpy import Float64, Float32, Float16
+from operator import add
 
-from sfpy import Float32
+def test_pipe_fp16():
+    dut = FPADDMuxInOut(16, 4)
+    runfp(dut, 16, "test_fpadd_pipe_fp16", Float16, add)
 
-class InputTest:
-    def __init__(self, dut):
-        self.dut = dut
-        self.di = {}
-        self.do = {}
-        self.tlen = 10
-        self.width = 32
-        for mid in range(dut.num_rows):
-            self.di[mid] = {}
-            self.do[mid] = []
-            for i in range(self.tlen):
-                op1 = randint(0, (1<<self.width)-1)
-                op2 = randint(0, (1<<self.width)-1)
-                #op1 = 0x40900000
-                #op2 = 0x40200000
-                res = Float32(op1) + Float32(op2)
-                self.di[mid][i] = (op1, op2)
-                self.do[mid].append(res.bits)
-
-    def send(self, mid):
-        for i in range(self.tlen):
-            op1, op2 = self.di[mid][i]
-            rs = self.dut.p[mid]
-            yield rs.valid_i.eq(1)
-            yield rs.data_i.a.eq(op1)
-            yield rs.data_i.b.eq(op2)
-            yield rs.data_i.mid.eq(mid)
-            yield
-            o_p_ready = yield rs.ready_o
-            while not o_p_ready:
-                yield
-                o_p_ready = yield rs.ready_o
-
-            fop1 = Float32(op1)
-            fop2 = Float32(op2)
-            res = fop1 + fop2
-            print ("send", mid, i, hex(op1), hex(op2), hex(res.bits),
-                           fop1, fop2, res)
-
-            yield rs.valid_i.eq(0)
-            # wait random period of time before queueing another value
-            for i in range(randint(0, 3)):
-                yield
-
-        yield rs.valid_i.eq(0)
-        yield
-
-        print ("send ended", mid)
-
-        ## wait random period of time before queueing another value
-        #for i in range(randint(0, 3)):
-        #    yield
-
-        #send_range = randint(0, 3)
-        #if send_range == 0:
-        #    send = True
-        #else:
-        #    send = randint(0, send_range) != 0
-
-    def rcv(self, mid):
-        while True:
-            #stall_range = randint(0, 3)
-            #for j in range(randint(1,10)):
-            #    stall = randint(0, stall_range) != 0
-            #    yield self.dut.n[0].ready_i.eq(stall)
-            #    yield
-            n = self.dut.n[mid]
-            yield n.ready_i.eq(1)
-            yield
-            o_n_valid = yield n.valid_o
-            i_n_ready = yield n.ready_i
-            if not o_n_valid or not i_n_ready:
-                continue
-
-            out_mid = yield n.data_o.mid
-            out_z = yield n.data_o.z
-
-            out_i = 0
-
-            print ("recv", out_mid, hex(out_z), "expected",
-                        hex(self.do[mid][out_i] ))
-
-            # see if this output has occurred already, delete it if it has
-            assert mid == out_mid, "out_mid %d not correct %d" % (out_mid, mid)
-            assert self.do[mid][out_i] == out_z
-            del self.do[mid][out_i]
-
-            # check if there's any more outputs
-            if len(self.do[mid]) == 0:
-                break
-        print ("recv ended", mid)
-
-
-def test1():
+def test_pipe_fp32():
     dut = FPADDMuxInOut(32, 4)
-    vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_fpadd_pipe.il", "w") as f:
-        f.write(vl)
-    #run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")
+    runfp(dut, 32, "test_fpadd_pipe_fp32", Float32, add)
 
-    test = InputTest(dut)
-    run_simulation(dut, [test.rcv(1), test.rcv(0),
-                         test.rcv(3), test.rcv(2),
-                         test.send(0), test.send(1),
-                         test.send(3), test.send(2),
-                        ],
-                   vcd_name="test_fpadd_pipe.vcd")
+def test_pipe_fp64():
+    dut = FPADDMuxInOut(64, 4)
+    runfp(dut, 64, "test_fpadd_pipe_fp64", Float64, add)
 
 if __name__ == '__main__':
-    test1()
+    test_pipe_fp16()
+    test_pipe_fp32()
+    test_pipe_fp64()
+
