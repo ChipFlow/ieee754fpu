@@ -16,7 +16,7 @@ from .postcalc import FPAddStage1Data
 class FPNorm1Data:
 
     def __init__(self, width, id_wid):
-        self.roundz = Signal(reset_less=True)
+        self.roundz = Signal(reset_less=True, name="norm1_roundz")
         self.z = FPNumBase(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
@@ -120,11 +120,11 @@ class FPNorm1ModSingle(Elaboratable):
                     msr.inp.eq(temp_m),
                     msr.diff.eq(ediff_n126),
                     self.o.z.m.eq(msr.m[3:]),
-                    of.m0.eq(temp_s[3]),   # copy of mantissa[0]
+                    of.m0.eq(msr.m[3]),   # copy of mantissa[0]
                     # overflow in bits 0..1: got shifted too (leave sticky)
-                    of.guard.eq(temp_s[2]),     # guard
-                    of.round_bit.eq(temp_s[1]), # round
-                    of.sticky.eq(temp_s[0]),    # sticky
+                    of.guard.eq(msr.m[2]),     # guard
+                    of.round_bit.eq(msr.m[1]), # round
+                    of.sticky.eq(msr.m[0]),    # sticky
                     self.o.z.e.eq(i.z.e + ediff_n126),
                 ]
 

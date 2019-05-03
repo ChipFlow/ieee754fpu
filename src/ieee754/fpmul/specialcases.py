@@ -56,7 +56,7 @@ class FPMulSpecialCasesMod(Elaboratable):
                     ]
 
         obz = Signal(reset_less=True)
-        m.d.comb += obz.eq(a1.is_zero & b1.is_zero)
+        m.d.comb += obz.eq(a1.is_zero | b1.is_zero)
 
         sabx = Signal(reset_less=True)   # sign a xor b (sabx, get it?)
         m.d.comb += sabx.eq(a1.s ^ b1.s)
