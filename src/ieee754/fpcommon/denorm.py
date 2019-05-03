@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
@@ -12,9 +12,9 @@ from ieee754.fpcommon.fpbase import FPState
 
 class FPSCData:
 
-    def __init__(self, width, id_wid):
-        self.a = FPNumBase(width, True)
-        self.b = FPNumBase(width, True)
+    def __init__(self, width, id_wid, m_extra=True):
+        self.a = FPNumBase(width, m_extra)
+        self.b = FPNumBase(width, m_extra)
         self.z = FPNumOut(width, False)
         self.oz = Signal(width, reset_less=True)
         self.out_do_z = Signal(reset_less=True)
@@ -33,19 +33,20 @@ class FPSCData:
                 self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
 
 
-class FPAddDeNormMod(FPState):
+class FPAddDeNormMod(FPState, Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, m_extra=True):
         self.width = width
         self.id_wid = id_wid
+        self.m_extra = m_extra
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid, self.m_extra)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid, self.m_extra)
 
     def process(self, i):
         return self.o

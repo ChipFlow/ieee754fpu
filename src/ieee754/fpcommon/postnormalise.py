@@ -71,7 +71,7 @@ class FPNorm1ModSingle(Elaboratable):
 
         espec = (len(i.z.e), True)
         ediff_n126 = Signal(espec, reset_less=True)
-        msr = MultiShiftRMerge(mwid, espec)
+        msr = MultiShiftRMerge(mwid+2, espec)
         m.submodules.multishift_r = msr
 
         m.d.comb += i.eq(self.i)

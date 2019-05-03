@@ -22,7 +22,7 @@ class FPMulStages(FPState, SimpleHandshake):
         self.m1o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid, False)
 
     def ospec(self):
         return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec

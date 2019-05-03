@@ -34,7 +34,7 @@ class FPMulStage0Mod(Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid, False)
 
     def ospec(self):
         return FPMulStage0Data(self.width, self.id_wid)
@@ -55,12 +55,9 @@ class FPMulStage0Mod(Elaboratable):
         m.submodules.mul0_out_z = self.o.z
 
         # store intermediate tests (and zero-extended mantissas)
-        seq = Signal(reset_less=True)
-        mge = Signal(reset_less=True)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        m.d.comb += [seq.eq(self.i.a.s == self.i.b.s),
-                     mge.eq(self.i.a.m >= self.i.b.m),
+        m.d.comb += [
                      am0.eq(Cat(self.i.a.m, 0)),
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]

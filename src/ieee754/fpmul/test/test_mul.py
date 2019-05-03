@@ -22,9 +22,10 @@ def tbench(dut, maxcount, num_loops):
     count = 0
 
     #regression tests
-    stimulus_a = [0xba57711a, 0xbf9b1e94, 0x34082401, 0x5e8ef81,
+
+    stimulus_a = [0xa4504d7, 0xba57711a, 0xbf9b1e94, 0x34082401, 0x5e8ef81,
                   0x5c75da81, 0x2b017]
-    stimulus_b = [0xee1818c5, 0xc038ed3a, 0xb328cd45, 0x114f3db,
+    stimulus_b = [0xb4658540, 0xee1818c5, 0xc038ed3a, 0xb328cd45, 0x114f3db,
                   0x2f642a39, 0xff3807ab]
     yield from run_fpunit(dut, stimulus_a, stimulus_b, mul, get_case)
     count += len(stimulus_a)

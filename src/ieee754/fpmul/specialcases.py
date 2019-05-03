@@ -1,6 +1,6 @@
 # IEEE Floating Point Multiplier 
 
-from nmigen import Module, Signal, Cat, Const
+from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
@@ -12,7 +12,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
 
-class FPMulSpecialCasesMod:
+class FPMulSpecialCasesMod(Elaboratable):
     """ special cases: NaNs, infs, zeros, denormalised
         see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -28,7 +28,7 @@ class FPMulSpecialCasesMod:
         return FPADDBaseData(self.width, self.id_wid)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.id_wid, False)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -45,8 +45,8 @@ class FPMulSpecialCasesMod:
         m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumDecode(None, self.width)
-        b1 = FPNumDecode(None, self.width)
+        a1 = FPNumDecode(None, self.width, False)
+        b1 = FPNumDecode(None, self.width, False)
         m.submodules.sc_decode_a = a1
         m.submodules.sc_decode_b = b1
         m.d.comb += [a1.v.eq(self.i.a),
@@ -54,18 +54,6 @@ class FPMulSpecialCasesMod:
                      self.o.a.eq(a1),
                      self.o.b.eq(b1)
                     ]
-
-        s_nomatch = Signal(reset_less=True)
-        m.d.comb += s_nomatch.eq(a1.s != b1.s)
-
-        m_match = Signal(reset_less=True)
-        m.d.comb += m_match.eq(a1.m == b1.m)
-
-        e_match = Signal(reset_less=True)
-        m.d.comb += e_match.eq(a1.e == b1.e)
-
-        aeqmb = Signal(reset_less=True)
-        m.d.comb += aeqmb.eq(s_nomatch & m_match & e_match)
 
         obz = Signal(reset_less=True)
         m.d.comb += obz.eq(a1.is_zero & b1.is_zero)
@@ -120,7 +108,7 @@ class FPMulSpecialCases(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "special_cases")
-        self.mod = FPAddSpecialCasesMod(width)
+        self.mod = FPMulSpecialCasesMod(width)
         self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
@@ -154,13 +142,13 @@ class FPMulSpecialCasesDeNorm(FPState, SimpleHandshake):
         return FPADDBaseData(self.width, self.id_wid) # SpecialCases ispec
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid) # DeNorm ospec
+        return FPSCData(self.width, self.id_wid, False) # DeNorm ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
         smod = FPMulSpecialCasesMod(self.width, self.id_wid)
-        dmod = FPAddDeNormMod(self.width, self.id_wid)
+        dmod = FPAddDeNormMod(self.width, self.id_wid, False)
 
         chain = StageChain([smod, dmod])
         chain.setup(m, i)
