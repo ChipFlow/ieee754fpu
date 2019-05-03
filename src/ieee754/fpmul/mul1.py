@@ -10,7 +10,6 @@ from .mul0 import FPMulStage0Data
 
 class FPMulStage1Mod(FPState, Elaboratable):
     """ Second stage of mul: preparation for normalisation.
-        detects when tot sum is too big (tot[27] is kinda a carry bit)
     """
 
     def __init__(self, width, id_wid):
@@ -39,15 +38,14 @@ class FPMulStage1Mod(FPState, Elaboratable):
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.o.z.eq(self.i.z)
-        # tot[-1] (MSB) gets set when the sum overflows. shift result down
         with m.If(~self.i.out_do_z):
             mw = self.o.z.m_width
             m.d.comb += [
                 self.o.z.m.eq(self.i.product[mw+2:]),
-                self.o.of.m0.eq(self.i.tot[mw+2]),
-                self.o.of.guard.eq(self.i.tot[mw+1]),
-                self.o.of.round_bit.eq(self.i.tot[mw]),
-                self.o.of.sticky.eq(self.i.tot[0:mw].bool())
+                self.o.of.m0.eq(self.i.product[mw+2]),
+                self.o.of.guard.eq(self.i.product[mw+1]),
+                self.o.of.round_bit.eq(self.i.product[mw]),
+                self.o.of.sticky.eq(self.i.product[0:mw].bool())
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)

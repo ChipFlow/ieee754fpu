@@ -15,7 +15,7 @@ from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from .specialcases import FPMulSpecialCasesDeNorm
-from .addstages import FPMulStages
+from .mulstages import FPMulStages
 
 
 
@@ -41,7 +41,7 @@ class FPMULMuxInOut(ReservationStations):
     """ Reservation-Station version of FPMUL pipeline.
 
         * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
-        * 3-stage adder pipeline
+        * 2-stage multiplier pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
         Fan-in and Fan-out are combinatorial.

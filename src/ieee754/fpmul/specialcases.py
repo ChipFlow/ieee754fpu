@@ -73,6 +73,9 @@ class FPMulSpecialCasesMod:
         sabx = Signal(reset_less=True)   # sign a xor b (sabx, get it?)
         m.d.comb += sabx.eq(a1.s ^ b1.s)
 
+        abnan = Signal(reset_less=True)
+        m.d.comb += abnan.eq(a1.is_nan | b1.is_nan)
+
         # if a is NaN or b is NaN return NaN
         with m.If(abnan):
             m.d.comb += self.o.out_do_z.eq(1)
