@@ -5,9 +5,10 @@
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOp, Overflow, FPBase
+from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
+                                     FPOpOut, Overflow, FPBase)
 
-from nmutil.singlepipe import eq
+from nmutil.nmoperator import eq
 
 
 class FPADD(FPBase):
@@ -17,9 +18,12 @@ class FPADD(FPBase):
         self.width = width
         self.single_cycle = single_cycle
 
-        self.in_a  = FPOp(width)
-        self.in_b  = FPOp(width)
-        self.out_z = FPOp(width)
+        self.in_a  = FPOpIn(width)
+        self.in_a.data_i = Signal(width)
+        self.in_b  = FPOpIn(width)
+        self.in_b.data_i = Signal(width)
+        self.out_z = FPOpOut(width)
+        self.out_z.data_o = Signal(width)
 
     def elaborate(self, platform=None):
         """ creates the HDL code-fragment for FPAdd
@@ -34,6 +38,9 @@ class FPADD(FPBase):
         m.submodules.fpnum_a = a
         m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
+        m.submodules.fpnum_in_a = self.in_a
+        m.submodules.fpnum_in_b = self.in_b
+        m.submodules.fpnum_out_z = self.out_z
 
         m.d.comb += a.v.eq(self.in_a.v)
         m.d.comb += b.v.eq(self.in_b.v)
@@ -52,14 +59,14 @@ class FPADD(FPBase):
 
             with m.State("get_a"):
                 res = self.get_op(m, self.in_a, a, "get_b")
-                m.d.sync += eq([a, self.in_a.ack], res)
+                m.d.sync += eq([a, self.in_a.ready_o], res)
 
             # ******
             # gets operand b
 
             with m.State("get_b"):
                 res = self.get_op(m, self.in_b, b, "special_cases")
-                m.d.sync += eq([b, self.in_b.ack], res)
+                m.d.sync += eq([b, self.in_b.ready_o], res)
 
             # ******
             # special cases: NaNs, infs, zeros, denormalised
@@ -151,10 +158,10 @@ class FPADD(FPBase):
 
                     # exponent of a greater than b: shift b down
                     with m.If(a.e > b.e):
-                        m.d.sync += b.shift_down()
+                        m.d.sync += b.shift_down(b)
                     # exponent of b greater than a: shift a down
                     with m.Elif(a.e < b.e):
-                        m.d.sync += a.shift_down()
+                        m.d.sync += a.shift_down(a)
                     # exponents equal: move to next stage.
                     with m.Else():
                         m.next = "add_0"
