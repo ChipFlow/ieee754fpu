@@ -159,7 +159,7 @@ class FURegDepMatrix(Elaboratable):
                         ]
 
         # ---
-        # connect Dependency Matrix go_read_i/go_write_i to module gr/gw
+        # connect Dependency Matrix go_read_i/go_write_i to module go_rd/go_wr
         # ---
         for fu in range(self.n_fu_row):
             fup = fupend[fu]
