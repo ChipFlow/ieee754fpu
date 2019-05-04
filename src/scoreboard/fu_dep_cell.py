@@ -26,12 +26,12 @@ class FUDependenceCell(Elaboratable):
         m.submodules.wr_l = wr_l = SRLatch()
 
         # write latch: reset on go_write HI, set on write pending and issue
-        m.d.sync += wr_l.s.eq(self.issue_i & self.wr_pend_i)
-        m.d.sync += wr_l.r.eq(self.go_write_i)
+        m.d.comb += wr_l.s.eq(self.issue_i & self.wr_pend_i)
+        m.d.comb += wr_l.r.eq(self.go_write_i)
 
         # read latch: reset on go_read HI, set on read pending and issue
-        m.d.sync += rd_l.s.eq(self.issue_i & self.rd_pend_i)
-        m.d.sync += rd_l.r.eq(self.go_read_i)
+        m.d.comb += rd_l.s.eq(self.issue_i & self.rd_pend_i)
+        m.d.comb += rd_l.r.eq(self.go_read_i)
 
         # Read/Write Pending Latches (read out horizontally)
         m.d.comb += self.wr_pend_o.eq(wr_l.qn)

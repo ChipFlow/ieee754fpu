@@ -34,16 +34,16 @@ class DependenceCell(Elaboratable):
         m.submodules.src2_l = src2_l = SRLatch()
 
         # destination latch: reset on go_write HI, set on dest and issue
-        m.d.sync += dest_l.s.eq(self.issue_i & self.dest_i)
-        m.d.sync += dest_l.r.eq(self.go_write_i)
+        m.d.comb += dest_l.s.eq(self.issue_i & self.dest_i)
+        m.d.comb += dest_l.r.eq(self.go_write_i)
 
         # src1 latch: reset on go_read HI, set on src1_i and issue
-        m.d.sync += src1_l.s.eq(self.issue_i & self.src1_i)
-        m.d.sync += src1_l.r.eq(self.go_read_i)
+        m.d.comb += src1_l.s.eq(self.issue_i & self.src1_i)
+        m.d.comb += src1_l.r.eq(self.go_read_i)
 
         # src2 latch: reset on go_read HI, set on op2_i and issue
-        m.d.sync += src2_l.s.eq(self.issue_i & self.src2_i)
-        m.d.sync += src2_l.r.eq(self.go_read_i)
+        m.d.comb += src2_l.s.eq(self.issue_i & self.src2_i)
+        m.d.comb += src2_l.r.eq(self.go_read_i)
 
         # FU "Forward Progress" (read out horizontally)
         m.d.comb += self.dest_fwd_o.eq(dest_l.qn & self.dest_i)
@@ -83,6 +83,8 @@ def dcell_sim(dut):
     yield
     yield dut.src1_i.eq(1)
     yield dut.issue_i.eq(1)
+    yield
+    yield
     yield
     yield dut.issue_i.eq(0)
     yield

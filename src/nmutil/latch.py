@@ -13,13 +13,14 @@ class SRLatch(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         q_int = Signal(reset_less=True)
-        qn_int = Signal(reset_less=True)
 
-        m.d.comb += self.q.eq(~(self.s | qn_int))
-        m.d.comb += self.qn.eq(~(self.r | q_int))
+        with m.If(self.s):
+            m.d.sync += q_int.eq(1)
+        with m.Elif(self.r):
+            m.d.sync += q_int.eq(0)
 
-        m.d.sync += q_int.eq(self.q)
-        m.d.sync += qn_int.eq(self.qn)
+        m.d.comb += self.q.eq(q_int)
+        m.d.comb += self.qn.eq(~q_int)
 
         return m
 
@@ -31,13 +32,22 @@ def sr_sim(dut):
     yield dut.s.eq(0)
     yield dut.r.eq(0)
     yield
+    yield
+    yield
     yield dut.s.eq(1)
+    yield
+    yield
     yield
     yield dut.s.eq(0)
     yield
+    yield
+    yield
     yield dut.r.eq(1)
     yield
+    yield
+    yield
     yield dut.r.eq(0)
+    yield
     yield
     yield
 
