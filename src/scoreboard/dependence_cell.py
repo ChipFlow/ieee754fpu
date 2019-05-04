@@ -3,6 +3,7 @@ from nmigen.cli import verilog, rtlil
 from nmigen import Module, Signal, Elaboratable
 from nmutil.latch import SRLatch
 
+
 class DependenceCell(Elaboratable):
     """ implements 11.4.7 mitch alsup dependence cell, p27
     """
@@ -72,6 +73,7 @@ class DependenceCell(Elaboratable):
                 
     def ports(self):
         return list(self)
+
 
 def dcell_sim(dut):
     yield dut.dest_i.eq(1)
