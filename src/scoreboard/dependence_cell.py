@@ -3,7 +3,7 @@ from nmigen.cli import verilog, rtlil
 from nmigen import Module, Signal, Elaboratable
 from nmutil.latch import SRLatch
 
-class DepencenceCell(Elaboratable):
+class DependenceCell(Elaboratable):
     """ implements 11.4.7 mitch alsup dependence cell, p27
     """
     def __init__(self):
@@ -45,14 +45,14 @@ class DepencenceCell(Elaboratable):
         m.d.sync += src2_l.r.eq(self.go_read_i)
 
         # FU "Forward Progress" (read out horizontally)
-        m.d.comb += self.dest_rsel_o.eq(dest_l.q & self.go_write_i)
-        m.d.comb += self.src1_rsel_o.eq(src1_l.q & self.go_read_i)
-        m.d.comb += self.src2_rsel_o.eq(src2_l.q & self.go_read_i)
+        m.d.comb += self.dest_rsel_o.eq(dest_l.qn & self.go_write_i)
+        m.d.comb += self.src1_rsel_o.eq(src1_l.qn & self.go_read_i)
+        m.d.comb += self.src2_rsel_o.eq(src2_l.qn & self.go_read_i)
 
         # Register File Select (read out vertically)
-        m.d.comb += self.dest_fwd_o.eq(dest_l.q & self.dest_i)
-        m.d.comb += self.src1_fwd_o.eq(src1_l.q & self.src1_i)
-        m.d.comb += self.src2_fwd_o.eq(src2_l.q & self.src2_i)
+        m.d.comb += self.dest_fwd_o.eq(dest_l.qn & self.dest_i)
+        m.d.comb += self.src1_fwd_o.eq(src1_l.qn & self.src1_i)
+        m.d.comb += self.src2_fwd_o.eq(src2_l.qn & self.src2_i)
 
         return m
 
@@ -74,21 +74,27 @@ class DepencenceCell(Elaboratable):
         return list(self)
 
 def dcell_sim(dut):
-    yield dut.s.eq(0)
-    yield dut.r.eq(0)
+    yield dut.dest_i.eq(1)
+    yield dut.issue_i.eq(1)
     yield
-    yield dut.s.eq(1)
+    yield dut.issue_i.eq(0)
     yield
-    yield dut.s.eq(0)
+    yield dut.src1_i.eq(1)
+    yield dut.issue_i.eq(1)
     yield
-    yield dut.r.eq(1)
+    yield dut.issue_i.eq(0)
     yield
-    yield dut.r.eq(0)
+    yield dut.go_read_i.eq(1)
     yield
+    yield dut.go_read_i.eq(0)
+    yield
+    yield dut.go_write_i.eq(1)
+    yield
+    yield dut.go_write_i.eq(0)
     yield
 
 def test_dcell():
-    dut = DepencenceCell()
+    dut = DependenceCell()
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_dcell.il", "w") as f:
         f.write(vl)
