@@ -1,4 +1,5 @@
-from nmigen import Elaboratable, Module, Array, Signal
+from nmigen import Elaboratable, Module, Signal
+
 
 class RegReservation(Elaboratable):
     def __init__(self, fu_count):

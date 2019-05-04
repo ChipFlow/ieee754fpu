@@ -45,14 +45,14 @@ class DependenceCell(Elaboratable):
         m.d.sync += src2_l.r.eq(self.go_read_i)
 
         # FU "Forward Progress" (read out horizontally)
-        m.d.comb += self.dest_rsel_o.eq(dest_l.qn & self.go_write_i)
-        m.d.comb += self.src1_rsel_o.eq(src1_l.qn & self.go_read_i)
-        m.d.comb += self.src2_rsel_o.eq(src2_l.qn & self.go_read_i)
-
-        # Register File Select (read out vertically)
         m.d.comb += self.dest_fwd_o.eq(dest_l.qn & self.dest_i)
         m.d.comb += self.src1_fwd_o.eq(src1_l.qn & self.src1_i)
         m.d.comb += self.src2_fwd_o.eq(src2_l.qn & self.src2_i)
+
+        # Register File Select (read out vertically)
+        m.d.comb += self.dest_rsel_o.eq(dest_l.qn & self.go_write_i)
+        m.d.comb += self.src1_rsel_o.eq(src1_l.qn & self.go_read_i)
+        m.d.comb += self.src2_rsel_o.eq(src2_l.qn & self.go_read_i)
 
         return m
 
