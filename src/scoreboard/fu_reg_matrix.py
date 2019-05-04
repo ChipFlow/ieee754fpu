@@ -139,7 +139,6 @@ class FURegDepMatrix(Elaboratable):
         # connect Dependency Matrix dest/src1/src2/issue to module d/s/s/i
         # ---
         for rn in range(self.n_reg_col):
-            rsv = regrsv[rn]
             dest_i = []
             src1_i = []
             src2_i = []
@@ -162,7 +161,6 @@ class FURegDepMatrix(Elaboratable):
         # connect Dependency Matrix go_read_i/go_write_i to module go_rd/go_wr
         # ---
         for fu in range(self.n_fu_row):
-            fup = fupend[fu]
             go_read_i = []
             go_write_i = []
             for rn in range(self.n_reg_col):
