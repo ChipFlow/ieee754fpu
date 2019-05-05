@@ -4,7 +4,8 @@ from nmigen import Signal, Module, Elaboratable
 
 
 class SRLatch(Elaboratable):
-    def __init__(self):
+    def __init__(self, sync=True):
+        self.sync = sync
         self.s = Signal(reset_less=True)
         self.r = Signal(reset_less=True)
         self.q = Signal(reset_less=True)
@@ -14,13 +15,25 @@ class SRLatch(Elaboratable):
         m = Module()
         q_int = Signal(reset_less=True)
 
-        with m.If(self.s):
-            m.d.sync += q_int.eq(1)
-        with m.Elif(self.r):
-            m.d.sync += q_int.eq(0)
-
-        m.d.comb += self.q.eq(q_int)
-        m.d.comb += self.qn.eq(~q_int)
+        if self.sync:
+            with m.If(self.s):
+                m.d.sync += q_int.eq(1)
+            with m.Elif(self.r):
+                m.d.sync += q_int.eq(0)
+            m.d.comb += self.q.eq(q_int)
+            m.d.comb += self.qn.eq(~q_int)
+        else:
+            with m.If(self.s):
+                m.d.sync += q_int.eq(1)
+                m.d.comb += self.q.eq(1)
+                m.d.comb += self.qn.eq(0)
+            with m.Elif(self.r):
+                m.d.sync += q_int.eq(0)
+                m.d.comb += self.q.eq(0)
+                m.d.comb += self.qn.eq(1)
+            with m.Else():
+                m.d.comb += self.q.eq(q_int)
+                m.d.comb += self.qn.eq(~q_int)
 
         return m
 
