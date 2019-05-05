@@ -6,7 +6,7 @@ from nmigen.lib.coding import Decoder
 
 
 class IntFnUnit(Elaboratable):
-    """ implements 11.4.7 integer function unit, p37
+    """ implements 11.4.8 integer function unit, p31
     """
     def __init__(self, wid):
         self.reg_width = wid
