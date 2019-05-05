@@ -7,6 +7,11 @@ from nmigen.lib.coding import Decoder
 
 class IntFnUnit(Elaboratable):
     """ implements 11.4.8 integer function unit, p31
+
+        notes:
+
+        * req_rel_i (request release) is the direct equivalent of pipeline
+                    "output valid"
     """
     def __init__(self, wid):
         self.reg_width = wid
