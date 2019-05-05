@@ -20,20 +20,20 @@ class SRLatch(Elaboratable):
                 m.d.sync += q_int.eq(1)
             with m.Elif(self.r):
                 m.d.sync += q_int.eq(0)
+            with m.Else():
+                m.d.sync += q_int.eq(q_int)
             m.d.comb += self.q.eq(q_int)
-            m.d.comb += self.qn.eq(~q_int)
         else:
             with m.If(self.s):
                 m.d.sync += q_int.eq(1)
                 m.d.comb += self.q.eq(1)
-                m.d.comb += self.qn.eq(0)
             with m.Elif(self.r):
                 m.d.sync += q_int.eq(0)
                 m.d.comb += self.q.eq(0)
-                m.d.comb += self.qn.eq(1)
             with m.Else():
+                m.d.sync += q_int.eq(q_int)
                 m.d.comb += self.q.eq(q_int)
-                m.d.comb += self.qn.eq(~q_int)
+        m.d.comb += self.qn.eq(~self.q)
 
         return m
 
@@ -71,6 +71,13 @@ def test_sr():
         f.write(vl)
 
     run_simulation(dut, sr_sim(dut), vcd_name='test_srlatch.vcd')
+
+    dut = SRLatch(sync=False)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_srlatch_async.il", "w") as f:
+        f.write(vl)
+
+    run_simulation(dut, sr_sim(dut), vcd_name='test_srlatch_async.vcd')
 
 if __name__ == '__main__':
     test_sr()
