@@ -35,8 +35,8 @@ class LDSTDepCell(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.war_l = war_l = SRLatch() # Write After Read Latch
-        m.submodules.raw_l = raw_l = SRLatch() # Read After Write Latch
+        m.submodules.war_l = war_l = SRLatch(sync=False) # WriteAfterRead Latch
+        m.submodules.raw_l = raw_l = SRLatch(sync=False) # ReadAfterWrite Latch
 
         # issue & store & load - used for both WAR and RAW Setting
         i_s_l = Signal(reset_less=True)
