@@ -56,14 +56,12 @@ class LDSTDepMatrix(Elaboratable):
         sh_l = []
         for fu in range(self.n_ldst):
             dc = dm[fu]
-            # OR the load-hold-store / store-hold-load cell outputs in...
-            _lhs = lhs
-            _shl = shl
-            lhs = Signal(reset_less=True)
-            shl = Signal(reset_less=True)
-            m.d.comb += [lhs.eq(_lhs | dc.ld_hold_st_o),
-                         shl.eq(_shl | dc.st_hold_ld_o)
+            # connect up the load/hold/store cell in/out (starts as a const)
+            m.d.comb += [dc.ld_hold_st_i.eq(lhs),
+                         dc.st_hold_ld_i.eq(shl)
                         ]
+            lhs = dc.ld_hold_st_o
+            shl = dc.st_hold_ld_o
             # accumulate load-hold-store / store-hold-load bits
             lhs_l.append(lhs)
             shl_l.append(shl)
@@ -88,7 +86,7 @@ class LDSTDepMatrix(Elaboratable):
         return m
 
     def __iter__(self):
-        yield self.load_i  
+        yield self.load_i
         yield self.stor_i
         yield self.issue_i
         yield self.load_hit_i

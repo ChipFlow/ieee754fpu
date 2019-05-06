@@ -7,8 +7,9 @@ from nmutil.latch import SRLatch
 class LDSTDepCell(Elaboratable):
     """ implements 11.4.12 mitch alsup load/store dependence cell, p45
 
-        note: the OR gate on load-hold-store and store-hold-load is left
-        out, to be done in the LDST sparse matrix (accumulating).
+        note: the load-hold-store / store-hold-load both come through from
+        the previous cell and accumulate using ORing to create priority
+        picking (in the sparse-matrix, which is where the cells are wired up)
     """
     def __init__(self):
         # inputs
@@ -18,6 +19,8 @@ class LDSTDepCell(Elaboratable):
 
         self.load_hit_i = Signal(reset_less=True) # load hit in (right)
         self.stwd_hit_i = Signal(reset_less=True) # store w/ data hit in (right)
+        self.ld_hold_st_i = Signal(reset_less=True) # load holds st in (right)
+        self.st_hold_ld_i = Signal(reset_less=True) # st holds load in (right)
 
         # outputs (latched rd/wr pend)
         self.ld_hold_st_o = Signal(reset_less=True) # load holds st out (left)
@@ -28,20 +31,23 @@ class LDSTDepCell(Elaboratable):
         m.submodules.war_l = war_l = SRLatch() # Write After Read Latch
         m.submodules.raw_l = raw_l = SRLatch() # Read After Write Latch
 
+        # issue & store & load - used for both WAR and RAW Setting
         i_s_l = Signal(reset_less=True)
-        
         m.d.comb += i_s_l.eq(self.issue_i & self.stor_i & self.load_i)
+
         # write after read latch: loads block stores
         m.d.comb += war_l.s.eq(i_s_l)
-        m.d.comb += war_l.r.eq(self.load_i)
+        m.d.comb += war_l.r.eq(self.load_i) # reset on LD
 
         # read after write latch: stores block loads
         m.d.comb += raw_l.s.eq(i_s_l)
-        m.d.comb += raw_l.r.eq(self.stor_i)
+        m.d.comb += raw_l.r.eq(self.stor_i) # reset on ST
 
-        # Hold results (read out horizontally)
-        m.d.comb += self.ld_hold_st_o.eq(war_l.qn | self.load_hit_i)
-        m.d.comb += self.st_hold_ld_o.eq(raw_l.qn | self.stwd_hit_i)
+        # Hold results (read out horizontally, accumulate in OR fashion)
+        lhs = war_l.qn & self.load_hit_i
+        shl = raw_l.qn & self.stwd_hit_i
+        m.d.comb += self.ld_hold_st_o.eq(self.ld_hold_st_i | lhs)
+        m.d.comb += self.st_hold_ld_o.eq(self.st_hold_ld_i | shl)
 
         return m
 
@@ -51,6 +57,8 @@ class LDSTDepCell(Elaboratable):
         yield self.issue_i
         yield self.load_hit_i
         yield self.stwd_hit_i
+        yield self.ld_hold_st_i
+        yield self.st_hold_ld_i
         yield self.ld_hold_st_o
         yield self.st_hold_ld_o
                 
