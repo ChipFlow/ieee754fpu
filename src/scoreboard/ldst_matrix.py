@@ -1,15 +1,19 @@
+""" Mitch Alsup 6600-style LD/ST Memory Scoreboard Matrix (sparse vector)
+
+6600 LD/ST Dependency Table Matrix inputs / outputs
+---------------------------------------------------
+
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=81
+
+"""
+
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen import Module, Signal, Elaboratable, Array, Cat, Const
 
 from ldst_dep_cell import LDSTDepCell
 
-"""
-
- 6600 LD/ST Dependency Table Matrix inputs / outputs
- ---------------------------------------------------
-
-"""
 
 class LDSTDepMatrix(Elaboratable):
     """ implements 11.4.12 mitch alsup LD/ST Dependency Matrix, p46

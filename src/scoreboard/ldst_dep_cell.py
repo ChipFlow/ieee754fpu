@@ -1,3 +1,10 @@
+""" Mitch Alsup 6600-style LD/ST scoreboard Dependency Cell
+
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=81
+
+"""
+
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 from nmigen import Module, Signal, Elaboratable
