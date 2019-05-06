@@ -1,6 +1,6 @@
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
-from nmigen import Module, Signal, Cat, Elaboratable
+from nmigen import Module, Signal, Cat, Array, Const, Elaboratable
 from nmutil.latch import SRLatch
 from nmigen.lib.coding import Decoder
 
@@ -24,11 +24,16 @@ class FnUnit(Elaboratable):
         * recover is a local python variable (actually go_die_o)
         * when shadow_wid = 0, recover and shadown are Consts (i.e. do nothing)
     """
-    def __init__(self, wid, shadow_wid=0):
+    def __init__(self, wid, shadow_wid=0, n_dests=1):
         self.reg_width = wid
+        self.n_dests = n_dests
         self.shadow_wid = shadow_wid
 
         # inputs
+        if n_dests > 1:
+            self.rfile_sel_i = Signal(max=n_dests, reset_less=True)
+        else:
+            self.rfile_sel_i = Const(0) # no selection.  gets Array[0]
         self.dest_i = Signal(max=wid, reset_less=True) # Dest R# in (top)
         self.src1_i = Signal(max=wid, reset_less=True) # oper1 R# in (top)
         self.src2_i = Signal(max=wid, reset_less=True) # oper2 R# in (top)
@@ -49,11 +54,13 @@ class FnUnit(Elaboratable):
 
         # outputs
         self.readable_o = Signal(reset_less=True) # Readable out (right)
-        self.writable_o = Signal(reset_less=True) # Writable out (right)
+        self.xxxxable_o = Array(Signal(reset_less=True) \
+                               for i in range(n_dests)) # XXXXable out (right)
         self.busy_o = Signal(reset_less=True) # busy out (left)
 
         self.rd_pend_o = Signal(wid, reset_less=True) # rd pending (right)
-        self.wr_pend_o = Signal(wid, reset_less=True) # wr pending (right)
+        self.wr_pend_o = Array(Signal(wid, reset_less=True) \
+                               for i in range(n_dests))# wr pending (right)
 
     def elaborate(self, platform):
         m = Module()
@@ -96,6 +103,10 @@ class FnUnit(Elaboratable):
             shadown = Const(1)
             recover = Const(0)
 
+        # selector
+        wr_pend_o = self.wr_pend_o[self.rfile_sel_i]
+        xxxxable_o = self.xxxxable_o[self.rfile_sel_i]
+
         # go_write latch: reset on go_write HI, set on issue
         m.d.comb += wr_l.s.eq(self.issue_i)
         m.d.comb += wr_l.r.eq(self.go_write_i | recover)
@@ -108,7 +119,9 @@ class FnUnit(Elaboratable):
         m.d.comb += dest_d.i.eq(self.dest_i)
         m.d.comb += dest_d.n.eq(wr_l.qn) # decode is inverted
         m.d.comb += self.busy_o.eq(wr_l.q) # busy if set
-        m.d.comb += self.wr_pend_o.eq(dest_d.o)
+        for i in range(self.n_dests):
+            m.d.comb += self.wr_pend_o[i].eq(0)
+        m.d.comb += wr_pend_o.eq(dest_d.o)
 
         # src1/src2 decoder: read-pending out
         m.d.comb += src1_d.i.eq(self.src1_i)
@@ -122,12 +135,12 @@ class FnUnit(Elaboratable):
         m.d.comb += int_g_wr.eq(self.g_wr_pend_i & self.rd_pend_o)
         m.d.comb += self.readable_o.eq(int_g_wr.bool())
 
-        # writable output signal
+        # xxxxable output signal
         int_g_rw = Signal(self.reg_width, reset_less=True)
         g_rw = Signal(reset_less=True)
-        m.d.comb += int_g_rw.eq(self.g_rd_pend_i & self.wr_pend_o)
+        m.d.comb += int_g_rw.eq(self.g_rd_pend_i & wr_pend_o)
         m.d.comb += g_rw.eq(~int_g_rw.bool())
-        m.d.comb += self.writable_o.eq(g_rw & rd_l.q & self.req_rel_i & shadown)
+        m.d.comb += xxxxable_o.eq(g_rw & rd_l.q & self.req_rel_i & shadown)
 
         return m
 
@@ -142,9 +155,9 @@ class FnUnit(Elaboratable):
         yield self.g_rd_pend_i
         yield self.g_wr_pend_i
         yield self.readable_o
-        yield self.writable_o
+        yield from self.xxxxable_o
         yield self.rd_pend_o
-        yield self.wr_pend_o
+        yield from self.wr_pend_o
 
     def ports(self):
         return list(self)
@@ -173,12 +186,12 @@ def int_fn_unit_sim(dut):
     yield
 
 def test_int_fn_unit():
-    dut = FnUnit(32, 2)
+    dut = FnUnit(32, 2, 2)
     vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_int_fn_unit.il", "w") as f:
+    with open("test_fn_unit.il", "w") as f:
         f.write(vl)
 
-    run_simulation(dut, int_fn_unit_sim(dut), vcd_name='test_int_fn_unit.vcd')
+    run_simulation(dut, int_fn_unit_sim(dut), vcd_name='test_fn_unit.vcd')
 
 if __name__ == '__main__':
     test_int_fn_unit()
