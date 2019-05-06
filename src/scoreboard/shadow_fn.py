@@ -18,8 +18,7 @@ class ShadowFn(Elaboratable):
 
         # outputs
         self.shadow_o = Signal(reset_less=True)
-        self.recover_o  = Signal(reset_less=True)
-        self.shadow_o  = Signal(reset_less=True)
+        self.recover_o = Signal(reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
@@ -39,7 +38,6 @@ class ShadowFn(Elaboratable):
         yield self.s_good_i
         yield self.shadow_o
         yield self.recover_o
-        yield self.shadow_o
 
     def ports(self):
         return list(self)
