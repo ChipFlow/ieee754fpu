@@ -10,8 +10,8 @@ class IntFnUnit(Elaboratable):
         also implements optional shadowing 11.5.1, p55
 
         shadowing can be used for branches as well as exceptions (interrupts),
-        and vector-element predication (once the predicate is known, which it
-        may not be at instruction issue)
+        load/store hold (exceptions again), and vector-element predication
+        (once the predicate is known, which it may not be at instruction issue)
 
         notes:
 
