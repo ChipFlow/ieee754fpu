@@ -4,6 +4,8 @@ from nmigen import Module, Signal, Cat, Elaboratable
 from nmutil.latch import SRLatch
 from nmigen.lib.coding import Decoder
 
+from shadow_fn import ShadowFn
+
 
 class IntFnUnit(Elaboratable):
     """ implements 11.4.8 integer function unit, p31
@@ -18,7 +20,7 @@ class IntFnUnit(Elaboratable):
         * req_rel_i (request release) is the direct equivalent of pipeline
                     "output valid"
         * recover is a local python variable (actually go_die_o)
-        * when shadow_wid = 0, recover and shadown are Consts
+        * when shadow_wid = 0, recover and shadown are Consts (i.e. do nothing)
     """
     def __init__(self, wid, shadow_wid=0):
         self.reg_width = wid
@@ -60,27 +62,34 @@ class IntFnUnit(Elaboratable):
         m.submodules.src2_d = src2_d = Decoder(self.reg_width)
         s_latches = []
         for i in range(self.shadow_wid):
-            sl = SRLatch(sync=False)
-            setattr(m.submodules, "shadow%d" % i, sl)
-            s_latches.append(sl)
+            sh = ShadowFn()
+            setattr(m.submodules, "shadow%d" % i, sh)
+            s_latches.append(sh)
 
         # shadow / recover (optional: shadow_wid > 0)
         if self.shadow_wid:
             recover = self.go_die_o
-            si = Signal(self.shadow_wid, reset_less=True)
-            sq = Signal(self.shadow_wid, reset_less=True)
             shadown = Signal(reset_less=True)
-            recfail = Signal(self.shadow_wid, reset_less=True)
-            l = self.shadow_i  & Cat(*([self.issue_i] * self.shadow_wid))
-            q_l = []
-            for i, s in enumerate(l):
-                m.d.comb += s_latches[i].s.eq(s)  # issue_i & shadow_i[i]
-                m.d.comb += s_latches[i].r.eq(self.s_good_i[i])
-                q_l.append(s_latches[i].q)
-            m.d.comb += sq.eq(Cat(*q_l))
-            m.d.comb += shadown.eq(~sq.bool())
-            m.d.comb += recfail.eq(sq & self.s_fail_i)
-            m.d.comb += recover.eq(recfail.bool())
+            i_l = []
+            fail_l = []
+            good_l = []
+            shi_l = []
+            sho_l = []
+            rec_l = []
+            # get list of latch signals. really must be a better way to do this
+            for l in s_latches:
+                i_l.append(l.issue_i)
+                shi_l.append(l.shadow_i)
+                fail_l.append(l.s_fail_i)
+                good_l.append(l.s_good_i)
+                sho_l.append(l.shadow_o)
+                rec_l.append(l.recover_o)
+            m.d.comb += Cat(*i_l).eq(self.issue_i)
+            m.d.comb += Cat(*fail_l).eq(self.s_fail_i)
+            m.d.comb += Cat(*good_l).eq(self.s_good_i)
+            m.d.comb += Cat(*shi_l).eq(self.shadow_i)
+            m.d.comb += shadown.eq(~(Cat(*sho_l).bool()))
+            m.d.comb += recover.eq(Cat(*rec_l).bool())
         else:
             shadown = Const(1)
             recover = Const(0)
