@@ -17,8 +17,10 @@ class FnUnit(Elaboratable):
 
         notes:
 
+        * dest_i / src1_i / src2_i are in *binary*, whereas
+        * g_rd_pend_i / g_wr_pend_i and rd_pend_o / wr_pend_o are UNARY vectors
         * req_rel_i (request release) is the direct equivalent of pipeline
-                    "output valid"
+                    "output valid" (valid_o)
         * recover is a local python variable (actually go_die_o)
         * when shadow_wid = 0, recover and shadown are Consts (i.e. do nothing)
     """
@@ -27,14 +29,14 @@ class FnUnit(Elaboratable):
         self.shadow_wid = shadow_wid
 
         # inputs
-        self.dest_i = Signal(wid, reset_less=True) # Dest in (top)
-        self.src1_i = Signal(wid, reset_less=True) # oper1 in (top)
-        self.src2_i = Signal(wid, reset_less=True) # oper2 in (top)
+        self.dest_i = Signal(max=wid, reset_less=True) # Dest R# in (top)
+        self.src1_i = Signal(max=wid, reset_less=True) # oper1 R# in (top)
+        self.src2_i = Signal(max=wid, reset_less=True) # oper2 R# in (top)
         self.issue_i = Signal(reset_less=True)    # Issue in (top)
 
         self.go_write_i = Signal(reset_less=True) # Go Write in (left)
         self.go_read_i = Signal(reset_less=True)  # Go Read in (left)
-        self.req_rel_i = Signal(wid, reset_less=True)  # request release (left)
+        self.req_rel_i = Signal(reset_less=True)  # request release (left)
 
         self.g_rd_pend_i = Signal(wid, reset_less=True)  # global rd (right)
         self.g_wr_pend_i = Signal(wid, reset_less=True)  # global wr (right)
