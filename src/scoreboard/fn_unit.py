@@ -7,8 +7,8 @@ from nmigen.lib.coding import Decoder
 from shadow_fn import ShadowFn
 
 
-class IntFnUnit(Elaboratable):
-    """ implements 11.4.8 integer function unit, p31
+class FnUnit(Elaboratable):
+    """ implements 11.4.8 function unit, p31
         also implements optional shadowing 11.5.1, p55
 
         shadowing can be used for branches as well as exceptions (interrupts),
@@ -171,7 +171,7 @@ def int_fn_unit_sim(dut):
     yield
 
 def test_int_fn_unit():
-    dut = IntFnUnit(32, 2)
+    dut = FnUnit(32, 2)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_int_fn_unit.il", "w") as f:
         f.write(vl)
