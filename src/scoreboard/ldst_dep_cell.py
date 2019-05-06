@@ -6,6 +6,9 @@ from nmutil.latch import SRLatch
 
 class LDSTDepCell(Elaboratable):
     """ implements 11.4.12 mitch alsup load/store dependence cell, p45
+
+        note: the OR gate on load-hold-store and store-hold-load is left
+        out, to be done in the LDST sparse matrix (accumulating).
     """
     def __init__(self):
         # inputs
