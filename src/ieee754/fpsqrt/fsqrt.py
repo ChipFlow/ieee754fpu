@@ -86,6 +86,18 @@ def normalise(s, m, e, lowbits):
         m += 1
     if get_mantissa(m) == ((1<<24)-1):
         e += 1
+    #if the num is NaN, than adjust
+    if (e == 128 & m !=0):
+        z[31] = 1
+        z[30:23] = 255
+        z[22] = 1
+        z[21:0] = 0
+    #if the num is Inf, then adjust
+    if (e == 128):
+        z[31] = s
+        z[30:23] = 255
+        z[22:0] = 0
+
     return s, m, e
 
 
