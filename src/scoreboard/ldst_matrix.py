@@ -3,6 +3,14 @@
 6600 LD/ST Dependency Table Matrix inputs / outputs
 ---------------------------------------------------
 
+Relevant comments (p45-46):
+
+* If there are no WAR dependencies on a Load instruction with a computed
+  address it can assert Bank_Addressable and Translate_Addressable.
+
+* If there are no RAW dependencies on a Store instruction with both a
+  write permission and store data present it can assert Bank_Addressable
+
 Relevant bugreports:
 * http://bugs.libre-riscv.org/show_bug.cgi?id=81
 
