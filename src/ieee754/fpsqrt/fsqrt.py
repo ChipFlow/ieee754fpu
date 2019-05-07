@@ -86,17 +86,23 @@ def normalise(s, m, e, lowbits):
         m += 1
     if get_mantissa(m) == ((1<<24)-1):
         e += 1
-    #if the num is NaN, than adjust
+
+    # this is 2nd-stage normalisation.  can move it to a separate fn.
+
+    #if the num is NaN, then adjust (normalised NaN rather than de-normed NaN)
     if (e == 128 & m !=0):
-        z[31] = 1
-        z[30:23] = 255
-        z[22] = 1
-        z[21:0] = 0
-    #if the num is Inf, then adjust
+        # these are in IEEE754 format, this function returns s,e,m not z
+        z[31] = 1       # sign (so, s=1)
+        z[30:23] = 255  # exponent (minus 128, so e = 127
+        z[22] = 1       # high bit of mantissa, so m = 1<<22 i think
+        z[21:0] = 0     # rest of mantissa is zero, so m = 1<<22 is good.
+
+    #if the num is Inf, then adjust (to normalised +/-INF)
     if (e == 128):
-        z[31] = s
-        z[30:23] = 255
-        z[22:0] = 0
+        # these are in IEEE754 format, this function returns s,e,m not z
+        z[31] = s       # s is already s, so do nothing to s.
+        z[30:23] = 255  # have to subtract 128, so e = 127 (again)
+        z[22:0] = 0     # mantissa... so m=0
 
     return s, m, e
 
