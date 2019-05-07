@@ -41,8 +41,8 @@ class LDSTDepMatrix(Elaboratable):
         self.stwd_hit_i = Signal(n_ldst, reset_less=True) # store w/data hit in
 
         # outputs
-        self.ld_hold_st_o = Signal(n_ldst, reset_less=True) # load holds st out
-        self.st_hold_ld_o = Signal(n_ldst, reset_less=True) # st holds load out
+        self.ld_hold_st_o = Signal(reset_less=True) # load holds st out
+        self.st_hold_ld_o = Signal(reset_less=True) # st holds load out
 
     def elaborate(self, platform):
         m = Module()
@@ -57,8 +57,6 @@ class LDSTDepMatrix(Elaboratable):
         # ---
         # connect Function Unit vector
         # ---
-        lhs = Const(0) # start at const 0
-        shl = Const(0) # (does no harm)
         lhs_l = []
         shl_l = []
         load_l = []
@@ -68,15 +66,9 @@ class LDSTDepMatrix(Elaboratable):
         sh_l = []
         for fu in range(self.n_ldst):
             dc = dm[fu]
-            # connect up the load/hold/store cell in/out (starts as a const)
-            m.d.comb += [dc.ld_hold_st_i.eq(lhs),
-                         dc.st_hold_ld_i.eq(shl)
-                        ]
-            lhs = dc.ld_hold_st_o
-            shl = dc.st_hold_ld_o
             # accumulate load-hold-store / store-hold-load bits
-            lhs_l.append(lhs)
-            shl_l.append(shl)
+            lhs_l.append(dc.ld_hold_st_o)
+            shl_l.append(dc.st_hold_ld_o)
             # accumulate inputs (for Cat'ing later) - TODO: must be a better way
             load_l.append(dc.load_i)
             stor_l.append(dc.stor_i)
@@ -92,8 +84,8 @@ class LDSTDepMatrix(Elaboratable):
                      Cat(*sh_l).eq(self.stwd_hit_i),
                     ]
         # set the load-hold-store / store-hold-load OR-accumulated outputs
-        m.d.comb += self.ld_hold_st_o.eq(Cat(*lhs_l))
-        m.d.comb += self.st_hold_ld_o.eq(Cat(*shl_l))
+        m.d.comb += self.ld_hold_st_o.eq(Cat(*lhs_l).bool())
+        m.d.comb += self.st_hold_ld_o.eq(Cat(*shl_l).bool())
 
         return m
 
