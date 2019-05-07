@@ -13,6 +13,7 @@ class IssueUnit(Elaboratable):
         Inputs
 
         * :wid:         register file width
+        * :n_insns:     number of instructions in this issue unit.
     """
     def __init__(self, wid, n_insns):
         self.reg_width = wid
@@ -76,6 +77,33 @@ class IssueUnit(Elaboratable):
         return list(self)
 
 
+class IntFPIssueUnit(Elaboratable):
+    def __init__(self, wid, n_int_insns, n_fp_insns):
+        self.i = IssueUnit(wid, n_int_insns)
+        self.f = IssueUnit(wid, n_fp_insns)
+        self.issue_o = Signal(reset_less=True)
+
+        # some renames
+        self.int_write_pending_i = self.i.g_wr_pend_i
+        self.fp_write_pending_i = self.f.g_wr_pend_i
+        self.int_write_pending_i.name = 'int_write_pending_i'
+        self.fp_write_pending_i.name = 'fp_write_pending_i'
+
+    def elaborate(self, platform):
+        m = Module()
+        m.submodules.intissue = self.i
+        m.submodules.fpissue = self.f
+
+        m.d.comb += self.issue_o.eq(self.i.g_issue_o | self.f.g_issue_o)
+
+        return m
+
+    def ports(self):
+        yield self.issue_o
+        yield from self.i
+        yield from self.f
+
+
 def issue_unit_sim(dut):
     yield dut.dest_i.eq(1)
     yield dut.issue_i.eq(1)
@@ -102,6 +130,11 @@ def test_issue_unit():
     dut = IssueUnit(32, 3)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_issue_unit.il", "w") as f:
+        f.write(vl)
+
+    dut = IntFPIssueUnit(32, 3, 3)
+    vl = rtlil.convert(dut, ports=dut.ports())
+    with open("test_intfp_issue_unit.il", "w") as f:
         f.write(vl)
 
     run_simulation(dut, issue_unit_sim(dut), vcd_name='test_issue_unit.vcd')
