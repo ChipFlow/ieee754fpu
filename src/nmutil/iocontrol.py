@@ -134,7 +134,7 @@ class Object:
 
 class RecordObject(Record):
     def __init__(self, layout=None, name=None):
-        Record.__init__(self, layout=layout or [], name=None)
+        Record.__init__(self, layout=layout or [], name=name)
 
     def __setattr__(self, k, v):
         #print (dir(Record))
