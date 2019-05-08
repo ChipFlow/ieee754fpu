@@ -93,17 +93,14 @@ def normalise(s, m, e, lowbits):
     if (e == 128 & m !=0):
         # these are in IEEE754 format, this function returns s,e,m not z
         s = 1           # sign (so, s=1)
-        e = 255         # exponent (minus 128, so e = 127
+        e = 127         # exponent (minus 128, so e = 127
         m = 1<<22     # high bit of mantissa, so m = 1<<22 i think
-        m = 1
-        m = 1<<22     # rest of mantissa is zero, so m = 1<<22 is good.
-        m = 0
 
     #if the num is Inf, then adjust (to normalised +/-INF)
     if (e == 128):
         # these are in IEEE754 format, this function returns s,e,m not z
         s = 1       # s is already s, so do nothing to s.
-        m = 255  # have to subtract 128, so e = 127 (again)
+        e = 127  # have to subtract 128, so e = 127 (again)
         m = 0     # mantissa... so m=0
 
     return s, m, e
