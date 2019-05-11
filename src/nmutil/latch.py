@@ -21,6 +21,15 @@ always @ (posedge c)
 endmodule
 """
 
+def latchregister(m, incoming, outgoing, settrue):
+    reg = Signal.like(incoming) # make register same as input. reset is OK.
+    with m.If(settrue):
+        m.d.sync += reg.eq(incoming)      # latch input into register
+        m.d.comb += outgoing.eq(incoming) # return input (combinatorial)
+    with m.Else():
+        m.d.comb += outgoing.eq(reg) # return input (combinatorial)
+
+
 class SRLatch(Elaboratable):
     def __init__(self, sync=True):
         self.sync = sync
