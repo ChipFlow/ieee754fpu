@@ -65,14 +65,18 @@ class Queue(FIFOInterface, Elaboratable):
         m.submodules.ram_read = ram_read = ram.read_port(synchronous=False)
         m.submodules.ram_write = ram_write = ram.write_port()
 
-        # convenience names
+        # convenience names, for people familiar with ready/valid terminology
+        # "p" stands for "previous stage", "n" stands for "next stage"
+        # for people familiar with the chisel Decoupled library:
+        # enq is "enqueue" (data in, aka "prev stage"),
+        # deq is "dequeue" (data out, aka "next stage")
         p_ready_o = self.writable
         p_valid_i = self.we
-        enq_data = self.din
+        enq_data = self.din # aka p_data_i
 
         n_valid_o = self.readable
         n_ready_i = self.re
-        deq_data = self.dout
+        deq_data = self.dout # aka n_data_o
 
         # intermediaries
         ptr_width = bits_for(self.depth - 1) if self.depth > 1 else 0
