@@ -33,14 +33,15 @@ def latchregister(m, incoming, outgoing, settrue):
 class SRLatch(Elaboratable):
     def __init__(self, sync=True):
         self.sync = sync
-        self.s = Signal(reset_less=True)
-        self.r = Signal(reset_less=True)
+        self.s = Signal(reset=0)
+        self.r = Signal(reset=1) # defaults to off
         self.q = Signal(reset_less=True)
         self.qn = Signal(reset_less=True)
+        self.qlq = Signal()
 
     def elaborate(self, platform):
         m = Module()
-        q_int = Signal(reset_less=True)
+        q_int = self.qlq
 
         if self.sync:
             with m.If(self.s):
