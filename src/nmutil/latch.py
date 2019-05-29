@@ -43,24 +43,11 @@ class SRLatch(Elaboratable):
         m = Module()
         q_int = Signal()
 
+        m.d.sync += q_int.eq((q_int & ~self.r) | self.s)
         if self.sync:
-            with m.If(self.s):
-                m.d.sync += q_int.eq(1)
-            with m.Elif(self.r):
-                m.d.sync += q_int.eq(0)
-            with m.Else():
-                m.d.sync += q_int.eq(q_int)
             m.d.comb += self.q.eq(q_int)
         else:
-            with m.If(self.s):
-                m.d.sync += q_int.eq(1)
-                m.d.comb += self.q.eq(1)
-            with m.Elif(self.r):
-                m.d.sync += q_int.eq(0)
-                m.d.comb += self.q.eq(0)
-            with m.Else():
-                m.d.sync += q_int.eq(q_int)
-                m.d.comb += self.q.eq(q_int)
+            m.d.comb += self.q.eq((q_int & ~self.r) | self.s)
         m.d.comb += self.qn.eq(~self.q)
         m.d.comb += self.qlq.eq(self.q | q_int) # useful output
 
