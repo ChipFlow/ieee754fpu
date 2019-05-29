@@ -1,6 +1,6 @@
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
-from nmigen import Signal, Module, Elaboratable
+from nmigen import Signal, Module, Const, Elaboratable
 
 """ jk latch
 
@@ -31,17 +31,18 @@ def latchregister(m, incoming, outgoing, settrue):
 
 
 class SRLatch(Elaboratable):
-    def __init__(self, sync=True):
+    def __init__(self, sync=True, llen=1):
         self.sync = sync
-        self.s = Signal(reset=0)
-        self.r = Signal(reset=1) # defaults to off
-        self.q = Signal(reset_less=True)
-        self.qn = Signal(reset_less=True)
-        self.qlq = Signal(reset_less=True)
+        self.llen = llen
+        self.s = Signal(llen, reset=0)
+        self.r = Signal(llen, reset=(1<<llen)-1) # defaults to off
+        self.q = Signal(llen, reset_less=True)
+        self.qn = Signal(llen, reset_less=True)
+        self.qlq = Signal(llen, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
-        q_int = Signal()
+        q_int = Signal(self.llen)
 
         m.d.sync += q_int.eq((q_int & ~self.r) | self.s)
         if self.sync:
