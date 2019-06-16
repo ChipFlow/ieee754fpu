@@ -67,7 +67,7 @@ class FPMulSpecialCasesMod(Elaboratable):
         # if a is NaN or b is NaN return NaN
         with m.If(abnan):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.nan(1)
+            m.d.comb += self.o.z.nan(0)
 
         # if a is inf return inf (or NaN)
         with m.Elif(a1.is_inf):
