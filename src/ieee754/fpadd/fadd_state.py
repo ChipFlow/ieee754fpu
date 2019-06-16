@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
@@ -11,7 +11,7 @@ from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
 from nmutil.nmoperator import eq
 
 
-class FPADD(FPBase):
+class FPADD(FPBase, Elaboratable):
 
     def __init__(self, width, single_cycle=False):
         FPBase.__init__(self)

@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Array, Const
+from nmigen import Module, Signal, Cat, Mux, Array, Const, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
@@ -46,7 +46,7 @@ class FPOpData:
         return list(self)
 
 
-class FPADDBaseMod:
+class FPADDBaseMod(Elaboratable):
 
     def __init__(self, width, id_wid=None, single_cycle=False, compact=True):
         """ IEEE754 FP Add
@@ -268,7 +268,7 @@ class FPADDBase(FPState):
                 m.d.sync += self.out_z.stb.eq(1)
 
 
-class FPADD(FPID):
+class FPADD(FPID, Elaboratable):
     """ FPADD: stages as follows:
 
         FPGetOp (a)
