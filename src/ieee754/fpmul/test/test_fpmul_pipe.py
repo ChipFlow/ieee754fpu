@@ -21,6 +21,7 @@ def test_pipe_fp64():
 
 if __name__ == '__main__':
     # XXX BUG: 0xe7bb 0x81ce 0x2afa
+    # XXX BUG: 0xe225 0x8181 0x249f -> 0x249e
     test_pipe_fp16()
     test_pipe_fp32()
     test_pipe_fp64()
