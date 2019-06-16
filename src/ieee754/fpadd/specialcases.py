@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Const
+from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
@@ -14,7 +14,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
 
-class FPAddSpecialCasesMod:
+class FPAddSpecialCasesMod(Elaboratable):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html

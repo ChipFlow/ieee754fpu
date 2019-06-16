@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumOut, FPNumIn, FPNumBase
@@ -93,7 +93,7 @@ class FPAddAlignMulti(FPState):
             m.next = "add_0"
 
 
-class FPAddAlignSingleMod:
+class FPAddAlignSingleMod(Elaboratable):
 
     def __init__(self, width, id_wid):
         self.width = width

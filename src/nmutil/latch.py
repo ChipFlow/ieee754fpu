@@ -82,14 +82,14 @@ def sr_sim(dut):
     yield
 
 def test_sr():
-    dut = SRLatch()
+    dut = SRLatch(llen=4)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_srlatch.il", "w") as f:
         f.write(vl)
 
     run_simulation(dut, sr_sim(dut), vcd_name='test_srlatch.vcd')
 
-    dut = SRLatch(sync=False)
+    dut = SRLatch(sync=False, llen=4)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("test_srlatch_async.il", "w") as f:
         f.write(vl)
