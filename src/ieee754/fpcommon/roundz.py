@@ -42,6 +42,7 @@ class FPRoundMod(Elaboratable):
 
     def setup(self, m, i):
         m.submodules.roundz = self
+        m.submodules.round_out_z = self.i.z
         m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):

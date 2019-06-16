@@ -61,8 +61,10 @@ class FPAddDeNormMod(FPState, Elaboratable):
         m = Module()
         m.submodules.denorm_in_a = self.i.a
         m.submodules.denorm_in_b = self.i.b
+        m.submodules.denorm_in_z = self.i.z
         m.submodules.denorm_out_a = self.o.a
         m.submodules.denorm_out_b = self.o.b
+        m.submodules.denorm_out_z = self.o.z
 
         with m.If(~self.i.out_do_z):
             # XXX hmmm, don't like repeating identical code
