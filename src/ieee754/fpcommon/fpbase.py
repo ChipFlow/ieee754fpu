@@ -60,7 +60,7 @@ class MultiShift:
         return res
 
 
-class FPNumBase: #(Elaboratable):
+class FPNumBaseRecord:
     """ Floating-point Base Number Class
     """
     def __init__(self, width, m_extra=True):
@@ -95,6 +95,22 @@ class FPNumBase: #(Elaboratable):
         self.P127 = Const(e_max-1, (e_width, True))
         self.N127 = Const(-(e_max-1), (e_width, True))
         self.N126 = Const(-(e_max-2), (e_width, True))
+
+    def __iter__(self):
+        yield self.s
+        yield self.e
+        yield self.m
+
+    def eq(self, inp):
+        return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
+
+
+class FPNumBase(FPNumBaseRecord): # Elaboratable
+    """ Floating-point Base Number Class
+    """
+    def __init__(self, width, m_extra=True):
+        FPNumBaseRecord.__init__(self, width, m_extra)
+        e_width = self.e_width
 
         self.is_nan = Signal(reset_less=True)
         self.is_zero = Signal(reset_less=True)
@@ -144,14 +160,6 @@ class FPNumBase: #(Elaboratable):
 
     def _is_denormalised(self):
         return (self.exp_n126) & (self.m_msbzero)
-
-    def __iter__(self):
-        yield self.s
-        yield self.e
-        yield self.m
-
-    def eq(self, inp):
-        return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
 
 
 class FPNumOut(FPNumBase):

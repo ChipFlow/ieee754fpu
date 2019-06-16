@@ -6,8 +6,8 @@ from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBase
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
+from ieee754.fpcommon.fpbase import FPState, FPNumBase
 
 
 class FPSCData:
