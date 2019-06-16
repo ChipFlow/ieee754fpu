@@ -84,7 +84,7 @@ class FPNumBase: #(Elaboratable):
 
         self.v = Signal(width, reset_less=True)      # Latched copy of value
         self.m = Signal(m_width, reset_less=True)    # Mantissa
-        self.e = Signal((e_width, True), reset_less=True) # Exponent: IEEE754exp+2 bits, signed
+        self.e = Signal((e_width, True), reset_less=True) # exp+2 bits, signed
         self.s = Signal(reset_less=True)           # Sign bit
 
         self.mzero = Const(0, (m_width, False))
