@@ -2,11 +2,12 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Const, Cat
+from nmigen import Module, Signal, Const, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
-                                     FPOpOut, Overflow, FPBase, FPState)
+                                     FPOpOut, Overflow, FPBase, FPState,
+                                     FPNumBaseRecord)
 from nmutil.nmoperator import eq
 
 
@@ -29,7 +30,7 @@ class Div:
         ]
 
 
-class FPDIV(FPBase):
+class FPDIV(FPBase, Elaboratable):
 
     def __init__(self, width):
         FPBase.__init__(self)
@@ -38,6 +39,9 @@ class FPDIV(FPBase):
         self.in_a  = FPOpIn(width)
         self.in_b  = FPOpIn(width)
         self.out_z = FPOpOut(width)
+        self.in_a.data_i = Signal(width)
+        self.in_b.data_i = Signal(width)
+        self.out_z.data_o = Signal(width)
 
         self.states = []
 
@@ -51,9 +55,12 @@ class FPDIV(FPBase):
         m = Module()
 
         # Latches
-        a = FPNumIn(None, self.width, False)
-        b = FPNumIn(None, self.width, False)
-        z = FPNumOut(self.width, False)
+        a = FPNumBaseRecord(self.width, False)
+        b = FPNumBaseRecord(self.width, False)
+        z = FPNumBaseRecord(self.width, False)
+        a = FPNumIn(None, a)
+        b = FPNumIn(None, b)
+        z = FPNumOut(z)
 
         div = Div(a.m_width*2 + 3) # double the mantissa width plus g/r/sticky
 
@@ -61,8 +68,9 @@ class FPDIV(FPBase):
         m.submodules.in_a = a
         m.submodules.in_b = b
         m.submodules.z = z
-        m.submodules.of = of
+        #m.submodules.of = of
 
+        print ("a.v", a.v, self.in_a.v)
         m.d.comb += a.v.eq(self.in_a.v)
         m.d.comb += b.v.eq(self.in_b.v)
 

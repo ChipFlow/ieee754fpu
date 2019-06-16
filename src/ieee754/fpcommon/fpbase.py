@@ -87,6 +87,27 @@ class FPNumBaseRecord:
         self.e = Signal((e_width, True), reset_less=True) # exp+2 bits, signed
         self.s = Signal(reset_less=True)           # Sign bit
 
+        self.fp = self
+        self.drop_in(self)
+
+    def drop_in(self, fp):
+        fp.s = self.s
+        fp.e = self.e
+        fp.m = self.m
+        fp.v = self.v
+        fp.rmw = self.rmw
+        fp.width = self.width
+        fp.e_width = self.e_width
+        fp.e_max = self.e_max
+        fp.m_width = self.m_width
+        fp.e_start = self.e_start
+        fp.e_end = self.e_end
+        fp.m_extra = self.m_extra
+
+        m_width = self.m_width
+        e_max = self.e_max
+        e_width = self.e_width
+
         self.mzero = Const(0, (m_width, False))
         m_msb = 1<<(self.m_width-2)
         self.msb1 = Const(m_msb, (m_width, False))
@@ -96,18 +117,6 @@ class FPNumBaseRecord:
         self.N127 = Const(-(e_max-1), (e_width, True))
         self.N126 = Const(-(e_max-2), (e_width, True))
 
-    def drop_in(self, fp):
-        fp.s = self.s
-        fp.e = self.e
-        fp.m = self.m
-        fp.v = self.v
-        fp.width = self.width
-        fp.e_width = self.e_width
-        fp.m_width = self.m_width
-        fp.e_start = self.e_start
-        fp.e_end = self.e_end
-        fp.m_extra = self.m_extra
-
     def create(self, s, e, m):
         """ creates a value from sign / exponent / mantissa
 
@@ -115,18 +124,18 @@ class FPNumBaseRecord:
         """
         return [
           self.v[-1].eq(s),          # sign
-          self.v[self.e_start:self.e_end].eq(e + self.P127), # exp (add on bias)
+          self.v[self.e_start:self.e_end].eq(e + self.fp.P127), # (add on bias)
           self.v[0:self.e_start].eq(m)         # mantissa
         ]
 
     def nan(self, s):
-        return self.create(s, self.P128, 1<<(self.e_start-1))
+        return self.create(s, self.fp.P128, 1<<(self.e_start-1))
 
     def inf(self, s):
-        return self.create(s, self.P128, 0)
+        return self.create(s, self.fp.P128, 0)
 
     def zero(self, s):
-        return self.create(s, self.N127, 0)
+        return self.create(s, self.fp.N127, 0)
 
     def create2(self, s, e, m):
         """ creates a value from sign / exponent / mantissa
@@ -416,7 +425,7 @@ class FPNumIn(FPNumBase):
         #print ("decode", self.e_end)
         res = ObjectProxy(m, pipemode=False)
         res.m = Cat(*args)                             # mantissa
-        res.e = v[self.e_start:self.e_end] - self.P127 # exp
+        res.e = v[self.e_start:self.e_end] - self.fp.P127 # exp
         res.s = v[-1]                                  # sign
         return res
 
@@ -622,7 +631,7 @@ class FPBase:
             which has to be taken into account when extracting the result.
         """
         with m.If(a.exp_n127):
-            m.d.sync += a.e.eq(a.N126) # limit a exponent
+            m.d.sync += a.e.eq(a.fp.N126) # limit a exponent
         with m.Else():
             m.d.sync += a.m[-1].eq(1) # set top mantissa bit
 
@@ -647,7 +656,7 @@ class FPBase:
             NOTE: the weirdness of reassigning guard and round is due to
                   the extra mantissa bits coming from tot[0..2]
         """
-        with m.If((z.m[-1] == 0) & (z.e > z.N126)):
+        with m.If((z.m[-1] == 0) & (z.e > z.fp.N126)):
             m.d.sync += [
                 z.e.eq(z.e - 1),  # DECREASE exponent
                 z.m.eq(z.m << 1), # shift mantissa UP
@@ -667,7 +676,7 @@ class FPBase:
             NOTE: the weirdness of reassigning guard and round is due to
                   the extra mantissa bits coming from tot[0..2]
         """
-        with m.If(z.e < z.N126):
+        with m.If(z.e < z.fp.N126):
             m.d.sync +=[
                 z.e.eq(z.e + 1),  # INCREASE exponent
                 z.m.eq(z.m >> 1), # shift mantissa DOWN
@@ -684,7 +693,7 @@ class FPBase:
         """
         with m.If(roundz):
             m.d.sync += z.m.eq(z.m + 1) # mantissa rounds up
-            with m.If(z.m == z.m1s): # all 1s
+            with m.If(z.m == z.fp.m1s): # all 1s
                 m.d.sync += z.e.eq(z.e + 1) # exponent rounds up
 
     def corrections(self, m, z, next_state):
@@ -693,7 +702,7 @@ class FPBase:
         m.next = next_state
         # denormalised, correct exponent to zero
         with m.If(z.is_denormalised):
-            m.d.sync += z.e.eq(z.N127)
+            m.d.sync += z.e.eq(z.fp.N127)
 
     def pack(self, m, z, next_state):
         """ packs the result into the output (detects overflow->Inf)
