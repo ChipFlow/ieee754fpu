@@ -45,8 +45,8 @@ class FPADD(FPBase, Elaboratable):
         m.d.comb += a.v.eq(self.in_a.v)
         m.d.comb += b.v.eq(self.in_b.v)
 
-        w = z.m_width + 4
-        tot = Signal(w, reset_less=True) # sticky/round/guard, {mantissa} result, 1 overflow
+        w = z.m_width + 4 # sticky/round/guard, {mantissa} result, 1 overflow
+        tot = Signal(w, reset_less=True)
 
         of = Overflow()
 
