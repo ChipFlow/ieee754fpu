@@ -35,7 +35,7 @@ class FPAddStage1Mod(FPState, Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.add1 = self
-        m.submodules.add1_out_overflow = self.o.of
+        #m.submodules.add1_out_overflow = self.o.of
 
         m.d.comb += self.i.eq(i)
 

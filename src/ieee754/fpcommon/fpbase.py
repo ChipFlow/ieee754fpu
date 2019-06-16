@@ -569,7 +569,7 @@ class Overflow: #(Elaboratable):
         self.sticky = Signal(reset_less=True)    # tot[0]
         self.m0 = Signal(reset_less=True)        # mantissa zero bit
 
-        self.roundz = Signal(reset_less=True)
+        #self.roundz = Signal(reset_less=True)
 
     def __iter__(self):
         yield self.guard
@@ -583,11 +583,9 @@ class Overflow: #(Elaboratable):
                 self.sticky.eq(inp.sticky),
                 self.m0.eq(inp.m0)]
 
-    def elaborate(self, platform):
-        m = Module()
-        m.d.comb += self.roundz.eq(self.guard & \
-                                   (self.round_bit | self.sticky | self.m0))
-        return m
+    @property
+    def roundz(self):
+        return self.guard & (self.round_bit | self.sticky | self.m0)
 
 
 class FPBase:

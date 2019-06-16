@@ -61,13 +61,13 @@ class FPNorm1ModSingle(Elaboratable):
         m.d.comb += self.o.roundz.eq(of.roundz)
 
         #m.submodules.norm1_out_z = self.o.z
-        m.submodules.norm1_out_overflow = of
+        #m.submodules.norm1_out_overflow = of
         #m.submodules.norm1_in_z = self.i.z
-        m.submodules.norm1_in_overflow = self.i.of
+        #m.submodules.norm1_in_overflow = self.i.of
 
         i = self.ispec()
         m.submodules.norm1_insel_z = insel_z = FPNumBase(i.z)
-        m.submodules.norm1_insel_overflow = i.of
+        #m.submodules.norm1_insel_overflow = i.of
 
         espec = (len(insel_z.e), True)
         ediff_n126 = Signal(espec, reset_less=True)
