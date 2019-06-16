@@ -77,6 +77,7 @@
     all the optional bits.
 """
 
+from nmigen import Elaboratable
 from abc import ABCMeta, abstractmethod
 import inspect
 
@@ -239,7 +240,10 @@ class StageChain(StageHelper):
         assert len(chain) > 0, "stage chain must be non-zero length"
         self.chain = chain
         StageHelper.__init__(self, None)
-        self.setup = self._sa_setup if specallocate else self._na_setup
+        if specallocate:
+            self.setup = self._sa_setup
+        else:
+            self.setup = self._na_setup
         self.set_specs(self.chain[0], self.chain[-1])
 
     def _sa_setup(self, m, i):
@@ -247,7 +251,10 @@ class StageChain(StageHelper):
             if hasattr(c, "setup"):
                 c.setup(m, i)               # stage may have some module stuff
             ofn = self.chain[idx].ospec     # last assignment survives
-            o = _spec(ofn, 'chainin%d' % idx)
+            cname = 'chainin%d' % idx
+            o = _spec(ofn, cname)
+            if isinstance(o, Elaboratable):
+                setattr(m.submodules, cname, o)
             m.d.comb += nmoperator.eq(o, c.process(i)) # process input into "o"
             if idx == len(self.chain)-1:
                 break

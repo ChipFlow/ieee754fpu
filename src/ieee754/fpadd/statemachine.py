@@ -161,7 +161,7 @@ class FPADDBaseMod(Elaboratable):
         get.trigger_setup(m, self.in_t.stb, self.in_t.ack)
 
         chainlist = [get, sc, alm, n1]
-        chain = StageChain(chainlist, specallocate=True)
+        chain = StageChain(chainlist, specallocate=False)
         chain.setup(m, self.i)
         m.submodules.sc = sc
         m.submodules.alm = alm
