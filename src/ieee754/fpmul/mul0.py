@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumBase
+from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 
@@ -13,7 +13,7 @@ from ieee754.fpcommon.denorm import FPSCData
 class FPMulStage0Data:
 
     def __init__(self, width, id_wid):
-        self.z = FPNumBase(width, False)
+        self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
@@ -50,9 +50,9 @@ class FPMulStage0Mod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.mul0_in_a = self.i.a
-        m.submodules.mul0_in_b = self.i.b
-        m.submodules.mul0_out_z = self.o.z
+        #m.submodules.mul0_in_a = self.i.a
+        #m.submodules.mul0_in_b = self.i.b
+        #m.submodules.mul0_out_z = self.o.z
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)

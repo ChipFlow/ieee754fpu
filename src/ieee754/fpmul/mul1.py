@@ -31,7 +31,7 @@ class FPMulStage1Mod(FPState, Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.mul1 = self
-        m.submodules.mul1_out_overflow = self.o.of
+        #m.submodules.mul1_out_overflow = self.o.of
 
         m.d.comb += self.i.eq(i)
 
@@ -60,7 +60,7 @@ class FPMulStage1(FPState):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "multiply_1")
         self.mod = FPMulStage1Mod(width)
-        self.out_z = FPNumBase(width, False)
+        self.out_z = FPNumBaseRecord(width, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()
 

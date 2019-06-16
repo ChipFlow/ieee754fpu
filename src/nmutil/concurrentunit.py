@@ -9,7 +9,7 @@
 """
 
 from math import log
-from nmigen import Module
+from nmigen import Module, Elaboratable
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import PassThroughStage
@@ -35,7 +35,7 @@ class FPADDMuxOutPipe(CombMuxOutPipe):
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
 
 
-class ReservationStations:
+class ReservationStations(Elaboratable):
     """ Reservation-Station pipeline
 
         Input: num_rows - number of input and output Reservation Stations
