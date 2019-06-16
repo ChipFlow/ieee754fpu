@@ -79,4 +79,4 @@ def test1(maxcount=10, num_loops=5):
                         vcd_name="test_add.vcd")
 
 if __name__ == '__main__':
-    test1(maxcount=1000, num_loops=1000)
+    test1(maxcount=10, num_loops=1000)
