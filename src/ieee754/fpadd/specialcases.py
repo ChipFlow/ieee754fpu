@@ -9,7 +9,7 @@ from math import log
 from ieee754.fpcommon.fpbase import FPNumDecode
 from nmutil.singlepipe import SimpleHandshake, StageChain
 
-from ieee754.fpcommon.fpbase import FPState, FPID
+from ieee754.fpcommon.fpbase import FPState, FPID, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
@@ -44,13 +44,13 @@ class FPAddSpecialCasesMod(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.sc_out_z = self.o.z
+        #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumDecode(None, self.width)
-        b1 = FPNumDecode(None, self.width)
-        m.submodules.sc_decode_a = a1
-        m.submodules.sc_decode_b = b1
+        a1 = FPNumBaseRecord(self.width)
+        b1 = FPNumBaseRecord(self.width)
+        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
+        m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
         m.d.comb += [a1.v.eq(self.i.a),
                      b1.v.eq(self.i.b),
                      self.o.a.eq(a1),

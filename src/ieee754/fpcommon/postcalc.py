@@ -3,12 +3,12 @@
 # 2013-12-12
 
 from nmigen import Signal
-from ieee754.fpcommon.fpbase import Overflow, FPNumBase
+from ieee754.fpcommon.fpbase import Overflow, FPNumBaseRecord
 
 class FPAddStage1Data:
 
     def __init__(self, width, id_wid):
-        self.z = FPNumBase(width, False)
+        self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()

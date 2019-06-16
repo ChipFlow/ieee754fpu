@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumBase
+from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from .postnormalise import FPNorm1Data
 
@@ -13,7 +13,7 @@ from .postnormalise import FPNorm1Data
 class FPRoundData:
 
     def __init__(self, width, id_wid):
-        self.z = FPNumBase(width, False)
+        self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
@@ -42,7 +42,6 @@ class FPRoundMod(Elaboratable):
 
     def setup(self, m, i):
         m.submodules.roundz = self
-        m.submodules.round_out_z = self.i.z
         m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):

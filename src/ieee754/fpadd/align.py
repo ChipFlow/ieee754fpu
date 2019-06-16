@@ -6,6 +6,7 @@ from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumOut, FPNumIn, FPNumBase
+from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
@@ -14,9 +15,9 @@ from ieee754.fpcommon.denorm import FPSCData
 class FPNumIn2Ops:
 
     def __init__(self, width, id_wid):
-        self.a = FPNumIn(None, width)
-        self.b = FPNumIn(None, width)
-        self.z = FPNumOut(width, False)
+        self.a = FPNumBaseRecord(width)
+        self.b = FPNumBaseRecord(width)
+        self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
@@ -30,10 +31,10 @@ class FPNumIn2Ops:
 class FPAddAlignMultiMod(FPState):
 
     def __init__(self, width):
-        self.in_a = FPNumBase(width)
-        self.in_b = FPNumBase(width)
-        self.out_a = FPNumIn(None, width)
-        self.out_b = FPNumIn(None, width)
+        self.in_a = FPNumBaseRecord(width)
+        self.in_b = FPNumBaseRecord(width)
+        self.out_a = FPNumBaseRecord(width)
+        self.out_b = FPNumBaseRecord(width)
         self.exp_eq = Signal(reset_less=True)
 
     def elaborate(self, platform):
@@ -42,10 +43,10 @@ class FPAddAlignMultiMod(FPState):
 
         m = Module()
 
-        m.submodules.align_in_a = self.in_a
-        m.submodules.align_in_b = self.in_b
-        m.submodules.align_out_a = self.out_a
-        m.submodules.align_out_b = self.out_b
+        #m.submodules.align_in_a = self.in_a
+        #m.submodules.align_in_b = self.in_b
+        #m.submodules.align_out_a = self.out_a
+        #m.submodules.align_out_b = self.out_b
 
         # NOTE: this does *not* do single-cycle multi-shifting,
         #       it *STAYS* in the align state until exponents match
@@ -74,8 +75,8 @@ class FPAddAlignMulti(FPState):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "align")
         self.mod = FPAddAlignMultiMod(width)
-        self.out_a = FPNumIn(None, width)
-        self.out_b = FPNumIn(None, width)
+        self.out_a = FPNumBaseRecord(width)
+        self.out_b = FPNumBaseRecord(width)
         self.exp_eq = Signal(reset_less=True)
 
     def setup(self, m, in_a, in_b):
@@ -127,18 +128,18 @@ class FPAddAlignSingleMod(Elaboratable):
         """
         m = Module()
 
-        m.submodules.align_in_a = self.i.a
-        m.submodules.align_in_b = self.i.b
-        m.submodules.align_out_a = self.o.a
-        m.submodules.align_out_b = self.o.b
+        #m.submodules.align_in_a = self.i.a
+        #m.submodules.align_in_b = self.i.b
+        #m.submodules.align_out_a = self.o.a
+        #m.submodules.align_out_b = self.o.b
 
         # temporary (muxed) input and output to be shifted
-        t_inp = FPNumBase(self.width)
-        t_out = FPNumIn(None, self.width)
+        t_inp = FPNumBaseRecord(self.width)
+        t_out = FPNumBaseRecord(self.width)
         espec = (len(self.i.a.e), True)
         msr = MultiShiftRMerge(self.i.a.m_width, espec)
-        m.submodules.align_t_in = t_inp
-        m.submodules.align_t_out = t_out
+        #m.submodules.align_t_in = t_inp
+        #m.submodules.align_t_out = t_out
         m.submodules.multishift_r = msr
 
         ediff = Signal(espec, reset_less=True)

@@ -7,7 +7,7 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
-from ieee754.fpcommon.fpbase import Overflow, FPNumBase
+from ieee754.fpcommon.fpbase import Overflow, FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from .postcalc import FPAddStage1Data
@@ -17,7 +17,7 @@ class FPNorm1Data:
 
     def __init__(self, width, id_wid):
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
-        self.z = FPNumBase(width, False)
+        self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
@@ -60,29 +60,29 @@ class FPNorm1ModSingle(Elaboratable):
         of = Overflow()
         m.d.comb += self.o.roundz.eq(of.roundz)
 
-        m.submodules.norm1_out_z = self.o.z
+        #m.submodules.norm1_out_z = self.o.z
         m.submodules.norm1_out_overflow = of
-        m.submodules.norm1_in_z = self.i.z
+        #m.submodules.norm1_in_z = self.i.z
         m.submodules.norm1_in_overflow = self.i.of
 
         i = self.ispec()
-        m.submodules.norm1_insel_z = i.z
+        m.submodules.norm1_insel_z = insel_z = FPNumBase(i.z)
         m.submodules.norm1_insel_overflow = i.of
 
-        espec = (len(i.z.e), True)
+        espec = (len(insel_z.e), True)
         ediff_n126 = Signal(espec, reset_less=True)
         msr = MultiShiftRMerge(mwid+2, espec)
         m.submodules.multishift_r = msr
 
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
-        m.d.comb += self.o.z.eq(i.z)
+        m.d.comb += self.o.z.eq(insel_z)
         m.d.comb += of.eq(i.of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
-        m.d.comb += decrease.eq(i.z.m_msbzero & i.z.exp_gt_n126)
-        m.d.comb += increase.eq(i.z.exp_lt_n126)
+        m.d.comb += decrease.eq(insel_z.m_msbzero & insel_z.exp_gt_n126)
+        m.d.comb += increase.eq(insel_z.exp_lt_n126)
         # decrease exponent
         with m.If(~self.i.out_do_z):
             with m.If(decrease):
@@ -91,18 +91,18 @@ class FPNorm1ModSingle(Elaboratable):
                 # we reverse the order of the bits.
                 temp_m = Signal(mwid, reset_less=True)
                 temp_s = Signal(mwid+1, reset_less=True)
-                clz = Signal((len(i.z.e), True), reset_less=True)
+                clz = Signal((len(insel_z.e), True), reset_less=True)
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
-                limclz = Mux(i.z.exp_sub_n126 > pe.o, pe.o,
-                             i.z.exp_sub_n126)
+                limclz = Mux(insel_z.exp_sub_n126 > pe.o, pe.o,
+                             insel_z.exp_sub_n126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
-                    temp_m.eq(Cat(i.of.round_bit, i.of.guard, i.z.m)),
+                    temp_m.eq(Cat(i.of.round_bit, i.of.guard, insel_z.m)),
                     pe.i.eq(temp_m[::-1]),          # inverted
                     clz.eq(limclz),                 # count zeros from MSB down
                     temp_s.eq(temp_m << clz),       # shift mantissa UP
-                    self.o.z.e.eq(i.z.e - clz),  # DECREASE exponent
+                    self.o.z.e.eq(insel_z.e - clz),  # DECREASE exponent
                     self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
                     of.m0.eq(temp_s[2]),          # copy of mantissa[0]
                     # overflow in bits 0..1: got shifted too (leave sticky)
@@ -114,8 +114,8 @@ class FPNorm1ModSingle(Elaboratable):
                 temp_m = Signal(mwid+1, reset_less=True)
                 m.d.comb += [
                     temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
-                                  i.z.m)),
-                    ediff_n126.eq(i.z.N126 - i.z.e),
+                                  insel_z.m)),
+                    ediff_n126.eq(insel_z.fp.N126 - insel_z.e),
                     # connect multi-shifter to inp/out mantissa (and ediff)
                     msr.inp.eq(temp_m),
                     msr.diff.eq(ediff_n126),
@@ -125,7 +125,7 @@ class FPNorm1ModSingle(Elaboratable):
                     of.guard.eq(msr.m[2]),     # guard
                     of.round_bit.eq(msr.m[1]), # round
                     of.sticky.eq(msr.m[0]),    # sticky
-                    self.o.z.e.eq(i.z.e + ediff_n126),
+                    self.o.z.e.eq(insel_z.e + ediff_n126),
                 ]
 
         m.d.comb += self.o.mid.eq(self.i.mid)

@@ -96,91 +96,17 @@ class FPNumBaseRecord:
         self.N127 = Const(-(e_max-1), (e_width, True))
         self.N126 = Const(-(e_max-2), (e_width, True))
 
-    def __iter__(self):
-        yield self.s
-        yield self.e
-        yield self.m
-
-    def eq(self, inp):
-        return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
-
-
-class FPNumBase(FPNumBaseRecord): # Elaboratable
-    """ Floating-point Base Number Class
-    """
-    def __init__(self, width, m_extra=True):
-        FPNumBaseRecord.__init__(self, width, m_extra)
-        e_width = self.e_width
-
-        self.is_nan = Signal(reset_less=True)
-        self.is_zero = Signal(reset_less=True)
-        self.is_inf = Signal(reset_less=True)
-        self.is_overflowed = Signal(reset_less=True)
-        self.is_denormalised = Signal(reset_less=True)
-        self.exp_128 = Signal(reset_less=True)
-        self.exp_sub_n126 = Signal((e_width, True), reset_less=True)
-        self.exp_lt_n126 = Signal(reset_less=True)
-        self.exp_gt_n126 = Signal(reset_less=True)
-        self.exp_gt127 = Signal(reset_less=True)
-        self.exp_n127 = Signal(reset_less=True)
-        self.exp_n126 = Signal(reset_less=True)
-        self.m_zero = Signal(reset_less=True)
-        self.m_msbzero = Signal(reset_less=True)
-
-    def elaborate(self, platform):
-        m = Module()
-        m.d.comb += self.is_nan.eq(self._is_nan())
-        m.d.comb += self.is_zero.eq(self._is_zero())
-        m.d.comb += self.is_inf.eq(self._is_inf())
-        m.d.comb += self.is_overflowed.eq(self._is_overflowed())
-        m.d.comb += self.is_denormalised.eq(self._is_denormalised())
-        m.d.comb += self.exp_128.eq(self.e == self.P128)
-        m.d.comb += self.exp_sub_n126.eq(self.e - self.N126)
-        m.d.comb += self.exp_gt_n126.eq(self.exp_sub_n126 > 0)
-        m.d.comb += self.exp_lt_n126.eq(self.exp_sub_n126 < 0)
-        m.d.comb += self.exp_gt127.eq(self.e > self.P127)
-        m.d.comb += self.exp_n127.eq(self.e == self.N127)
-        m.d.comb += self.exp_n126.eq(self.e == self.N126)
-        m.d.comb += self.m_zero.eq(self.m == self.mzero)
-        m.d.comb += self.m_msbzero.eq(self.m[self.e_start] == 0)
-
-        return m
-
-    def _is_nan(self):
-        return (self.exp_128) & (~self.m_zero)
-
-    def _is_inf(self):
-        return (self.exp_128) & (self.m_zero)
-
-    def _is_zero(self):
-        return (self.exp_n127) & (self.m_zero)
-
-    def _is_overflowed(self):
-        return self.exp_gt127
-
-    def _is_denormalised(self):
-        return (self.exp_n126) & (self.m_msbzero)
-
-
-class FPNumOut(FPNumBase):
-    """ Floating-point Number Class
-
-        Contains signals for an incoming copy of the value, decoded into
-        sign / exponent / mantissa.
-        Also contains encoding functions, creation and recognition of
-        zero, NaN and inf (all signed)
-
-        Four extra bits are included in the mantissa: the top bit
-        (m[-1]) is effectively a carry-overflow.  The other three are
-        guard (m[2]), round (m[1]), and sticky (m[0])
-    """
-    def __init__(self, width, m_extra=True):
-        FPNumBase.__init__(self, width, m_extra)
-
-    def elaborate(self, platform):
-        m = FPNumBase.elaborate(self, platform)
-
-        return m
+    def drop_in(self, fp):
+        fp.s = self.s
+        fp.e = self.e
+        fp.m = self.m
+        fp.v = self.v
+        fp.width = self.width
+        fp.e_width = self.e_width
+        fp.m_width = self.m_width
+        fp.e_start = self.e_start
+        fp.e_end = self.e_end
+        fp.m_extra = self.m_extra
 
     def create(self, s, e, m):
         """ creates a value from sign / exponent / mantissa
@@ -220,6 +146,93 @@ class FPNumOut(FPNumBase):
 
     def zero2(self, s):
         return self.create2(s, self.N127, self.mzero)
+
+    def __iter__(self):
+        yield self.s
+        yield self.e
+        yield self.m
+
+    def eq(self, inp):
+        return [self.s.eq(inp.s), self.e.eq(inp.e), self.m.eq(inp.m)]
+
+
+class FPNumBase(FPNumBaseRecord, Elaboratable):
+    """ Floating-point Base Number Class
+    """
+    def __init__(self, fp):
+        fp.drop_in(self)
+        self.fp = fp
+        e_width = fp.e_width
+
+        self.is_nan = Signal(reset_less=True)
+        self.is_zero = Signal(reset_less=True)
+        self.is_inf = Signal(reset_less=True)
+        self.is_overflowed = Signal(reset_less=True)
+        self.is_denormalised = Signal(reset_less=True)
+        self.exp_128 = Signal(reset_less=True)
+        self.exp_sub_n126 = Signal((e_width, True), reset_less=True)
+        self.exp_lt_n126 = Signal(reset_less=True)
+        self.exp_gt_n126 = Signal(reset_less=True)
+        self.exp_gt127 = Signal(reset_less=True)
+        self.exp_n127 = Signal(reset_less=True)
+        self.exp_n126 = Signal(reset_less=True)
+        self.m_zero = Signal(reset_less=True)
+        self.m_msbzero = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.is_nan.eq(self._is_nan())
+        m.d.comb += self.is_zero.eq(self._is_zero())
+        m.d.comb += self.is_inf.eq(self._is_inf())
+        m.d.comb += self.is_overflowed.eq(self._is_overflowed())
+        m.d.comb += self.is_denormalised.eq(self._is_denormalised())
+        m.d.comb += self.exp_128.eq(self.e == self.fp.P128)
+        m.d.comb += self.exp_sub_n126.eq(self.e - self.fp.N126)
+        m.d.comb += self.exp_gt_n126.eq(self.exp_sub_n126 > 0)
+        m.d.comb += self.exp_lt_n126.eq(self.exp_sub_n126 < 0)
+        m.d.comb += self.exp_gt127.eq(self.e > self.fp.P127)
+        m.d.comb += self.exp_n127.eq(self.e == self.fp.N127)
+        m.d.comb += self.exp_n126.eq(self.e == self.fp.N126)
+        m.d.comb += self.m_zero.eq(self.m == self.fp.mzero)
+        m.d.comb += self.m_msbzero.eq(self.m[self.fp.e_start] == 0)
+
+        return m
+
+    def _is_nan(self):
+        return (self.exp_128) & (~self.m_zero)
+
+    def _is_inf(self):
+        return (self.exp_128) & (self.m_zero)
+
+    def _is_zero(self):
+        return (self.exp_n127) & (self.m_zero)
+
+    def _is_overflowed(self):
+        return self.exp_gt127
+
+    def _is_denormalised(self):
+        return (self.exp_n126) & (self.m_msbzero)
+
+
+class FPNumOut(FPNumBase):
+    """ Floating-point Number Class
+
+        Contains signals for an incoming copy of the value, decoded into
+        sign / exponent / mantissa.
+        Also contains encoding functions, creation and recognition of
+        zero, NaN and inf (all signed)
+
+        Four extra bits are included in the mantissa: the top bit
+        (m[-1]) is effectively a carry-overflow.  The other three are
+        guard (m[2]), round (m[1]), and sticky (m[0])
+    """
+    def __init__(self, fp):
+        FPNumBase.__init__(self, fp)
+
+    def elaborate(self, platform):
+        m = FPNumBase.elaborate(self, platform)
+
+        return m
 
 
 class MultiShiftRMerge(Elaboratable):
@@ -349,8 +362,8 @@ class FPNumDecode(FPNumBase):
         (m[-1]) is effectively a carry-overflow.  The other three are
         guard (m[2]), round (m[1]), and sticky (m[0])
     """
-    def __init__(self, op, width, m_extra=True):
-        FPNumBase.__init__(self, width, m_extra)
+    def __init__(self, op, fp):
+        FPNumBase.__init__(self, fp)
         self.op = op
 
     def elaborate(self, platform):
@@ -370,7 +383,7 @@ class FPNumDecode(FPNumBase):
         args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
         #print ("decode", self.e_end)
         return [self.m.eq(Cat(*args)), # mantissa
-                self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
+                self.e.eq(v[self.e_start:self.e_end] - self.fp.P127), # exp
                 self.s.eq(v[-1]),                 # sign
                 ]
 
@@ -386,8 +399,8 @@ class FPNumIn(FPNumBase):
         (m[-1]) is effectively a carry-overflow.  The other three are
         guard (m[2]), round (m[1]), and sticky (m[0])
     """
-    def __init__(self, op, width, m_extra=True):
-        FPNumBase.__init__(self, width, m_extra)
+    def __init__(self, op, fp):
+        FPNumBase.__init__(self, fp)
         self.latch_in = Signal()
         self.op = op
 

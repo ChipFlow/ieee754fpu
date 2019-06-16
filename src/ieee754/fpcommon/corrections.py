@@ -4,7 +4,7 @@
 
 from nmigen import Module, Elaboratable
 from nmigen.cli import main, verilog
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.fpbase import FPState, FPNumBase
 from .roundz import FPRoundData
 
 
@@ -33,11 +33,11 @@ class FPCorrectionsMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.corr_in_z = self.i.z
-        m.submodules.corr_out_z = self.out_z.z
+        m.submodules.corr_in_z = in_z = FPNumBase(self.i.z)
+        #m.submodules.corr_out_z = self.out_z.z
         m.d.comb += self.out_z.eq(self.i) # copies mid, z, out_do_z
         with m.If(~self.i.out_do_z):
-            with m.If(self.i.z.is_denormalised):
+            with m.If(in_z.is_denormalised):
                 m.d.comb += self.out_z.z.e.eq(self.i.z.N127)
         return m
 

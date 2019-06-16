@@ -5,7 +5,7 @@
 from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumOut
+from ieee754.fpcommon.fpbase import FPNumOut, FPNumBaseRecord, FPNumBase
 from ieee754.fpcommon.fpbase import FPState
 from .roundz import FPRoundData
 from nmutil.singlepipe import Object
@@ -44,12 +44,12 @@ class FPPackMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        z = FPNumOut(self.width, False)
-        m.submodules.pack_in_z = self.i.z
-        m.submodules.pack_out_z = z
+        z = FPNumBaseRecord(self.width, False)
+        m.submodules.pack_in_z = in_z = FPNumBase(self.i.z)
+        #m.submodules.pack_out_z = out_z = FPNumOut(z)
         m.d.comb += self.o.mid.eq(self.i.mid)
         with m.If(~self.i.out_do_z):
-            with m.If(self.i.z.is_overflowed):
+            with m.If(in_z.is_overflowed):
                 m.d.comb += z.inf(self.i.z.s)
             with m.Else():
                 m.d.comb += z.create(self.i.z.s, self.i.z.e, self.i.z.m)

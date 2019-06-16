@@ -13,9 +13,9 @@ from ieee754.fpcommon.fpbase import FPState, FPNumBase
 class FPSCData:
 
     def __init__(self, width, id_wid, m_extra=True):
-        self.a = FPNumBase(width, m_extra)
-        self.b = FPNumBase(width, m_extra)
-        self.z = FPNumOut(width, False)
+        self.a = FPNumBaseRecord(width, m_extra)
+        self.b = FPNumBaseRecord(width, m_extra)
+        self.z = FPNumBaseRecord(width, False)
         self.oz = Signal(width, reset_less=True)
         self.out_do_z = Signal(reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
@@ -59,23 +59,22 @@ class FPAddDeNormMod(FPState, Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.denorm_in_a = self.i.a
-        m.submodules.denorm_in_b = self.i.b
-        m.submodules.denorm_in_z = self.i.z
-        m.submodules.denorm_out_a = self.o.a
-        m.submodules.denorm_out_b = self.o.b
-        m.submodules.denorm_out_z = self.o.z
+        m.submodules.denorm_in_a = in_a = FPNumBase(self.i.a)
+        m.submodules.denorm_in_b = in_b = FPNumBase(self.i.b)
+        #m.submodules.denorm_out_a = self.o.a
+        #m.submodules.denorm_out_b = self.o.b
+        #m.submodules.denorm_out_z = self.o.z
 
         with m.If(~self.i.out_do_z):
             # XXX hmmm, don't like repeating identical code
             m.d.comb += self.o.a.eq(self.i.a)
-            with m.If(self.i.a.exp_n127):
+            with m.If(in_a.exp_n127):
                 m.d.comb += self.o.a.e.eq(self.i.a.N126) # limit a exponent
             with m.Else():
                 m.d.comb += self.o.a.m[-1].eq(1) # set top mantissa bit
 
             m.d.comb += self.o.b.eq(self.i.b)
-            with m.If(self.i.b.exp_n127):
+            with m.If(in_b.exp_n127):
                 m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
             with m.Else():
                 m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
@@ -93,8 +92,8 @@ class FPAddDeNorm(FPState):
     def __init__(self, width, id_wid):
         FPState.__init__(self, "denormalise")
         self.mod = FPAddDeNormMod(width)
-        self.out_a = FPNumBase(width)
-        self.out_b = FPNumBase(width)
+        self.out_a = FPNumBaseRecord(width)
+        self.out_b = FPNumBaseRecord(width)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
