@@ -1,4 +1,8 @@
-# IEEE Floating Point Divider
+"""IEEE754 Floating Point pipelined Divider
+
+Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
+
+"""
 
 from nmigen import Module
 from nmigen.cli import main, verilog
@@ -33,7 +37,9 @@ class FPDivStages(FPState, SimpleHandshake):
         """ links module to inputs and outputs
         """
 
-        # chain DivStage0 and DivStage1
+        # TODO.  clearly, this would be a for-loop, here, creating
+        # a huge number of stages (if radix-2 is used).  interestingly
+        # the number of stages will be data-dependent.
         m0mod = FPDivStage0Mod(self.width, self.id_wid)
         m1mod = FPDivStage1Mod(self.width, self.id_wid)
 
