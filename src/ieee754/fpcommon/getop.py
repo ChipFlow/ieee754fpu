@@ -87,9 +87,9 @@ class FPADDBaseData:
     def __init__(self, width, id_wid):
         self.width = width
         self.id_wid = id_wid
-        self.a  = Signal(width)
-        self.b  = Signal(width)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.a  = Signal(width)                      # operand a
+        self.b  = Signal(width)                      # operand b
+        self.mid = Signal(id_wid, reset_less=True)   # RS multiplex ID
 
     def eq(self, i):
         return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
