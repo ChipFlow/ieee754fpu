@@ -14,9 +14,10 @@ class FPRoundData:
 
     def __init__(self, width, id_wid):
         self.z = FPNumBaseRecord(width, False)
+        self.mid = Signal(id_wid, reset_less=True) # multiplex ID
+        # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
@@ -47,7 +48,7 @@ class FPRoundMod(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         m.d.comb += self.out_z.eq(self.i) # copies mid, z, out_do_z
-        with m.If(~self.i.out_do_z):
+        with m.If(~self.i.out_do_z): # bypass wasn't enabled
             with m.If(self.i.roundz):
                 m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1) # mantissa up
                 with m.If(self.i.z.m == self.i.z.m1s): # all 1s
