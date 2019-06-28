@@ -5,9 +5,7 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
-from nmutil.multipipe import CombMuxOutPipe
-from nmutil.multipipe import PriorityCombMuxInPipe
+from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
 from ieee754.fpcommon.getop import FPADDBaseData
