@@ -1,6 +1,4 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+# IEEE Floating Point Divider Pipeline
 
 from nmigen import Module
 from nmigen.cli import main, verilog
@@ -13,7 +11,7 @@ from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from .specialcases import FPDivSpecialCasesDeNorm
-from .mulstages import FPDivStages
+from .divstages import FPDivStages
 
 
 
@@ -29,7 +27,7 @@ class FPDIVBasePipe(ControlBase):
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
         m.submodules.scnorm = self.pipe1
-        m.submodules.mulstages = self.pipe2
+        m.submodules.divstages = self.pipe2
         m.submodules.normpack = self.pipe3
         m.d.comb += self._eqs
         return m
@@ -39,7 +37,7 @@ class FPDIVMuxInOut(ReservationStations):
     """ Reservation-Station version of FPDIV pipeline.
 
         * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
-        * 2-stage multiplier pipeline
+        * N-stage divider pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
         Fan-in and Fan-out are combinatorial.
