@@ -16,6 +16,7 @@ from ieee754.fpcommon.postcalc import FPAddStage1Data
 # TODO: write these
 from .div0 import FPDivStage0Mod
 from .div1 import FPDivStage1Mod
+from .div2 import FPDivStage2Mod
 
 
 class FPDivStages(FPState, SimpleHandshake):
@@ -40,10 +41,12 @@ class FPDivStages(FPState, SimpleHandshake):
         # TODO.  clearly, this would be a for-loop, here, creating
         # a huge number of stages (if radix-2 is used).  interestingly
         # the number of stages will be data-dependent.
-        m0mod = FPDivStage0Mod(self.width, self.id_wid)
-        m1mod = FPDivStage1Mod(self.width, self.id_wid)
+        divstages = [FPDivStage0Mod(self.width, self.id_wid)]
+        for i in range(self.width): # XXX TODO: work out actual number needed
+            divstages.append(FPDivStage1Mod(self.width, self.id_wid))
+        divstages.append(FPDivStage2Mod(self.width, self.id_wid))
 
-        chain = StageChain([m0mod, m1mod])
+        chain = StageChain(divstages)
         chain.setup(m, i)
 
         self.o = m1mod.o
