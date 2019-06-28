@@ -10,7 +10,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
-from .specialcases import FPDivSpecialCasesDeNorm
+from .specialcases import FPDIVSpecialCasesDeNorm
 from .divstages import FPDivStages
 
 
@@ -18,7 +18,7 @@ from .divstages import FPDivStages
 class FPDIVBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
-        self.pipe1 = FPDivSpecialCasesDeNorm(width, id_wid)
+        self.pipe1 = FPDIVSpecialCasesDeNorm(width, id_wid)
         self.pipe2 = FPDivStages(width, id_wid)
         self.pipe3 = FPNormToPack(width, id_wid)
 

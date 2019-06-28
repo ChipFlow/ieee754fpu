@@ -5,7 +5,7 @@ from ieee754.fpdiv.pipeline import (FPDIVMuxInOut,)
 from ieee754.fpcommon.test.fpmux import runfp
 
 from sfpy import Float64, Float32, Float16
-from operator import div
+from operator import truediv as div
 
 def test_pipe_fp16():
     dut = FPDIVMuxInOut(16, 4)

@@ -11,7 +11,7 @@ from ieee754.fpcommon.postcalc import FPAddStage1Data
 from .div0 import FPDivStage0Data
 
 
-class FPDivStage1Mod(FPState, Elaboratable):
+class FPDivStage2Mod(FPState, Elaboratable):
     """ Second stage of div: preparation for normalisation.
     """
 
@@ -67,11 +67,11 @@ class FPDivStage1Mod(FPState, Elaboratable):
         return m
 
 
-class FPDivStage1(FPState):
+class FPDivStage2(FPState):
 
     def __init__(self, width, id_wid):
         FPState.__init__(self, "divider_1")
-        self.mod = FPDivStage1Mod(width)
+        self.mod = FPDivStage2Mod(width)
         self.out_z = FPNumBaseRecord(width, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()
