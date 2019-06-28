@@ -15,8 +15,8 @@ class FPPackData(Object):
 
     def __init__(self, width, id_wid):
         Object.__init__(self)
-        self.z = Signal(width, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.z = Signal(width, reset_less=True)    # result
+        self.mid = Signal(id_wid, reset_less=True) # multiplex ID
 
 
 class FPPackMod(Elaboratable):
