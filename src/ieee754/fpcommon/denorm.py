@@ -13,12 +13,17 @@ from ieee754.fpcommon.fpbase import FPState, FPNumBase
 class FPSCData:
 
     def __init__(self, width, id_wid, m_extra=True):
-        self.a = FPNumBaseRecord(width, m_extra)
-        self.b = FPNumBaseRecord(width, m_extra)
-        self.z = FPNumBaseRecord(width, False)
-        self.oz = Signal(width, reset_less=True)
-        self.out_do_z = Signal(reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
+
+        # NOTE: difference between z and oz is that oz is created by
+        # special-cases module(s) and will propagate, along with its
+        # "bypass" signal out_do_z, through the pipeline, *disabling*
+        # all processing of all subsequent stages.
+        self.a = FPNumBaseRecord(width, m_extra)   # operand a
+        self.b = FPNumBaseRecord(width, m_extra)   # operand b
+        self.z = FPNumBaseRecord(width, False)     # denormed result 
+        self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
+        self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
+        self.mid = Signal(id_wid, reset_less=True) # multiplexer ID
 
     def __iter__(self):
         yield from self.a
