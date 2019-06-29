@@ -42,7 +42,7 @@ class FPDivStage1Mod(Elaboratable):
         # here is where Q and R are used, TODO: Q/REM (etc) need to be in
         # FPDivStage0Data.
 
-        # NOTE: this does ONE step of conversion.  it does NOT do
+        # NOTE: this does ONE step of Q/REM processing.  it does NOT do
         # MULTIPLE stages of Q/REM processing.  it *MUST* be PURE
         # combinatorial and one step ONLY.
 
