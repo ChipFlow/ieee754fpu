@@ -17,6 +17,7 @@ from ieee754.fpcommon.postcalc import FPAddStage1Data
 from .div0 import FPDivStage0Mod
 from .div1 import FPDivStage1Mod
 from .div2 import FPDivStage2Mod
+from .div0 import FPDivStage0Data
 
 
 class FPDivStages(FPState, SimpleHandshake):
@@ -33,13 +34,13 @@ class FPDivStages(FPState, SimpleHandshake):
 
     def ispec(self):
         if self.begin:
-            return FPSCData(self.width, self.id_wid, False)
-        return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
+            return FPSCData(self.width, self.id_wid, False) # from denorm
+        return FPDivStage0Data(self.width, self.id_wid) # DIV ispec (loop)
 
     def ospec(self):
         if self.end: # TODO
-            return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
-        return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
+            return FPAddStage1Data(self.width, self.id_wid) # to post-norm
+        return FPDivStage0Data(self.width, self.id_wid) # DIV ospec (loop)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -51,6 +52,9 @@ class FPDivStages(FPState, SimpleHandshake):
 
         # end mode takes the DIV pipeline/chain data and munges it
         # into the format that the normalisation can accept.
+
+        # neither start nor end mode simply takes the exact same
+        # data in as out, this is where the Q/Rem comes in and Q/Rem goes out
 
         divstages = []
 
