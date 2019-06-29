@@ -393,21 +393,21 @@ class Fixed:
         return retval
 
 
-def fract_sqrt():
+def fixed_sqrt():
     # FIXME: finish
     raise NotImplementedError()
 
 
-class FractSqrt:
+class FixedSqrt:
     # FIXME: finish
     pass
 
 
-def fract_rsqrt():
+def fixed_rsqrt():
     # FIXME: finish
     raise NotImplementedError()
 
 
-class FractRSqrt:
+class FixedRSqrt:
     # FIXME: finish
     pass

@@ -3,7 +3,7 @@
 
 from nmigen.hdl.ast import Const
 from .algorithm import (div_rem, UnsignedDivRem, DivRem,
-                        Fract, fract_sqrt, FractSqrt, fract_rsqrt,  FractRSqrt)
+                        Fixed, fixed_sqrt, FixedSqrt, fixed_rsqrt, FixedRSqrt)
 import unittest
 
 
