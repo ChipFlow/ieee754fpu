@@ -2,7 +2,8 @@
 # See Notices.txt for copyright information
 
 from nmigen.hdl.ast import Const
-from .algorithm import div_rem, UnsignedDivRem, DivRem
+from .algorithm import (div_rem, UnsignedDivRem, DivRem,
+                        Fract, fract_sqrt, FractSqrt, fract_rsqrt,  FractRSqrt)
 import unittest
 
 
@@ -346,3 +347,5 @@ class TestDivRem(unittest.TestCase):
 
     def test_radix_16(self):
         self.helper(4)
+
+# FIXME: add tests for Fract, fract_sqrt, FractSqrt, fract_rsqrt, and FractRSqrt
