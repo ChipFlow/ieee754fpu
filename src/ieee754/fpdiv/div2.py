@@ -22,10 +22,10 @@ class FPDivStage2Mod(FPState, Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPDivStage0Data(self.width, self.id_wid)
+        return FPDivStage0Data(self.width, self.id_wid) # Q/Rem in...
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.id_wid)
+        return FPAddStage1Data(self.width, self.id_wid) # out to post-process
 
     def process(self, i):
         return self.o

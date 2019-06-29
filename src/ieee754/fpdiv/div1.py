@@ -1,4 +1,4 @@
-"""IEEE754 Floating Point Divider 
+"""IEEE754 Floating Point Divider
 
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
@@ -21,10 +21,10 @@ class FPDivStage1Mod(Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPDivStage0Data(self.width, self.id_wid)
+        return FPDivStage0Data(self.width, self.id_wid) # Q/Rem (etc) in...
 
     def ospec(self):
-        return FPDivStage0Data(self.width, self.id_wid)
+        return FPDivStage0Data(self.width, self.id_wid) # ... Q/Rem (etc) out
 
     def process(self, i):
         return self.o
@@ -40,7 +40,8 @@ class FPDivStage1Mod(Elaboratable):
 
         # XXX TODO, actual DIV code here.  this class would be
         # "step two" and is the main "chain".  tons of these needed.
-        # here is where Q and R are used, TODO: those are in FPDivStage0Data.
+        # here is where Q and R are used, TODO: those need to be in
+        # FPDivStage0Data.
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)

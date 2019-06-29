@@ -60,9 +60,9 @@ class FPDivStage0Mod(Elaboratable):
         m = Module()
 
         # XXX TODO, actual DIV code here.  this class would be
-        # "step one" which takes the pre-normalised data and
+        # "step one" which takes the pre-normalised data (see ispec) and
         # *begins* the processing phase (enters the massive DIV
-        # pipeline chain)
+        # pipeline chain) - see ospec.
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
