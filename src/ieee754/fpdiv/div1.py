@@ -39,9 +39,12 @@ class FPDivStage1Mod(Elaboratable):
         m = Module()
 
         # XXX TODO, actual DIV code here.  this class would be
-        # "step two" and is the main "chain".  tons of these needed.
-        # here is where Q and R are used, TODO: those need to be in
+        # here is where Q and R are used, TODO: Q/REM (etc) need to be in
         # FPDivStage0Data.
+
+        # NOTE: this does ONE step of conversion.  it does NOT do
+        # MULTIPLE stages of Q/REM processing.  it *MUST* be PURE
+        # combinatorial and one step ONLY.
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
