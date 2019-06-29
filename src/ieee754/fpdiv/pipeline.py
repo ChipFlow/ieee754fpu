@@ -1,4 +1,42 @@
-# IEEE Floating Point Divider Pipeline
+"""IEEE Floating Point Divider Pipeline
+
+Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
+
+Stack looks like this:
+
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData  ospec FPSCData
+            StageChain: FPDIVSpecialCasesMod,
+                        FPAddDeNormMod
+
+pipediv0 - FPDivStages(start=true) ispec FPSCData       ospec FPDivStage0Data
+            StageChain: FPDivStage0Mod,
+                        FPDivStage1Mod,
+                        ...
+                        FPDivStage1Mod
+
+pipediv1 - FPDivStages()           ispec FPDivStage0Data ospec FPDivStage0Data
+            StageChain: FPDivStage1Mod,
+                        ...
+                        FPDivStage1Mod
+...
+...
+
+pipediv5 - FPDivStages(end=true    ispec FPDivStage0Data ospec FPAddStage1Data
+            StageChain: FPDivStage1Mod,
+                        ...
+                        FPDivStage1Mod,
+                        FPDivStage2Mod
+
+normpack - FPNormToPack            ispec FPAddStage1Data ospec FPPackData
+            StageChain: Norm1ModSingle,
+                        RoundMod,
+                        CorrectionsMod,
+                        PackMod
+
+the number of combinatorial StageChains (n_combinatorial_stages) in
+FPDivStages is an argument arranged to get the length of the whole
+pipeline down to sane numbers.
+"""
 
 from nmigen import Module
 from nmigen.cli import main, verilog
