@@ -50,6 +50,9 @@ class FPDivStage2Mod(FPState, Elaboratable):
         # last-stage guard/round/sticky and copies mantissa into z.
         # post-processing stages take care of things from that point.
 
+        # NOTE: this phase does NOT do ACTUAL DIV processing, it ONLY
+        # does "conversion" *out* of the Q/REM last stage
+
         with m.If(~self.i.out_do_z):
             mw = self.o.z.m_width
             m.d.comb += [

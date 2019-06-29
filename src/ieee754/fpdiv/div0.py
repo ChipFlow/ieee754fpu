@@ -64,6 +64,10 @@ class FPDivStage0Mod(Elaboratable):
         # *begins* the processing phase (enters the massive DIV
         # pipeline chain) - see ospec.
 
+        # NOTE: this stage does *NOT* do *ACTUAL* DIV processing,
+        # it is PURELY the *ENTRY* point into the chain, performing
+        # "preparation" work
+
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
