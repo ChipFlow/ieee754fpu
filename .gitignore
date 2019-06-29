@@ -1,6 +1,9 @@
 *.vcd
 *.py?
+!*.pyi
 .*.sw?
 __pycache__
 *.v
 *.il
+.eggs
+*.egg-info
