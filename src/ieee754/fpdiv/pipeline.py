@@ -18,17 +18,27 @@ from .divstages import FPDivStages
 class FPDIVBasePipe(ControlBase):
     def __init__(self, width, id_wid):
         ControlBase.__init__(self)
-        self.pipe1 = FPDIVSpecialCasesDeNorm(width, id_wid)
-        self.pipe2 = FPDivStages(width, id_wid)
-        self.pipe3 = FPNormToPack(width, id_wid)
+        self.pipestart = FPDIVSpecialCasesDeNorm(width, id_wid)
+        pipechain = []
+        n_stages = 6 # TODO
+        n_combinatorial_stages = 2 # TODO
+        for i in range(n_stages):
+            begin = i == 0 # needs to convert input from pipestart ospec
+            end = i == n_stages - 1 # needs to convert output to pipeend ispec
+            pipechain.append(FPDivStages(width, id_wid,
+                                         n_combinatorial_stages,
+                                         begin, end))
+        self.pipechain = pipechain
+        self.pipeend = FPNormToPack(width, id_wid)
 
-        self._eqs = self.connect([self.pipe1, self.pipe2, self.pipe3])
+        self._eqs = self.connect([self.pipestart] + pipechain + [self.pipeend])
 
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
-        m.submodules.scnorm = self.pipe1
-        m.submodules.divstages = self.pipe2
-        m.submodules.normpack = self.pipe3
+        m.submodules.scnorm = self.pipestart
+        for i, p in enumerate(self.pipechain):
+            setattr(m.submodules, "pipediv%d" % i, p)
+        m.submodules.normpack = self.pipeend
         m.d.comb += self._eqs
         return m
 

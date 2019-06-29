@@ -6,7 +6,7 @@ Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumBaseRecord
+from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 
@@ -17,6 +17,7 @@ class FPDivStage0Data:
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
+        self.of = Overflow()
 
         # TODO: here is where Q and R would be put, and passed
         # down to Stage1 processing.
@@ -28,6 +29,7 @@ class FPDivStage0Data:
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+                self.of.eq(i.of),
                 self.product.eq(i.product), self.mid.eq(i.mid)]
 
 

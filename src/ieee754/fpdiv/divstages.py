@@ -21,35 +21,53 @@ from .div2 import FPDivStage2Mod
 
 class FPDivStages(FPState, SimpleHandshake):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, n_stages, begin, end):
         FPState.__init__(self, "align")
         self.width = width
         self.id_wid = id_wid
+        self.n_stages = n_stages # number of combinatorial stages
+        self.begin = begin # "begin" mode
+        self.end = end # "end" mode
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, False)
+        if self.begin:
+            return FPSCData(self.width, self.id_wid, False)
+        return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
 
     def ospec(self):
+        if self.end: # TODO
+            return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
         return FPAddStage1Data(self.width, self.id_wid) # AddStage1 ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
 
-        # TODO.  clearly, this would be a for-loop, here, creating
-        # a huge number of stages (if radix-2 is used).  interestingly
-        # the number of stages will be data-dependent.
-        divstages = [FPDivStage0Mod(self.width, self.id_wid)]
-        for i in range(self.width): # XXX TODO: work out actual number needed
+        # start mode accepts data from the FP normalisation stage
+        # and does a bit of munging of the data.  it will be chained
+        # into the first DIV combinatorial block,
+
+        # end mode takes the DIV pipeline/chain data and munges it
+        # into the format that the normalisation can accept.
+
+        divstages = []
+
+        if self.begin: # XXX check this
+            divstages.append(FPDivStage0Mod(self.width, self.id_wid))
+
+        for count in range(self.n_stages): # number of combinatorial stages
             divstages.append(FPDivStage1Mod(self.width, self.id_wid))
-        divstages.append(FPDivStage2Mod(self.width, self.id_wid))
+
+        if self.end: # XXX check this
+            divstages.append(FPDivStage2Mod(self.width, self.id_wid))
 
         chain = StageChain(divstages)
         chain.setup(m, i)
 
-        self.o = m1mod.o
+        # output is from the last pipe stage
+        self.o = divstages[-1].o
 
     def process(self, i):
         return self.o
