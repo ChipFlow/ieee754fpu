@@ -7,6 +7,7 @@ code for simulating/testing the various algorithms
 """
 
 from nmigen.hdl.ast import Const
+import math
 
 
 def div_rem(dividend, divisor, bit_width, signed):
@@ -175,6 +176,9 @@ class Fixed:
     def __init__(self, value, fract_width, bit_width, signed):
         """ Create a new Fixed.
 
+        Note: ``value`` is not the same as ``bits``. To put a particular number
+        in ``bits``, use ``Fixed.from_bits``.
+
         :param value: the value of the fixed-point number
         :param fract_width: the number of bits in the fractional portion
         :param bit_width: the total number of bits
@@ -190,7 +194,7 @@ class Fixed:
         elif isinstance(value, int):
             bits = value << fract_width
         else:
-            bits = floor(value * 2 ** fract_width)
+            bits = math.floor(value * 2 ** fract_width)
         self.bits = Const.normalize(bits, (bit_width, signed))
         self.fract_width = fract_width
         self.bit_width = bit_width
@@ -198,7 +202,8 @@ class Fixed:
 
     def __repr__(self):
         """ Get representation."""
-        return f"Fixed({self.bits}, {self.fract_width}, {self.bit_width})"
+        retval = f"Fixed.from_bits({self.bits}, {self.fract_width}, "
+        return retval + f"{self.bit_width}, {self.signed})"
 
     def __trunc__(self):
         """ Truncate to integer."""
@@ -387,9 +392,10 @@ class Fixed:
         # round up fract_width to nearest multiple of 4
         fract_width = (self.fract_width + 3) & ~3
         fract_part <<= (fract_width - self.fract_width)
-        fract_width_in_hex_digits = fract_width / 4
-        retval += f"{int_part:x}."
-        retval += f"{fract_part:x}".zfill(fract_width_in_hex_digits)
+        fract_width_in_hex_digits = fract_width // 4
+        retval += f"0x{int_part:x}."
+        if fract_width_in_hex_digits != 0:
+            retval += f"{fract_part:x}".zfill(fract_width_in_hex_digits)
         return retval
 
 

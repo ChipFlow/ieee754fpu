@@ -5,6 +5,7 @@ from nmigen.hdl.ast import Const
 from .algorithm import (div_rem, UnsignedDivRem, DivRem,
                         Fixed, fixed_sqrt, FixedSqrt, fixed_rsqrt, FixedRSqrt)
 import unittest
+import math
 
 
 class TestDivRemFn(unittest.TestCase):
@@ -348,4 +349,213 @@ class TestDivRem(unittest.TestCase):
     def test_radix_16(self):
         self.helper(4)
 
-# FIXME: add tests for Fract, fract_sqrt, FractSqrt, fract_rsqrt, and FractRSqrt
+
+class TestFixed(unittest.TestCase):
+    def test_constructor(self):
+        value = Fixed(0, 0, 1, False)
+        self.assertEqual(value.bits, 0)
+        self.assertEqual(value.fract_width, 0)
+        self.assertEqual(value.bit_width, 1)
+        self.assertEqual(value.signed, False)
+        value = Fixed(1, 2, 3, True)
+        self.assertEqual(value.bits, -4)
+        self.assertEqual(value.fract_width, 2)
+        self.assertEqual(value.bit_width, 3)
+        self.assertEqual(value.signed, True)
+        value = Fixed(1, 2, 4, True)
+        self.assertEqual(value.bits, 4)
+        self.assertEqual(value.fract_width, 2)
+        self.assertEqual(value.bit_width, 4)
+        self.assertEqual(value.signed, True)
+        value = Fixed(1.25, 4, 8, True)
+        self.assertEqual(value.bits, 0x14)
+        self.assertEqual(value.fract_width, 4)
+        self.assertEqual(value.bit_width, 8)
+        self.assertEqual(value.signed, True)
+        value = Fixed(Fixed(2, 0, 12, False), 4, 8, True)
+        self.assertEqual(value.bits, 0x20)
+        self.assertEqual(value.fract_width, 4)
+        self.assertEqual(value.bit_width, 8)
+        self.assertEqual(value.signed, True)
+        value = Fixed(0x2FF / 2 ** 8, 8, 12, False)
+        self.assertEqual(value.bits, 0x2FF)
+        self.assertEqual(value.fract_width, 8)
+        self.assertEqual(value.bit_width, 12)
+        self.assertEqual(value.signed, False)
+        value = Fixed(value, 4, 8, True)
+        self.assertEqual(value.bits, 0x2F)
+        self.assertEqual(value.fract_width, 4)
+        self.assertEqual(value.bit_width, 8)
+        self.assertEqual(value.signed, True)
+
+    def helper_test_from_bits(self, bit_width, fract_width):
+        signed = False
+        for bits in range(1 << bit_width):
+            with self.subTest(bit_width=bit_width,
+                              fract_width=fract_width,
+                              signed=signed,
+                              bits=hex(bits)):
+                value = Fixed.from_bits(bits, fract_width, bit_width, signed)
+                self.assertEqual(value.bit_width, bit_width)
+                self.assertEqual(value.fract_width, fract_width)
+                self.assertEqual(value.signed, signed)
+                self.assertEqual(value.bits, bits)
+        signed = True
+        for bits in range(-1 << (bit_width - 1), 1 << (bit_width - 1)):
+            with self.subTest(bit_width=bit_width,
+                              fract_width=fract_width,
+                              signed=signed,
+                              bits=hex(bits)):
+                value = Fixed.from_bits(bits, fract_width, bit_width, signed)
+                self.assertEqual(value.bit_width, bit_width)
+                self.assertEqual(value.fract_width, fract_width)
+                self.assertEqual(value.signed, signed)
+                self.assertEqual(value.bits, bits)
+
+    def test_from_bits(self):
+        for bit_width in range(1, 5):
+            for fract_width in range(bit_width):
+                self.helper_test_from_bits(bit_width, fract_width)
+
+    def test_repr(self):
+        self.assertEqual(repr(Fixed.from_bits(1, 2, 3, False)),
+                         "Fixed.from_bits(1, 2, 3, False)")
+        self.assertEqual(repr(Fixed.from_bits(-4, 2, 3, True)),
+                         "Fixed.from_bits(-4, 2, 3, True)")
+        self.assertEqual(repr(Fixed.from_bits(-4, 7, 10, True)),
+                         "Fixed.from_bits(-4, 7, 10, True)")
+
+    def test_trunc(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(math.trunc(value), math.trunc(i / 4))
+
+    def test_int(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(int(value), math.trunc(value))
+
+    def test_float(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(float(value), i / 4)
+
+    def test_floor(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(math.floor(value), math.floor(i / 4))
+
+    def test_ceil(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(math.ceil(value), math.ceil(i / 4))
+
+    def test_neg(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            expected = -i / 4 if i != -8 else -2.0  # handle wrap-around
+            with self.subTest(value=repr(value)):
+                self.assertEqual(float(-value), expected)
+
+    def test_pos(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                value = +value
+                self.assertEqual(value.bits, i)
+
+    def test_abs(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            expected = abs(i) / 4 if i != -8 else -2.0  # handle wrap-around
+            with self.subTest(value=repr(value)):
+                self.assertEqual(float(abs(value)), expected)
+
+    def test_not(self):
+        for i in range(-8, 8):
+            value = Fixed.from_bits(i, 2, 4, True)
+            with self.subTest(value=repr(value)):
+                self.assertEqual(float(~value), (~i) / 4)
+
+    # TODO: add test for _binary_op
+    # TODO: add test for __add__
+    # TODO: add test for __radd__
+    # TODO: add test for __sub__
+    # TODO: add test for __rsub__
+    # TODO: add test for __and__
+    # TODO: add test for __rand__
+    # TODO: add test for __or__
+    # TODO: add test for __ror__
+    # TODO: add test for __xor__
+    # TODO: add test for __rxor__
+    # TODO: add test for __mul__
+    # TODO: add test for _cmp_impl
+    # TODO: add test for cmp
+    # TODO: add test for __lt__
+    # TODO: add test for __le__
+    # TODO: add test for __eq__
+    # TODO: add test for __ne__
+    # TODO: add test for __gt__
+    # TODO: add test for __ge__
+    # TODO: add test for __bool__
+
+    def test_str(self):
+        self.assertEqual(str(Fixed.from_bits(0x1234, 0, 16, False)),
+                         "fixed:0x1234.")
+        self.assertEqual(str(Fixed.from_bits(-0x1234, 0, 16, True)),
+                         "fixed:-0x1234.")
+        self.assertEqual(str(Fixed.from_bits(0x12345, 3, 20, True)),
+                         "fixed:0x2468.a")
+        self.assertEqual(str(Fixed(123.625, 3, 12, True)),
+                         "fixed:0x7b.a")
+
+        self.assertEqual(str(Fixed.from_bits(0x1, 0, 20, True)),
+                         "fixed:0x1.")
+        self.assertEqual(str(Fixed.from_bits(0x2, 1, 20, True)),
+                         "fixed:0x1.0")
+        self.assertEqual(str(Fixed.from_bits(0x4, 2, 20, True)),
+                         "fixed:0x1.0")
+        self.assertEqual(str(Fixed.from_bits(0x9, 3, 20, True)),
+                         "fixed:0x1.2")
+        self.assertEqual(str(Fixed.from_bits(0x12, 4, 20, True)),
+                         "fixed:0x1.2")
+        self.assertEqual(str(Fixed.from_bits(0x24, 5, 20, True)),
+                         "fixed:0x1.20")
+        self.assertEqual(str(Fixed.from_bits(0x48, 6, 20, True)),
+                         "fixed:0x1.20")
+        self.assertEqual(str(Fixed.from_bits(0x91, 7, 20, True)),
+                         "fixed:0x1.22")
+        self.assertEqual(str(Fixed.from_bits(0x123, 8, 20, True)),
+                         "fixed:0x1.23")
+        self.assertEqual(str(Fixed.from_bits(0x246, 9, 20, True)),
+                         "fixed:0x1.230")
+        self.assertEqual(str(Fixed.from_bits(0x48d, 10, 20, True)),
+                         "fixed:0x1.234")
+        self.assertEqual(str(Fixed.from_bits(0x91a, 11, 20, True)),
+                         "fixed:0x1.234")
+        self.assertEqual(str(Fixed.from_bits(0x1234, 12, 20, True)),
+                         "fixed:0x1.234")
+        self.assertEqual(str(Fixed.from_bits(0x2468, 13, 20, True)),
+                         "fixed:0x1.2340")
+        self.assertEqual(str(Fixed.from_bits(0x48d1, 14, 20, True)),
+                         "fixed:0x1.2344")
+        self.assertEqual(str(Fixed.from_bits(0x91a2, 15, 20, True)),
+                         "fixed:0x1.2344")
+        self.assertEqual(str(Fixed.from_bits(0x12345, 16, 20, True)),
+                         "fixed:0x1.2345")
+        self.assertEqual(str(Fixed.from_bits(0x2468a, 17, 20, True)),
+                         "fixed:0x1.23450")
+        self.assertEqual(str(Fixed.from_bits(0x48d14, 18, 20, True)),
+                         "fixed:0x1.23450")
+        self.assertEqual(str(Fixed.from_bits(0x91a28, 19, 20, True)),
+                         "fixed:-0x0.dcbb0")
+        self.assertEqual(str(Fixed.from_bits(0x91a28, 19, 20, False)),
+                         "fixed:0x1.23450")
+
+
+# FIXME: add tests for fract_sqrt, FractSqrt, fract_rsqrt, and FractRSqrt
