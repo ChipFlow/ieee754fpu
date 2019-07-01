@@ -9,29 +9,32 @@ from ieee754.fpcommon.fpbase import FPNumOut, FPNumBaseRecord, FPNumBase
 from ieee754.fpcommon.fpbase import FPState
 from .roundz import FPRoundData
 from nmutil.singlepipe import Object
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPPackData(Object):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid):
         Object.__init__(self)
         self.z = Signal(width, reset_less=True)    # result
         self.mid = Signal(id_wid, reset_less=True) # multiplex ID
+        self.op = Signal(op_wid or 0, reset_less=True) # operand width
 
 
 class FPPackMod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPRoundData(self.width, self.id_wid)
+        return FPRoundData(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPPackData(self.width, self.id_wid)
+        return FPPackData(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.o
@@ -48,6 +51,8 @@ class FPPackMod(Elaboratable):
         m.submodules.pack_in_z = in_z = FPNumBase(self.i.z)
         #m.submodules.pack_out_z = out_z = FPNumOut(z)
         m.d.comb += self.o.mid.eq(self.i.mid)
+        if self.i.op_wid:
+            m.d.comb += self.o.op.eq(self.i.op)
         with m.If(~self.i.out_do_z):
             with m.If(in_z.is_overflowed):
                 m.d.comb += z.inf(self.i.z.s)

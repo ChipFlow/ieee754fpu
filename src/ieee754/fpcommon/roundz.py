@@ -12,31 +12,39 @@ from .postnormalise import FPNorm1Data
 
 class FPRoundData:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.z = FPNumBaseRecord(width, False)
         self.mid = Signal(id_wid, reset_less=True) # multiplex ID
         # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
+        self.op_wid = op_wid
+        if op_wid:
+            self.op = Signal(op_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+        ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.mid.eq(i.mid)]
+        if self.op_wid:
+            ret.append(self.op.eq(i.op))
+        return ret
+
 
 
 class FPRoundMod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNorm1Data(self.width, self.id_wid)
+        return FPNorm1Data(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPRoundData(self.width, self.id_wid)
+        return FPRoundData(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.out_z

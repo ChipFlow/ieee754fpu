@@ -8,36 +8,38 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPMulStage0Data:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
+        FPBaseData.__init__(self, 0, width, id_wid, op_wid)
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         self.product = Signal(mw, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.product.eq(i.product), self.mid.eq(i.mid)]
+                self.product.eq(i.product)] + FPBaseData.eq(self, i)
 
 
 class FPMulStage0Mod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, False)
+        return FPSCData(self.width, self.id_wid, False, self.op_wid)
 
     def ospec(self):
-        return FPMulStage0Data(self.width, self.id_wid)
+        return FPMulStage0Data(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.o
@@ -71,6 +73,8 @@ class FPMulStage0Mod(Elaboratable):
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.mid.eq(self.i.mid)
+        if self.o.op_wid:
+            m.d.comb += self.o.op.eq(self.i.op)
         return m
 
 

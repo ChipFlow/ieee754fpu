@@ -15,31 +15,38 @@ from .postcalc import FPAddStage1Data
 
 class FPNorm1Data:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.mid = Signal(id_wid, reset_less=True)
+        self.op_wid = op_wid
+        if op_wid:
+            self.op = Signal(op_wid, reset_less=True) # operand
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+        ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
+        if self.op_wid:
+            ret.append(self.op.eq(i.op))
+        return ret
 
 
 class FPNorm1ModSingle(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage1Data(self.width, self.id_wid)
+        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPNorm1Data(self.width, self.id_wid)
+        return FPNorm1Data(self.width, self.id_wid, self.op_wid)
 
     def setup(self, m, i):
         """ links module to inputs and outputs

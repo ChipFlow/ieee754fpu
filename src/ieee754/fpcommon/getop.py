@@ -82,24 +82,49 @@ class FPNumBase2Ops:
         return [self.a, self.b, self.mid]
 
 
-class FPADDBaseData:
+class FPBaseData:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, n_ops, width, id_wid, op_wid):
         self.width = width
         self.id_wid = id_wid
-        self.a  = Signal(width)                      # operand a
-        self.b  = Signal(width)                      # operand b
+        self.op_wid = op_wid
+        ops = []
+        for i in range(n_ops):
+            name = chr(ord("a")+i)
+            operand = Signal(width, name=name)
+            setattr(self, name, operand)
+            ops.append(operand)
+        self.ops = ops
         self.mid = Signal(id_wid, reset_less=True)   # RS multiplex ID
+        self.op = Signal(op_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+        ret = []
+        for op1, op2 in zip(self.ops, i.ops):
+            ret.append(op1.eq(op2))
+        ret.append(self.mid.eq(i.mid))
+        if self.op_wid:
+            ret.append(self.op.eq(i.op))
+        return ret
+
+    def __iter__(self):
+        if self.ops:
+            yield from self.ops
+        yield self.mid
+        if self.id_wid:
+            yield self.op
 
     def ports(self):
-        return [self.a, self.b, self.mid]
+        return list(self)
+
+class FPADDBaseData(FPBaseData):
+
+    def __init__(self, width, id_wid, op_wid):
+        FPBaseData.__init__(self, 2, width, id_wid, op_wid)
 
 
 class FPGet2OpMod(PrevControl):
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         PrevControl.__init__(self)
         self.width = width
         self.id_wid = id_wid
@@ -108,10 +133,10 @@ class FPGet2OpMod(PrevControl):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.o
@@ -129,10 +154,10 @@ class FPGet2Op(FPState):
     """ gets operands
     """
 
-    def __init__(self, in_state, out_state, width, id_wid):
+    def __init__(self, in_state, out_state, width, id_wid, op_wid=None):
         FPState.__init__(self, in_state)
         self.out_state = out_state
-        self.mod = FPGet2OpMod(width, id_wid)
+        self.mod = FPGet2OpMod(width, id_wid, op_wid)
         self.o = self.ospec()
         self.in_stb = Signal(reset_less=True)
         self.out_ack = Signal(reset_less=True)

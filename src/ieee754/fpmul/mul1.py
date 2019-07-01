@@ -12,17 +12,18 @@ class FPMulStage1Mod(FPState, Elaboratable):
     """ Second stage of mul: preparation for normalisation.
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPMulStage0Data(self.width, self.id_wid)
+        return FPMulStage0Data(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.id_wid)
+        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.o
@@ -51,6 +52,8 @@ class FPMulStage1Mod(FPState, Elaboratable):
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.mid.eq(self.i.mid)
+        if self.o.op_wid:
+            m.d.comb += self.o.op.eq(self.i.op)
 
         return m
 

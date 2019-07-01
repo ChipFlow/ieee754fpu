@@ -44,14 +44,15 @@ class FPMULMuxInOut(ReservationStations):
 
         Fan-in and Fan-out are combinatorial.
     """
-    def __init__(self, width, num_rows):
+    def __init__(self, width, num_rows, op_wid=0):
         self.width = width
         self.id_wid = num_bits(width)
+        self.op_wid = op_wid
         self.alu = FPMULBasePipe(width, self.id_wid)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.id_wid)
+        return FPPackData(self.width, self.id_wid, self.op_wid)

@@ -18,17 +18,18 @@ class FPMulSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid, False)
+        return FPSCData(self.width, self.id_wid, False, self.op_wid)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -131,18 +132,19 @@ class FPMulSpecialCasesDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         FPState.__init__(self, "special_cases")
         self.width = width
         self.id_wid = id_wid
+        self.op_wid = op_wid
         SimpleHandshake.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid) # SpecialCases ispec
+        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid, False) # DeNorm ospec
+        return FPSCData(self.width, self.id_wid, False, self.op_wid)
 
     def setup(self, m, i):
         """ links module to inputs and outputs

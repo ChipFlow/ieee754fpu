@@ -16,17 +16,18 @@ from .pack import FPPackData, FPPackMod
 
 class FPNormToPack(FPState, SimpleHandshake):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, id_wid, op_wid=None):
         FPState.__init__(self, "normalise_1")
         self.id_wid = id_wid
+        self.op_wid = op_wid
         self.width = width
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
 
     def ispec(self):
-        return FPAddStage1Data(self.width, self.id_wid) # Norm1ModSingle ispec
+        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPPackData(self.width, self.id_wid) # FPPackMod ospec
+        return FPPackData(self.width, self.id_wid, self.op_wid) # FPPackMod
 
     def setup(self, m, i):
         """ links module to inputs and outputs
