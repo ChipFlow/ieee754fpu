@@ -200,6 +200,28 @@ class Fixed:
         self.bit_width = bit_width
         self.signed = signed
 
+    def with_bits(self, bits):
+        """ Create a new Fixed with the specified bits.
+
+        :param bits: the new bits.
+        :returns Fixed: the new Fixed.
+        """
+        return self.from_bits(bits,
+                              self.fract_width,
+                              self.bit_width,
+                              self.signed)
+
+    def with_value(self, value):
+        """ Create a new Fixed with the specified value.
+
+        :param value: the new value.
+        :returns Fixed: the new Fixed.
+        """
+        return Fixed(value,
+                     self.fract_width,
+                     self.bit_width,
+                     self.signed)
+
     def __repr__(self):
         """ Get representation."""
         retval = f"Fixed.from_bits({self.bits}, {self.fract_width}, "
@@ -217,7 +239,7 @@ class Fixed:
 
     def __float__(self):
         """ Convert to float."""
-        return self.bits * 2 ** -self.fract_width
+        return self.bits * 2.0 ** -self.fract_width
 
     def __floor__(self):
         """ Floor to integer."""
@@ -403,9 +425,63 @@ class Fixed:
         return retval
 
 
-def fixed_sqrt():
-    # FIXME: finish
-    raise NotImplementedError()
+class RootRemainder:
+    """ A polynomial root and remainder.
+
+    :attribute root: the polynomial root.
+    :attribute remainder: the remainder.
+    """
+
+    def __init__(self, root, remainder):
+        """ Create a new RootRemainder.
+
+        :param root: the polynomial root.
+        :param remainder: the remainder.
+        """
+        self.root = root
+        self.remainder = remainder
+
+    def __repr__(self):
+        """ Get the representation as a string. """
+        return f"RootRemainder({repr(self.root)}, {repr(self.remainder)})"
+
+    def __str__(self):
+        """ Convert to a string. """
+        return f"RootRemainder({str(self.root)}, {str(self.remainder)})"
+
+
+def fixed_sqrt(radicand):
+    """ Compute the Square Root and Remainder.
+
+    Solves the polynomial ``radicand - x * x == 0``
+
+    :param radicand: the ``Fixed`` to take the square root of.
+    :returns RootRemainder:
+    """
+    # Written for correctness, not speed
+    if radicand < 0:
+        return None
+    is_int = isinstance(radicand, int)
+    if is_int:
+        radicand = Fixed(radicand, 0, radicand.bit_length() + 1, True)
+    elif not isinstance(radicand, Fixed):
+        raise TypeError()
+
+    def is_remainder_non_negative(root):
+        return radicand >= root * root
+
+    root = radicand.with_bits(0)
+    for i in reversed(range(root.bit_width)):
+        new_root = root.with_bits(root.bits | (1 << i))
+        if new_root < 0:  # skip sign bit
+            continue
+        if is_remainder_non_negative(new_root):
+            root = new_root
+    remainder = radicand - root * root
+    if is_int:
+        root = int(root)
+        remainder = int(remainder)
+    return RootRemainder(root, remainder)
 
 
 class FixedSqrt:
@@ -413,7 +489,7 @@ class FixedSqrt:
     pass
 
 
-def fixed_rsqrt():
+def fixed_rsqrt(radicand):
     # FIXME: finish
     raise NotImplementedError()
 
