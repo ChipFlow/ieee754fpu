@@ -24,4 +24,8 @@ if __name__ == '__main__':
     # XXX BUG: 0xe225 0x8181 0x249f -> 0x249e
     test_pipe_fp16()
     test_pipe_fp32()
+
+    # XXX BUG 0x4e1b1e94ef100 0x42e1b4e00b65f134 0x2e59bf1d2667c4d  ->
+    #         recv 0x2e59bf1d2667c4c expected 0x2e59bf1d2667c4d
+
     test_pipe_fp64()
