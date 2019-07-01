@@ -728,4 +728,57 @@ class TestFixedSqrtFn(unittest.TestCase):
                 self.assertEqual(str(fixed_sqrt(radicand)), expected)
 
 
-# FIXME: add tests for FixedSqrt, fixed_rsqrt, and FixedRSqrt
+# FIXME: add tests for FixedSqrt
+
+
+class TestFixedRSqrtFn(unittest.TestCase):
+    def test2(self):
+        for bits in range(1, 1 << 5):
+            radicand = Fixed.from_bits(bits, 5, 12, False)
+            float_root = 1 / math.sqrt(float(radicand))
+            root = radicand.with_value(float_root)
+            remainder = 1 - root * root * radicand
+            expected = RootRemainder(root, remainder)
+            with self.subTest(radicand=repr(radicand),
+                              expected=repr(expected)):
+                self.assertEqual(repr(fixed_rsqrt(radicand)),
+                                 repr(expected))
+
+    def test(self):
+        for signed in False, True:
+            for bit_width in range(1, 10):
+                for fract_width in range(bit_width):
+                    for bits in range(1 << bit_width):
+                        radicand = Fixed.from_bits(bits,
+                                                   fract_width,
+                                                   bit_width,
+                                                   signed)
+                        if radicand <= 0:
+                            continue
+                        float_root = 1 / math.sqrt(float(radicand))
+                        max_value = radicand.with_bits(
+                            (1 << (bit_width - signed)) - 1)
+                        if float_root > float(max_value):
+                            root = max_value
+                        else:
+                            root = radicand.with_value(float_root)
+                        remainder = 1 - root * root * radicand
+                        expected = RootRemainder(root, remainder)
+                        with self.subTest(radicand=repr(radicand),
+                                          expected=repr(expected)):
+                            self.assertEqual(repr(fixed_rsqrt(radicand)),
+                                             repr(expected))
+
+    def test_misc_cases(self):
+        test_cases = [
+            # radicand, expected
+            (Fixed(0.5, 30, 32, False),
+             "RootRemainder(fixed:0x1.6a09e664, "
+             "fixed:0x0.0000000596d014780000000)")
+        ]
+        for radicand, expected in test_cases:
+            with self.subTest(radicand=str(radicand), expected=expected):
+                self.assertEqual(str(fixed_rsqrt(radicand)), expected)
+
+
+# FIXME: add tests for FixedRSqrt

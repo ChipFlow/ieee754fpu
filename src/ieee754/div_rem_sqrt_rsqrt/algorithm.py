@@ -490,8 +490,31 @@ class FixedSqrt:
 
 
 def fixed_rsqrt(radicand):
-    # FIXME: finish
-    raise NotImplementedError()
+    """ Compute the Reciprocal Square Root and Remainder.
+
+    Solves the polynomial ``1 - x * x * radicand == 0``
+
+    :param radicand: the ``Fixed`` to take the reciprocal square root of.
+    :returns RootRemainder:
+    """
+    # Written for correctness, not speed
+    if radicand <= 0:
+        return None
+    if not isinstance(radicand, Fixed):
+        raise TypeError()
+
+    def is_remainder_non_negative(root):
+        return 1 >= root * root * radicand
+
+    root = radicand.with_bits(0)
+    for i in reversed(range(root.bit_width)):
+        new_root = root.with_bits(root.bits | (1 << i))
+        if new_root < 0:  # skip sign bit
+            continue
+        if is_remainder_non_negative(new_root):
+            root = new_root
+    remainder = 1 - root * root * radicand
+    return RootRemainder(root, remainder)
 
 
 class FixedRSqrt:
