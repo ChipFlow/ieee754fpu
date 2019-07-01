@@ -333,6 +333,10 @@ class Fixed:
         bits = self.bits * rhs_bits
         return self.from_bits(bits, fract_width, bit_width, self.signed)
 
+    def __rmul__(self, rhs):
+        """ Reverse Multiplication. """
+        return self.__mul__(rhs)
+
     @staticmethod
     def _cmp_impl(lhs, rhs, fract_width, bit_width, signed):
         if lhs < rhs:
@@ -374,7 +378,7 @@ class Fixed:
         """ Greater Than or Equal."""
         return self.cmp(rhs) >= 0
 
-    def __bool__(self, rhs):
+    def __bool__(self):
         """ Convert to bool."""
         return bool(self.bits)
 
