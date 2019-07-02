@@ -18,6 +18,7 @@ class FPNormToPack(FPState, SimpleHandshake):
 
     def __init__(self, width, pspec):
         FPState.__init__(self, "normalise_1")
+        print ("normtopack", pspec)
         self.pspec = pspec
         self.width = width
         SimpleHandshake.__init__(self, self) # pipeline is its own stage

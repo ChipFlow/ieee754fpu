@@ -94,14 +94,12 @@ class FPPipeContext:
 
     def eq(self, i):
         ret = [self.muxid.eq(i.muxid)]
-        if self.op_wid:
-            ret.append(self.op.eq(i.op))
+        ret.append(self.op.eq(i.op))
         return ret
 
     def __iter__(self):
         yield self.muxid
-        if self.op_wid:
-            yield self.op
+        yield self.op
 
     def ports(self):
         return list(self)
