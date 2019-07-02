@@ -22,7 +22,7 @@ class FPNorm1Data:
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.ctx = FPBaseData(width, pspec)
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),

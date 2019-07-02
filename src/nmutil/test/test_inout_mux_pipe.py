@@ -19,7 +19,7 @@ from nmutil.singlepipe import SimpleHandshake, RecordObject, Object
 class PassData2(RecordObject):
     def __init__(self):
         RecordObject.__init__(self)
-        self.mid = Signal(2, reset_less=True)
+        self.muxid = Signal(2, reset_less=True)
         self.idx = Signal(8, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
@@ -27,7 +27,7 @@ class PassData2(RecordObject):
 class PassData(Object):
     def __init__(self):
         Object.__init__(self)
-        self.mid = Signal(2, reset_less=True)
+        self.muxid = Signal(2, reset_less=True)
         self.idx = Signal(8, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
@@ -55,28 +55,28 @@ class InputTest:
         self.di = {}
         self.do = {}
         self.tlen = 100
-        for mid in range(dut.num_rows):
-            self.di[mid] = {}
-            self.do[mid] = {}
+        for muxid in range(dut.num_rows):
+            self.di[muxid] = {}
+            self.do[muxid] = {}
             for i in range(self.tlen):
-                self.di[mid][i] = randint(0, 255) + (mid<<8)
-                self.do[mid][i] = self.di[mid][i]
+                self.di[muxid][i] = randint(0, 255) + (muxid<<8)
+                self.do[muxid][i] = self.di[muxid][i]
 
-    def send(self, mid):
+    def send(self, muxid):
         for i in range(self.tlen):
-            op2 = self.di[mid][i]
-            rs = self.dut.p[mid]
+            op2 = self.di[muxid][i]
+            rs = self.dut.p[muxid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
-            yield rs.data_i.mid.eq(mid)
+            yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            print ("send", mid, i, hex(op2))
+            print ("send", muxid, i, hex(op2))
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
@@ -86,7 +86,7 @@ class InputTest:
         yield rs.valid_i.eq(0)
         yield
 
-        print ("send ended", mid)
+        print ("send ended", muxid)
 
         ## wait random period of time before queueing another value
         #for i in range(randint(0, 3)):
@@ -98,14 +98,14 @@ class InputTest:
         #else:
         #    send = randint(0, send_range) != 0
 
-    def rcv(self, mid):
+    def rcv(self, muxid):
         while True:
             #stall_range = randint(0, 3)
             #for j in range(randint(1,10)):
             #    stall = randint(0, stall_range) != 0
             #    yield self.dut.n[0].ready_i.eq(stall)
             #    yield
-            n = self.dut.n[mid]
+            n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
             yield
             o_n_valid = yield n.valid_o
@@ -113,23 +113,23 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            out_mid = yield n.data_o.mid
+            out_muxid = yield n.data_o.muxid
             out_i = yield n.data_o.idx
             out_v = yield n.data_o.data
 
-            print ("recv", out_mid, out_i, hex(out_v))
+            print ("recv", out_muxid, out_i, hex(out_v))
 
             # see if this output has occurred already, delete it if it has
-            assert mid == out_mid, "out_mid %d not correct %d" % (out_mid, mid)
-            assert out_i in self.do[mid], "out_i %d not in array %s" % \
-                                          (out_i, repr(self.do[mid]))
-            assert self.do[mid][out_i] == out_v # pass-through data
-            del self.do[mid][out_i]
+            assert muxid == out_muxid, "out_muxid %d not correct %d" % (out_muxid, muxid)
+            assert out_i in self.do[muxid], "out_i %d not in array %s" % \
+                                          (out_i, repr(self.do[muxid]))
+            assert self.do[muxid][out_i] == out_v # pass-through data
+            del self.do[muxid][out_i]
 
             # check if there's any more outputs
-            if len(self.do[mid]) == 0:
+            if len(self.do[muxid]) == 0:
                 break
-        print ("recv ended", mid)
+        print ("recv ended", muxid)
 
 
 class TestPriorityMuxPipe(PriorityCombMuxInPipe):
@@ -147,26 +147,26 @@ class OutputTest:
         self.tlen = 100
         for i in range(self.tlen * dut.num_rows):
             if i < dut.num_rows:
-                mid = i
+                muxid = i
             else:
-                mid = randint(0, dut.num_rows-1)
-            data = randint(0, 255) + (mid<<8)
+                muxid = randint(0, dut.num_rows-1)
+            data = randint(0, 255) + (muxid<<8)
 
     def send(self):
         for i in range(self.tlen * dut.num_rows):
             op2 = self.di[i][0]
-            mid = self.di[i][1]
+            muxid = self.di[i][1]
             rs = dut.p
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
-            yield rs.data_i.mid.eq(mid)
+            yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            print ("send", mid, i, hex(op2))
+            print ("send", muxid, i, hex(op2))
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value

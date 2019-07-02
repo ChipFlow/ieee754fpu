@@ -16,7 +16,7 @@ class FPRoundData:
     def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
         self.ctx = FPBaseData(width, pspec)
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
         # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)

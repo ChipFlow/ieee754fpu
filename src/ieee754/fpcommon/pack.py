@@ -18,7 +18,7 @@ class FPPackData(Object):
         Object.__init__(self)
         self.z = Signal(width, reset_less=True)    # result
         self.ctx = FPBaseData(width, pspec)
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
 
 class FPPackMod(Elaboratable):
 

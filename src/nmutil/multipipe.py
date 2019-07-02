@@ -186,7 +186,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
             self.stage.setup(m, r_data)
 
         # multiplexer id taken from n_mux
-        mid = self.n_mux.m_id
+        muxid = self.n_mux.m_id
         print ("self.n_mux", self.n_mux)
         print ("self.n_mux.m_id", self.n_mux.m_id)
 
@@ -200,13 +200,13 @@ class CombMultiOutPipeline(MultiOutControlBase):
         # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
             m.d.comb += self.n[i].valid_o.eq(0)
-        data_valid = self.n[mid].valid_o
-        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[mid].ready_i)
+        data_valid = self.n[muxid].valid_o
+        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[muxid].ready_i)
         m.d.comb += data_valid.eq(p_valid_i | \
-                                    (~self.n[mid].ready_i & data_valid))
+                                    (~self.n[muxid].ready_i & data_valid))
         with m.If(pv):
             m.d.comb += eq(r_data, self.p.data_i)
-        m.d.comb += eq(self.n[mid].data_o, self.process(r_data))
+        m.d.comb += eq(self.n[muxid].data_o, self.process(r_data))
 
         return m
 
@@ -304,9 +304,9 @@ class CombMuxOutPipe(CombMultiOutPipeline):
         # HACK: stage is also the n-way multiplexer
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
 
-        # HACK: n-mux is also the stage... so set the muxid equal to input mid
-        print ("combmuxout", self.p.data_i.mid)
-        stage.m_id = self.p.data_i.mid
+        # HACK: n-mux is also the stage... so set the muxid equal to input muxid
+        print ("combmuxout", self.p.data_i.muxid)
+        stage.m_id = self.p.data_i.muxid
 
 
 

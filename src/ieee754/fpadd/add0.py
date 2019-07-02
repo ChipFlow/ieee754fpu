@@ -19,7 +19,7 @@ class FPAddStage0Data:
         self.oz = Signal(width, reset_less=True)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
         self.ctx = FPBaseData(width, pspec)
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),

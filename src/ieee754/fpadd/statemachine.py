@@ -33,14 +33,14 @@ class FPOpData:
     def __init__(self, width, id_wid):
         self.z = FPOpOut(width)
         self.z.data_o = Signal(width)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.muxid = Signal(id_wid, reset_less=True)
 
     def __iter__(self):
         yield self.z
-        yield self.mid
+        yield self.muxid
 
     def eq(self, i):
-        return [self.z.eq(i.z), self.mid.eq(i.mid)]
+        return [self.z.eq(i.z), self.muxid.eq(i.mid)]
 
     def ports(self):
         return list(self)

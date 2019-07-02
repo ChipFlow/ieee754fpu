@@ -14,7 +14,7 @@ class FPAddStage1Data:
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
         self.ctx = FPBaseData(width, pspec)
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
 
     def __iter__(self):
         yield from self.z

@@ -25,7 +25,7 @@ class FPSCData:
         self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
         self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
         self.ctx = FPBaseData(width, pspec) 
-        self.mid = self.ctx.mid
+        self.muxid = self.ctx.muxid
 
     def __iter__(self):
         yield from self.a

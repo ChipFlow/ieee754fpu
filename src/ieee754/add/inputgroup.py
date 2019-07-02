@@ -63,7 +63,7 @@ class InputGroup:
         self.num_rows = num_rows
         self.mmax = int(log(self.num_rows) / log(2))
         self.rs = []
-        self.mid = Signal(self.mmax, reset_less=True) # multiplex id
+        self.muxid = Signal(self.mmax, reset_less=True) # multiplex id
         for i in range(num_rows):
             self.rs.append(FPGetSyncOpsMod(width, num_ops))
         self.rs = Array(self.rs)
@@ -92,7 +92,7 @@ class InputGroup:
         # encoder active: ack relevant input, record MID, pass output
         with m.If(out_en):
             rs = self.rs[pe.o]
-            m.d.sync += self.mid.eq(pe.o)
+            m.d.sync += self.muxid.eq(pe.o)
             m.d.sync += rs.ack.eq(0)
             m.d.sync += self.out_op.stb.eq(0)
             for j in range(self.num_ops):
@@ -110,6 +110,6 @@ class InputGroup:
         for i in range(self.num_rows):
             inop = self.rs[i]
             res += inop.in_op + [inop.stb]
-        return self.out_op.ports() + res + [self.mid]
+        return self.out_op.ports() + res + [self.muxid]
 
 

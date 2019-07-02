@@ -43,8 +43,8 @@ def testbench(dut):
     # output strobe should be active, MID should be 0 until "ack" is set...
     out_stb = yield dut.out_op.stb
     assert out_stb == 1
-    out_mid = yield dut.mid
-    assert out_mid == 0
+    out_muxid = yield dut.muxid
+    assert out_muxid == 0
 
     # ... and output should not yet be passed through either
     op0 = yield dut.out_op.v[0]
@@ -72,8 +72,8 @@ def testbench(dut):
     op0 = yield dut.out_op.v[0]
     op1 = yield dut.out_op.v[1]
     assert op0 == 3 and op1 == 4, "op0 %d op1 %d" % (op0, op1)
-    out_mid = yield dut.mid
-    assert out_mid == 2
+    out_muxid = yield dut.muxid
+    assert out_muxid == 2
 
     # set row 0 and 3 input
     yield dut.rs[0].in_op[0].eq(9)
@@ -88,15 +88,15 @@ def testbench(dut):
     yield
     yield dut.rs[0].stb.eq(0) # clear row 1 strobe
     yield
-    out_mid = yield dut.mid
-    assert out_mid == 0, "out mid %d" % out_mid
+    out_muxid = yield dut.muxid
+    assert out_muxid == 0, "out muxid %d" % out_muxid
 
     yield
     yield dut.rs[3].stb.eq(0) # clear row 1 strobe
     yield dut.out_op.ack.eq(0) # clear ack on output
     yield
-    out_mid = yield dut.mid
-    assert out_mid == 3, "out mid %d" % out_mid
+    out_muxid = yield dut.muxid
+    assert out_muxid == 3, "out muxid %d" % out_muxid
 
 
 class InputTest:
@@ -105,17 +105,17 @@ class InputTest:
         self.di = {}
         self.do = {}
         self.tlen = 10
-        for mid in range(dut.num_rows):
-            self.di[mid] = {}
-            self.do[mid] = {}
+        for muxid in range(dut.num_rows):
+            self.di[muxid] = {}
+            self.do[muxid] = {}
             for i in range(self.tlen):
-                self.di[mid][i] = randint(0, 100)
-                self.do[mid][i] = self.di[mid][i]
+                self.di[muxid][i] = randint(0, 100)
+                self.do[muxid][i] = self.di[muxid][i]
 
-    def send(self, mid):
+    def send(self, muxid):
         for i in range(self.tlen):
-            op2 = self.di[mid][i]
-            rs = dut.rs[mid]
+            op2 = self.di[muxid][i]
+            rs = dut.rs[muxid]
             ack = yield rs.ack
             while not ack:
                 yield
@@ -146,14 +146,14 @@ class InputTest:
             while stb:
                 yield
                 stb = yield dut.out_op.stb
-            mid = yield dut.mid
+            muxid = yield dut.muxid
             out_i = yield dut.out_op.v[0]
             out_v = yield dut.out_op.v[1]
 
             # see if this output has occurred already, delete it if it has
-            assert out_i in self.do[mid]
-            assert self.do[mid][out_i] == out_v
-            del self.do[mid][out_i]
+            assert out_i in self.do[muxid]
+            assert self.do[muxid][out_i] == out_v
+            del self.do[muxid][out_i]
 
             # check if there's any more outputs
             zerolen = True

@@ -73,13 +73,13 @@ class FPNumBase2Ops:
     def __init__(self, width, id_wid, m_extra=True):
         self.a = FPNumBase(width, m_extra)
         self.b = FPNumBase(width, m_extra)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.muxid = Signal(id_wid, reset_less=True)
 
     def eq(self, i):
-        return [self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+        return [self.a.eq(i.a), self.b.eq(i.b), self.muxid.eq(i.muxid)]
 
     def ports(self):
-        return [self.a, self.b, self.mid]
+        return [self.a, self.b, self.muxid]
 
 
 class FPBaseData:
@@ -89,17 +89,17 @@ class FPBaseData:
         print (pspec)
         self.id_wid = pspec['id_wid']
         self.op_wid = pspec.get('op_wid', 0)
-        self.mid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
+        self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
         self.op = Signal(self.op_wid, reset_less=True)
 
     def eq(self, i):
-        ret = [self.mid.eq(i.mid)]
+        ret = [self.muxid.eq(i.muxid)]
         if self.op_wid:
             ret.append(self.op.eq(i.op))
         return ret
 
     def __iter__(self):
-        yield self.mid
+        yield self.muxid
         if self.op_wid:
             yield self.op
 
@@ -118,7 +118,7 @@ class FPADDBaseData:
             operand = Signal(width, name=name)
             setattr(self, name, operand)
             ops.append(operand)
-        self.mid = self.ctx.mid # make muxid available here: complicated
+        self.muxid = self.ctx.muxid # make muxid available here: complicated
         self.ops = ops
 
     def eq(self, i):

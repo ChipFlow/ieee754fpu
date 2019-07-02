@@ -11,7 +11,7 @@ from nmutil.singlepipe import SimpleHandshake, PassThroughHandshake, RecordObjec
 class PassInData(RecordObject):
     def __init__(self):
         RecordObject.__init__(self)
-        self.mid = Signal(2, reset_less=True)
+        self.muxid = Signal(2, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
 
@@ -51,30 +51,30 @@ class OutputTest:
         self.tlen = 10
         for i in range(self.tlen * dut.num_rows):
             if i < dut.num_rows:
-                mid = i
+                muxid = i
             else:
-                mid = randint(0, dut.num_rows-1)
-            data = randint(0, 255) + (mid<<8)
-            if mid not in self.do:
-                self.do[mid] = []
-            self.di.append((data, mid))
-            self.do[mid].append(data)
+                muxid = randint(0, dut.num_rows-1)
+            data = randint(0, 255) + (muxid<<8)
+            if muxid not in self.do:
+                self.do[muxid] = []
+            self.di.append((data, muxid))
+            self.do[muxid].append(data)
 
     def send(self):
         for i in range(self.tlen * self.dut.num_rows):
             op2 = self.di[i][0]
-            mid = self.di[i][1]
+            muxid = self.di[i][1]
             rs = self.dut.p
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
-            yield rs.data_i.mid.eq(mid)
+            yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            print ("send", mid, i, hex(op2))
+            print ("send", muxid, i, hex(op2))
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
@@ -83,14 +83,14 @@ class OutputTest:
 
         yield rs.valid_i.eq(0)
 
-    def rcv(self, mid):
+    def rcv(self, muxid):
         out_i = 0
         count = 0
         stall_range = randint(0, 3)
-        while out_i != len(self.do[mid]):
+        while out_i != len(self.do[muxid]):
             count += 1
             assert count != 2000, "timeout: too long"
-            n = self.dut.n[mid]
+            n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
             yield
             o_n_valid = yield n.valid_o
@@ -100,9 +100,9 @@ class OutputTest:
 
             out_v = yield n.data_o
 
-            print ("recv", mid, out_i, hex(out_v))
+            print ("recv", muxid, out_i, hex(out_v))
 
-            assert self.do[mid][out_i] == out_v # pass-through data
+            assert self.do[muxid][out_i] == out_v # pass-through data
 
             out_i += 1
 

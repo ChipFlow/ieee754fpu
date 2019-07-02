@@ -10,15 +10,15 @@ from nmutil.multipipe import (CombMultiInPipeline, PriorityCombMuxInPipe)
 
 class PassData:
     def __init__(self):
-        self.mid = Signal(2, reset_less=True)
+        self.muxid = Signal(2, reset_less=True)
         self.idx = Signal(6, reset_less=True)
         self.data = Signal(16, reset_less=True)
 
     def eq(self, i):
-        return [self.mid.eq(i.mid), self.idx.eq(i.idx), self.data.eq(i.data)]
+        return [self.muxid.eq(i.muxid), self.idx.eq(i.idx), self.data.eq(i.data)]
 
     def ports(self):
-        return [self.mid, self.idx, self.data]
+        return [self.muxid, self.idx, self.data]
 
 
 def tbench(dut):
@@ -58,8 +58,8 @@ def tbench(dut):
     # output strobe should be active, MID should be 0 until "ack" is set...
     out_stb = yield dut.out_op.stb
     assert out_stb == 1
-    out_mid = yield dut.mid
-    assert out_mid == 0
+    out_muxid = yield dut.muxid
+    assert out_muxid == 0
 
     # ... and output should not yet be passed through either
     op0 = yield dut.out_op.v[0]
@@ -87,8 +87,8 @@ def tbench(dut):
     op0 = yield dut.out_op.v[0]
     op1 = yield dut.out_op.v[1]
     assert op0 == 3 and op1 == 4, "op0 %d op1 %d" % (op0, op1)
-    out_mid = yield dut.mid
-    assert out_mid == 2
+    out_muxid = yield dut.muxid
+    assert out_muxid == 2
 
     # set row 0 and 3 input
     yield dut.rs[0].in_op[0].eq(9)
@@ -103,15 +103,15 @@ def tbench(dut):
     yield
     yield dut.rs[0].stb.eq(0) # clear row 1 strobe
     yield
-    out_mid = yield dut.mid
-    assert out_mid == 0, "out mid %d" % out_mid
+    out_muxid = yield dut.muxid
+    assert out_muxid == 0, "out muxid %d" % out_muxid
 
     yield
     yield dut.rs[3].stb.eq(0) # clear row 1 strobe
     yield dut.out_op.ack.eq(0) # clear ack on output
     yield
-    out_mid = yield dut.mid
-    assert out_mid == 3, "out mid %d" % out_mid
+    out_muxid = yield dut.muxid
+    assert out_muxid == 3, "out muxid %d" % out_muxid
 
 
 class InputTest:
@@ -120,28 +120,28 @@ class InputTest:
         self.di = {}
         self.do = {}
         self.tlen = 10
-        for mid in range(dut.num_rows):
-            self.di[mid] = {}
-            self.do[mid] = {}
+        for muxid in range(dut.num_rows):
+            self.di[muxid] = {}
+            self.do[muxid] = {}
             for i in range(self.tlen):
-                self.di[mid][i] = randint(0, 100) + (mid<<8)
-                self.do[mid][i] = self.di[mid][i]
+                self.di[muxid][i] = randint(0, 100) + (muxid<<8)
+                self.do[muxid][i] = self.di[muxid][i]
 
-    def send(self, mid):
+    def send(self, muxid):
         for i in range(self.tlen):
-            op2 = self.di[mid][i]
-            rs = self.dut.p[mid]
+            op2 = self.di[muxid][i]
+            rs = self.dut.p[muxid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
-            yield rs.data_i.mid.eq(mid)
+            yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            print ("send", mid, i, hex(op2))
+            print ("send", muxid, i, hex(op2))
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
@@ -174,17 +174,17 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            mid = yield n.data_o.mid
+            muxid = yield n.data_o.muxid
             out_i = yield n.data_o.idx
             out_v = yield n.data_o.data
 
-            print ("recv", mid, out_i, hex(out_v))
+            print ("recv", muxid, out_i, hex(out_v))
 
             # see if this output has occurred already, delete it if it has
-            assert out_i in self.do[mid], "out_i %d not in array %s" % \
-                                          (out_i, repr(self.do[mid]))
-            assert self.do[mid][out_i] == out_v # pass-through data
-            del self.do[mid][out_i]
+            assert out_i in self.do[muxid], "out_i %d not in array %s" % \
+                                          (out_i, repr(self.do[muxid]))
+            assert self.do[muxid][out_i] == out_v # pass-through data
+            del self.do[muxid][out_i]
 
             # check if there's any more outputs
             zerolen = True

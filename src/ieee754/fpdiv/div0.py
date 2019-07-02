@@ -21,7 +21,7 @@ class FPDivStage0Data:
         self.of = Overflow()
 
         self.ctx = FPBaseData(width, pspec) # context: muxid, operator etc.
-        self.mid = self.ctx.mid             # annoying. complicated.
+        self.muxid = self.ctx.muxid             # annoying. complicated.
 
         # TODO: here is where Q and R would be put, and passed
         # down to Stage1 processing.

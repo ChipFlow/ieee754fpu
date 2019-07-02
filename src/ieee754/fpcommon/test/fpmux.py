@@ -19,9 +19,9 @@ class InputTest:
         self.do = {}
         self.tlen = 10
         self.width = width
-        for mid in range(dut.num_rows):
-            self.di[mid] = {}
-            self.do[mid] = []
+        for muxid in range(dut.num_rows):
+            self.di[muxid] = {}
+            self.do[muxid] = []
             for i in range(self.tlen):
                 op1 = randint(0, (1<<self.width)-1)
                 op2 = randint(0, (1<<self.width)-1)
@@ -36,17 +36,17 @@ class InputTest:
                 #op1 = 0x40900000
                 #op2 = 0x40200000
                 res = self.fpop(self.fpkls(op1), self.fpkls(op2))
-                self.di[mid][i] = (op1, op2)
-                self.do[mid].append(res.bits)
+                self.di[muxid][i] = (op1, op2)
+                self.do[muxid].append(res.bits)
 
-    def send(self, mid):
+    def send(self, muxid):
         for i in range(self.tlen):
-            op1, op2 = self.di[mid][i]
-            rs = self.dut.p[mid]
+            op1, op2 = self.di[muxid][i]
+            rs = self.dut.p[muxid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.a.eq(op1)
             yield rs.data_i.b.eq(op2)
-            yield rs.data_i.mid.eq(mid)
+            yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
@@ -56,7 +56,7 @@ class InputTest:
             fop1 = self.fpkls(op1)
             fop2 = self.fpkls(op2)
             res = self.fpop(fop1, fop2)
-            print ("send", mid, i, hex(op1), hex(op2), hex(res.bits),
+            print ("send", muxid, i, hex(op1), hex(op2), hex(res.bits),
                            fop1, fop2, res)
 
             yield rs.valid_i.eq(0)
@@ -67,7 +67,7 @@ class InputTest:
         yield rs.valid_i.eq(0)
         yield
 
-        print ("send ended", mid)
+        print ("send ended", muxid)
 
         ## wait random period of time before queueing another value
         #for i in range(randint(0, 3)):
@@ -79,14 +79,14 @@ class InputTest:
         #else:
         #    send = randint(0, send_range) != 0
 
-    def rcv(self, mid):
+    def rcv(self, muxid):
         while True:
             #stall_range = randint(0, 3)
             #for j in range(randint(1,10)):
             #    stall = randint(0, stall_range) != 0
             #    yield self.dut.n[0].ready_i.eq(stall)
             #    yield
-            n = self.dut.n[mid]
+            n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
             yield
             o_n_valid = yield n.valid_o
@@ -94,23 +94,24 @@ class InputTest:
             if not o_n_valid or not i_n_ready:
                 continue
 
-            out_mid = yield n.data_o.mid
+            out_muxid = yield n.data_o.muxid
             out_z = yield n.data_o.z
 
             out_i = 0
 
-            print ("recv", out_mid, hex(out_z), "expected",
-                        hex(self.do[mid][out_i] ))
+            print ("recv", out_muxid, hex(out_z), "expected",
+                        hex(self.do[muxid][out_i] ))
 
             # see if this output has occurred already, delete it if it has
-            assert mid == out_mid, "out_mid %d not correct %d" % (out_mid, mid)
-            assert self.do[mid][out_i] == out_z
-            del self.do[mid][out_i]
+            assert muxid == out_muxid, "out_muxid %d not correct %d" % \
+                                       (out_muxid, muxid)
+            assert self.do[muxid][out_i] == out_z
+            del self.do[muxid][out_i]
 
             # check if there's any more outputs
-            if len(self.do[mid]) == 0:
+            if len(self.do[muxid]) == 0:
                 break
-        print ("recv ended", mid)
+        print ("recv ended", muxid)
 
 
 def runfp(dut, width, name, fpkls, fpop):
