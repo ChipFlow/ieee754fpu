@@ -89,6 +89,9 @@ class FPDIVMuxInOut(ReservationStations):
         * fan-out on outputs (an array of FPPackData: z,mid)
 
         Fan-in and Fan-out are combinatorial.
+
+        :op_wid: - set this to the width of an operator which can
+                   then be used to change the behaviour of the pipeline.
     """
     def __init__(self, width, num_rows, op_wid=0):
         self.width = width
