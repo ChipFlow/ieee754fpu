@@ -7,7 +7,7 @@ from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 from .postnormalise import FPNorm1Data
 
 
@@ -15,7 +15,7 @@ class FPRoundData:
 
     def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         self.muxid = self.ctx.muxid
         # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)

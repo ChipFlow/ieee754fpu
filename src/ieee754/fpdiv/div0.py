@@ -9,7 +9,7 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 
 class FPDivStage0Data:
@@ -20,7 +20,7 @@ class FPDivStage0Data:
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
 
-        self.ctx = FPBaseData(width, pspec) # context: muxid, operator etc.
+        self.ctx = FPPipeContext(width, pspec) # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
 
         # TODO: here is where Q and R would be put, and passed

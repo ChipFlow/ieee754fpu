@@ -8,7 +8,7 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 
 class FPMulStage0Data:
@@ -19,7 +19,7 @@ class FPMulStage0Data:
         self.oz = Signal(width, reset_less=True)
         mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         self.product = Signal(mw, reset_less=True)
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         self.muxid = self.ctx.muxid
 
     def eq(self, i):

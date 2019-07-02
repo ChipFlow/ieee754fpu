@@ -10,7 +10,7 @@ from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 
 class FPNumIn2Ops:
@@ -21,7 +21,7 @@ class FPNumIn2Ops:
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         self.muxid = self.ctx.muxid
 
     def eq(self, i):

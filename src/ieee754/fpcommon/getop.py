@@ -82,7 +82,7 @@ class FPNumBase2Ops:
         return [self.a, self.b, self.muxid]
 
 
-class FPBaseData:
+class FPPipeContext:
 
     def __init__(self, width, pspec):
         self.width = width
@@ -111,7 +111,7 @@ class FPADDBaseData:
 
     def __init__(self, width, pspec, n_ops=2):
         self.width = width
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         ops = []
         for i in range(n_ops):
             name = chr(ord("a")+i)

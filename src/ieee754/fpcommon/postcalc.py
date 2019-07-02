@@ -4,7 +4,7 @@
 
 from nmigen import Signal
 from ieee754.fpcommon.fpbase import Overflow, FPNumBaseRecord
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 class FPAddStage1Data:
 
@@ -13,7 +13,7 @@ class FPAddStage1Data:
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         self.muxid = self.ctx.muxid
 
     def __iter__(self):

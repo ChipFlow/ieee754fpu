@@ -9,7 +9,7 @@ from ieee754.fpcommon.fpbase import FPNumOut, FPNumBaseRecord, FPNumBase
 from ieee754.fpcommon.fpbase import FPState
 from .roundz import FPRoundData
 from nmutil.singlepipe import Object
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 
 class FPPackData(Object):
@@ -17,7 +17,7 @@ class FPPackData(Object):
     def __init__(self, width, pspec):
         Object.__init__(self)
         self.z = Signal(width, reset_less=True)    # result
-        self.ctx = FPBaseData(width, pspec)
+        self.ctx = FPPipeContext(width, pspec)
         self.muxid = self.ctx.muxid
 
 class FPPackMod(Elaboratable):

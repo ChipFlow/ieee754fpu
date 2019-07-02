@@ -8,7 +8,7 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState, FPNumBase
-from ieee754.fpcommon.getop import FPBaseData
+from ieee754.fpcommon.getop import FPPipeContext
 
 
 class FPSCData:
@@ -24,7 +24,7 @@ class FPSCData:
         self.z = FPNumBaseRecord(width, False)     # denormed result 
         self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
         self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
-        self.ctx = FPBaseData(width, pspec) 
+        self.ctx = FPPipeContext(width, pspec) 
         self.muxid = self.ctx.muxid
 
     def __iter__(self):
