@@ -10,18 +10,17 @@ from .roundz import FPRoundData
 
 class FPCorrectionsMod(Elaboratable):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid # operand width
+        self.pspec = pspec
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPRoundData(self.width, self.id_wid, self.op_wid)
+        return FPRoundData(self.width, self.pspec)
 
     def ospec(self):
-        return FPRoundData(self.width, self.id_wid, self.op_wid)
+        return FPRoundData(self.width, self.pspec)
 
     def process(self, i):
         return self.out_z
@@ -62,7 +61,7 @@ class FPCorrections(FPState):
         self.mod.setup(m, in_z)
 
         m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)
+        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)
 
     def action(self, m):
         m.next = "pack"

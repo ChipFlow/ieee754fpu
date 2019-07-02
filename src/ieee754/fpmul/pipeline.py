@@ -18,11 +18,11 @@ from .mulstages import FPMulStages
 
 
 class FPMULBasePipe(ControlBase):
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPMulSpecialCasesDeNorm(width, id_wid)
-        self.pipe2 = FPMulStages(width, id_wid)
-        self.pipe3 = FPNormToPack(width, id_wid)
+        self.pipe1 = FPMulSpecialCasesDeNorm(width, pspec)
+        self.pipe2 = FPMulStages(width, pspec)
+        self.pipe3 = FPNormToPack(width, pspec)
 
         self._eqs = self.connect([self.pipe1, self.pipe2, self.pipe3])
 
@@ -46,13 +46,16 @@ class FPMULMuxInOut(ReservationStations):
     """
     def __init__(self, width, num_rows, op_wid=0):
         self.width = width
+        self.pspec = {}
         self.id_wid = num_bits(width)
         self.op_wid = op_wid
-        self.alu = FPMULBasePipe(width, self.id_wid)
+        self.pspec['id_wid'] = self.id_wid
+        self.pspec['op_wid'] = self.op_wid
+        self.alu = FPMULBasePipe(width, self.pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
+        return FPADDBaseData(self.width, self.pspec)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.id_wid, self.op_wid)
+        return FPPackData(self.width, self.pspec)

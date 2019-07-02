@@ -187,6 +187,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
 
         # multiplexer id taken from n_mux
         mid = self.n_mux.m_id
+        print ("self.n_mux", self.n_mux)
+        print ("self.n_mux.m_id", self.n_mux.m_id)
 
         # temporaries
         p_valid_i = Signal(reset_less=True)
@@ -303,6 +305,7 @@ class CombMuxOutPipe(CombMultiOutPipeline):
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len, n_mux=stage)
 
         # HACK: n-mux is also the stage... so set the muxid equal to input mid
+        print ("combmuxout", self.p.data_i.mid)
         stage.m_id = self.p.data_i.mid
 
 

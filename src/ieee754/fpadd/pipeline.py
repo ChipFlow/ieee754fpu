@@ -50,11 +50,12 @@ class FPADDMuxInOut(ReservationStations):
         self.width = width
         self.id_wid = num_bits(width)
         self.op_wid = op_wid
-        self.alu = FPADDBasePipe(width, self.id_wid)
+        self.pspec = {'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.alu = FPADDBasePipe(width, self.pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
+        return FPADDBaseData(self.width, self.pspec)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.id_wid, self.op_wid)
+        return FPPackData(self.width, self.pspec)

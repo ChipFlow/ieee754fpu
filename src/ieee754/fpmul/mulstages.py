@@ -14,27 +14,26 @@ from .mul1 import FPMulStage1Mod
 
 class FPMulStages(FPState, SimpleHandshake):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "align")
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, False, self.op_wid)
+        return FPSCData(self.width, self.pspec, False)
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
+        return FPAddStage1Data(self.width, self.pspec)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
 
         # chain MulStage0 and MulStage1
-        m0mod = FPMulStage0Mod(self.width, self.id_wid, self.op_wid)
-        m1mod = FPMulStage1Mod(self.width, self.id_wid, self.op_wid)
+        m0mod = FPMulStage0Mod(self.width, self.pspec)
+        m1mod = FPMulStage1Mod(self.width, self.pspec)
 
         chain = StageChain([m0mod, m1mod])
         chain.setup(m, i)

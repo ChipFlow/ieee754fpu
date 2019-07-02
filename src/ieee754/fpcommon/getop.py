@@ -84,43 +84,57 @@ class FPNumBase2Ops:
 
 class FPBaseData:
 
-    def __init__(self, n_ops, width, id_wid, op_wid):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        print (pspec)
+        self.id_wid = pspec['id_wid']
+        self.op_wid = pspec.get('op_wid', 0)
+        self.mid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
+        self.op = Signal(self.op_wid, reset_less=True)
+
+    def eq(self, i):
+        ret = [self.mid.eq(i.mid)]
+        if self.op_wid:
+            ret.append(self.op.eq(i.op))
+        return ret
+
+    def __iter__(self):
+        yield self.mid
+        if self.op_wid:
+            yield self.op
+
+    def ports(self):
+        return list(self)
+
+
+class FPADDBaseData:
+
+    def __init__(self, width, pspec, n_ops=2):
+        self.width = width
+        self.ctx = FPBaseData(width, pspec)
         ops = []
         for i in range(n_ops):
             name = chr(ord("a")+i)
             operand = Signal(width, name=name)
             setattr(self, name, operand)
             ops.append(operand)
+        self.mid = self.ctx.mid # make muxid available here: complicated
         self.ops = ops
-        self.mid = Signal(id_wid, reset_less=True)   # RS multiplex ID
-        self.op = Signal(op_wid, reset_less=True)
 
     def eq(self, i):
         ret = []
         for op1, op2 in zip(self.ops, i.ops):
             ret.append(op1.eq(op2))
-        ret.append(self.mid.eq(i.mid))
-        if self.op_wid:
-            ret.append(self.op.eq(i.op))
+        ret.append(self.ctx.eq(i.ctx))
         return ret
 
     def __iter__(self):
         if self.ops:
             yield from self.ops
-        yield self.mid
-        if self.id_wid:
-            yield self.op
+        yield from self.ctx
 
     def ports(self):
         return list(self)
-
-class FPADDBaseData(FPBaseData):
-
-    def __init__(self, width, id_wid, op_wid):
-        FPBaseData.__init__(self, 2, width, id_wid, op_wid)
 
 
 class FPGet2OpMod(PrevControl):

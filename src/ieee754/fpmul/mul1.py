@@ -12,18 +12,17 @@ class FPMulStage1Mod(FPState, Elaboratable):
     """ Second stage of mul: preparation for normalisation.
     """
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPMulStage0Data(self.width, self.id_wid, self.op_wid)
+        return FPMulStage0Data(self.width, self.pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
+        return FPAddStage1Data(self.width, self.pspec)
 
     def process(self, i):
         return self.o
@@ -51,18 +50,16 @@ class FPMulStage1Mod(FPState, Elaboratable):
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.mid.eq(self.i.mid)
-        if self.o.op_wid:
-            m.d.comb += self.o.op.eq(self.i.op)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
 
 class FPMulStage1(FPState):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "multiply_1")
-        self.mod = FPMulStage1Mod(width)
+        self.mod = FPMulStage1Mod(width, pspec)
         self.out_z = FPNumBaseRecord(width, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()

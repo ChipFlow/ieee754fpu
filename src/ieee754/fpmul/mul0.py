@@ -13,33 +13,33 @@ from ieee754.fpcommon.getop import FPBaseData
 
 class FPMulStage0Data:
 
-    def __init__(self, width, id_wid, op_wid=None):
-        FPBaseData.__init__(self, 0, width, id_wid, op_wid)
+    def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         self.product = Signal(mw, reset_less=True)
+        self.ctx = FPBaseData(width, pspec)
+        self.mid = self.ctx.mid
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.product.eq(i.product)] + FPBaseData.eq(self, i)
+                self.product.eq(i.product), self.ctx.eq(i.ctx)]
 
 
 class FPMulStage0Mod(Elaboratable):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, False, self.op_wid)
+        return FPSCData(self.width, self.pspec, False)
 
     def ospec(self):
-        return FPMulStage0Data(self.width, self.id_wid, self.op_wid)
+        return FPMulStage0Data(self.width, self.pspec)
 
     def process(self, i):
         return self.o
@@ -72,9 +72,7 @@ class FPMulStage0Mod(Elaboratable):
 
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
-        if self.o.op_wid:
-            m.d.comb += self.o.op.eq(self.i.op)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         return m
 
 

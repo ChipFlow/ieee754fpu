@@ -7,44 +7,39 @@ from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.getop import FPBaseData
 from .postnormalise import FPNorm1Data
 
 
 class FPRoundData:
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
-        self.mid = Signal(id_wid, reset_less=True) # multiplex ID
+        self.ctx = FPBaseData(width, pspec)
+        self.mid = self.ctx.mid
         # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.op_wid = op_wid
-        if op_wid:
-            self.op = Signal(op_wid, reset_less=True)
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.mid.eq(i.mid)]
-        if self.op_wid:
-            ret.append(self.op.eq(i.op))
+                self.ctx.eq(i.ctx)]
         return ret
-
 
 
 class FPRoundMod(Elaboratable):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNorm1Data(self.width, self.id_wid, self.op_wid)
+        return FPNorm1Data(self.width, self.pspec)
 
     def ospec(self):
-        return FPRoundData(self.width, self.id_wid, self.op_wid)
+        return FPRoundData(self.width, self.pspec)
 
     def process(self, i):
         return self.out_z
@@ -85,7 +80,7 @@ class FPRound(FPState):
 
         self.idsync(m)
         m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)
+        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)
 
     def action(self, m):
         m.next = "corrections"

@@ -10,21 +10,23 @@ from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPNumIn2Ops:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.a = FPNumBaseRecord(width)
         self.b = FPNumBaseRecord(width)
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.ctx = FPBaseData(width, pspec)
+        self.mid = self.ctx.mid
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
+                self.a.eq(i.a), self.b.eq(i.b), self.ctx.eq(i.ctx)]
 
 
 
@@ -72,9 +74,9 @@ class FPAddAlignMultiMod(FPState):
 
 class FPAddAlignMulti(FPState):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "align")
-        self.mod = FPAddAlignMultiMod(width)
+        self.mod = FPAddAlignMultiMod(width, pspec)
         self.out_a = FPNumBaseRecord(width)
         self.out_b = FPNumBaseRecord(width)
         self.exp_eq = Signal(reset_less=True)
@@ -96,17 +98,17 @@ class FPAddAlignMulti(FPState):
 
 class FPAddAlignSingleMod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.pspec, True)
 
     def ospec(self):
-        return FPNumIn2Ops(self.width, self.id_wid)
+        return FPNumIn2Ops(self.width, self.pspec)
 
     def process(self, i):
         return self.o
@@ -181,7 +183,7 @@ class FPAddAlignSingleMod(Elaboratable):
                              self.o.a.s.eq(self.i.a.s), # whoops forgot sign
                             ]
 
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
@@ -191,9 +193,9 @@ class FPAddAlignSingleMod(Elaboratable):
 
 class FPAddAlignSingle(FPState):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "align")
-        self.mod = FPAddAlignSingleMod(width, id_wid)
+        self.mod = FPAddAlignSingleMod(width, pspec)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 

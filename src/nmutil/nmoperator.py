@@ -94,8 +94,8 @@ class Visitor2:
 
     def arrayproxy_iter2(self, ao, ai):
         for p in ai.ports():
+            print ("arrayproxy - p", p, p.name, ao)
             op = getattr(ao, p.name)
-            print ("arrayproxy - p", p, p.name)
             yield from self.iterator2(op, p)
 
 

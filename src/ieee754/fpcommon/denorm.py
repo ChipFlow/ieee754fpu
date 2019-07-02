@@ -8,11 +8,12 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState, FPNumBase
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPSCData:
 
-    def __init__(self, width, id_wid, m_extra=True, op_wid=None):
+    def __init__(self, width, pspec, m_extra):
 
         # NOTE: difference between z and oz is that oz is created by
         # special-cases module(s) and will propagate, along with its
@@ -23,11 +24,8 @@ class FPSCData:
         self.z = FPNumBaseRecord(width, False)     # denormed result 
         self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
         self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
-        self.mid = Signal(id_wid, reset_less=True) # multiplexer ID
-        self.op_wid = op_wid
-        if op_wid:
-            self.op = Signal(op_wid, reset_less=True) # operand
-
+        self.ctx = FPBaseData(width, pspec) 
+        self.mid = self.ctx.mid
 
     def __iter__(self):
         yield from self.a
@@ -35,33 +33,28 @@ class FPSCData:
         yield from self.z
         yield self.oz
         yield self.out_do_z
-        yield self.mid
-        if op_wid:
-            yield self.op
+        yield from self.ctx
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.a.eq(i.a), self.b.eq(i.b), self.mid.eq(i.mid)]
-        if self.op_wid:
-            ret.append(self.op.eq(i.op))
+                self.a.eq(i.a), self.b.eq(i.b), self.ctx.eq(i.ctx)]
         return ret
 
 
 class FPAddDeNormMod(FPState, Elaboratable):
 
-    def __init__(self, width, id_wid, m_extra=True, op_wid=None):
+    def __init__(self, width, pspec, m_extra):
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.m_extra = m_extra
-        self.op_wid = op_wid
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, self.m_extra, self.op_wid)
+        return FPSCData(self.width, self.pspec, self.m_extra)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid, self.m_extra, self.op_wid)
+        return FPSCData(self.width, self.pspec, self.m_extra)
 
     def process(self, i):
         return self.o
@@ -94,7 +87,7 @@ class FPAddDeNormMod(FPState, Elaboratable):
             with m.Else():
                 m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
 
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)

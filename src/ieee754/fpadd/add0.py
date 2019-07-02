@@ -8,35 +8,37 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPAddStage0Data:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
+        self.ctx = FPBaseData(width, pspec)
+        self.mid = self.ctx.mid
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.tot.eq(i.tot), self.mid.eq(i.mid)]
+                self.tot.eq(i.tot), self.ctx.eq(i.ctx)]
 
 
 class FPAddStage0Mod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid)
+        return FPSCData(self.width, self.pspec, True)
 
     def ospec(self):
-        return FPAddStage0Data(self.width, self.id_wid)
+        return FPAddStage0Data(self.width, self.pspec)
 
     def process(self, i):
         return self.o
@@ -86,7 +88,7 @@ class FPAddStage0Mod(Elaboratable):
 
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         return m
 
 
@@ -96,7 +98,7 @@ class FPAddStage0(FPState):
         give greatest accuracy.
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "add_0")
         self.mod = FPAddStage0Mod(width)
         self.o = self.mod.ospec()

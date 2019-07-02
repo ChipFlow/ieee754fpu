@@ -10,43 +10,39 @@ from math import log
 from ieee754.fpcommon.fpbase import Overflow, FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.getop import FPBaseData
 from .postcalc import FPAddStage1Data
 
 
 class FPNorm1Data:
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.mid = Signal(id_wid, reset_less=True)
-        self.op_wid = op_wid
-        if op_wid:
-            self.op = Signal(op_wid, reset_less=True) # operand
+        self.ctx = FPBaseData(width, pspec)
+        self.mid = self.ctx.mid
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.roundz.eq(i.roundz), self.mid.eq(i.mid)]
-        if self.op_wid:
-            ret.append(self.op.eq(i.op))
+                self.roundz.eq(i.roundz), self.ctx.eq(i.ctx)]
         return ret
 
 
 class FPNorm1ModSingle(Elaboratable):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
+        return FPAddStage1Data(self.width, self.pspec)
 
     def ospec(self):
-        return FPNorm1Data(self.width, self.id_wid, self.op_wid)
+        return FPNorm1Data(self.width, self.pspec)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -135,7 +131,7 @@ class FPNorm1ModSingle(Elaboratable):
                     self.o.z.e.eq(insel_z.e + ediff_n126),
                 ]
 
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
 

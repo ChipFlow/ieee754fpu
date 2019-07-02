@@ -16,28 +16,27 @@ from .pack import FPPackData, FPPackMod
 
 class FPNormToPack(FPState, SimpleHandshake):
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "normalise_1")
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.width = width
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
 
     def ispec(self):
-        return FPAddStage1Data(self.width, self.id_wid, self.op_wid)
+        return FPAddStage1Data(self.width, self.pspec)
 
     def ospec(self):
-        return FPPackData(self.width, self.id_wid, self.op_wid) # FPPackMod
+        return FPPackData(self.width, self.pspec) # FPPackMod
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
 
         # Normalisation, Rounding Corrections, Pack - in a chain
-        nmod = FPNorm1ModSingle(self.width, self.id_wid)
-        rmod = FPRoundMod(self.width, self.id_wid)
-        cmod = FPCorrectionsMod(self.width, self.id_wid)
-        pmod = FPPackMod(self.width, self.id_wid)
+        nmod = FPNorm1ModSingle(self.width, self.pspec)
+        rmod = FPRoundMod(self.width, self.pspec)
+        cmod = FPCorrectionsMod(self.width, self.pspec)
+        pmod = FPPackMod(self.width, self.pspec)
         stages = [nmod, rmod, cmod, pmod]
         chain = StageChain(stages)
         chain.setup(m, i)

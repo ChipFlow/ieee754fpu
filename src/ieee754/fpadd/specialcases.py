@@ -20,18 +20,17 @@ class FPAddSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
+        return FPADDBaseData(self.width, self.pspec)
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid, True, self.op_wid)
+        return FPSCData(self.width, self.pspec, True)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -145,9 +144,7 @@ class FPAddSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.out_do_z.eq(0)
 
         m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.mid.eq(self.i.mid)
-        if self.o.op_wid:
-            m.d.comb += self.o.op.eq(self.i.op)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
@@ -169,7 +166,7 @@ class FPAddSpecialCases(FPState):
         """
         self.mod.setup(m, i, self.out_do_z)
         m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
-        m.d.sync += self.out_z.mid.eq(self.mod.o.mid)  # (and mid)
+        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and mid)
 
     def action(self, m):
         self.idsync(m)
@@ -185,25 +182,24 @@ class FPAddSpecialCasesDeNorm(FPState, SimpleHandshake):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, id_wid, op_wid=None):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "special_cases")
         self.width = width
-        self.id_wid = id_wid
-        self.op_wid = op_wid
+        self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid) # SC ispec
+        return FPADDBaseData(self.width, self.pspec) # SC ispec
 
     def ospec(self):
-        return FPSCData(self.width, self.id_wid, True, self.op_wid) # DeNorm
+        return FPSCData(self.width, self.pspec, True) # DeNorm
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        smod = FPAddSpecialCasesMod(self.width, self.id_wid)
-        dmod = FPAddDeNormMod(self.width, self.id_wid)
+        smod = FPAddSpecialCasesMod(self.width, self.pspec)
+        dmod = FPAddDeNormMod(self.width, self.pspec, True)
 
         chain = StageChain([smod, dmod])
         chain.setup(m, i)
