@@ -9,15 +9,19 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.getop import FPBaseData
 
 
 class FPDivStage0Data:
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
+
+        self.ctx = FPBaseData(width, pspec) # context: muxid, operator etc.
+        self.mid = self.ctx.mid             # annoying. complicated.
 
         # TODO: here is where Q and R would be put, and passed
         # down to Stage1 processing.
@@ -25,12 +29,10 @@ class FPDivStage0Data:
         mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
         self.product = Signal(mw, reset_less=True)
 
-        self.mid = Signal(id_wid, reset_less=True)
-
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.of.eq(i.of),
-                self.product.eq(i.product), self.mid.eq(i.mid)]
+                self.product.eq(i.product), self.ctx.eq(i.ctx)]
 
 
 class FPDivStage0Mod(Elaboratable):
@@ -86,7 +88,7 @@ class FPDivStage0Mod(Elaboratable):
 
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         return m
 
 

@@ -22,10 +22,10 @@ from .div0 import FPDivStage0Data
 
 class FPDivStages(FPState, SimpleHandshake):
 
-    def __init__(self, width, id_wid, n_stages, begin, end):
+    def __init__(self, width, pspec, n_stages, begin, end):
         FPState.__init__(self, "align")
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         self.begin = begin # "begin" mode
         self.end = end # "end" mode
@@ -34,13 +34,13 @@ class FPDivStages(FPState, SimpleHandshake):
 
     def ispec(self):
         if self.begin:
-            return FPSCData(self.width, self.id_wid, False) # from denorm
-        return FPDivStage0Data(self.width, self.id_wid) # DIV ispec (loop)
+            return FPSCData(self.width, self.pspec, False) # from denorm
+        return FPDivStage0Data(self.width, self.pspec) # DIV ispec (loop)
 
     def ospec(self):
         if self.end: # TODO
-            return FPAddStage1Data(self.width, self.id_wid) # to post-norm
-        return FPDivStage0Data(self.width, self.id_wid) # DIV ospec (loop)
+            return FPAddStage1Data(self.width, self.pspec) # to post-norm
+        return FPDivStage0Data(self.width, self.pspec) # DIV ospec (loop)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -59,13 +59,13 @@ class FPDivStages(FPState, SimpleHandshake):
         divstages = []
 
         if self.begin: # XXX check this
-            divstages.append(FPDivStage0Mod(self.width, self.id_wid))
+            divstages.append(FPDivStage0Mod(self.width, self.pspec))
 
         for count in range(self.n_stages): # number of combinatorial stages
-            divstages.append(FPDivStage1Mod(self.width, self.id_wid))
+            divstages.append(FPDivStage1Mod(self.width, self.pspec))
 
         if self.end: # XXX check this
-            divstages.append(FPDivStage2Mod(self.width, self.id_wid))
+            divstages.append(FPDivStage2Mod(self.width, self.pspec))
 
         chain = StageChain(divstages)
         chain.setup(m, i)

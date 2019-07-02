@@ -14,17 +14,17 @@ from .div0 import FPDivStage0Data
 
 class FPDivStage1Mod(Elaboratable):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPDivStage0Data(self.width, self.id_wid) # Q/Rem (etc) in...
+        return FPDivStage0Data(self.width, self.pspec) # Q/Rem (etc) in...
 
     def ospec(self):
-        return FPDivStage0Data(self.width, self.id_wid) # ... Q/Rem (etc) out
+        return FPDivStage0Data(self.width, self.pspec) # ... Q/Rem (etc) out
 
     def process(self, i):
         return self.o
@@ -64,6 +64,6 @@ class FPDivStage1Mod(Elaboratable):
 
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         return m
 

@@ -54,20 +54,20 @@ from .divstages import FPDivStages
 
 
 class FPDIVBasePipe(ControlBase):
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         ControlBase.__init__(self)
-        self.pipestart = FPDIVSpecialCasesDeNorm(width, id_wid)
+        self.pipestart = FPDIVSpecialCasesDeNorm(width, pspec)
         pipechain = []
         n_stages = 6 # TODO
         n_combinatorial_stages = 2 # TODO
         for i in range(n_stages):
             begin = i == 0 # needs to convert input from pipestart ospec
             end = i == n_stages - 1 # needs to convert output to pipeend ispec
-            pipechain.append(FPDivStages(width, id_wid,
+            pipechain.append(FPDivStages(width, pspec,
                                          n_combinatorial_stages,
                                          begin, end))
         self.pipechain = pipechain
-        self.pipeend = FPNormToPack(width, id_wid)
+        self.pipeend = FPNormToPack(width, pspec)
 
         self._eqs = self.connect([self.pipestart] + pipechain + [self.pipeend])
 
@@ -90,14 +90,15 @@ class FPDIVMuxInOut(ReservationStations):
 
         Fan-in and Fan-out are combinatorial.
     """
-    def __init__(self, width, num_rows):
+    def __init__(self, width, num_rows, op_wid=0):
         self.width = width
         self.id_wid = num_bits(width)
-        self.alu = FPDIVBasePipe(width, self.id_wid)
+        self.pspec = {'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.alu = FPDIVBasePipe(width, self.pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPADDBaseData(self.width, self.pspec)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.id_wid)
+        return FPPackData(self.width, self.pspec)

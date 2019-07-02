@@ -15,17 +15,17 @@ class FPDivStage2Mod(FPState, Elaboratable):
     """ Second stage of div: preparation for normalisation.
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         self.width = width
-        self.id_wid = id_wid
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPDivStage0Data(self.width, self.id_wid) # Q/Rem in...
+        return FPDivStage0Data(self.width, self.pspec) # Q/Rem in...
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.id_wid) # out to post-process
+        return FPAddStage1Data(self.width, self.pspec) # out to post-process
 
     def process(self, i):
         return self.o
@@ -65,14 +65,14 @@ class FPDivStage2Mod(FPState, Elaboratable):
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
 
 class FPDivStage2(FPState):
 
-    def __init__(self, width, id_wid):
+    def __init__(self, width, pspec):
         FPState.__init__(self, "divider_1")
         self.mod = FPDivStage2Mod(width)
         self.out_z = FPNumBaseRecord(width, False)
