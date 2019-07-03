@@ -491,8 +491,8 @@ class FixedSqrt:
     :attribute root: the square root
     :attribute root_squared: the square of ``root``
     :attribute remainder: the remainder
-    :attribute log2_radix: the base-2 log of the division radix. The number of
-        bits of quotient that are calculated per pipeline stage.
+    :attribute log2_radix: the base-2 log of the operation radix. The number of
+        bits of root that are calculated per pipeline stage.
     :attribute current_shift: the current bit index
     """
 
@@ -500,8 +500,8 @@ class FixedSqrt:
         """ Create an FixedSqrt.
 
         :param radicand: the radicand.
-        :param log2_radix: the base-2 log of the division radix. The number of
-            bits of result that are calculated per pipeline stage.
+        :param log2_radix: the base-2 log of the operation radix. The number of
+            bits of root that are calculated per pipeline stage.
         """
         assert isinstance(radicand, Fixed)
         assert radicand.signed is False
@@ -513,7 +513,7 @@ class FixedSqrt:
         self.current_shift = self.root.bit_width
 
     def calculate_stage(self):
-        """ Calculate the next pipeline stage of the division.
+        """ Calculate the next pipeline stage of the operation.
 
         :returns bool: True if this is the last pipeline stage.
         """
