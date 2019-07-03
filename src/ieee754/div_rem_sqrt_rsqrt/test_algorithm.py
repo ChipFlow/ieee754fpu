@@ -4,7 +4,8 @@
 from nmigen.hdl.ast import Const
 from .algorithm import (div_rem, UnsignedDivRem, DivRem,
                         Fixed, RootRemainder, fixed_sqrt, FixedSqrt,
-                        fixed_rsqrt, FixedRSqrt)
+                        fixed_rsqrt, FixedRSqrt, Operation,
+                        FixedUDivRemSqrtRSqrt)
 import unittest
 import math
 
@@ -872,3 +873,199 @@ class TestFixedRSqrt(unittest.TestCase):
 
     def test_radix_16(self):
         self.helper(4)
+
+
+class TestFixedUDivRemSqrtRSqrt(unittest.TestCase):
+    @staticmethod
+    def show_fixed(bits, fract_width, bit_width):
+        fixed = Fixed.from_bits(bits, fract_width, bit_width, False)
+        return f"{str(fixed)}:{repr(fixed)}"
+
+    def check_invariants(self,
+                         dividend,
+                         divisor_radicand,
+                         operation,
+                         bit_width,
+                         fract_width,
+                         log2_radix,
+                         obj):
+        self.assertEqual(obj.dividend, dividend)
+        self.assertEqual(obj.divisor_radicand, divisor_radicand)
+        self.assertEqual(obj.operation, operation)
+        self.assertEqual(obj.bit_width, bit_width)
+        self.assertEqual(obj.fract_width, fract_width)
+        self.assertEqual(obj.log2_radix, log2_radix)
+        self.assertEqual(obj.root_times_radicand,
+                         obj.quotient_root * obj.divisor_radicand)
+        self.assertGreaterEqual(obj.compare_lhs, obj.compare_rhs)
+        self.assertEqual(obj.remainder, obj.compare_lhs - obj.compare_rhs)
+        if operation is Operation.UDivRem:
+            self.assertEqual(obj.compare_lhs, obj.dividend << fract_width)
+            self.assertEqual(obj.compare_rhs,
+                             (obj.quotient_root * obj.divisor_radicand)
+                             << fract_width)
+        elif operation is Operation.SqrtRem:
+            self.assertEqual(obj.compare_lhs,
+                             obj.divisor_radicand << (fract_width * 2))
+            self.assertEqual(obj.compare_rhs,
+                             (obj.quotient_root * obj.quotient_root)
+                             << fract_width)
+        else:
+            assert operation is Operation.RSqrtRem
+            self.assertEqual(obj.compare_lhs,
+                             1 << (fract_width * 3))
+            self.assertEqual(obj.compare_rhs,
+                             obj.quotient_root * obj.quotient_root
+                             * obj.divisor_radicand)
+
+    def handle_case(self,
+                    dividend,
+                    divisor_radicand,
+                    operation,
+                    bit_width,
+                    fract_width,
+                    log2_radix):
+        dividend_str = self.show_fixed(dividend,
+                                       fract_width * 2,
+                                       bit_width + fract_width)
+        divisor_radicand_str = self.show_fixed(divisor_radicand,
+                                               fract_width,
+                                               bit_width)
+        with self.subTest(dividend=dividend_str,
+                          divisor_radicand=divisor_radicand_str,
+                          operation=operation.name,
+                          bit_width=bit_width,
+                          fract_width=fract_width,
+                          log2_radix=log2_radix):
+            if operation is Operation.UDivRem:
+                if divisor_radicand == 0:
+                    return
+                quotient_root, remainder = div_rem(dividend,
+                                                   divisor_radicand,
+                                                   bit_width * 3,
+                                                   False)
+                remainder <<= fract_width
+            elif operation is Operation.SqrtRem:
+                root_remainder = fixed_sqrt(Fixed.from_bits(divisor_radicand,
+                                                            fract_width,
+                                                            bit_width,
+                                                            False))
+                self.assertEqual(root_remainder.root.bit_width,
+                                 bit_width)
+                self.assertEqual(root_remainder.root.fract_width,
+                                 fract_width)
+                self.assertEqual(root_remainder.remainder.bit_width,
+                                 bit_width * 2)
+                self.assertEqual(root_remainder.remainder.fract_width,
+                                 fract_width * 2)
+                quotient_root = root_remainder.root.bits
+                remainder = root_remainder.remainder.bits << fract_width
+            else:
+                assert operation is Operation.RSqrtRem
+                if divisor_radicand == 0:
+                    return
+                root_remainder = fixed_rsqrt(Fixed.from_bits(divisor_radicand,
+                                                             fract_width,
+                                                             bit_width,
+                                                             False))
+                self.assertEqual(root_remainder.root.bit_width,
+                                 bit_width)
+                self.assertEqual(root_remainder.root.fract_width,
+                                 fract_width)
+                self.assertEqual(root_remainder.remainder.bit_width,
+                                 bit_width * 3)
+                self.assertEqual(root_remainder.remainder.fract_width,
+                                 fract_width * 3)
+                quotient_root = root_remainder.root.bits
+                remainder = root_remainder.remainder.bits
+            if quotient_root >= (1 << bit_width):
+                return
+            quotient_root_str = self.show_fixed(quotient_root,
+                                                fract_width,
+                                                bit_width)
+            remainder_str = self.show_fixed(remainder,
+                                            fract_width * 3,
+                                            bit_width * 3)
+            with self.subTest(quotient_root=quotient_root_str,
+                              remainder=remainder_str):
+                obj = FixedUDivRemSqrtRSqrt(dividend,
+                                            divisor_radicand,
+                                            operation,
+                                            bit_width,
+                                            fract_width,
+                                            log2_radix)
+                for _ in range(250 * bit_width):
+                    self.check_invariants(dividend,
+                                          divisor_radicand,
+                                          operation,
+                                          bit_width,
+                                          fract_width,
+                                          log2_radix,
+                                          obj)
+                    if obj.calculate_stage():
+                        break
+                else:
+                    self.fail("infinite loop")
+                self.check_invariants(dividend,
+                                      divisor_radicand,
+                                      operation,
+                                      bit_width,
+                                      fract_width,
+                                      log2_radix,
+                                      obj)
+                self.assertEqual(obj.quotient_root, quotient_root)
+                self.assertEqual(obj.remainder, remainder)
+
+    def helper(self, log2_radix, operation):
+        bit_width_range = range(1, 8)
+        if operation is Operation.UDivRem:
+            bit_width_range = range(1, 6)
+        for bit_width in bit_width_range:
+            for fract_width in range(bit_width):
+                for divisor_radicand in range(1 << bit_width):
+                    dividend_range = range(1)
+                    if operation is Operation.UDivRem:
+                        dividend_range = range(1 << (bit_width + fract_width))
+                    for dividend in dividend_range:
+                        self.handle_case(dividend,
+                                         divisor_radicand,
+                                         operation,
+                                         bit_width,
+                                         fract_width,
+                                         log2_radix)
+
+    def test_radix_2_UDiv(self):
+        self.helper(1, Operation.UDivRem)
+
+    def test_radix_4_UDiv(self):
+        self.helper(2, Operation.UDivRem)
+
+    def test_radix_8_UDiv(self):
+        self.helper(3, Operation.UDivRem)
+
+    def test_radix_16_UDiv(self):
+        self.helper(4, Operation.UDivRem)
+
+    def test_radix_2_Sqrt(self):
+        self.helper(1, Operation.SqrtRem)
+
+    def test_radix_4_Sqrt(self):
+        self.helper(2, Operation.SqrtRem)
+
+    def test_radix_8_Sqrt(self):
+        self.helper(3, Operation.SqrtRem)
+
+    def test_radix_16_Sqrt(self):
+        self.helper(4, Operation.SqrtRem)
+
+    def test_radix_2_RSqrt(self):
+        self.helper(1, Operation.RSqrtRem)
+
+    def test_radix_4_RSqrt(self):
+        self.helper(2, Operation.RSqrtRem)
+
+    def test_radix_8_RSqrt(self):
+        self.helper(3, Operation.RSqrtRem)
+
+    def test_radix_16_RSqrt(self):
+        self.helper(4, Operation.RSqrtRem)
