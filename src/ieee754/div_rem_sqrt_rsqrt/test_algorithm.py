@@ -389,7 +389,7 @@ class TestFixed(unittest.TestCase):
         self.assertEqual(value.bit_width, 8)
         self.assertEqual(value.signed, True)
 
-    def helper_test_from_bits(self, bit_width, fract_width):
+    def helper_tst_from_bits(self, bit_width, fract_width):
         signed = False
         for bits in range(1 << bit_width):
             with self.subTest(bit_width=bit_width,
@@ -416,7 +416,7 @@ class TestFixed(unittest.TestCase):
     def test_from_bits(self):
         for bit_width in range(1, 5):
             for fract_width in range(bit_width):
-                self.helper_test_from_bits(bit_width, fract_width)
+                self.helper_tst_from_bits(bit_width, fract_width)
 
     def test_repr(self):
         self.assertEqual(repr(Fixed.from_bits(1, 2, 3, False)),
