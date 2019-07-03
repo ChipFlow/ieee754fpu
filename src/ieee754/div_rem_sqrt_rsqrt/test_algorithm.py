@@ -728,7 +728,50 @@ class TestFixedSqrtFn(unittest.TestCase):
                 self.assertEqual(str(fixed_sqrt(radicand)), expected)
 
 
-# FIXME: add tests for FixedSqrt
+class TestFixedSqrt(unittest.TestCase):
+    def helper(self, log2_radix):
+        for bit_width in range(1, 8):
+            for fract_width in range(bit_width):
+                for radicand_bits in range(1 << bit_width):
+                    radicand = Fixed.from_bits(radicand_bits,
+                                               fract_width,
+                                               bit_width,
+                                               False)
+                    root_remainder = fixed_sqrt(radicand)
+                    with self.subTest(radicand=repr(radicand),
+                                      root_remainder=repr(root_remainder),
+                                      log2_radix=log2_radix):
+                        obj = FixedSqrt(radicand, log2_radix)
+                        for _ in range(250 * bit_width):
+                            self.assertEqual(obj.root * obj.root,
+                                             obj.root_squared)
+                            self.assertGreaterEqual(obj.radicand,
+                                                    obj.root_squared)
+                            if obj.calculate_stage():
+                                break
+                        else:
+                            self.fail("infinite loop")
+                        self.assertEqual(obj.root * obj.root,
+                                         obj.root_squared)
+                        self.assertGreaterEqual(obj.radicand,
+                                                obj.root_squared)
+                        self.assertEqual(obj.remainder,
+                                         obj.radicand - obj.root_squared)
+                        self.assertEqual(obj.root, root_remainder.root)
+                        self.assertEqual(obj.remainder,
+                                         root_remainder.remainder)
+
+    def test_radix_2(self):
+        self.helper(1)
+
+    def test_radix_4(self):
+        self.helper(2)
+
+    def test_radix_8(self):
+        self.helper(3)
+
+    def test_radix_16(self):
+        self.helper(4)
 
 
 class TestFixedRSqrtFn(unittest.TestCase):
