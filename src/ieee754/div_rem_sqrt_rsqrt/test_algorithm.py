@@ -824,4 +824,51 @@ class TestFixedRSqrtFn(unittest.TestCase):
                 self.assertEqual(str(fixed_rsqrt(radicand)), expected)
 
 
-# FIXME: add tests for FixedRSqrt
+class TestFixedRSqrt(unittest.TestCase):
+    def helper(self, log2_radix):
+        for bit_width in range(1, 8):
+            for fract_width in range(bit_width):
+                for radicand_bits in range(1, 1 << bit_width):
+                    radicand = Fixed.from_bits(radicand_bits,
+                                               fract_width,
+                                               bit_width,
+                                               False)
+                    root_remainder = fixed_rsqrt(radicand)
+                    with self.subTest(radicand=repr(radicand),
+                                      root_remainder=repr(root_remainder),
+                                      log2_radix=log2_radix):
+                        obj = FixedRSqrt(radicand, log2_radix)
+                        for _ in range(250 * bit_width):
+                            self.assertEqual(obj.radicand * obj.root,
+                                             obj.radicand_root)
+                            self.assertEqual(obj.radicand_root * obj.root,
+                                             obj.radicand_root_squared)
+                            self.assertGreaterEqual(1,
+                                                    obj.radicand_root_squared)
+                            if obj.calculate_stage():
+                                break
+                        else:
+                            self.fail("infinite loop")
+                        self.assertEqual(obj.radicand * obj.root,
+                                         obj.radicand_root)
+                        self.assertEqual(obj.radicand_root * obj.root,
+                                         obj.radicand_root_squared)
+                        self.assertGreaterEqual(1,
+                                                obj.radicand_root_squared)
+                        self.assertEqual(obj.remainder,
+                                         1 - obj.radicand_root_squared)
+                        self.assertEqual(obj.root, root_remainder.root)
+                        self.assertEqual(obj.remainder,
+                                         root_remainder.remainder)
+
+    def test_radix_2(self):
+        self.helper(1)
+
+    def test_radix_4(self):
+        self.helper(2)
+
+    def test_radix_8(self):
+        self.helper(3)
+
+    def test_radix_16(self):
+        self.helper(4)

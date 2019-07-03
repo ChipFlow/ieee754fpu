@@ -592,5 +592,87 @@ def fixed_rsqrt(radicand):
 
 
 class FixedRSqrt:
-    # FIXME: finish
-    pass
+    """ Fixed-point Reciprocal-Square-Root/Remainder.
+
+    :attribute radicand: the radicand
+    :attribute root: the reciprocal square root
+    :attribute radicand_root: ``radicand * root``
+    :attribute radicand_root_squared: ``radicand * root * root``
+    :attribute remainder: the remainder
+    :attribute log2_radix: the base-2 log of the operation radix. The number of
+        bits of root that are calculated per pipeline stage.
+    :attribute current_shift: the current bit index
+    """
+
+    def __init__(self, radicand, log2_radix=3):
+        """ Create an FixedRSqrt.
+
+        :param radicand: the radicand.
+        :param log2_radix: the base-2 log of the operation radix. The number of
+            bits of root that are calculated per pipeline stage.
+        """
+        assert isinstance(radicand, Fixed)
+        assert radicand.signed is False
+        self.radicand = radicand
+        self.root = radicand.with_bits(0)
+        self.radicand_root = radicand.with_bits(0) * self.root
+        self.radicand_root_squared = self.radicand_root * self.root
+        self.remainder = radicand.with_bits(0) - self.radicand_root_squared
+        self.log2_radix = log2_radix
+        self.current_shift = self.root.bit_width
+
+    def calculate_stage(self):
+        """ Calculate the next pipeline stage of the operation.
+
+        :returns bool: True if this is the last pipeline stage.
+        """
+        if self.current_shift == 0:
+            return True
+        log2_radix = min(self.log2_radix, self.current_shift)
+        assert log2_radix > 0
+        self.current_shift -= log2_radix
+        radix = 1 << log2_radix
+        trial_values = []
+        for i in range(radix):
+            v = self.radicand_root_squared
+            factor1 = Fixed.from_bits(i << (self.current_shift + 1),
+                                      self.root.fract_width,
+                                      self.root.bit_width + 1 + log2_radix,
+                                      False)
+            v += self.radicand_root * factor1
+            factor2 = Fixed.from_bits(i << self.current_shift,
+                                      self.root.fract_width,
+                                      self.root.bit_width + log2_radix,
+                                      False)
+            v += self.radicand * factor2 * factor2
+            trial_values.append(self.radicand_root_squared.with_value(v))
+        root_bits = 0
+        new_radicand_root_squared = self.radicand_root_squared
+        for i in range(radix):
+            if 1 >= trial_values[i]:
+                root_bits = i
+                new_radicand_root_squared = trial_values[i]
+        v = self.radicand_root
+        v += self.radicand * Fixed.from_bits(root_bits << self.current_shift,
+                                             self.root.fract_width,
+                                             self.root.bit_width + log2_radix,
+                                             False)
+        self.radicand_root = self.radicand_root.with_value(v)
+        self.root |= Fixed.from_bits(root_bits << self.current_shift,
+                                     self.root.fract_width,
+                                     self.root.bit_width + log2_radix,
+                                     False)
+        self.radicand_root_squared = new_radicand_root_squared
+        if self.current_shift == 0:
+            self.remainder = 1 - self.radicand_root_squared
+            return True
+        return False
+
+    def calculate(self):
+        """ Calculate the results of the reciprocal square root.
+
+        :returns: self
+        """
+        while not self.calculate_stage():
+            pass
+        return self
