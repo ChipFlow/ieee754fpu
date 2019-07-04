@@ -128,14 +128,23 @@ class FPNumBaseRecord:
           self.v[0:self.e_start].eq(m)         # mantissa
         ]
 
+    def _nan(self, s):
+        return (s, self.fp.P128, 1<<(self.e_start-1))
+
+    def _inf(self, s):
+        return (s, self.fp.P128, 0)
+
+    def _zero(self, s):
+        return (s, self.fp.N127, 0)
+
     def nan(self, s):
-        return self.create(s, self.fp.P128, 1<<(self.e_start-1))
+        return self.create(*self._nan(s))
 
     def inf(self, s):
-        return self.create(s, self.fp.P128, 0)
+        return self.create(*self._inf(s))
 
     def zero(self, s):
-        return self.create(s, self.fp.N127, 0)
+        return self.create(*self._zero(s))
 
     def create2(self, s, e, m):
         """ creates a value from sign / exponent / mantissa

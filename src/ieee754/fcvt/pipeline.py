@@ -71,6 +71,9 @@ class FPCVTSpecialCasesMod(Elaboratable):
         m.d.comb += a1.v.eq(self.i.a)
         z1 = self.o.z
 
+        # set sign
+        m.d.comb += self.o.z.s.eq(a1.s)
+
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
         exp_gt127 = Signal(reset_less=True)
@@ -79,30 +82,40 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # if a zero, return zero (signed)
         with m.If(a1.exp_n127):
-            m.d.comb += self.o.z.zero(a1.s)
+            _, ze, zm = self.o.z._zero(a1.s)
+            m.d.comb += self.o.z.e.eq(ze)
+            m.d.comb += self.o.z.m.eq(zm)
 
         # if a range within z min range (-126)
         with m.Elif(exp_sub_n126 < 0):
-            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw:])
+            m.d.comb += self.o.z.e.eq(a1.e)
+            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
             m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-1])
             m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-2])
             m.d.comb += self.o.of.sticky.eq(a1.m[-self.o.z.rmw-2:] != 0)
 
         # if a is inf return inf 
         with m.Elif(a1.is_inf):
-            m.d.comb += self.o.z.inf(a1.s)
+            _, ze, zm = self.o.z._inf(a1.s)
+            m.d.comb += self.o.z.e.eq(ze)
+            m.d.comb += self.o.z.m.eq(zm)
 
         # if a is NaN return NaN
         with m.Elif(a1.is_nan):
-            m.d.comb += self.o.z.nan(a1.s)
+            _, ze, zm = self.o.z._nan(a1.s)
+            m.d.comb += self.o.z.e.eq(ze)
+            m.d.comb += self.o.z.m.eq(zm)
 
         # if a mantissa greater than 127, return inf
         with m.Elif(exp_gt127):
-            m.d.comb += self.o.z.inf(a1.s)
+            _, ze, zm = self.o.z._inf(a1.s)
+            m.d.comb += self.o.z.e.eq(ze)
+            m.d.comb += self.o.z.m.eq(zm)
 
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
-            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw:])
+            m.d.comb += self.o.z.e.eq(a1.e)
+            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
 
         # copy the context (muxid, operator)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
