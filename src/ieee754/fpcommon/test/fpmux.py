@@ -11,10 +11,11 @@ from nmigen.cli import verilog, rtlil
 
 
 class InputTest:
-    def __init__(self, dut, width, fpkls, fpop):
+    def __init__(self, dut, width, fpkls, fpop, single_op=False):
         self.dut = dut
         self.fpkls = fpkls
         self.fpop = fpop
+        self.single_op = single_op
         self.di = {}
         self.do = {}
         self.tlen = 10
@@ -35,8 +36,12 @@ class InputTest:
                 #op2 = 0xb4658540 # expect 0x8016147c
                 #op1 = 0x40900000
                 #op2 = 0x40200000
-                res = self.fpop(self.fpkls(op1), self.fpkls(op2))
-                self.di[muxid][i] = (op1, op2)
+                if self.single_op:
+                    res = self.fpop(self.fpkls(op1))
+                    self.di[muxid][i] = (op1, op2)
+                else:
+                    res = self.fpop(self.fpkls(op1), self.fpkls(op2))
+                    self.di[muxid][i] = (op1, op2)
                 self.do[muxid].append(res.bits)
 
     def send(self, muxid):
@@ -53,11 +58,17 @@ class InputTest:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            fop1 = self.fpkls(op1)
-            fop2 = self.fpkls(op2)
-            res = self.fpop(fop1, fop2)
-            print ("send", muxid, i, hex(op1), hex(op2), hex(res.bits),
-                           fop1, fop2, res)
+            if self.single_op:
+                fop1 = self.fpkls(op1)
+                res = self.fpop(fop1)
+                print ("send", muxid, i, hex(op1), hex(res.bits),
+                               fop1, res)
+            else:
+                fop1 = self.fpkls(op1)
+                fop2 = self.fpkls(op2)
+                res = self.fpop(fop1, fop2)
+                print ("send", muxid, i, hex(op1), hex(op2), hex(res.bits),
+                               fop1, fop2, res)
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
@@ -114,12 +125,12 @@ class InputTest:
         print ("recv ended", muxid)
 
 
-def runfp(dut, width, name, fpkls, fpop):
+def runfp(dut, width, name, fpkls, fpop, single_op=False):
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("%s.il" % name, "w") as f:
         f.write(vl)
 
-    test = InputTest(dut, width, fpkls, fpop)
+    test = InputTest(dut, width, fpkls, fpop, single_op)
     run_simulation(dut, [test.rcv(1), test.rcv(0),
                          test.rcv(3), test.rcv(2),
                          test.send(0), test.send(1),

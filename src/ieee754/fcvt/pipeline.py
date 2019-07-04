@@ -1,0 +1,197 @@
+# IEEE Floating Point Adder (Single Precision)
+# Copyright (C) Jonathan P Dawson 2013
+# 2013-12-12
+
+from nmigen import Module
+from nmigen.cli import main, verilog
+
+from nmutil.singlepipe import ControlBase
+from nmutil.concurrentunit import ReservationStations, num_bits
+
+from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.pack import FPPackData
+from ieee754.fpcommon.normtopack import FPNormToPack
+
+
+from nmigen import Module, Signal, Elaboratable
+from math import log
+
+from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
+from ieee754.fpcommon.fpbase import FPState, FPNumBase
+from ieee754.fpcommon.getop import FPPipeContext
+
+from nmigen import Module, Signal, Cat, Const, Elaboratable
+
+from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
+from nmutil.singlepipe import SimpleHandshake, StageChain
+
+from ieee754.fpcommon.fpbase import FPState, FPID
+from ieee754.fpcommon.getop import FPADDBaseData
+
+
+class FPCVTSpecialCasesMod(Elaboratable):
+    """ special cases: NaNs, infs, zeros, denormalised
+        see "Special Operations"
+        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+    """
+
+    def __init__(self, in_width, out_width, pspec):
+        self.in_width = in_width
+        self.out_width = out_width
+        self.pspec = pspec
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPADDBaseData(self.in_width, self.pspec)
+
+    def ospec(self):
+        return FPAddStage1Data(self.in_width, self.pspec)
+
+    def setup(self, m, i):
+        """ links module to inputs and outputs
+        """
+        m.submodules.specialcases = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
+
+    def elaborate(self, platform):
+        m = Module()
+
+        #m.submodules.sc_out_z = self.o.z
+
+        # decode: XXX really should move to separate stage
+        a1 = FPNumBaseRecord(self.width, False)
+        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
+        m.d.comb += [a1.v.eq(self.i.a),
+                     self.o.a.eq(a1),
+                    ]
+
+        # intermediaries
+        exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
+        exp_gt127 = Signal(reset_less=True)
+        m.d.comb += exp_sub_n126.eq(a1.e - z1.fp.N126)
+        m.d.comb += exp_gt127.eq(a1.e > z1.fp.P127)
+
+        # if a zero, return zero (signed)
+        with m.If(a1.exp_n127):
+            m.d.comb += self.o.z.zero(a1.s)
+
+        # if a range within z min range (-126)
+        with m.Elif(exp_sub_n126 < 0):
+            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw:])
+            m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-1])
+            m.d.comb += self.o.of.round.eq(a1.m[-self.o.z.rmw-2])
+            m.d.comb += self.o.of.sticky.eq(a1.m[-self.o.z.rmw-2:] != 0)
+
+        # if a is inf return inf 
+        with m.Elif(a1.is_inf):
+            m.d.comb += self.o.z.inf(a1.s)
+
+        # if a is NaN return NaN
+        with m.Elif(a1.is_nan):
+            m.d.comb += self.o.z.nan(a1.s)
+
+        # if a mantissa greater than 127, return inf
+        with m.Elif(exp_gt127):
+            m.d.comb += self.o.z.inf(a1.s)
+
+        # ok after all that, anything else should fit fine (whew)
+        with m.Else():
+            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw:])
+
+        # copy the context (muxid, operator)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+
+        return m
+
+
+class FPCVTSpecialCases(FPState):
+    """ special cases: NaNs, infs, zeros, denormalised
+    """
+
+    def __init__(self, width, id_wid):
+        FPState.__init__(self, "special_cases")
+        self.mod = FPCVTSpecialCasesMod(width)
+        self.out_z = self.mod.ospec()
+        self.out_do_z = Signal(reset_less=True)
+
+    def setup(self, m, i):
+        """ links module to inputs and outputs
+        """
+        self.mod.setup(m, i, self.out_do_z)
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
+        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
+
+    def action(self, m):
+        self.idsync(m)
+        with m.If(self.out_do_z):
+            m.next = "put_z"
+        with m.Else():
+            m.next = "denormalise"
+
+
+class FPCVTSpecialCasesDeNorm(FPState, SimpleHandshake):
+    """ special cases: NaNs, infs, zeros, denormalised
+    """
+
+    def __init__(self, width, pspec):
+        FPState.__init__(self, "special_cases")
+        self.width = width
+        self.pspec = pspec
+        sc = FPCVTSpecialCasesMod(self.width, self.pspec)
+        SimpleHandshake.__init__(self, sc)
+        self.out = self.ospec()
+
+
+class FPCVTBasePipe(ControlBase):
+    def __init__(self, in_width, out_width, in_pspec, out_pspec):
+        ControlBase.__init__(self)
+        self.pipe1 = FPCVTSpecialCasesDeNorm(in_width, out_width, in_pspec)
+        self.pipe2 = FPNormToPack(out_width, out_pspec)
+
+        self._eqs = self.connect([self.pipe1, self.pipe2])
+
+    def elaborate(self, platform):
+        m = ControlBase.elaborate(self, platform)
+        m.submodules.scnorm = self.pipe1
+        m.submodules.normpack = self.pipe2
+        m.d.comb += self._eqs
+        return m
+
+
+class FPCVTMuxInOut(ReservationStations):
+    """ Reservation-Station version of FPCVT pipeline.
+
+        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * 2-stage multiplier pipeline
+        * fan-out on outputs (an array of FPPackData: z,mid)
+
+        Fan-in and Fan-out are combinatorial.
+    """
+    def __init__(self, in_width, out_width, num_rows, op_wid=0):
+        self.in_width = in_width
+        self.out_width = out_width
+        self.op_wid = op_wid
+        self.id_wid = num_bits(in_width)
+        self.out_id_wid = num_bits(out_width)
+
+        self.in_pspec = {}
+        self.in_pspec['id_wid'] = self.id_wid
+        self.in_pspec['op_wid'] = self.op_wid
+
+        self.out_pspec = {}
+        self.out_pspec['id_wid'] = self.out_id_wid
+        self.out_pspec['op_wid'] = self.op_wid
+
+        self.alu = FPCVTBasePipe(width, self.in_pspec, self.out_pspec)
+        ReservationStations.__init__(self, num_rows)
+
+    def i_specfn(self):
+        return FPADDBaseData(self.in_width, self.in_pspec)
+
+    def o_specfn(self):
+        return FPPackData(self.out_width, self.out_pspec)
