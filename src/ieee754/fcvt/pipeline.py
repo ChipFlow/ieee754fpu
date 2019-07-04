@@ -12,6 +12,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
+from ieee754.fpcommon.postcalc import FPAddStage1Data
 
 
 from nmigen import Module, Signal, Elaboratable
@@ -36,18 +37,19 @@ class FPCVTSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, in_width, out_width, pspec):
+    def __init__(self, in_width, out_width, in_pspec, out_pspec):
         self.in_width = in_width
         self.out_width = out_width
-        self.pspec = pspec
+        self.in_pspec = in_pspec
+        self.out_pspec = out_pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.in_width, self.pspec)
+        return FPADDBaseData(self.in_width, self.in_pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.in_width, self.pspec)
+        return FPAddStage1Data(self.out_width, self.out_pspec)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -64,11 +66,10 @@ class FPCVTSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumBaseRecord(self.width, False)
+        a1 = FPNumBaseRecord(self.in_width, False)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.d.comb += [a1.v.eq(self.i.a),
-                     self.o.a.eq(a1),
-                    ]
+        m.d.comb += a1.v.eq(self.i.a)
+        z1 = self.o.z
 
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
@@ -84,7 +85,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
         with m.Elif(exp_sub_n126 < 0):
             m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw:])
             m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-1])
-            m.d.comb += self.o.of.round.eq(a1.m[-self.o.z.rmw-2])
+            m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-2])
             m.d.comb += self.o.of.sticky.eq(a1.m[-self.o.z.rmw-2:] != 0)
 
         # if a is inf return inf 
@@ -113,9 +114,9 @@ class FPCVTSpecialCases(FPState):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, in_width, out_width, id_wid):
         FPState.__init__(self, "special_cases")
-        self.mod = FPCVTSpecialCasesMod(width)
+        self.mod = FPCVTSpecialCasesMod(in_width, out_width)
         self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
@@ -138,19 +139,18 @@ class FPCVTSpecialCasesDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, in_width, out_width, in_pspec, out_pspec):
         FPState.__init__(self, "special_cases")
-        self.width = width
-        self.pspec = pspec
-        sc = FPCVTSpecialCasesMod(self.width, self.pspec)
+        sc = FPCVTSpecialCasesMod(in_width, out_width, in_pspec, out_pspec)
         SimpleHandshake.__init__(self, sc)
-        self.out = self.ospec()
+        self.out = self.ospec(None)
 
 
 class FPCVTBasePipe(ControlBase):
     def __init__(self, in_width, out_width, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTSpecialCasesDeNorm(in_width, out_width, in_pspec)
+        self.pipe1 = FPCVTSpecialCasesDeNorm(in_width, out_width,
+                                             in_pspec, out_pspec)
         self.pipe2 = FPNormToPack(out_width, out_pspec)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
@@ -187,7 +187,8 @@ class FPCVTMuxInOut(ReservationStations):
         self.out_pspec['id_wid'] = self.out_id_wid
         self.out_pspec['op_wid'] = self.op_wid
 
-        self.alu = FPCVTBasePipe(width, self.in_pspec, self.out_pspec)
+        self.alu = FPCVTBasePipe(in_width, out_width,
+                                 self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
