@@ -157,38 +157,40 @@ class DivPipeCoreInterstageData:
 
 
 class DivPipeCoreSetupStage(Elaboratable):
-    """ Setup Stage of the core of the div/rem/sqrt/rsqrt pipeline. """
-
+    """ Setup Stage of the core of the div/rem/sqrt/rsqrt pipeline.
+    """
     def __init__(self, core_config):
-        """ Create a ``DivPipeCoreSetupStage`` instance. """
+        """ Create a ``DivPipeCoreSetupStage`` instance."""
         self.core_config = core_config
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        """ Get the input spec for this pipeline stage. """
+        """ Get the input spec for this pipeline stage."""
         return DivPipeCoreInputData(self.core_config)
 
     def ospec(self):
-        """ Get the output spec for this pipeline stage. """
+        """ Get the output spec for this pipeline stage."""
         return DivPipeCoreInterstageData(self.core_config)
 
     def setup(self, m, i):
-        """ FIXME: write correct docs. """
-        # FIXME: implement
-        raise NotImplementedError()
+        """ FIXME: write correct docs.
+        """
+        m.submodules.divpipe = self # parent module m, put ourselves in it
+        m.d.come += self.i.eq(i)    # copy data into this module
 
     def process(self, i):
         """ FIXME: write correct docs. """
-        # FIXME: implement
-        raise NotImplementedError()
+        return self.o # return processed data (ignore i)
 
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
         m = Module()
+
         m.d.comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
         m.d.comb += self.o.quotient_root.eq(0)
         m.d.comb += self.o.root_times_radicand.eq(0)
+
         with m.If(self.i.operation == DivPipeCoreOperation.UDivRem):
             m.d.comb += self.o.compare_lhs.eq(self.i.dividend
                                               << self.core_config.fract_width)
@@ -198,6 +200,8 @@ class DivPipeCoreSetupStage(Elaboratable):
         with m.Else():
             m.d.comb += self.o.compare_lhs.eq(
                 1 << (self.core_config.fract_width * 3))
+
         m.d.comb += self.o.compare_rhs.eq(0)
         m.d.comb += self.o.operation.eq(self.i.operation)
+
         return m
