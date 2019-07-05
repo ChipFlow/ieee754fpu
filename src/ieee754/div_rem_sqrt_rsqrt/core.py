@@ -303,6 +303,15 @@ class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
                DivPipeCoreOutputData.eq(self, rhs)
 
 
+class DivPipeBaseStage:
+    """ Base Mix-in for DivPipe*Stage """
+
+    def _elaborate(self, m, platform):
+        m.d.comb += self.o.oz.eq(self.i.oz)
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+
+
 class DivPipeCoreSetupStage(Elaboratable):
     """ Setup Stage of the core of the div/rem/sqrt/rsqrt pipeline. """
 
@@ -352,10 +361,8 @@ class DivPipeCoreSetupStage(Elaboratable):
 
         return m
 
-        # TODO: these as well
-        m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        # XXX in DivPipeSetupStage
+        DivPipeBaseStage._elaborate(self, m, platform)
 
 
 class DivPipeCoreCalculateStage(Elaboratable):
@@ -470,6 +477,10 @@ class DivPipeCoreCalculateStage(Elaboratable):
                                             | (next_bits << current_shift))
         return m
 
+        # XXX in DivPipeCalculateStage
+        DivPipeBaseStage._elaborate(self, m, platform)
+
+
 
 class DivPipeCoreFinalStage(Elaboratable):
     """ Final Stage of the core of the div/rem/sqrt/rsqrt pipeline. """
@@ -506,3 +517,7 @@ class DivPipeCoreFinalStage(Elaboratable):
                                         - self.i.compare_rhs)
 
         return m
+
+        # XXX in DivPipeFinalStage
+        DivPipeBaseStage._elaborate(self, m, platform)
+
