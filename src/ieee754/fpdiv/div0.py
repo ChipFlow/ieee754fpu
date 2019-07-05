@@ -12,6 +12,7 @@ from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 
 
+# TODO: delete (replace by DivPipeCoreInputData)
 class FPDivStage0Data:
 
     def __init__(self, width, pspec):

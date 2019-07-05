@@ -76,6 +76,13 @@ class FPDivStages(FPState, SimpleHandshake):
 
         if self.begin: # XXX check this
             divstages.append(FPDivStage0Mod(self.width, self.pspec))
+            # XXX if FPDivStage0Mod is to be used to convert from
+            # FPSCData into DivPipeCoreInputData, rather than
+            # DivPipeCoreSetupStage conforming *to* FPSCData format,
+            # then DivPipeCoreSetupStage needs to be added here:
+            # vvvvvvv
+            # FIXME divstages.append(DivPipeCoreSetupStage(something))
+            # ^^^^^^^
 
         for count in range(self.n_stages): # number of combinatorial stages
             divstages.append(FPDivStage1Mod(self.width, self.pspec))
