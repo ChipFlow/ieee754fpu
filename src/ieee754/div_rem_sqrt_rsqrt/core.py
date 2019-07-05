@@ -90,6 +90,8 @@ class DivPipeCoreInputData:
         self.dividend = Signal(core_config.bit_width + core_config.fract_width,
                                reset_less=True)
         self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
+
+        # FIXME: this goes into (is replaced by) self.ctx.op
         self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
 
         return # TODO: needs a width argument and a pspec
@@ -105,7 +107,7 @@ class DivPipeCoreInputData:
         """ Get member signals. """
         yield self.dividend
         yield self.divisor_radicand
-        yield self.operation
+        yield self.operation # FIXME: delete.  already covered by self.ctx
         return
         yield self.z
         yield self.out_do_z
@@ -116,7 +118,7 @@ class DivPipeCoreInputData:
         """ Assign member signals. """
         return [self.dividend.eq(rhs.dividend),
                 self.divisor_radicand.eq(rhs.divisor_radicand),
-                self.operation.eq(rhs.operation)]
+                self.operation.eq(rhs.operation)] # FIXME: delete.
         # TODO: and these
         return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.ctx.eq(i.ctx)]
@@ -152,6 +154,7 @@ class DivPipeCoreInterstageData:
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
         self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
+        # XXX FIXME: delete.  already covered by self.ctx.op
         self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
         self.quotient_root = Signal(core_config.bit_width, reset_less=True)
         self.root_times_radicand = Signal(core_config.bit_width * 2,
@@ -169,7 +172,7 @@ class DivPipeCoreInterstageData:
     def __iter__(self):
         """ Get member signals. """
         yield self.divisor_radicand
-        yield self.operation
+        yield self.operation # XXX FIXME: delete.  already in self.ctx.op
         yield self.quotient_root
         yield self.root_times_radicand
         yield self.compare_lhs
@@ -183,7 +186,7 @@ class DivPipeCoreInterstageData:
     def eq(self, rhs):
         """ Assign member signals. """
         return [self.divisor_radicand.eq(rhs.divisor_radicand),
-                self.operation.eq(rhs.operation),
+                self.operation.eq(rhs.operation), # FIXME: delete.
                 self.quotient_root.eq(rhs.quotient_root),
                 self.root_times_radicand.eq(rhs.root_times_radicand),
                 self.compare_lhs.eq(rhs.compare_lhs),

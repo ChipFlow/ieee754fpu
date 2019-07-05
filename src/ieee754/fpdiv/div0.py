@@ -46,6 +46,7 @@ class FPDivStage0Mod(Elaboratable):
         return FPSCData(self.width, self.id_wid, False)
 
     def ospec(self):
+        # XXX TODO: replace with DivPipeCoreInputData, here
         return FPDivStage0Data(self.width, self.id_wid)
 
     def process(self, i):
@@ -65,10 +66,14 @@ class FPDivStage0Mod(Elaboratable):
         # *begins* the processing phase (enters the massive DIV
         # pipeline chain) - see ospec.
 
+        # INPUT SPEC: FPSCData
+        # OUTPUT SPEC: DivPipeCoreInputData
+
         # NOTE: this stage does *NOT* do *ACTUAL* DIV processing,
         # it is PURELY the *ENTRY* point into the chain, performing
-        # "preparation" work
+        # "preparation" work.
 
+        # delete this
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
@@ -76,8 +81,11 @@ class FPDivStage0Mod(Elaboratable):
                      am0.eq(Cat(self.i.a.m, 0)),
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]
-        # same-sign (both negative or both positive) div mantissas
+
         with m.If(~self.i.out_do_z):
+            # do conversion here, of both self.i.a and self.i.b,
+            # into DivPipeCoreInputData dividend and divisor.
+
             m.d.comb += [self.o.z.e.eq(self.i.a.e + self.i.b.e + 1),
                          # TODO: no, not product, first stage Q and R etc. etc.
                          # go here.
@@ -85,9 +93,11 @@ class FPDivStage0Mod(Elaboratable):
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s)
                 ]
 
+        # these are required and must not be touched
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
+
         return m
 
 
