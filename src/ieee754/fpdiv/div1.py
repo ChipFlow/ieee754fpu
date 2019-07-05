@@ -9,7 +9,7 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
-from .div0 import FPDivStage0Data
+from .div0 import FPDivStage0Data # TODO: replace with DivPipeCoreInterstageData
 
 
 class FPDivStage1Mod(Elaboratable):
@@ -21,9 +21,11 @@ class FPDivStage1Mod(Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
+        # TODO: DivPipeCoreInterstageData, here
         return FPDivStage0Data(self.width, self.pspec) # Q/Rem (etc) in...
 
     def ospec(self):
+        # TODO: DivPipeCoreInterstageData, here
         return FPDivStage0Data(self.width, self.pspec) # ... Q/Rem (etc) out
 
     def process(self, i):

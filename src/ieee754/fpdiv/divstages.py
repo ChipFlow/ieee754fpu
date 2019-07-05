@@ -33,13 +33,29 @@ class FPDivStages(FPState, SimpleHandshake):
         self.m1o = self.ospec()
 
     def ispec(self):
-        if self.begin:
+        if self.begin: # TODO - this is for FPDivStage0Mod
+            # REQUIRED.  do NOT change.
             return FPSCData(self.width, self.pspec, False) # from denorm
+
+        if self.end: # TODO - this is for FPDivStage2Mod
+            # XXX TODO: replace with "intermediary" (DivPipeCoreInterstageData?)
+            return FPDivStage0Data(self.width, self.pspec) # DIV ispec (loop)
+
+        # TODO - this is for FPDivStage1Mod
+        # XXX TODO: replace with "intermediary" (DivPipeCoreInterstageData)
         return FPDivStage0Data(self.width, self.pspec) # DIV ispec (loop)
 
     def ospec(self):
-        if self.end: # TODO
+        if self.begin: # TODO - this is for FPDivStage0Mod
+            # XXX TODO: replace with "intermediary" (DivPipeCoreInterstageData)
+            return FPDivStage0Data(self.width, self.pspec) # DIV ospec (loop)
+
+        if self.end: # TODO - this is for FPDivStage2Mod
+            # REQUIRED.  do NOT change.
             return FPAddStage1Data(self.width, self.pspec) # to post-norm
+
+        # TODO - this is for FPDivStage1Mod
+        # XXX TODO: replace with "intermediary" (DivPipeCoreInterstageData)
         return FPDivStage0Data(self.width, self.pspec) # DIV ospec (loop)
 
     def setup(self, m, i):
