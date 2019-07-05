@@ -13,18 +13,18 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPSCData:
 
-    def __init__(self, width, pspec, m_extra):
-
+    def __init__(self, pspec, m_extra):
+        width = pspec['width']
         # NOTE: difference between z and oz is that oz is created by
         # special-cases module(s) and will propagate, along with its
         # "bypass" signal out_do_z, through the pipeline, *disabling*
         # all processing of all subsequent stages.
         self.a = FPNumBaseRecord(width, m_extra)   # operand a
         self.b = FPNumBaseRecord(width, m_extra)   # operand b
-        self.z = FPNumBaseRecord(width, False)     # denormed result 
+        self.z = FPNumBaseRecord(width, False)     # denormed result
         self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
         self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
-        self.ctx = FPPipeContext(width, pspec) 
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
     def __iter__(self):
@@ -43,18 +43,17 @@ class FPSCData:
 
 class FPAddDeNormMod(FPState, Elaboratable):
 
-    def __init__(self, width, pspec, m_extra):
-        self.width = width
+    def __init__(self, pspec, m_extra):
         self.pspec = pspec
         self.m_extra = m_extra
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.pspec, self.m_extra)
+        return FPSCData(self.pspec, self.m_extra)
 
     def ospec(self):
-        return FPSCData(self.width, self.pspec, self.m_extra)
+        return FPSCData(self.pspec, self.m_extra)
 
     def process(self, i):
         return self.o

@@ -16,17 +16,16 @@ class FPAddStage1Mod(FPState, Elaboratable):
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage0Data(self.width, self.pspec)
+        return FPAddStage0Data(self.pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.pspec)
+        return FPAddStage1Data(self.pspec)
 
     def process(self, i):
         return self.o
@@ -72,7 +71,7 @@ class FPAddStage1Mod(FPState, Elaboratable):
 
 class FPAddStage1(FPState):
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "add_1")
         self.mod = FPAddStage1Mod(width)
         self.out_z = FPNumBase(width, False)

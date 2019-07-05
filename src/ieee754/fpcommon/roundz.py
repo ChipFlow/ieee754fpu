@@ -13,9 +13,10 @@ from .postnormalise import FPNorm1Data
 
 class FPRoundData:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.z = FPNumBaseRecord(width, False)
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
         # pipeline bypass [data comes from specialcases]
         self.out_do_z = Signal(reset_less=True)
@@ -29,17 +30,16 @@ class FPRoundData:
 
 class FPRoundMod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPNorm1Data(self.width, self.pspec)
+        return FPNorm1Data(self.pspec)
 
     def ospec(self):
-        return FPRoundData(self.width, self.pspec)
+        return FPRoundData(self.pspec)
 
     def process(self, i):
         return self.out_z

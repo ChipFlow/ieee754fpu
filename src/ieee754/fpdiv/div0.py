@@ -15,12 +15,12 @@ from ieee754.fpcommon.getop import FPPipeContext
 # TODO: delete (replace by DivPipeCoreInputData)
 class FPDivStage0Data:
 
-    def __init__(self, width, pspec):
-        self.z = FPNumBaseRecord(width, False)
+    def __init__(self, pspec):
+        self.z = FPNumBaseRecord(pspec['width'], False)
         self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(width, reset_less=True)
+        self.oz = Signal(pspec['width'], reset_less=True)
 
-        self.ctx = FPPipeContext(width, pspec) # context: muxid, operator etc.
+        self.ctx = FPPipeContext(pspec['width'], pspec) # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
 
         # TODO: here is where Q and R would be put, and passed
@@ -36,18 +36,17 @@ class FPDivStage0Data:
 
 class FPDivStage0Mod(Elaboratable):
 
-    def __init__(self, width, id_wid):
-        self.width = width
-        self.id_wid = id_wid
+    def __init__(self, pspec):
+        self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.id_wid, False)
+        return FPSCData(self.pspec, False)
 
     def ospec(self):
         # XXX TODO: replace with DivPipeCoreInputData, here
-        return FPDivStage0Data(self.width, self.id_wid)
+        return FPDivStage0Data(self.pspec)
 
     def process(self, i):
         return self.o
@@ -105,9 +104,9 @@ class FPDivStage0(FPState):
     """ First stage of div.  
     """
 
-    def __init__(self, width, id_wid):
+    def __init__(self, pspec):
         FPState.__init__(self, "divider_0")
-        self.mod = FPDivStage0Mod(width)
+        self.mod = FPDivStage0Mod(pspec)
         self.o = self.mod.ospec()
 
     def setup(self, m, i):

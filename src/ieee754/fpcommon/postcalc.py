@@ -8,12 +8,13 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPAddStage1Data:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
     def __iter__(self):

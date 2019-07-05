@@ -18,17 +18,16 @@ class FPDIVSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.pspec)
+        return FPADDBaseData(self.pspec)
 
     def ospec(self):
-        return FPSCData(self.width, self.pspec, False)
+        return FPSCData(self.pspec, False)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -45,8 +44,8 @@ class FPDIVSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumBaseRecord(self.width, False)
-        b1 = FPNumBaseRecord(self.width, False)
+        a1 = FPNumBaseRecord(self.pspec['width'], False)
+        b1 = FPNumBaseRecord(self.pspec['width'], False)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
         m.d.comb += [a1.v.eq(self.i.a),
@@ -113,9 +112,9 @@ class FPDIVSpecialCases(FPState):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "special_cases")
-        self.mod = FPDIVSpecialCasesMod(width)
+        self.mod = FPDIVSpecialCasesMod(pspec)
         self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
@@ -138,24 +137,23 @@ class FPDIVSpecialCasesDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "special_cases")
-        self.width = width
         self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.pspec) # SpecialCases ispec
+        return FPADDBaseData(self.pspec) # SpecialCases ispec
 
     def ospec(self):
-        return FPSCData(self.width, self.pspec, False) # DeNorm ospec
+        return FPSCData(self.pspec, False) # DeNorm ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        smod = FPDIVSpecialCasesMod(self.width, self.pspec)
-        dmod = FPAddDeNormMod(self.width, self.pspec, False)
+        smod = FPDIVSpecialCasesMod(self.pspec)
+        dmod = FPAddDeNormMod(self.pspec, False)
 
         chain = StageChain([smod, dmod])
         chain.setup(m, i)

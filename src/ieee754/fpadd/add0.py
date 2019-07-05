@@ -13,12 +13,13 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPAddStage0Data:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.tot = Signal(self.z.m_width + 4, reset_less=True)
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
     def eq(self, i):
@@ -28,17 +29,16 @@ class FPAddStage0Data:
 
 class FPAddStage0Mod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.pspec, True)
+        return FPSCData(self.pspec, True)
 
     def ospec(self):
-        return FPAddStage0Data(self.width, self.pspec)
+        return FPAddStage0Data(self.pspec)
 
     def process(self, i):
         return self.o
@@ -98,7 +98,7 @@ class FPAddStage0(FPState):
         give greatest accuracy.
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "add_0")
         self.mod = FPAddStage0Mod(width)
         self.o = self.mod.ospec()

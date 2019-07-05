@@ -25,9 +25,8 @@ from .div0 import FPDivStage0Data
 
 class FPDivStagesSetup(FPState, SimpleHandshake):
 
-    def __init__(self, width, pspec, n_stages):
+    def __init__(self, pspec, n_stages):
         FPState.__init__(self, "divsetup")
-        self.width = width
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
@@ -35,11 +34,11 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
 
     def ispec(self):
         # REQUIRED.  do NOT change.
-        return FPSCData(self.width, self.pspec, False) # from denorm
+        return FPSCData(self.pspec, False) # from denorm
 
     def ospec(self):
         # XXX TODO: replace with "intermediary" (DivPipeInterstageData)
-        return FPDivStage0Data(self.width, self.pspec) # DIV ospec (loop)
+        return FPDivStage0Data(self.pspec) # DIV ospec (loop)
 
     def setup(self, m, i):
         """ links module to inputs and outputs.
@@ -53,7 +52,7 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
         divstages = []
 
         # Converts from FPSCData into DivPipeInputData
-        divstages.append(FPDivStage0Mod(self.width, self.pspec))
+        divstages.append(FPDivStage0Mod(self.pspec))
 
         # does 1 "convert" (actual processing) from DivPipeInputData
         # into "intermediate" output (DivPipeInterstageData)
@@ -67,7 +66,7 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
             # XXX: this can actually be entirely dropped...
-            divstages.append(FPDivStage1Mod(self.width, self.pspec))
+            divstages.append(FPDivStage1Mod(self.pspec))
 
             # ... and replaced with this.
             # vvvvvvv
@@ -90,25 +89,22 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
 
 class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
-    def __init__(self, width, pspec, n_stages):
+    def __init__(self, pspec, n_stages):
         FPState.__init__(self, "divintermediate")
-        self.width = width
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
-        self.begin = begin # "begin" mode
-        self.end = end # "end" mode
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
     def ispec(self):
         # TODO - this is for FPDivStage1Mod
         # XXX TODO: replace with "intermediary" (DivPipeInterstageData)
-        return FPDivStage0Data(self.width, self.pspec) # DIV ispec (loop)
+        return FPDivStage0Data(self.pspec) # DIV ispec (loop)
 
     def ospec(self):
         # TODO - this is for FPDivStage1Mod
         # XXX TODO: replace with "intermediary" (DivPipeInterstageData)
-        return FPDivStage0Data(self.width, self.pspec) # DIV ospec (loop)
+        return FPDivStage0Data(self.pspec) # DIV ospec (loop)
 
     def setup(self, m, i):
         """ links module to inputs and outputs.
@@ -126,7 +122,7 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
             # XXX: this can actually be entirely dropped...
-            divstages.append(FPDivStage1Mod(self.width, self.pspec))
+            divstages.append(FPDivStage1Mod(self.pspec))
 
             # ... and replaced with this.
             # vvvvvvv
@@ -149,9 +145,8 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
 class FPDivStagesFinal(FPState, SimpleHandshake):
 
-    def __init__(self, width, pspec, n_stages):
+    def __init__(self, pspec, n_stages):
         FPState.__init__(self, "divfinal")
-        self.width = width
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
@@ -159,11 +154,11 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
 
     def ispec(self):
         # XXX TODO: replace with "intermediary" (DivPipeInterstageData?)
-        return FPDivStage0Data(self.width, self.pspec) # DIV ispec (loop)
+        return FPDivStage0Data(self.pspec) # DIV ispec (loop)
 
     def ospec(self):
         # REQUIRED.  do NOT change.
-        return FPAddStage1Data(self.width, self.pspec) # to post-norm
+        return FPAddStage1Data(self.pspec) # to post-norm
 
     def setup(self, m, i):
         """ links module to inputs and outputs.
@@ -184,7 +179,7 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
             # XXX: this can actually be entirely dropped...
-            divstages.append(FPDivStage1Mod(self.width, self.pspec))
+            divstages.append(FPDivStage1Mod(self.pspec))
 
             # ... and replaced with this.
             # vvvvvvv
@@ -199,7 +194,7 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
         # does conversion from DivPipeOutputData into
         # FPAddStage1Data format (bad name, TODO, doesn't matter),
         # so that post-normalisation and corrections can take over
-        divstages.append(FPDivStage2Mod(self.width, self.pspec))
+        divstages.append(FPDivStage2Mod(self.pspec))
 
         chain = StageChain(divstages)
         chain.setup(m, i)

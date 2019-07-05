@@ -16,12 +16,13 @@ from .postcalc import FPAddStage1Data
 
 class FPNorm1Data:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
     def eq(self, i):
@@ -32,17 +33,16 @@ class FPNorm1Data:
 
 class FPNorm1ModSingle(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage1Data(self.width, self.pspec)
+        return FPAddStage1Data(self.pspec)
 
     def ospec(self):
-        return FPNorm1Data(self.width, self.pspec)
+        return FPNorm1Data(self.pspec)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -140,7 +140,7 @@ class FPNorm1ModSingle(Elaboratable):
 
 class FPNorm1ModMulti:
 
-    def __init__(self, width, single_cycle=True):
+    def __init__(self, pspec, single_cycle=True):
         self.width = width
         self.in_select = Signal(reset_less=True)
         self.in_z = FPNumBase(width, False)

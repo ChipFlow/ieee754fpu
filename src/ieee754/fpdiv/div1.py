@@ -14,19 +14,18 @@ from .div0 import FPDivStage0Data # TODO: replace with DivPipeCoreInterstageData
 
 class FPDivStage1Mod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
         # TODO: DivPipeCoreInterstageData, here
-        return FPDivStage0Data(self.width, self.pspec) # Q/Rem (etc) in...
+        return FPDivStage0Data(self.pspec) # Q/Rem (etc) in...
 
     def ospec(self):
         # TODO: DivPipeCoreInterstageData, here
-        return FPDivStage0Data(self.width, self.pspec) # ... Q/Rem (etc) out
+        return FPDivStage0Data(self.pspec) # ... Q/Rem (etc) out
 
     def process(self, i):
         return self.o

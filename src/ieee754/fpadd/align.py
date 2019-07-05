@@ -15,13 +15,14 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPNumIn2Ops:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.a = FPNumBaseRecord(width)
         self.b = FPNumBaseRecord(width)
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
     def eq(self, i):
@@ -74,9 +75,9 @@ class FPAddAlignMultiMod(FPState):
 
 class FPAddAlignMulti(FPState):
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "align")
-        self.mod = FPAddAlignMultiMod(width, pspec)
+        self.mod = FPAddAlignMultiMod(pspec)
         self.out_a = FPNumBaseRecord(width)
         self.out_b = FPNumBaseRecord(width)
         self.exp_eq = Signal(reset_less=True)
@@ -98,17 +99,16 @@ class FPAddAlignMulti(FPState):
 
 class FPAddAlignSingleMod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.pspec, True)
+        return FPSCData(self.pspec, True)
 
     def ospec(self):
-        return FPNumIn2Ops(self.width, self.pspec)
+        return FPNumIn2Ops(self.pspec)
 
     def process(self, i):
         return self.o
@@ -136,8 +136,9 @@ class FPAddAlignSingleMod(Elaboratable):
         #m.submodules.align_out_b = self.o.b
 
         # temporary (muxed) input and output to be shifted
-        t_inp = FPNumBaseRecord(self.width)
-        t_out = FPNumBaseRecord(self.width)
+        width = self.pspec['width']
+        t_inp = FPNumBaseRecord(width)
+        t_out = FPNumBaseRecord(width)
         espec = (len(self.i.a.e), True)
         msr = MultiShiftRMerge(self.i.a.m_width, espec)
         #m.submodules.align_t_in = t_inp
@@ -193,9 +194,10 @@ class FPAddAlignSingleMod(Elaboratable):
 
 class FPAddAlignSingle(FPState):
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "align")
-        self.mod = FPAddAlignSingleMod(width, pspec)
+        width = pspec['width']
+        self.mod = FPAddAlignSingleMod(pspec)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)
 

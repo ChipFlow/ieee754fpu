@@ -84,8 +84,7 @@ class FPNumBase2Ops:
 
 class FPPipeContext:
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         print (pspec)
         self.id_wid = pspec['id_wid']
         self.op_wid = pspec.get('op_wid', 0)
@@ -107,9 +106,9 @@ class FPPipeContext:
 
 class FPADDBaseData:
 
-    def __init__(self, width, pspec, n_ops=2):
-        self.width = width
-        self.ctx = FPPipeContext(width, pspec)
+    def __init__(self, pspec, n_ops=2):
+        width = pspec['width']
+        self.ctx = FPPipeContext(pspec)
         ops = []
         for i in range(n_ops):
             name = chr(ord("a")+i)

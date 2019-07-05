@@ -18,27 +18,26 @@ from .add1 import FPAddStage1Mod
 
 class FPAddAlignSingleAdd(FPState, SimpleHandshake):
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "align")
-        self.width = width
         self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.a1o = self.ospec()
 
     def ispec(self):
-        return FPSCData(self.width, self.pspec, True)
+        return FPSCData(self.pspec, True)
 
     def ospec(self):
-        return FPAddStage1Data(self.width, self.pspec) # AddStage1 ospec
+        return FPAddStage1Data(self.pspec) # AddStage1 ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
 
         # chain AddAlignSingle, AddStage0 and AddStage1
-        mod = FPAddAlignSingleMod(self.width, self.pspec)
-        a0mod = FPAddStage0Mod(self.width, self.pspec)
-        a1mod = FPAddStage1Mod(self.width, self.pspec)
+        mod = FPAddAlignSingleMod(self.pspec)
+        a0mod = FPAddStage0Mod(self.pspec)
+        a1mod = FPAddStage1Mod(self.pspec)
 
         chain = StageChain([mod, a0mod, a1mod])
         chain.setup(m, i)

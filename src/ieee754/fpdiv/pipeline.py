@@ -73,9 +73,8 @@ from .divstages import (FPDivStagesSetup,
 
 
 class FPDIVBasePipe(ControlBase):
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         ControlBase.__init__(self)
-        self.width = width
         self.pspec = pspec
 
     def elaborate(self, platform):
@@ -104,11 +103,11 @@ class FPDIVBasePipe(ControlBase):
             else:
                 kls = FPDivStagesIntermediate
 
-            pipechain.append(kls(self.width, self.pspec, n_comb_stages))
+            pipechain.append(kls(self.pspec, n_comb_stages))
 
         # start and end: unpack/specialcases then normalisation/packing
-        pipestart = FPDIVSpecialCasesDeNorm(self.width, self.pspec)
-        pipeend = FPNormToPack(self.width, self.pspec)
+        pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
+        pipeend = FPNormToPack(self.pspec)
 
         # add submodules
         m.submodules.scnorm = pipestart
@@ -135,14 +134,13 @@ class FPDIVMuxInOut(ReservationStations):
                    then be used to change the behaviour of the pipeline.
     """
     def __init__(self, width, num_rows, op_wid=0):
-        self.width = width
         self.id_wid = num_bits(width)
-        self.pspec = {'id_wid': self.id_wid, 'op_wid': op_wid}
-        self.alu = FPDIVBasePipe(width, self.pspec)
+        self.pspec = {'width': width, 'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.alu = FPDIVBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.pspec)
+        return FPADDBaseData(self.pspec)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.pspec)
+        return FPPackData(self.pspec)

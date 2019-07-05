@@ -20,11 +20,11 @@ from .addstages import FPAddAlignSingleAdd
 
 
 class FPADDBasePipe(ControlBase):
-    def __init__(self, width, id_wid):
+    def __init__(self, pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPAddSpecialCasesDeNorm(width, id_wid)
-        self.pipe2 = FPAddAlignSingleAdd(width, id_wid)
-        self.pipe3 = FPNormToPack(width, id_wid)
+        self.pipe1 = FPAddSpecialCasesDeNorm(pspec)
+        self.pipe2 = FPAddAlignSingleAdd(pspec)
+        self.pipe3 = FPNormToPack(pspec)
 
         self._eqs = self.connect([self.pipe1, self.pipe2, self.pipe3])
 
@@ -47,15 +47,14 @@ class FPADDMuxInOut(ReservationStations):
         Fan-in and Fan-out are combinatorial.
     """
     def __init__(self, width, num_rows, op_wid=None):
-        self.width = width
         self.id_wid = num_bits(width)
         self.op_wid = op_wid
-        self.pspec = {'id_wid': self.id_wid, 'op_wid': op_wid}
-        self.alu = FPADDBasePipe(width, self.pspec)
+        self.pspec = {'width': width, 'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.alu = FPADDBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.width, self.pspec)
+        return FPADDBaseData(self.pspec)
 
     def o_specfn(self):
-        return FPPackData(self.width, self.pspec)
+        return FPPackData(self.pspec)

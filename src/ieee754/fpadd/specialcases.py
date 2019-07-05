@@ -20,17 +20,16 @@ class FPAddSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.pspec)
+        return FPADDBaseData(self.pspec)
 
     def ospec(self):
-        return FPSCData(self.width, self.pspec, True)
+        return FPSCData(self.pspec, True)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -47,8 +46,9 @@ class FPAddSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumBaseRecord(self.width)
-        b1 = FPNumBaseRecord(self.width)
+        width = self.pspec['width']
+        a1 = FPNumBaseRecord(width)
+        b1 = FPNumBaseRecord(width)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
         m.d.comb += [a1.v.eq(self.i.a),
@@ -182,24 +182,23 @@ class FPAddSpecialCasesDeNorm(FPState, SimpleHandshake):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "special_cases")
-        self.width = width
         self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.pspec) # SC ispec
+        return FPADDBaseData(self.pspec) # SC ispec
 
     def ospec(self):
-        return FPSCData(self.width, self.pspec, True) # DeNorm
+        return FPSCData(self.pspec, True) # DeNorm
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        smod = FPAddSpecialCasesMod(self.width, self.pspec)
-        dmod = FPAddDeNormMod(self.width, self.pspec, True)
+        smod = FPAddSpecialCasesMod(self.pspec)
+        dmod = FPAddDeNormMod(self.pspec, True)
 
         chain = StageChain([smod, dmod])
         chain.setup(m, i)

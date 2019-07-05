@@ -15,20 +15,19 @@ class FPDivStage2Mod(FPState, Elaboratable):
     """ Second stage of div: preparation for normalisation.
     """
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
         # TODO: DivPipeCoreInterstageData
-        return FPDivStage0Data(self.width, self.pspec) # Q/Rem in...
+        return FPDivStage0Data(self.pspec) # Q/Rem in...
 
     def ospec(self):
         # XXX REQUIRED.  MUST NOT BE CHANGED.  this is the format
         # required for ongoing processing (normalisation, correction etc.)
-        return FPAddStage1Data(self.width, self.pspec) # out to post-process
+        return FPAddStage1Data(self.pspec) # out to post-process
 
     def process(self, i):
         return self.o
@@ -75,10 +74,10 @@ class FPDivStage2Mod(FPState, Elaboratable):
 
 class FPDivStage2(FPState):
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         FPState.__init__(self, "divider_1")
-        self.mod = FPDivStage2Mod(width)
-        self.out_z = FPNumBaseRecord(width, False)
+        self.mod = FPDivStage2Mod(pspec)
+        self.out_z = FPNumBaseRecord(pspec, False)
         self.out_of = Overflow()
         self.norm_stb = Signal()
 

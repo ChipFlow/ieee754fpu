@@ -37,19 +37,17 @@ class FPCVTSpecialCasesMod(Elaboratable):
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
-    def __init__(self, in_width, out_width, in_pspec, out_pspec):
-        self.in_width = in_width
-        self.out_width = out_width
+    def __init__(self, in_pspec, out_pspec):
         self.in_pspec = in_pspec
         self.out_pspec = out_pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.in_width, self.in_pspec)
+        return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.out_width, self.out_pspec)
+        return FPAddStage1Data(self.out_pspec)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -66,8 +64,9 @@ class FPCVTSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        print ("in_width out", self.in_width, self.out_width)
-        a1 = FPNumBaseRecord(self.in_width, False)
+        print ("in_width out", self.in_pspec['width'],
+                               self.out_pspec['width'])
+        a1 = FPNumBaseRecord(self.in_pspec['width'], False)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.d.comb += a1.v.eq(self.i.a)
         z1 = self.o.z
@@ -158,19 +157,18 @@ class FPCVTSpecialCasesDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, in_width, out_width, in_pspec, out_pspec):
+    def __init__(self, in_pspec, out_pspec):
         FPState.__init__(self, "special_cases")
-        sc = FPCVTSpecialCasesMod(in_width, out_width, in_pspec, out_pspec)
+        sc = FPCVTSpecialCasesMod(in_pspec, out_pspec)
         SimpleHandshake.__init__(self, sc)
         self.out = self.ospec(None)
 
 
 class FPCVTBasePipe(ControlBase):
-    def __init__(self, in_width, out_width, in_pspec, out_pspec):
+    def __init__(self, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTSpecialCasesDeNorm(in_width, out_width,
-                                             in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_width, out_pspec)
+        self.pipe1 = FPCVTSpecialCasesDeNorm(in_pspec, out_pspec)
+        self.pipe2 = FPNormToPack(out_pspec)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
 
@@ -192,8 +190,6 @@ class FPCVTMuxInOut(ReservationStations):
         Fan-in and Fan-out are combinatorial.
     """
     def __init__(self, in_width, out_width, num_rows, op_wid=0):
-        self.in_width = in_width
-        self.out_width = out_width
         self.op_wid = op_wid
         self.id_wid = num_bits(in_width)
         self.out_id_wid = num_bits(out_width)
@@ -201,17 +197,18 @@ class FPCVTMuxInOut(ReservationStations):
         self.in_pspec = {}
         self.in_pspec['id_wid'] = self.id_wid
         self.in_pspec['op_wid'] = self.op_wid
+        self.in_pspec['width'] = self.in_width
 
         self.out_pspec = {}
         self.out_pspec['id_wid'] = self.out_id_wid
-        self.out_pspec['op_wid'] = self.op_wid
+        self.out_pspec['op_wid'] = op_wid
+        self.out_pspec['width'] = out_width
 
-        self.alu = FPCVTBasePipe(in_width, out_width,
-                                 self.in_pspec, self.out_pspec)
+        self.alu = FPCVTBasePipe(self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.in_width, self.in_pspec)
+        return FPADDBaseData(self.in_pspec)
 
     def o_specfn(self):
-        return FPPackData(self.out_width, self.out_pspec)
+        return FPPackData(self.out_pspec)

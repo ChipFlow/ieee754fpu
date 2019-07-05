@@ -10,17 +10,16 @@ from .roundz import FPRoundData
 
 class FPCorrectionsMod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.out_z = self.ospec()
 
     def ispec(self):
-        return FPRoundData(self.width, self.pspec)
+        return FPRoundData(self.pspec)
 
     def ospec(self):
-        return FPRoundData(self.width, self.pspec)
+        return FPRoundData(self.pspec)
 
     def process(self, i):
         return self.out_z

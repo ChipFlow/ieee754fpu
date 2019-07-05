@@ -79,12 +79,13 @@ class DivPipeBaseData:
     """ input data base type for ``DivPipe``.
     """
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
         """ Create a ``DivPipeBaseData`` instance. """
+        width = pspec['width']
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
-        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
+        self.ctx = FPPipeContext(pspec)  # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
 
     def __iter__(self):
@@ -149,11 +150,11 @@ class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
     def __init__(self, core_config):
         """ Create a ``DivPipeInputData`` instance. """
         DivPipeCoreInputData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+        DivPipeBaseData.__init__(self, pspec) # XXX TODO args
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
-        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
+        self.ctx = FPPipeContext(pspec)  # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
 
     def __iter__(self):
@@ -235,7 +236,7 @@ class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
     def __init__(self, core_config):
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         DivPipeCoreInterstageData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+        DivPipeBaseData.__init__(self, pspec) # XXX TODO args
 
     def __iter__(self):
         """ Get member signals. """
@@ -290,7 +291,7 @@ class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
     def __init__(self, core_config):
         """ Create a ``DivPipeCoreOutputData`` instance. """
         DivPipeCoreOutputData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+        DivPipeBaseData.__init__(self, pspec) # XXX TODO args
 
     def __iter__(self):
         """ Get member signals. """

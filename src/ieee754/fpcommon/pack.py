@@ -14,9 +14,10 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPPackData:
 
-    def __init__(self, width, pspec):
+    def __init__(self, pspec):
+        width = pspec['width']
         self.z = Signal(width, reset_less=True)    # result
-        self.ctx = FPPipeContext(width, pspec)
+        self.ctx = FPPipeContext(pspec)
 
         # this is complicated: it's a workaround, due to the
         # array-indexing not working properly in nmigen.
@@ -40,17 +41,16 @@ class FPPackData:
 
 class FPPackMod(Elaboratable):
 
-    def __init__(self, width, pspec):
-        self.width = width
+    def __init__(self, pspec):
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPRoundData(self.width, self.pspec)
+        return FPRoundData(self.pspec)
 
     def ospec(self):
-        return FPPackData(self.width, self.pspec)
+        return FPPackData(self.pspec)
 
     def process(self, i):
         return self.o
@@ -63,7 +63,7 @@ class FPPackMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        z = FPNumBaseRecord(self.width, False)
+        z = FPNumBaseRecord(self.pspec['width'], False)
         m.submodules.pack_in_z = in_z = FPNumBase(self.i.z)
         #m.submodules.pack_out_z = out_z = FPNumOut(z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
