@@ -4,38 +4,55 @@ Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 
 Stack looks like this:
 
-scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData  ospec FPSCData
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
+------                             ospec FPSCData
+
             StageChain: FPDIVSpecialCasesMod,
                         FPAddDeNormMod
 
-pipediv0 - FPDivStages(start=true) ispec FPSCData       ospec FPDivStage0Data
+pipediv0 - FPDivStagesSetup        ispec FPSCData
+--------                           ospec DivPipeCoreInterstageData
+
             StageChain: FPDivStage0Mod,
-                        FPDivStage1Mod,
+                        DivPipeCalculateStage,
                         ...
-                        FPDivStage1Mod
+                        DivPipeCalculateStage
 
-pipediv1 - FPDivStages()           ispec FPDivStage0Data ospec FPDivStage0Data
-            StageChain: FPDivStage1Mod,
+pipediv1 - FPDivStagesIntermediate ispec DivPipeCoreInterstageData
+--------                           ospec DivPipeCoreInterstageData
+
+            StageChain: DivPipeCalculateStage,
                         ...
-                        FPDivStage1Mod
+                        DivPipeCalculateStage
 ...
 ...
 
-pipediv5 - FPDivStages(end=true    ispec FPDivStage0Data ospec FPAddStage1Data
-            StageChain: FPDivStage1Mod,
+pipediv5 - FPDivStageFinal         ispec FPDivStage0Data
+--------                           ospec FPAddStage1Data
+
+            StageChain: DivPipeCalculateStage,
                         ...
-                        FPDivStage1Mod,
+                        DivPipeCalculateStage,
+                        DivPipeFinalStage,
                         FPDivStage2Mod
 
-normpack - FPNormToPack            ispec FPAddStage1Data ospec FPPackData
+normpack - FPNormToPack            ispec FPAddStage1Data
+--------                           ospec FPPackData
+
             StageChain: Norm1ModSingle,
                         RoundMod,
                         CorrectionsMod,
                         PackMod
 
-the number of combinatorial StageChains (n_combinatorial_stages) in
+the number of combinatorial StageChains (n_comb_stages) in
 FPDivStages is an argument arranged to get the length of the whole
 pipeline down to sane numbers.
+
+the reason for keeping the number of stages down is that for every
+pipeline clock delay, a corresponding ReservationStation is needed.
+if there are 24 pipeline stages, we need a whopping TWENTY FOUR
+RS's.  that's far too many.  6 is just about an acceptable number.
+even 8 is starting to get alarmingly high.
 """
 
 from nmigen import Module
@@ -49,35 +66,50 @@ from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from .specialcases import FPDIVSpecialCasesDeNorm
-from .divstages import FPDivStages
+from .divstages import (FPDivStagesSetup,
+                        FPDivStagesIntermediate,
+                        FPDivStagesFinal)
 
 
 
 class FPDIVBasePipe(ControlBase):
     def __init__(self, width, pspec):
         ControlBase.__init__(self)
-        self.pipestart = FPDIVSpecialCasesDeNorm(width, pspec)
-        pipechain = []
-        n_stages = 6 # TODO
-        n_combinatorial_stages = 2 # TODO
-        for i in range(n_stages):
-            begin = i == 0 # needs to convert input from pipestart ospec
-            end = i == n_stages - 1 # needs to convert output to pipeend ispec
-            pipechain.append(FPDivStages(width, pspec,
-                                         n_combinatorial_stages,
-                                         begin, end))
-        self.pipechain = pipechain
-        self.pipeend = FPNormToPack(width, pspec)
-
-        self._eqs = self.connect([self.pipestart] + pipechain + [self.pipeend])
+        self.width = width
+        self.pspec = pspec
 
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
-        m.submodules.scnorm = self.pipestart
-        for i, p in enumerate(self.pipechain):
+
+        pipestart = FPDIVSpecialCasesDeNorm(self.width, self.pspec)
+        pipechain = []
+        n_stages = 6      # TODO (depends on width)
+        n_comb_stages = 3 # TODO (depends on how many RS's we want)
+                          # to which the answer: "as few as possible"
+                          # is required.  too many ReservationStations
+                          # means "big problems".
+        for i in range(n_stages):
+            if i == 0: # needs to convert input from pipestart ospec
+                kls = FPDivStagesSetup
+                n_comb_stages -= 1 # reduce due to work done at start
+            elif i == n_stages - 1: # needs to convert output to pipeend ispec
+                kls = FPDivStagesFinal
+                n_comb_stages -= 1 # reduce due to work done at end?
+            else:
+                kls = FPDivStagesIntermediate
+            pipechain.append(kls(self.width, self.pspec, n_comb_stages))
+
+        pipeend = FPNormToPack(self.width, self.pspec)
+
+        # add submodules
+        m.submodules.scnorm = pipestart
+        for i, p in enumerate(pipechain):
             setattr(m.submodules, "pipediv%d" % i, p)
-        m.submodules.normpack = self.pipeend
-        m.d.comb += self._eqs
+        m.submodules.normpack = pipeend
+
+        # ControlBase.connect creates (returns) the "eqs" needed
+        m.d.comb += self.connect([pipestart] + pipechain + [pipeend])
+
         return m
 
 
