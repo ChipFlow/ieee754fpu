@@ -14,6 +14,7 @@ pipediv0 - FPDivStagesSetup        ispec FPSCData
 --------                           ospec DivPipeCoreInterstageData
 
             StageChain: FPDivStage0Mod,
+                        DivPipeSetupStage,
                         DivPipeCalculateStage,
                         ...
                         DivPipeCalculateStage
@@ -71,7 +72,6 @@ from .divstages import (FPDivStagesSetup,
                         FPDivStagesFinal)
 
 
-
 class FPDIVBasePipe(ControlBase):
     def __init__(self, width, pspec):
         ControlBase.__init__(self)
@@ -81,24 +81,33 @@ class FPDIVBasePipe(ControlBase):
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
 
-        pipestart = FPDIVSpecialCasesDeNorm(self.width, self.pspec)
         pipechain = []
         n_stages = 6      # TODO (depends on width)
         n_comb_stages = 3 # TODO (depends on how many RS's we want)
                           # to which the answer: "as few as possible"
                           # is required.  too many ReservationStations
                           # means "big problems".
+
         for i in range(n_stages):
-            if i == 0: # needs to convert input from pipestart ospec
+
+            # needs to convert input from pipestart ospec
+            if i == 0:
                 kls = FPDivStagesSetup
                 n_comb_stages -= 1 # reduce due to work done at start
-            elif i == n_stages - 1: # needs to convert output to pipeend ispec
+
+            # needs to convert output to pipeend ispec
+            elif i == n_stages - 1:
                 kls = FPDivStagesFinal
-                n_comb_stages -= 1 # reduce due to work done at end?
+                n_comb_stages -= 1 # FIXME - reduce due to work done at end?
+
+            # intermediary stage
             else:
                 kls = FPDivStagesIntermediate
+
             pipechain.append(kls(self.width, self.pspec, n_comb_stages))
 
+        # start and end: unpack/specialcases then normalisation/packing
+        pipestart = FPDIVSpecialCasesDeNorm(self.width, self.pspec)
         pipeend = FPNormToPack(self.width, self.pspec)
 
         # add submodules
@@ -107,7 +116,7 @@ class FPDIVBasePipe(ControlBase):
             setattr(m.submodules, "pipediv%d" % i, p)
         m.submodules.normpack = pipeend
 
-        # ControlBase.connect creates (returns) the "eqs" needed
+        # ControlBase.connect creates the "eqs" needed to connect each pipe
         m.d.comb += self.connect([pipestart] + pipechain + [pipeend])
 
         return m
