@@ -36,6 +36,9 @@ class InputTest:
                 #op2 = 0xb4658540 # expect 0x8016147c
                 #op1 = 0x40900000
                 #op2 = 0x40200000
+                #op1 = 0x40900000
+                #op1 = 0x40900000
+                #op1 = 0x94607b66
                 if self.single_op:
                     res = self.fpop(self.fpkls(op1))
                     self.di[muxid][i] = (op1, op2)
