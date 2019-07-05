@@ -21,6 +21,10 @@ right-hand-side of the comparison in the above formulas.
 from nmigen import (Elaboratable, Module, Signal)
 import enum
 
+# TODO
+#from ieee754.fpcommon.fpbase import FPNumBaseRecord
+#from ieee754.fpcommon.getop import FPPipeContext
+
 
 class DivPipeCoreConfig:
     """ Configuration for core of the div/rem/sqrt/rsqrt pipeline.
