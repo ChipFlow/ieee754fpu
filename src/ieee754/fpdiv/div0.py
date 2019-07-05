@@ -19,7 +19,6 @@ class FPDivStage0Data:
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.of = Overflow()
 
         self.ctx = FPPipeContext(width, pspec) # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
@@ -32,7 +31,6 @@ class FPDivStage0Data:
 
     def eq(self, i):
         return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.of.eq(i.of),
                 self.product.eq(i.product), self.ctx.eq(i.ctx)]
 
 
