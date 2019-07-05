@@ -7,43 +7,43 @@ Stack looks like this:
 scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
 ------                             ospec FPSCData
 
-            StageChain: FPDIVSpecialCasesMod,
-                        FPAddDeNormMod
+                StageChain: FPDIVSpecialCasesMod,
+                            FPAddDeNormMod
 
 pipediv0 - FPDivStagesSetup        ispec FPSCData
 --------                           ospec DivPipeCoreInterstageData
 
-            StageChain: FPDivStage0Mod,
-                        DivPipeSetupStage,
-                        DivPipeCalculateStage,
-                        ...
-                        DivPipeCalculateStage
+                StageChain: FPDivStage0Mod,
+                            DivPipeSetupStage,
+                            DivPipeCalculateStage,
+                            ...
+                            DivPipeCalculateStage
 
 pipediv1 - FPDivStagesIntermediate ispec DivPipeCoreInterstageData
 --------                           ospec DivPipeCoreInterstageData
 
-            StageChain: DivPipeCalculateStage,
-                        ...
-                        DivPipeCalculateStage
+                StageChain: DivPipeCalculateStage,
+                            ...
+                            DivPipeCalculateStage
 ...
 ...
 
 pipediv5 - FPDivStageFinal         ispec FPDivStage0Data
 --------                           ospec FPAddStage1Data
 
-            StageChain: DivPipeCalculateStage,
-                        ...
-                        DivPipeCalculateStage,
-                        DivPipeFinalStage,
-                        FPDivStage2Mod
+                StageChain: DivPipeCalculateStage,
+                            ...
+                            DivPipeCalculateStage,
+                            DivPipeFinalStage,
+                            FPDivStage2Mod
 
 normpack - FPNormToPack            ispec FPAddStage1Data
 --------                           ospec FPPackData
 
-            StageChain: Norm1ModSingle,
-                        RoundMod,
-                        CorrectionsMod,
-                        PackMod
+                StageChain: Norm1ModSingle,
+                            RoundMod,
+                            CorrectionsMod,
+                            PackMod
 
 the number of combinatorial StageChains (n_comb_stages) in
 FPDivStages is an argument arranged to get the length of the whole
