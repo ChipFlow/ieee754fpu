@@ -135,7 +135,13 @@ class FPDIVMuxInOut(ReservationStations):
     """
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(width)
-        self.pspec = {'width': width, 'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.pspec = {)
+        self.pspec['width'] = width
+        self.pspec['id_wid'] = self.id_wid
+        self.pspec['op_wid'] = op_wid
+        # XXX TODO - a class (or function?) that takes the pspec (right here)
+        # and creates... "something".  that "something" MUST have an eq function
+        # self.pspec['opkls'] = DivPipeCoreOperation
         self.alu = FPDIVBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 
