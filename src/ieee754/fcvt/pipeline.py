@@ -47,7 +47,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
         return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.out_pspec)
+        return FPAddStage1Data(self.out_pspec, e_extra=True)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -67,9 +67,11 @@ class FPCVTSpecialCasesMod(Elaboratable):
         print ("in_width out", self.in_pspec['width'],
                                self.out_pspec['width'])
         a1 = FPNumBaseRecord(self.in_pspec['width'], False)
+        print ("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.d.comb += a1.v.eq(self.i.a)
         z1 = self.o.z
+        print ("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
         # set sign
         m.d.comb += self.o.z.s.eq(a1.s)
@@ -85,44 +87,42 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # if a zero, return zero (signed)
         with m.If(a1.exp_n127):
-            _, ze, zm = self.o.z._zero(a1.s)
-            m.d.comb += self.o.z.e.eq(ze)
-            m.d.comb += self.o.z.m.eq(zm)
+            m.d.comb += self.o.z.zero(a1.s)
+            m.d.comb += self.o.out_do_z.eq(1)
 
-        # if a range within z min range (-126)
+        # if a range outside z's min range (-126)
         with m.Elif(exp_sub_n126 < 0):
             m.d.comb += self.o.z.e.eq(a1.e)
-            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
-            m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-1])
-            m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-2])
-            m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-2] != 0)
+            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw-1:])
+            m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-2])
+            m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-3])
+            m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-3] != 0)
 
         # if a is inf return inf 
         with m.Elif(a1.is_inf):
-            _, ze, zm = self.o.z._inf(a1.s)
-            m.d.comb += self.o.z.e.eq(ze)
-            m.d.comb += self.o.z.m.eq(zm)
+            m.d.comb += self.o.z.inf(a1.s)
+            m.d.comb += self.o.out_do_z.eq(1)
 
         # if a is NaN return NaN
         with m.Elif(a1.is_nan):
-            _, ze, zm = self.o.z._nan(a1.s)
-            m.d.comb += self.o.z.e.eq(ze)
-            m.d.comb += self.o.z.m.eq(zm)
+            m.d.comb += self.o.z.nan(a1.s)
+            m.d.comb += self.o.out_do_z.eq(1)
 
         # if a mantissa greater than 127, return inf
         with m.Elif(exp_gt127):
-            _, ze, zm = self.o.z._inf(a1.s)
-            m.d.comb += self.o.z.e.eq(ze)
-            m.d.comb += self.o.z.m.eq(zm)
+            m.d.comb += self.o.z.inf(a1.s)
+            m.d.comb += self.o.out_do_z.eq(1)
 
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
             m.d.comb += self.o.z.e.eq(a1.e)
             print ("alen", a1.e_start, z1.fp.N126, N126)
-            print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw:])
-            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
+            print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
+            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
+            m.d.comb += self.o.out_do_z.eq(1)
 
         # copy the context (muxid, operator)
+        m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m

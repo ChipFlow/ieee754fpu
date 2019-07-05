@@ -126,6 +126,9 @@ class InputTestRandom(InputTest):
             for i in range(n_vals):
                 if single_op:
                     op1 = randint(0, (1<<width)-1)
+                    #op1 = 0x40900000
+                    #op1 = 0x94607b66
+                    #op1 = 0x889cd8c
                     vals.append((op1,))
                 else:
                     op1 = randint(0, (1<<width)-1)

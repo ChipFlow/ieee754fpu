@@ -63,12 +63,12 @@ class MultiShift:
 class FPNumBaseRecord:
     """ Floating-point Base Number Class
     """
-    def __init__(self, width, m_extra=True):
+    def __init__(self, width, m_extra=True, e_extra=False):
         self.width = width
         m_width = {16: 11, 32: 24, 64: 53}[width] # 1 extra bit (overflow)
         e_width = {16: 7,  32: 10, 64: 13}[width] # 2 extra bits (overflow)
         e_max = 1<<(e_width-3)
-        self.rmw = m_width # real mantissa width (not including extras)
+        self.rmw = m_width - 1 # real mantissa width (not including extras)
         self.e_max = e_max
         if m_extra:
             # mantissa extra bits (top,guard,round)
@@ -76,11 +76,16 @@ class FPNumBaseRecord:
             m_width += self.m_extra
         else:
             self.m_extra = 0
+        if e_extra:
+            self.e_extra = 3
+            e_width += self.e_extra
+        else:
+            self.e_extra = 0
         #print (m_width, e_width, e_max, self.rmw, self.m_extra)
         self.m_width = m_width
         self.e_width = e_width
-        self.e_start = self.rmw - 1
-        self.e_end = self.rmw + self.e_width - 3 # for decoding
+        self.e_start = self.rmw
+        self.e_end = self.rmw + self.e_width - 2 # for decoding
 
         self.v = Signal(width, reset_less=True)      # Latched copy of value
         self.m = Signal(m_width, reset_less=True)    # Mantissa
