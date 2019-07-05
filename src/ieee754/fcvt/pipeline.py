@@ -197,7 +197,7 @@ class FPCVTMuxInOut(ReservationStations):
         self.in_pspec = {}
         self.in_pspec['id_wid'] = self.id_wid
         self.in_pspec['op_wid'] = self.op_wid
-        self.in_pspec['width'] = self.in_width
+        self.in_pspec['width'] = in_width
 
         self.out_pspec = {}
         self.out_pspec['id_wid'] = self.out_id_wid

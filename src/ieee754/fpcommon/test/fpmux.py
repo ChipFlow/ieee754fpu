@@ -27,7 +27,7 @@ class InputTest:
                 if self.single_op:
                     (op1, ) = vals.pop(0)
                     res = self.fpop(self.fpkls(op1))
-                    self.di[muxid][i] = (op1, op2)
+                    self.di[muxid][i] = (op1, )
                 else:
                     (op1, op2, ) = vals.pop(0)
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
@@ -36,11 +36,15 @@ class InputTest:
 
     def send(self, muxid):
         for i in range(self.tlen):
-            op1, op2 = self.di[muxid][i]
+            if self.single_op:
+                op1, = self.di[muxid][i]
+            else:
+                op1, op2 = self.di[muxid][i]
             rs = self.dut.p[muxid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.a.eq(op1)
-            yield rs.data_i.b.eq(op2)
+            if not self.single_op:
+                yield rs.data_i.b.eq(op2)
             yield rs.data_i.muxid.eq(muxid)
             yield
             o_p_ready = yield rs.ready_o
