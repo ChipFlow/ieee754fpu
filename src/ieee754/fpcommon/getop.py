@@ -85,11 +85,20 @@ class FPNumBase2Ops:
 class FPPipeContext:
 
     def __init__(self, pspec):
-        print (pspec)
+        """ creates a pipeline context.  currently: operator (op) and muxid
+
+            opkls (within pspec) - the class to create that will be the
+                                   "operator". instance must have an "eq"
+                                   function.
+        """
         self.id_wid = pspec['id_wid']
         self.op_wid = pspec.get('op_wid', 0)
         self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
-        self.op = Signal(self.op_wid, reset_less=True)
+        opkls = pspec.get('opkls', None)
+        if opkls is None:
+            self.op = Signal(self.op_wid, reset_less=True)
+        else:
+            self.op = opkls(pspec)
 
     def eq(self, i):
         ret = [self.muxid.eq(i.muxid)]
