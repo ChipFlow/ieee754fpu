@@ -159,6 +159,7 @@ class DivPipeCoreInterstageData:
 class DivPipeCoreSetupStage(Elaboratable):
     """ Setup Stage of the core of the div/rem/sqrt/rsqrt pipeline.
     """
+
     def __init__(self, core_config):
         """ Create a ``DivPipeCoreSetupStage`` instance."""
         self.core_config = core_config
@@ -174,14 +175,13 @@ class DivPipeCoreSetupStage(Elaboratable):
         return DivPipeCoreInterstageData(self.core_config)
 
     def setup(self, m, i):
-        """ FIXME: write correct docs.
-        """
-        m.submodules.divpipe = self # parent module m, put ourselves in it
-        m.d.come += self.i.eq(i)    # copy data into this module
+        """ Pipeline stage setup. """
+        m.submodules.div_pipe_core_setup = self
+        m.d.comb += self.i.eq(i)
 
     def process(self, i):
-        """ FIXME: write correct docs. """
-        return self.o # return processed data (ignore i)
+        """ Pipeline stage process. """
+        return self.o  # return processed data (ignore i)
 
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
@@ -197,7 +197,7 @@ class DivPipeCoreSetupStage(Elaboratable):
         with m.Elif(self.i.operation == DivPipeCoreOperation.SqrtRem):
             m.d.comb += self.o.compare_lhs.eq(
                 self.i.divisor_radicand << (self.core_config.fract_width * 2))
-        with m.Else():
+        with m.Else():  # DivPipeCoreOperation.RSqrtRem
             m.d.comb += self.o.compare_lhs.eq(
                 1 << (self.core_config.fract_width * 3))
 
