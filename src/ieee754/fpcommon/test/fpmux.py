@@ -11,38 +11,25 @@ from nmigen.cli import verilog, rtlil
 
 
 class InputTest:
-    def __init__(self, dut, width, fpkls, fpop, single_op=False):
+    def __init__(self, dut, width, fpkls, fpop, vals, single_op):
         self.dut = dut
         self.fpkls = fpkls
         self.fpop = fpop
         self.single_op = single_op
         self.di = {}
         self.do = {}
-        self.tlen = 10
+        self.tlen = len(vals) // dut.num_rows
         self.width = width
         for muxid in range(dut.num_rows):
             self.di[muxid] = {}
             self.do[muxid] = []
             for i in range(self.tlen):
-                op1 = randint(0, (1<<self.width)-1)
-                op2 = randint(0, (1<<self.width)-1)
-                #op1 = 0x513ba448
-                #op2 = 0xfff5c7fe 
-                #op1 = 0xffcaeefa
-                #op2 = 0x3f803262
-                #op1 = 0xae430313
-                #op2 = 0x901c3214
-                #op1 = 0xa4504d7
-                #op2 = 0xb4658540 # expect 0x8016147c
-                #op1 = 0x40900000
-                #op2 = 0x40200000
-                #op1 = 0x40900000
-                #op1 = 0x40900000
-                #op1 = 0x94607b66
                 if self.single_op:
+                    (op1, ) = vals.pop(0)
                     res = self.fpop(self.fpkls(op1))
                     self.di[muxid][i] = (op1, op2)
                 else:
+                    (op1, op2, ) = vals.pop(0)
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
                     self.di[muxid][i] = (op1, op2)
                 self.do[muxid].append(res.bits)
@@ -128,12 +115,28 @@ class InputTest:
         print ("recv ended", muxid)
 
 
-def runfp(dut, width, name, fpkls, fpop, single_op=False):
+class InputTestRandom(InputTest):
+    def __init__(self, dut, width, fpkls, fpop, single_op=False, n_vals=10):
+        vals = []
+        for muxid in range(dut.num_rows):
+            for i in range(n_vals):
+                if single_op:
+                    op1 = randint(0, (1<<width)-1)
+                    vals.append((op1,))
+                else:
+                    op1 = randint(0, (1<<width)-1)
+                    op2 = randint(0, (1<<width)-1)
+                    vals.append((op1, op2,))
+
+        InputTest.__init__(self, dut, width, fpkls, fpop, vals, single_op)
+
+
+def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10):
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("%s.il" % name, "w") as f:
         f.write(vl)
 
-    test = InputTest(dut, width, fpkls, fpop, single_op)
+    test = InputTestRandom(dut, width, fpkls, fpop, single_op, n_vals)
     run_simulation(dut, [test.rcv(1), test.rcv(0),
                          test.rcv(3), test.rcv(2),
                          test.send(0), test.send(1),
