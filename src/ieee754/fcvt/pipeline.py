@@ -66,6 +66,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
+        print ("in_width out", self.in_width, self.out_width)
         a1 = FPNumBaseRecord(self.in_width, False)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.d.comb += a1.v.eq(self.i.a)
@@ -77,8 +78,11 @@ class FPCVTSpecialCasesMod(Elaboratable):
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
         exp_gt127 = Signal(reset_less=True)
-        m.d.comb += exp_sub_n126.eq(a1.e - z1.fp.N126)
-        m.d.comb += exp_gt127.eq(a1.e > z1.fp.P127)
+        # constants from z1, at the bit-width of a1.
+        N126 = Const(z1.fp.N126.value, (a1.e_width, True))
+        P127 = Const(z1.fp.P127.value, (a1.e_width, True))
+        m.d.comb += exp_sub_n126.eq(a1.e - N126)
+        m.d.comb += exp_gt127.eq(a1.e > P127)
 
         # if a zero, return zero (signed)
         with m.If(a1.exp_n127):
@@ -92,7 +96,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
             m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-1])
             m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-2])
-            m.d.comb += self.o.of.sticky.eq(a1.m[-self.o.z.rmw-2:] != 0)
+            m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-2] != 0)
 
         # if a is inf return inf 
         with m.Elif(a1.is_inf):
@@ -115,6 +119,8 @@ class FPCVTSpecialCasesMod(Elaboratable):
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
             m.d.comb += self.o.z.e.eq(a1.e)
+            print ("alen", a1.e_start, z1.fp.N126, N126)
+            print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw:])
             m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw:])
 
         # copy the context (muxid, operator)

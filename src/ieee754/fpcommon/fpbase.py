@@ -398,7 +398,7 @@ class FPNumDecode(FPNumBase):
             is extended to 10 bits so that subtract 127 is done on
             a 10-bit number
         """
-        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        args = [0] * self.m_extra + [v[0:self.e_start+1]] # pad with extra zeros
         #print ("decode", self.e_end)
         return [self.m.eq(Cat(*args)), # mantissa
                 self.e.eq(v[self.e_start:self.e_end] - self.fp.P127), # exp
@@ -430,7 +430,7 @@ class FPNumIn(FPNumBase):
             a 10-bit number
         """
         v = self.v
-        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        args = [0] * self.m_extra + [v[0:self.e_start+1]] # pad with extra zeros
         #print ("decode", self.e_end)
         res = ObjectProxy(m, pipemode=False)
         res.m = Cat(*args)                             # mantissa
@@ -445,7 +445,7 @@ class FPNumIn(FPNumBase):
             is extended to 10 bits so that subtract 127 is done on
             a 10-bit number
         """
-        args = [0] * self.m_extra + [v[0:self.e_start]] # pad with extra zeros
+        args = [0] * self.m_extra + [v[0:self.e_start+1]] # pad with extra zeros
         #print ("decode", self.e_end)
         return [self.m.eq(Cat(*args)), # mantissa
                 self.e.eq(v[self.e_start:self.e_end] - self.P127), # exp
