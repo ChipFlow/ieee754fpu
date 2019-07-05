@@ -88,17 +88,35 @@ class DivPipeCoreInputData:
         self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
         self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
 
+        return # TODO: needs a width argument and a pspec
+        self.z = FPNumBaseRecord(width, False)
+        self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
+
+        self.ctx = FPPipeContext(width, pspec) # context: muxid, operator etc.
+        self.muxid = self.ctx.muxid             # annoying. complicated.
+
+
     def __iter__(self):
         """ Get member signals. """
         yield self.dividend
         yield self.divisor_radicand
         yield self.operation
+        return
+        yield self.z
+        yield self.out_do_z
+        yield self.oz
+        yield from self.ctx
 
     def eq(self, rhs):
         """ Assign member signals. """
         return [self.dividend.eq(rhs.dividend),
                 self.divisor_radicand.eq(rhs.divisor_radicand),
                 self.operation.eq(rhs.operation)]
+        # TODO: and these
+        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+                self.ctx.eq(i.ctx)]
+
 
 
 class DivPipeCoreInterstageData:
@@ -136,6 +154,13 @@ class DivPipeCoreInterstageData:
                                           reset_less=True)
         self.compare_lhs = Signal(core_config.bit_width * 3, reset_less=True)
         self.compare_rhs = Signal(core_config.bit_width * 3, reset_less=True)
+        return # TODO: needs a width argument and a pspec
+        self.z = FPNumBaseRecord(width, False)
+        self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
+
+        self.ctx = FPPipeContext(width, pspec) # context: muxid, operator etc.
+        self.muxid = self.ctx.muxid             # annoying. complicated.
 
     def __iter__(self):
         """ Get member signals. """
@@ -145,6 +170,11 @@ class DivPipeCoreInterstageData:
         yield self.root_times_radicand
         yield self.compare_lhs
         yield self.compare_rhs
+        return
+        yield self.z
+        yield self.out_do_z
+        yield self.oz
+        yield from self.ctx
 
     def eq(self, rhs):
         """ Assign member signals. """
@@ -154,6 +184,9 @@ class DivPipeCoreInterstageData:
                 self.root_times_radicand.eq(rhs.root_times_radicand),
                 self.compare_lhs.eq(rhs.compare_lhs),
                 self.compare_rhs.eq(rhs.compare_rhs)]
+        # TODO: and these
+        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+                self.ctx.eq(i.ctx)]
 
 
 class DivPipeCoreSetupStage(Elaboratable):
@@ -205,3 +238,9 @@ class DivPipeCoreSetupStage(Elaboratable):
         m.d.comb += self.o.operation.eq(self.i.operation)
 
         return m
+
+        # TODO: these as well
+        m.d.comb += self.o.oz.eq(self.i.oz)
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+
