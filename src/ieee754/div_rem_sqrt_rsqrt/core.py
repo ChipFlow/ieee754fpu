@@ -21,8 +21,7 @@ right-hand-side of the comparison in the above formulas.
 from nmigen import (Elaboratable, Module, Signal, Const, Mux)
 import enum
 
-# TODO
-#from ieee754.fpcommon.fpbase import FPNumBaseRecord
+# TODO, move to new (suitable) location
 #from ieee754.fpcommon.getop import FPPipeContext
 
 
@@ -75,6 +74,31 @@ class DivPipeCoreOperation(enum.IntEnum):
                       **kwargs)
 
 
+# TODO: move to suitable location
+class DivPipeBaseData:
+    """ input data base type for ``DivPipe``.
+    """
+
+    def __init__(self, width, pspec):
+        """ Create a ``DivPipeBaseData`` instance. """
+        self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
+
+        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
+        self.muxid = self.ctx.muxid             # annoying. complicated.
+
+    def __iter__(self):
+        """ Get member signals. """
+        yield self.out_do_z
+        yield self.oz
+        yield from self.ctx
+
+    def eq(self, rhs):
+        """ Assign member signals. """
+        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+                self.ctx.eq(i.ctx)]
+
+
 class DivPipeCoreInputData:
     """ input data type for ``DivPipeCore``.
 
@@ -99,14 +123,6 @@ class DivPipeCoreInputData:
         # FIXME: this goes into (is replaced by) self.ctx.op
         self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
 
-        return  # TODO: needs a width argument and a pspec
-        self.z = FPNumBaseRecord(width, False)
-        self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(width, reset_less=True)
-
-        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
-        self.muxid = self.ctx.muxid             # annoying. complicated.
-
     def __iter__(self):
         """ Get member signals. """
         yield self.dividend
@@ -123,9 +139,33 @@ class DivPipeCoreInputData:
         return [self.dividend.eq(rhs.dividend),
                 self.divisor_radicand.eq(rhs.divisor_radicand),
                 self.operation.eq(rhs.operation)]  # FIXME: delete.
-        # TODO: and these
-        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.ctx.eq(i.ctx)]
+
+
+# TODO: move to suitable location
+class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
+    """ input data type for ``DivPipe``.
+    """
+
+    def __init__(self, core_config):
+        """ Create a ``DivPipeInputData`` instance. """
+        DivPipeCoreInputData.__init__(self, core_config)
+        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+        self.out_do_z = Signal(reset_less=True)
+        self.oz = Signal(width, reset_less=True)
+
+        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
+        self.muxid = self.ctx.muxid             # annoying. complicated.
+
+    def __iter__(self):
+        """ Get member signals. """
+        yield from DivPipeCoreInputData.__iter__(self)
+        yield from DivPipeBaseData.__iter__(self)
+
+    def eq(self, rhs):
+        """ Assign member signals. """
+        return DivPipeBaseData.eq(self, rhs) + \
+               DivPipeCoreInputData.eq(self, rhs)
+
 
 
 class DivPipeCoreInterstageData:
@@ -164,13 +204,6 @@ class DivPipeCoreInterstageData:
                                           reset_less=True)
         self.compare_lhs = Signal(core_config.bit_width * 3, reset_less=True)
         self.compare_rhs = Signal(core_config.bit_width * 3, reset_less=True)
-        return  # TODO: needs a width argument and a pspec
-        self.z = FPNumBaseRecord(width, False)
-        self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(width, reset_less=True)
-
-        self.ctx = FPPipeContext(width, pspec)  # context: muxid, operator etc.
-        self.muxid = self.ctx.muxid             # annoying. complicated.
 
     def __iter__(self):
         """ Get member signals. """
@@ -180,11 +213,6 @@ class DivPipeCoreInterstageData:
         yield self.root_times_radicand
         yield self.compare_lhs
         yield self.compare_rhs
-        return
-        yield self.z
-        yield self.out_do_z
-        yield self.oz
-        yield from self.ctx
 
     def eq(self, rhs):
         """ Assign member signals. """
@@ -194,9 +222,30 @@ class DivPipeCoreInterstageData:
                 self.root_times_radicand.eq(rhs.root_times_radicand),
                 self.compare_lhs.eq(rhs.compare_lhs),
                 self.compare_rhs.eq(rhs.compare_rhs)]
-        # TODO: and these
-        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.ctx.eq(i.ctx)]
+
+
+# TODO: move to suitable location
+class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
+    """ interstage data type for ``DivPipe``.
+
+    :attribute core_config: ``DivPipeCoreConfig`` instance describing the
+        configuration to be used.
+    """
+
+    def __init__(self, core_config):
+        """ Create a ``DivPipeCoreInterstageData`` instance. """
+        DivPipeCoreInterstageData.__init__(self, core_config)
+        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+
+    def __iter__(self):
+        """ Get member signals. """
+        yield from DivPipeInterstageData.__iter__(self)
+        yield from DivPipeBaseData.__iter__(self)
+
+    def eq(self, rhs):
+        """ Assign member signals. """
+        return DivPipeBaseData.eq(self, rhs) + \
+               DivPipeCoreInterstageData.eq(self, rhs)
 
 
 class DivPipeCoreOutputData:
@@ -228,6 +277,30 @@ class DivPipeCoreOutputData:
         """ Assign member signals. """
         return [self.quotient_root.eq(rhs.quotient_root),
                 self.remainder.eq(rhs.remainder)]
+
+
+# TODO: move to suitable location
+class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
+    """ interstage data type for ``DivPipe``.
+
+    :attribute core_config: ``DivPipeCoreConfig`` instance describing the
+        configuration to be used.
+    """
+
+    def __init__(self, core_config):
+        """ Create a ``DivPipeCoreOutputData`` instance. """
+        DivPipeCoreOutputData.__init__(self, core_config)
+        DivPipeBaseData.__init__(self, width, pspec) # XXX TODO args
+
+    def __iter__(self):
+        """ Get member signals. """
+        yield from DivPipeOutputData.__iter__(self)
+        yield from DivPipeBaseData.__iter__(self)
+
+    def eq(self, rhs):
+        """ Assign member signals. """
+        return DivPipeBaseData.eq(self, rhs) + \
+               DivPipeCoreOutputData.eq(self, rhs)
 
 
 class DivPipeCoreSetupStage(Elaboratable):
