@@ -125,12 +125,15 @@ class FPNumBaseRecord:
     def create(self, s, e, m):
         """ creates a value from sign / exponent / mantissa
 
-            bias is added here, to the exponent
+            bias is added here, to the exponent.
+
+            NOTE: order is important, because e_start/e_end can be
+            a bit too long (overwriting s).
         """
         return [
-          self.v[-1].eq(s),          # sign
+          self.v[0:self.e_start].eq(m),        # mantissa
           self.v[self.e_start:self.e_end].eq(e + self.fp.P127), # (add on bias)
-          self.v[0:self.e_start].eq(m)         # mantissa
+          self.v[-1].eq(s),          # sign
         ]
 
     def _nan(self, s):
