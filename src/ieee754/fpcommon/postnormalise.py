@@ -33,13 +33,14 @@ class FPNorm1Data:
 
 class FPNorm1ModSingle(Elaboratable):
 
-    def __init__(self, pspec):
+    def __init__(self, pspec, e_extra=False):
         self.pspec = pspec
+        self.e_extra = e_extra
         self.i = self.ispec()
         self.o = self.ospec()
 
     def ispec(self):
-        return FPAddStage1Data(self.pspec)
+        return FPAddStage1Data(self.pspec, e_extra=self.e_extra)
 
     def ospec(self):
         return FPNorm1Data(self.pspec)

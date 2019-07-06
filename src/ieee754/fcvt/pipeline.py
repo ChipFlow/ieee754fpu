@@ -167,7 +167,7 @@ class FPCVTBasePipe(ControlBase):
     def __init__(self, in_pspec, out_pspec):
         ControlBase.__init__(self)
         self.pipe1 = FPCVTSpecialCasesDeNorm(in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_pspec)
+        self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
 
