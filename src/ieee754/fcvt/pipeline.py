@@ -82,6 +82,12 @@ class FPCVTSpecialCasesMod(Elaboratable):
         m.d.comb += exp_sub_n126.eq(a1.e - N126)
         m.d.comb += exp_gt127.eq(a1.e > P127)
 
+        # overflow
+        m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-2])
+        m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-3])
+        m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-3] != 0)
+        m.d.comb += self.o.of.m0.eq(self.o.z.m[0])
+
         # if a zero, return zero (signed)
         with m.If(a1.exp_n127):
             m.d.comb += self.o.z.zero(a1.s)
@@ -92,10 +98,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.z.s.eq(a1.s)
             m.d.comb += self.o.z.e.eq(a1.e)
             m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw-1:])
-            m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-2])
-            m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-3])
-            m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-3] != 0)
-            m.d.comb += self.o.of.m0.eq(self.o.z.m[0])
+            m.d.comb += self.o.z.m[-1].eq(1)
 
         # if a is inf return inf 
         with m.Elif(a1.is_inf):
@@ -104,7 +107,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # if a is NaN return NaN
         with m.Elif(a1.is_nan):
-            m.d.comb += self.o.z.nan(a1.s)
+            m.d.comb += self.o.z.nan(0)
             m.d.comb += self.o.out_do_z.eq(1)
 
         # if a mantissa greater than 127, return inf
@@ -117,7 +120,10 @@ class FPCVTSpecialCasesMod(Elaboratable):
         with m.Else():
             print ("alen", a1.e_start, z1.fp.N126, N126)
             print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
-            m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
+            with m.If(self.o.of.roundz):
+                m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:]+1)
+            with m.Else():
+                m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
             m.d.comb += self.o.out_do_z.eq(1)
 
         # copy the context (muxid, operator)
