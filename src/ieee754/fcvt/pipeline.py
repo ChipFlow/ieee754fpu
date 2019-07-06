@@ -85,7 +85,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
         # overflow
         m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-2])
         m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-3])
-        m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-3] != 0)
+        m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-1] != 0)
         m.d.comb += self.o.of.m0.eq(self.o.z.m[0])
 
         # if a zero, return zero (signed)
@@ -118,10 +118,16 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
+            # XXX TODO: this is basically duplicating FPRoundMod. hmmm...
             print ("alen", a1.e_start, z1.fp.N126, N126)
             print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
+            mo = Signal(self.o.z.m_width-1)
+            m.d.comb += mo.eq(a1.m[-self.o.z.rmw-1:])
             with m.If(self.o.of.roundz):
-                m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:]+1)
+                with m.If((~mo == 0)): # all 1s
+                    m.d.comb += self.o.z.create(a1.s, a1.e+1, mo+1)
+                with m.Else():
+                    m.d.comb += self.o.z.create(a1.s, a1.e, mo+1)
             with m.Else():
                 m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
             m.d.comb += self.o.out_do_z.eq(1)
