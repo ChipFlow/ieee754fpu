@@ -301,24 +301,27 @@ class DivPipeCoreCalculateStage(Elaboratable):
         trial_compare_rhs_values = []
         pass_flags = []
         for trial_bits in range(radix):
-            shifted_trial_bits = Const(trial_bits, log2_radix) << current_shift
-            shifted_trial_bits_sqrd = shifted_trial_bits * shifted_trial_bits
+            tb = trial_bits << current_shift
+            log2_tb = log2_radix + current_shift
+            shifted_trial_bits = Const(tb, log2_tb)
+            shifted_trial_bits2 = Const(tb*2, log2_tb+1)
+            shifted_trial_bits_sqrd = Const(tb * tb, log2_tb * 2)
 
             # UDivRem
             div_rhs = self.i.compare_rhs
-            div_factor1 = self.i.divisor_radicand * shifted_trial_bits
+            div_factor1 = self.i.divisor_radicand * shifted_trial_bits2
             div_rhs += div_factor1 << self.core_config.fract_width
 
             # SqrtRem
             sqrt_rhs = self.i.compare_rhs
-            sqrt_factor1 = self.i.quotient_root * (shifted_trial_bits << 1)
+            sqrt_factor1 = self.i.quotient_root * shifted_trial_bits2
             sqrt_rhs += sqrt_factor1 << self.core_config.fract_width
             sqrt_factor2 = shifted_trial_bits_sqrd
             sqrt_rhs += sqrt_factor2 << self.core_config.fract_width
 
             # RSqrtRem
             rsqrt_rhs = self.i.compare_rhs
-            rsqrt_rhs += self.i.root_times_radicand * (shifted_trial_bits << 1)
+            rsqrt_rhs += self.i.root_times_radicand * shifted_trial_bits2
             rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
 
             trial_compare_rhs = Signal.like(
