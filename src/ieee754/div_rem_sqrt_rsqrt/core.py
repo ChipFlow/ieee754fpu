@@ -309,20 +309,23 @@ class DivPipeCoreCalculateStage(Elaboratable):
 
             # UDivRem
             div_rhs = self.i.compare_rhs
-            div_factor1 = self.i.divisor_radicand * shifted_trial_bits2
-            div_rhs += div_factor1 << self.core_config.fract_width
+            if tb != 0: # no point adding stuff that's multiplied by zero
+                div_factor1 = self.i.divisor_radicand * shifted_trial_bits2
+                div_rhs += div_factor1 << self.core_config.fract_width
 
             # SqrtRem
             sqrt_rhs = self.i.compare_rhs
-            sqrt_factor1 = self.i.quotient_root * shifted_trial_bits2
-            sqrt_rhs += sqrt_factor1 << self.core_config.fract_width
-            sqrt_factor2 = shifted_trial_bits_sqrd
-            sqrt_rhs += sqrt_factor2 << self.core_config.fract_width
+            if tb != 0: # no point adding stuff that's multiplied by zero
+                sqrt_factor1 = self.i.quotient_root * shifted_trial_bits2
+                sqrt_rhs += sqrt_factor1 << self.core_config.fract_width
+                sqrt_factor2 = shifted_trial_bits_sqrd
+                sqrt_rhs += sqrt_factor2 << self.core_config.fract_width
 
             # RSqrtRem
             rsqrt_rhs = self.i.compare_rhs
-            rsqrt_rhs += self.i.root_times_radicand * shifted_trial_bits2
-            rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
+            if tb != 0: # no point adding stuff that's multiplied by zero
+                rsqrt_rhs += self.i.root_times_radicand * shifted_trial_bits2
+                rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
 
             trial_compare_rhs = Signal.like(
                 self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}")
