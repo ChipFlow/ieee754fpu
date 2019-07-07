@@ -18,7 +18,7 @@ Formulas solved are:
 The remainder is the left-hand-side of the comparison minus the
 right-hand-side of the comparison in the above formulas.
 """
-from nmigen import (Elaboratable, Module, Signal, Const, Mux)
+from nmigen import (Elaboratable, Module, Signal, Const, Mux, Cat)
 import enum
 
 
@@ -351,14 +351,20 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 bit_value ^= pass_flags[j]
             m.d.comb += next_bits.part(i, 1).eq(bit_value)
 
-        next_compare_rhs = 0
+        next_compare_rhs = Signal(radix, reset_less=True)
+        l = []
         for i in range(radix):
             next_flag = pass_flags[i + 1] if i + 1 < radix else 0
-            next_compare_rhs |= Mux(pass_flags[i] & ~next_flag,
+            flag = Signal(reset_less=True)
+            test = Signal(reset_less=True)
+            m.d.comb += test.eq((pass_flags[i] & ~next_flag))
+            m.d.comb += flag.eq(Mux(test,
                                     trial_compare_rhs_values[i],
-                                    0)
+                                    0))
+            l.append(flag)
 
-        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs)
+        m.d.comb += next_compare_rhs.eq(Cat(*l))
+        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs.bool())
         m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
