@@ -144,10 +144,10 @@ class DivPipeCoreTestPipeline(Elaboratable):
             for stage_index in range(core_config.num_calculate_stages)]
         self.final_stage = DivPipeCoreFinalStage(core_config)
         self.interstage_signals = [
-            DivPipeCoreInterstageData(core_config, reset_less=False)
+            DivPipeCoreInterstageData(core_config, reset_less=True)
             for i in range(core_config.num_calculate_stages + 1)]
-        self.i = DivPipeCoreInputData(core_config, reset_less=False)
-        self.o = DivPipeCoreOutputData(core_config, reset_less=False)
+        self.i = DivPipeCoreInputData(core_config, reset_less=True)
+        self.o = DivPipeCoreOutputData(core_config, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
