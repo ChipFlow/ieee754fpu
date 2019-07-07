@@ -296,14 +296,22 @@ class TestUnsignedDivRem(unittest.TestCase):
                 with self.subTest(n=n, d=d, q=q, r=r):
                     udr = UnsignedDivRem(n, d, bit_width, log2_radix)
                     for _ in range(250 * bit_width):
-                        self.assertEqual(n, udr.quotient * udr.divisor
-                                         + udr.remainder)
+                        self.assertEqual(udr.dividend, n)
+                        self.assertEqual(udr.divisor, d)
+                        self.assertEqual(udr.quotient_times_divisor,
+                                         udr.quotient * udr.divisor)
+                        self.assertGreaterEqual(udr.dividend,
+                                                udr.quotient_times_divisor)
                         if udr.calculate_stage():
                             break
                     else:
                         self.fail("infinite loop")
-                    self.assertEqual(n, udr.quotient * udr.divisor
-                                     + udr.remainder)
+                    self.assertEqual(udr.dividend, n)
+                    self.assertEqual(udr.divisor, d)
+                    self.assertEqual(udr.quotient_times_divisor,
+                                     udr.quotient * udr.divisor)
+                    self.assertGreaterEqual(udr.dividend,
+                                            udr.quotient_times_divisor)
                     self.assertEqual(udr.quotient, q)
                     self.assertEqual(udr.remainder, r)
 

@@ -38,12 +38,14 @@ class UnsignedDivRem:
 
     NOT the same as the // or % operators
 
-    :attribute remainder: the remainder and/or dividend
+    :attribute dividend: the dividend
+    :attribute remainder: the remainder
     :attribute divisor: the divisor
     :attribute bit_width: the bit width of the inputs/outputs
     :attribute log2_radix: the base-2 log of the division radix. The number of
         bits of quotient that are calculated per pipeline stage.
     :attribute quotient: the quotient
+    :attribute quotient_times_divisor: ``quotient * divisor``
     :attribute current_shift: the current bit index
     """
 
@@ -56,11 +58,12 @@ class UnsignedDivRem:
         :param log2_radix: the base-2 log of the division radix. The number of
             bits of quotient that are calculated per pipeline stage.
         """
-        self.remainder = Const.normalize(dividend, (bit_width, False))
+        self.dividend = Const.normalize(dividend, (bit_width, False))
         self.divisor = Const.normalize(divisor, (bit_width, False))
         self.bit_width = bit_width
         self.log2_radix = log2_radix
         self.quotient = 0
+        self.quotient_times_divisor = self.quotient * self.divisor
         self.current_shift = bit_width
 
     def calculate_stage(self):
@@ -74,17 +77,23 @@ class UnsignedDivRem:
         assert log2_radix > 0
         self.current_shift -= log2_radix
         radix = 1 << log2_radix
-        remainders = []
+        trial_values = []
         for i in range(radix):
-            v = (self.divisor * i) << self.current_shift
-            remainders.append(self.remainder - v)
+            v = self.quotient_times_divisor
+            v += (self.divisor * i) << self.current_shift
+            trial_values.append(v)
         quotient_bits = 0
+        next_product = self.quotient_times_divisor
         for i in range(radix):
-            if remainders[i] >= 0:
+            if self.dividend >= trial_values[i]:
                 quotient_bits = i
-        self.remainder = remainders[quotient_bits]
+                next_product = trial_values[i]
+        self.quotient_times_divisor = next_product
         self.quotient |= quotient_bits << self.current_shift
-        return self.current_shift == 0
+        if self.current_shift == 0:
+            self.remainder = self.dividend - self.quotient_times_divisor
+            return True
+        return False
 
     def calculate(self):
         """ Calculate the results of the division.
