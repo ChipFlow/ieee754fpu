@@ -73,6 +73,10 @@ class FPCVTSpecialCasesMod(Elaboratable):
         z1 = self.o.z
         print ("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
+        me = a1.rmw
+        ms = a1.rmw - self.o.z.rmw
+        print ("ms-me", ms, me)
+
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
         exp_gt127 = Signal(reset_less=True)
@@ -89,17 +93,17 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # if a range outside z's min range (-126)
         with m.Elif(exp_sub_n126 < 0):
-            m.d.comb += self.o.of.guard.eq(a1.m[-self.o.z.rmw-2])
-            m.d.comb += self.o.of.round_bit.eq(a1.m[-self.o.z.rmw-3])
-            m.d.comb += self.o.of.sticky.eq(a1.m[:-self.o.z.rmw-1] != 0)
-            m.d.comb += self.o.of.m0.eq(self.o.z.m[0])
+            m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
+            m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
+            m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
+            m.d.comb += self.o.of.m0.eq(a1.m[ms]) # bit of a1
 
             m.d.comb += self.o.z.s.eq(a1.s)
             m.d.comb += self.o.z.e.eq(a1.e)
             m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw-1:])
             m.d.comb += self.o.z.m[-1].eq(1)
 
-        # if a is inf return inf 
+        # if a is inf return inf
         with m.Elif(a1.is_inf):
             m.d.comb += self.o.z.inf(a1.s)
             m.d.comb += self.o.out_do_z.eq(1)
@@ -117,13 +121,10 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
-            me = a1.rmw
-            ms = a1.rmw - self.o.z.rmw
-            print ("ms-me", ms, me)
             m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
             m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
             m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            m.d.comb += self.o.of.m0.eq(a1.m[ms]) # last bit of a1 NOT z
+            m.d.comb += self.o.of.m0.eq(a1.m[ms]) # bit of a1
 
             # XXX TODO: this is basically duplicating FPRoundMod. hmmm...
             print ("alen", a1.e_start, z1.fp.N126, N126)
