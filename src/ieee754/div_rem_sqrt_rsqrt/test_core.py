@@ -226,3 +226,5 @@ class TestDivPipeCore(unittest.TestCase):
         self.handle_case(DivPipeCoreConfig(bit_width=8,
                                            fract_width=4,
                                            log2_radix=1))
+
+    # FIXME: add more test_* functions
