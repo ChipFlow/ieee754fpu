@@ -1,22 +1,51 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 """ div/rem/sqrt/rsqrt pipeline. """
+
 from .core import (DivPipeCoreConfig, DivPipeCoreInputData,
                    DivPipeCoreInterstageData, DivPipeCoreOutputData)
+from ieee754.fpcommon.getop import FPPipeContext
+
+
+class DivPipeConfig:
+    """ Configuration for the div/rem/sqrt/rsqrt pipeline.
+
+    :attribute pspec: FIXME: document
+    :attribute core_config: the ``DivPipeCoreConfig`` instance.
+    """
+
+    def __init__(self, pspec):
+        """ Create a ``DivPipeConfig`` instance. """
+        self.pspec = pspec
+        # FIXME: get bit_width, fract_width, and log2_radix from pspec or pass
+        # in as arguments
+        self.core_config = DivPipeCoreConfig(bit_width,
+                                             fract_width,
+                                             log2_radix)
 
 
 class DivPipeBaseData:
     """ input data base type for ``DivPipe``.
+
+    :attribute out_do_z: FIXME: document
+    :attribute oz: FIXME: document
+    :attribute ctx: FIXME: document
+    :attribute muxid:
+        FIXME: document
+        Alias of ``ctx.muxid``.
+    :attribute config: the ``DivPipeConfig`` instance.
     """
 
-    def __init__(self, pspec):
+    def __init__(self, config):
         """ Create a ``DivPipeBaseData`` instance. """
-        width = pspec['width']
+        self.config = config
+        width = config.pspec['width']
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
-        self.ctx = FPPipeContext(pspec)  # context: muxid, operator etc.
-        self.muxid = self.ctx.muxid             # annoying. complicated.
+        self.ctx = FPPipeContext(config.pspec)  # context: muxid, operator etc.
+        # FIXME: add proper muxid explanation somewhere and refer to it here
+        self.muxid = self.ctx.muxid  # annoying. complicated.
 
     def __iter__(self):
         """ Get member signals. """
@@ -31,18 +60,12 @@ class DivPipeBaseData:
 
 
 class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
-    """ input data type for ``DivPipe``.
-    """
+    """ input data type for ``DivPipe``. """
 
-    def __init__(self, core_config):
+    def __init__(self, config):
         """ Create a ``DivPipeInputData`` instance. """
-        DivPipeCoreInputData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, pspec)  # XXX TODO args
-        self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(width, reset_less=True)
-
-        self.ctx = FPPipeContext(pspec)  # context: muxid, operator etc.
-        self.muxid = self.ctx.muxid             # annoying. complicated.
+        DivPipeCoreInputData.__init__(self, config.core_config)
+        DivPipeBaseData.__init__(self, config)
 
     def __iter__(self):
         """ Get member signals. """
@@ -51,60 +74,61 @@ class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return DivPipeBaseData.eq(self, rhs) + \
-            DivPipeCoreInputData.eq(self, rhs)
+        return DivPipeCoreInputData.eq(self, rhs) + \
+            DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
-    """ interstage data type for ``DivPipe``.
+    """ interstage data type for ``DivPipe``. """
 
-    :attribute core_config: ``DivPipeCoreConfig`` instance describing the
-        configuration to be used.
-    """
-
-    def __init__(self, core_config):
-        """ Create a ``DivPipeCoreInterstageData`` instance. """
-        DivPipeCoreInterstageData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, pspec)  # XXX TODO args
+    def __init__(self, config):
+        """ Create a ``DivPipeInterstageData`` instance. """
+        DivPipeCoreInterstageData.__init__(self, config.core_config)
+        DivPipeBaseData.__init__(self, config)
 
     def __iter__(self):
         """ Get member signals. """
-        yield from DivPipeInterstageData.__iter__(self)
+        yield from DivPipeCoreInterstageData.__iter__(self)
         yield from DivPipeBaseData.__iter__(self)
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return DivPipeBaseData.eq(self, rhs) + \
-            DivPipeCoreInterstageData.eq(self, rhs)
+        return DivPipeCoreInterstageData.eq(self, rhs) + \
+            DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
-    """ interstage data type for ``DivPipe``.
+    """ output data type for ``DivPipe``. """
 
-    :attribute core_config: ``DivPipeCoreConfig`` instance describing the
-        configuration to be used.
-    """
-
-    def __init__(self, core_config):
-        """ Create a ``DivPipeCoreOutputData`` instance. """
-        DivPipeCoreOutputData.__init__(self, core_config)
-        DivPipeBaseData.__init__(self, pspec)  # XXX TODO args
+    def __init__(self, config):
+        """ Create a ``DivPipeOutputData`` instance. """
+        DivPipeCoreOutputData.__init__(self, config.core_config)
+        DivPipeBaseData.__init__(self, config)
 
     def __iter__(self):
         """ Get member signals. """
-        yield from DivPipeOutputData.__iter__(self)
+        yield from DivPipeCoreOutputData.__iter__(self)
         yield from DivPipeBaseData.__iter__(self)
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return DivPipeBaseData.eq(self, rhs) + \
-            DivPipeCoreOutputData.eq(self, rhs)
+        return DivPipeCoreOutputData.eq(self, rhs) + \
+            DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeBaseStage:
-    """ Base Mix-in for DivPipe*Stage """
+    """ Base Mix-in for DivPipe*Stage. """
 
     def _elaborate(self, m, platform):
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
+
+# FIXME: in DivPipeSetupStage.elaborate
+# DivPipeBaseStage._elaborate(self, m, platform)
+
+# FIXME: in DivPipeCalculateStage.elaborate
+# DivPipeBaseStage._elaborate(self, m, platform)
+
+# FIXME: in DivPipeFinalStage.elaborate
+# DivPipeBaseStage._elaborate(self, m, platform)

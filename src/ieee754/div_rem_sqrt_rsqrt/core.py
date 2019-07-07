@@ -21,9 +21,6 @@ right-hand-side of the comparison in the above formulas.
 from nmigen import (Elaboratable, Module, Signal, Const, Mux)
 import enum
 
-# TODO, move to new (suitable) location
-#from ieee754.fpcommon.getop import FPPipeContext
-
 
 class DivPipeCoreConfig:
     """ Configuration for core of the div/rem/sqrt/rsqrt pipeline.
@@ -103,17 +100,13 @@ class DivPipeCoreInputData:
         yield self.dividend
         yield self.divisor_radicand
         yield self.operation  # FIXME: delete.  already covered by self.ctx
-        return
-        yield self.z
-        yield self.out_do_z
-        yield self.oz
-        yield from self.ctx
 
     def eq(self, rhs):
         """ Assign member signals. """
         return [self.dividend.eq(rhs.dividend),
                 self.divisor_radicand.eq(rhs.divisor_radicand),
-                self.operation.eq(rhs.operation)]  # FIXME: delete.
+                self.operation.eq(rhs.operation),  # FIXME: delete.
+                ]
 
 
 class DivPipeCoreInterstageData:
@@ -145,7 +138,7 @@ class DivPipeCoreInterstageData:
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
         self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
-        # XXX FIXME: delete.  already covered by self.ctx.op
+        # FIXME: delete self.operation.  already covered by self.ctx.op
         self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
         self.quotient_root = Signal(core_config.bit_width, reset_less=True)
         self.root_times_radicand = Signal(core_config.bit_width * 2,
@@ -156,7 +149,7 @@ class DivPipeCoreInterstageData:
     def __iter__(self):
         """ Get member signals. """
         yield self.divisor_radicand
-        yield self.operation  # XXX FIXME: delete.  already in self.ctx.op
+        yield self.operation  # FIXME: delete.  already in self.ctx.op
         yield self.quotient_root
         yield self.root_times_radicand
         yield self.compare_lhs
@@ -251,9 +244,6 @@ class DivPipeCoreSetupStage(Elaboratable):
         m.d.comb += self.o.operation.eq(self.i.operation)
 
         return m
-
-        # XXX in DivPipeSetupStage
-        DivPipeBaseStage._elaborate(self, m, platform)
 
 
 class DivPipeCoreCalculateStage(Elaboratable):
@@ -368,9 +358,6 @@ class DivPipeCoreCalculateStage(Elaboratable):
                                             | (next_bits << current_shift))
         return m
 
-        # XXX in DivPipeCalculateStage
-        DivPipeBaseStage._elaborate(self, m, platform)
-
 
 class DivPipeCoreFinalStage(Elaboratable):
     """ Final Stage of the core of the div/rem/sqrt/rsqrt pipeline. """
@@ -391,7 +378,7 @@ class DivPipeCoreFinalStage(Elaboratable):
 
     def setup(self, m, i):
         """ Pipeline stage setup. """
-        m.submodules.div_pipe_core_setup = self
+        m.submodules.div_pipe_core_final = self
         m.d.comb += self.i.eq(i)
 
     def process(self, i):
@@ -407,6 +394,3 @@ class DivPipeCoreFinalStage(Elaboratable):
                                         - self.i.compare_rhs)
 
         return m
-
-        # XXX in DivPipeFinalStage
-        DivPipeBaseStage._elaborate(self, m, platform)
