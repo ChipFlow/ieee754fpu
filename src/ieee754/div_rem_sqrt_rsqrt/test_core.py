@@ -186,7 +186,6 @@ class TestDivPipeCore(unittest.TestCase):
             vl = rtlil.convert(dut, ports=[*dut.i, *dut.o])
             with open(f"{base_name}.il", "w") as f:
                 f.write(vl)
-        self.fail("generated invalid rtlil")  # FIXME: remove when fixed
         dut = DivPipeCoreTestPipeline(core_config)
         with Simulator(dut,
                        vcd_file=f"{base_name}.vcd",
