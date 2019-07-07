@@ -328,7 +328,8 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
 
             trial_compare_rhs = Signal.like(
-                self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}")
+                self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}",
+                reset_less=True)
 
             with m.If(self.i.operation == DivPipeCoreOperation.UDivRem):
                 m.d.comb += trial_compare_rhs.eq(div_rhs)
@@ -338,7 +339,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 m.d.comb += trial_compare_rhs.eq(rsqrt_rhs)
             trial_compare_rhs_values.append(trial_compare_rhs)
 
-            pass_flag = Signal(name=f"pass_flag_{trial_bits}")
+            pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
             m.d.comb += pass_flag.eq(self.i.compare_lhs >= trial_compare_rhs)
             pass_flags.append(pass_flag)
 
@@ -350,7 +351,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         # Assumes that pass_flag[0] is always set (since
         # compare_lhs >= compare_rhs is a pipeline invariant).
 
-        next_bits = Signal(log2_radix)
+        next_bits = Signal(log2_radix, reset_less=True)
         for i in range(log2_radix):
             bit_value = 1
             for j in range(0, radix, 1 << i):
