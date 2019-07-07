@@ -77,7 +77,7 @@ class FPNumBaseRecord:
         else:
             self.m_extra = 0
         if e_extra:
-            self.e_extra = 3
+            self.e_extra = 6 # enough to cover FP64 when converting to FP16
             e_width += self.e_extra
         else:
             self.e_extra = 0
