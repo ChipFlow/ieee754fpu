@@ -357,7 +357,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         next_compare_rhs = Signal(radix, reset_less=True)
         l = []
         for i in range(radix):
-            next_flag = pass_flags[i + 1] if i + 1 < radix else 0
+            next_flag = pass_flags[i + 1] if (i + 1 < radix) else Const(0)
             flag = Signal(reset_less=True, name=f"flag{i}")
             test = Signal(reset_less=True, name=f"test{i}")
             # XXX TODO: check the width on this
