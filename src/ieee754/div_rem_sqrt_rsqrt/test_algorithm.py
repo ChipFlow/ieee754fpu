@@ -1077,3 +1077,55 @@ class TestFixedUDivRemSqrtRSqrt(unittest.TestCase):
 
     def test_radix_16_RSqrt(self):
         self.helper(4, Operation.RSqrtRem)
+
+    def test_int_div(self):
+        bit_width = 8
+        fract_width = 4
+        log2_radix = 3
+        for dividend in range(1 << bit_width):
+            for divisor in range(1, 1 << bit_width):
+                obj = FixedUDivRemSqrtRSqrt(dividend,
+                                            divisor,
+                                            Operation.UDivRem,
+                                            bit_width,
+                                            fract_width,
+                                            log2_radix)
+                obj.calculate()
+                quotient, remainder = div_rem(dividend,
+                                              divisor,
+                                              bit_width,
+                                              False)
+                shifted_remainder = remainder << fract_width
+                with self.subTest(dividend=dividend,
+                                  divisor=divisor,
+                                  quotient=quotient,
+                                  remainder=remainder,
+                                  shifted_remainder=shifted_remainder):
+                    self.assertEqual(obj.quotient_root, quotient)
+                    self.assertEqual(obj.remainder, shifted_remainder)
+
+    def test_fract_div(self):
+        bit_width = 8
+        fract_width = 4
+        log2_radix = 3
+        for dividend in range(1 << bit_width):
+            for divisor in range(1, 1 << bit_width):
+                obj = FixedUDivRemSqrtRSqrt(dividend << fract_width,
+                                            divisor,
+                                            Operation.UDivRem,
+                                            bit_width,
+                                            fract_width,
+                                            log2_radix)
+                obj.calculate()
+                quotient = (dividend << fract_width) // divisor
+                if quotient >= (1 << bit_width):
+                    continue
+                remainder = (dividend << fract_width) % divisor
+                shifted_remainder = remainder << fract_width
+                with self.subTest(dividend=dividend,
+                                  divisor=divisor,
+                                  quotient=quotient,
+                                  remainder=remainder,
+                                  shifted_remainder=shifted_remainder):
+                    self.assertEqual(obj.quotient_root, quotient)
+                    self.assertEqual(obj.remainder, shifted_remainder)
