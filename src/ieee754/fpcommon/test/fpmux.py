@@ -141,6 +141,7 @@ class InputTestRandom(InputTest):
                     #op1 = 0x358637BD
                     #op1 = 0x3340f2a7
                     #op1 = 0x33D6BF95
+                    #op1 = 0x9885020648d8c0e8
                     vals.append((op1,))
                 else:
                     op1 = randint(0, (1<<width)-1)

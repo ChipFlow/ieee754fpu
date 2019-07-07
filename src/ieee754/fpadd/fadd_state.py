@@ -6,7 +6,8 @@ from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import (FPNumIn, FPNumOut, FPOpIn,
-                                     FPOpOut, Overflow, FPBase)
+                                     FPOpOut, Overflow, FPBase,
+                                     FPNumBaseRecord)
 
 from nmutil.nmoperator import eq
 
@@ -31,16 +32,16 @@ class FPADD(FPBase, Elaboratable):
         m = Module()
 
         # Latches
-        a = FPNumIn(self.in_a, self.width)
-        b = FPNumIn(self.in_b, self.width)
-        z = FPNumOut(self.width, False)
+        a = FPNumBaseRecord(self.width, False)
+        b = FPNumBaseRecord(self.width, False)
+        z = FPNumBaseRecord(self.width, False)
+        a = FPNumIn(None, a)
+        b = FPNumIn(None, b)
+        z = FPNumOut(z)
 
         m.submodules.fpnum_a = a
         m.submodules.fpnum_b = b
         m.submodules.fpnum_z = z
-        m.submodules.fpnum_in_a = self.in_a
-        m.submodules.fpnum_in_b = self.in_b
-        m.submodules.fpnum_out_z = self.out_z
 
         m.d.comb += a.v.eq(self.in_a.v)
         m.d.comb += b.v.eq(self.in_b.v)
@@ -49,8 +50,6 @@ class FPADD(FPBase, Elaboratable):
         tot = Signal(w, reset_less=True)
 
         of = Overflow()
-
-        m.submodules.overflow = of
 
         with m.FSM() as fsm:
 
