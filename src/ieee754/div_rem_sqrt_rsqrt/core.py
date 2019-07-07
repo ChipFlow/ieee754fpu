@@ -362,9 +362,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
             test = Signal(reset_less=True)
             # XXX TODO: check the width on this
             m.d.comb += test.eq((pass_flags[i] & ~next_flag))
-            m.d.comb += flag.eq(Mux(test,
-                                    trial_compare_rhs_values[i],
-                                    0))
+            m.d.comb += flag.eq(Mux(test, trial_compare_rhs_values[i], 0))
             l.append(flag)
 
         m.d.comb += next_compare_rhs.eq(Cat(*l))
