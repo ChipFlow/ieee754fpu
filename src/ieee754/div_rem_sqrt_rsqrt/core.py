@@ -85,15 +85,17 @@ class DivPipeCoreInputData:
     :attribute operation: the ``DivPipeCoreOperation`` to be computed.
     """
 
-    def __init__(self, core_config):
+    def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreInputData`` instance. """
         self.core_config = core_config
         self.dividend = Signal(core_config.bit_width + core_config.fract_width,
-                               reset_less=True)
-        self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
+                               reset_less=reset_less)
+        self.divisor_radicand = Signal(core_config.bit_width,
+                                       reset_less=reset_less)
 
         # FIXME: this goes into (is replaced by) self.ctx.op
-        self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
+        self.operation = \
+            DivPipeCoreOperation.create_signal(reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -134,17 +136,22 @@ class DivPipeCoreInterstageData:
         ``core_config.fract_width * 3`` bits.
     """
 
-    def __init__(self, core_config):
+    def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
-        self.divisor_radicand = Signal(core_config.bit_width, reset_less=True)
+        self.divisor_radicand = Signal(core_config.bit_width,
+                                       reset_less=reset_less)
         # FIXME: delete self.operation.  already covered by self.ctx.op
-        self.operation = DivPipeCoreOperation.create_signal(reset_less=True)
-        self.quotient_root = Signal(core_config.bit_width, reset_less=True)
+        self.operation = \
+            DivPipeCoreOperation.create_signal(reset_less=reset_less)
+        self.quotient_root = Signal(core_config.bit_width,
+                                    reset_less=reset_less)
         self.root_times_radicand = Signal(core_config.bit_width * 2,
-                                          reset_less=True)
-        self.compare_lhs = Signal(core_config.bit_width * 3, reset_less=True)
-        self.compare_rhs = Signal(core_config.bit_width * 3, reset_less=True)
+                                          reset_less=reset_less)
+        self.compare_lhs = Signal(core_config.bit_width * 3,
+                                  reset_less=reset_less)
+        self.compare_rhs = Signal(core_config.bit_width * 3,
+                                  reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -178,11 +185,13 @@ class DivPipeCoreOutputData:
         fract-width of ``core_config.fract_width * 3`` bits.
     """
 
-    def __init__(self, core_config):
+    def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreOutputData`` instance. """
         self.core_config = core_config
-        self.quotient_root = Signal(core_config.bit_width, reset_less=True)
-        self.remainder = Signal(core_config.bit_width * 3, reset_less=True)
+        self.quotient_root = Signal(core_config.bit_width,
+                                    reset_less=reset_less)
+        self.remainder = Signal(core_config.bit_width * 3,
+                                reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -312,8 +321,8 @@ class DivPipeCoreCalculateStage(Elaboratable):
             rsqrt_rhs += self.i.root_times_radicand * (shifted_trial_bits << 1)
             rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
 
-            trial_compare_rhs = self.o.compare_rhs.like(
-                name=f"trial_compare_rhs_{trial_bits}")
+            trial_compare_rhs = Signal.like(
+                self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}")
 
             with m.If(self.i.operation == DivPipeCoreOperation.UDivRem):
                 m.d.comb += trial_compare_rhs.eq(div_rhs)
