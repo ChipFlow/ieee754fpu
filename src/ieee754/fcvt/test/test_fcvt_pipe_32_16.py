@@ -13,7 +13,7 @@ def fcvt_16(x):
 
 def test_pipe_fp32_16():
     dut = FPCVTMuxInOut(32, 16, 4)
-    run_pipe_fp(dut, 32, "add", unit_test_single, Float32,
+    run_pipe_fp(dut, 32, "fcvt", unit_test_single, Float32,
                 regressions, fcvt_16, 10, True)
 
 if __name__ == '__main__':
