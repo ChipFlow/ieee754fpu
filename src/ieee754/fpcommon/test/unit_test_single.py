@@ -36,14 +36,14 @@ def match(x, y):
         (x == y)
         )
 
-def create(s, e, x):
-    return (s<<31) | ((e+127) << 23) | m
+def create(s, e, m):
+    return set_exponent((s<<31) | m, e)
 
 def inf(s):
     return create(s, 128, 0)
 
 def nan(s):
-    return create(s, 128, 1<<23)
+    return create(s, 128, 1<<22)
 
 def zero(s):
     return s<<31

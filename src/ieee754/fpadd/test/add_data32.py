@@ -42,7 +42,7 @@ def regressions():
     yield  0x4E5693A4, 0x42500000
     yield  0x42500000, 0x4E5693A4
 
-    yield 0x08000000, 0xff8000010
+    yield 0x08000000, 0xff800001
     yield 0x22cb525a, 0xadd79efa
     yield 0x40000000, 0xC0000000
     yield 0x83e73d5c, 0x1c800000

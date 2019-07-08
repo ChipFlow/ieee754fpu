@@ -30,6 +30,7 @@ class InputTest:
                     self.di[muxid][i] = (op1, )
                 else:
                     (op1, op2, ) = vals.pop(0)
+                    print ("test", hex(op1), hex(op2))
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
                     self.di[muxid][i] = (op1, op2)
                 self.do[muxid].append(res.bits)
@@ -119,44 +120,56 @@ class InputTest:
         print ("recv ended", muxid)
 
 
-class InputTestRandom(InputTest):
-    def __init__(self, dut, width, fpkls, fpop, single_op=False, n_vals=10):
-        vals = []
-        for muxid in range(dut.num_rows):
-            for i in range(n_vals):
-                if single_op:
-                    op1 = randint(0, (1<<width)-1)
-                    #op1 = 0x40900000
-                    #op1 = 0x94607b66
-                    #op1 = 0x889cd8c
-                    #op1 = 0xe98646d7
-                    #op1 = 0x3340f2a7
-                    #op1 = 0xfff13f05
-                    #op1 = 0x453eb000
-                    #op1 = 0x3a05de50
-                    #op1 = 0xc27ff989
-                    #op1 = 0x41689000
-                    #op1 = 0xbbc0edec
-                    #op1 = 0x2EDBE6FF
-                    #op1 = 0x358637BD
-                    #op1 = 0x3340f2a7
-                    #op1 = 0x33D6BF95
-                    #op1 = 0x9885020648d8c0e8
-                    vals.append((op1,))
-                else:
-                    op1 = randint(0, (1<<width)-1)
-                    op2 = randint(0, (1<<width)-1)
-                    vals.append((op1, op2,))
-
-        InputTest.__init__(self, dut, width, fpkls, fpop, vals, single_op)
+def create_random(num_rows, width, single_op=False, n_vals=10):
+    vals = []
+    for muxid in range(num_rows):
+        for i in range(n_vals):
+            if single_op:
+                op1 = randint(0, (1<<width)-1)
+                #op1 = 0x40900000
+                #op1 = 0x94607b66
+                #op1 = 0x889cd8c
+                #op1 = 0xe98646d7
+                #op1 = 0x3340f2a7
+                #op1 = 0xfff13f05
+                #op1 = 0x453eb000
+                #op1 = 0x3a05de50
+                #op1 = 0xc27ff989
+                #op1 = 0x41689000
+                #op1 = 0xbbc0edec
+                #op1 = 0x2EDBE6FF
+                #op1 = 0x358637BD
+                #op1 = 0x3340f2a7
+                #op1 = 0x33D6BF95
+                #op1 = 0x9885020648d8c0e8
+                vals.append((op1,))
+            else:
+                op1 = randint(0, (1<<width)-1)
+                op2 = randint(0, (1<<width)-1)
+                vals.append((op1, op2,))
+    return vals
 
 
-def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10):
+def repeat(num_rows, vals):
+    """ bit of a hack: repeats the last value to create a list
+        that will be accepted by the muxer, all mux lists to be
+        of equal length
+    """
+    vals = list(vals)
+    n_to_repeat = len(vals) % num_rows
+    print (vals, vals[-1])
+    return vals + [vals[-1]] * n_to_repeat
+
+
+def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("%s.il" % name, "w") as f:
         f.write(vl)
 
-    test = InputTestRandom(dut, width, fpkls, fpop, single_op, n_vals)
+    if vals is None:
+        vals = create_random(dut.num_rows, width, single_op, n_vals)
+
+    test = InputTest(dut, width, fpkls, fpop, vals, single_op)
     run_simulation(dut, [test.rcv(1), test.rcv(0),
                          test.rcv(3), test.rcv(2),
                          test.send(0), test.send(1),
