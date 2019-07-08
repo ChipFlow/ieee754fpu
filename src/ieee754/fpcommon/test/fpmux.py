@@ -160,13 +160,14 @@ def repeat(num_rows, vals):
     return vals + [vals[-1]] * n_to_repeat
 
 
-def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count):
+def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
+                            single_op=False):
     for i, fixed_num in enumerate(cc(mod)):
         vals = fn(mod, fixed_num, count, width)
         vals = repeat(dut.num_rows, vals)
         fmt = "test_pipe_fp%d_%s_cornercases_%d"
         runfp(dut, width, fmt % (width, name, i),
-                   fmod, fpfn, vals=vals)
+                   fmod, fpfn, vals=vals, single_op=single_op)
 
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
