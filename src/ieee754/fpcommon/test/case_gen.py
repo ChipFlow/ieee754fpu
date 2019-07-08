@@ -113,13 +113,13 @@ class PipeFPCase:
 
 def run_pipe_fp(dut, width, name, mod, fmod, regressions, fpfn, count):
     pc = PipeFPCase(dut, name, mod, fmod, width, fpfn, count)
+    pc.run_regressions(regressions)
+    pc.run_cornercases()
     pc.run("rand1", get_rand1)
     pc.run("n127", get_n127)
     pc.run("noncan", get_nan_noncan)
     pc.run("nearlyzero", get_nearly_zero)
     pc.run("nearlyinf", get_nearly_inf)
     pc.run("corner_rand", get_corner_rand)
-    pc.run_cornercases()
-    pc.run_regressions(regressions)
     pc.run_random()
 
