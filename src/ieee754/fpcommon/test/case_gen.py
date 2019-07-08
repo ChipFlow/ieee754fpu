@@ -34,7 +34,8 @@ def get_rval(width):
 def get_rand1(mod, fixed_num, maxcount, width, single_op=False):
     stimulus_b = [get_rval(width) for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -45,7 +46,8 @@ def get_nan_noncan(mod, fixed_num, maxcount, width, single_op=False):
     stimulus_b = [mod.set_exponent(get_rval(width), mod.max_e) \
                         for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -56,7 +58,8 @@ def get_n127(mod, fixed_num, maxcount, width, single_op=False):
     stimulus_b = [mod.set_exponent(get_rval(width), -mod.max_e+1) \
                         for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -67,7 +70,8 @@ def get_nearly_zero(mod, fixed_num, maxcount, width, single_op=False):
     stimulus_b = [mod.set_exponent(get_rval(width), -mod.max_e+2) \
                         for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -78,7 +82,8 @@ def get_nearly_inf(mod, fixed_num, maxcount, width, single_op=False):
     stimulus_b = [mod.set_exponent(get_rval(width), mod.max_e-1) \
                         for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -88,7 +93,8 @@ def get_corner_rand(mod, fixed_num, maxcount, width, single_op=False):
     # random
     stimulus_b = [get_rval(width) for i in range(maxcount)]
     if single_op:
-        return stimulus_b
+        yield from stimulus_b
+        return
     stimulus_a = replicate(fixed_num, maxcount)
     yield from zip(stimulus_a, stimulus_b)
     yield from zip(stimulus_b, stimulus_a)
@@ -112,14 +118,15 @@ class PipeFPCase:
                                 self.count, self.single_op)
 
     def run_cornercases(self):
-        vals = repeat(self.dut.num_rows, get_corner_cases(self.mod))
+        ccs = get_corner_cases(self.mod, self.single_op)
+        vals = repeat(self.dut.num_rows, ccs)
         tname = "test_fp%s_pipe_fp%d_cornercases" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals,
               single_op=self.single_op)
 
     def run_regressions(self, regressions_fn):
         vals = repeat(self.dut.num_rows, regressions_fn())
-        print ("regressions", vals)
+        #print ("regressions", self.single_op, vals)
         tname = "test_fp%s_pipe_fp%d_regressions" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals,
               single_op=self.single_op)

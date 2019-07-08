@@ -25,7 +25,11 @@ class MuxInOut:
             self.do[muxid] = []
             for i in range(self.tlen):
                 if self.single_op:
-                    (op1, ) = vals.pop(0)
+                    #print ("vals", vals)
+                    op1 = vals.pop(0)
+                    if isinstance(op1, tuple):
+                        assert len(op1) == 1
+                        op1 = op1[0]
                     res = self.fpop(self.fpkls(op1))
                     self.di[muxid][i] = (op1, )
                 else:
@@ -157,14 +161,16 @@ def repeat(num_rows, vals):
     """
     vals = list(vals)
     n_to_repeat = len(vals) % num_rows
+    #print ("repeat", vals)
     return vals + [vals[-1]] * n_to_repeat
 
 
 def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
                             single_op=False):
     for i, fixed_num in enumerate(cc(mod)):
-        vals = fn(mod, fixed_num, count, width)
+        vals = fn(mod, fixed_num, count, width, single_op)
         vals = repeat(dut.num_rows, vals)
+        #print ("repeat", i, fn, single_op, list(vals))
         fmt = "test_pipe_fp%d_%s_cornercases_%d"
         runfp(dut, width, fmt % (width, name, i),
                    fmod, fpfn, vals=vals, single_op=single_op)
