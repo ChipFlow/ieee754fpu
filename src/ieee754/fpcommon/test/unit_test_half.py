@@ -39,7 +39,7 @@ def match(x, y):
         )
 
 def create(s, e, m):
-    return set_exponent((s<<15) | m, x)
+    return set_exponent((s<<15) | m, e)
 
 def inf(s):
     return create(s, 16, 0)

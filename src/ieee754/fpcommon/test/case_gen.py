@@ -25,17 +25,20 @@ def replicate(fixed_num, maxcount):
     else:
         return fixed_num
 
+def get_rval(width):
+    mval = (1<<width)-1
+    return randint(0, mval)
 
 def get_rand1(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
-    stimulus_b = [randint(0, 1<<width) for i in range(maxcount)]
+    stimulus_b = [get_rval(width) for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
 
 def get_nan_noncan(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
     # non-canonical NaNs.
-    stimulus_b = [mod.set_exponent(randint(0, 1<<width), mod.max_e) \
+    stimulus_b = [mod.set_exponent(get_rval(width), mod.max_e) \
                         for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
@@ -43,7 +46,7 @@ def get_nan_noncan(mod, fixed_num, maxcount, width):
 def get_n127(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
     # -127
-    stimulus_b = [mod.set_exponent(randint(0, 1<<width), -mod.max_e+1) \
+    stimulus_b = [mod.set_exponent(get_rval(width), -mod.max_e+1) \
                         for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
@@ -51,7 +54,7 @@ def get_n127(mod, fixed_num, maxcount, width):
 def get_nearly_zero(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
     # nearly zero
-    stimulus_b = [mod.set_exponent(randint(0, 1<<width), -mod.max_e+2) \
+    stimulus_b = [mod.set_exponent(get_rval(width), -mod.max_e+2) \
                         for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
@@ -59,7 +62,7 @@ def get_nearly_zero(mod, fixed_num, maxcount, width):
 def get_nearly_inf(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
     # nearly inf
-    stimulus_b = [mod.set_exponent(randint(0, 1<<width), mod.max_e-1) \
+    stimulus_b = [mod.set_exponent(get_rval(width), mod.max_e-1) \
                         for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
@@ -67,7 +70,7 @@ def get_nearly_inf(mod, fixed_num, maxcount, width):
 def get_corner_rand(mod, fixed_num, maxcount, width):
     stimulus_a = replicate(fixed_num, maxcount)
     # random
-    stimulus_b = [randint(0, 1<<width) for i in range(maxcount)]
+    stimulus_b = [get_rval(width) for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
 
 
