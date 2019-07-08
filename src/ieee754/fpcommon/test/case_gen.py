@@ -103,6 +103,7 @@ class PipeFPCase:
 
     def run_regressions(self, regressions_fn):
         vals = repeat(self.dut.num_rows, regressions_fn())
+        print ("regressions", vals)
         tname = "test_fp%s_pipe_fp%d_regressions" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals)
 

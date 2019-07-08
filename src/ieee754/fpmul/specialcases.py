@@ -75,7 +75,7 @@ class FPMulSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.z.inf(sabx)
             # b is zero return NaN
             with m.If(b1.is_zero):
-                m.d.comb += self.o.z.nan(1)
+                m.d.comb += self.o.z.nan(0)
 
         # if b is inf return inf (or NaN)
         with m.Elif(b1.is_inf):
@@ -83,7 +83,7 @@ class FPMulSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.z.inf(sabx)
             # a is zero return NaN
             with m.If(a1.is_zero):
-                m.d.comb += self.o.z.nan(1)
+                m.d.comb += self.o.z.nan(0)
 
         # if a is zero or b zero return signed-a/b
         with m.Elif(obz):
