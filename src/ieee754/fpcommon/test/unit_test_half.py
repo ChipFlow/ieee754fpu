@@ -4,6 +4,8 @@ from random import seed
 import sys
 from sfpy import Float16
 
+max_e = 16
+
 def get_mantissa(x):
     return 0x3ff & x
 

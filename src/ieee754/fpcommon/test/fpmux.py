@@ -30,7 +30,7 @@ class InputTest:
                     self.di[muxid][i] = (op1, )
                 else:
                     (op1, op2, ) = vals.pop(0)
-                    print ("test", hex(op1), hex(op2))
+                    #print ("test", hex(op1), hex(op2))
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
                     self.di[muxid][i] = (op1, op2)
                 self.do[muxid].append(res.bits)
@@ -159,6 +159,15 @@ def repeat(num_rows, vals):
     n_to_repeat = len(vals) % num_rows
     print (vals, vals[-1])
     return vals + [vals[-1]] * n_to_repeat
+
+
+def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count):
+    for i, fixed_num in enumerate(cc(mod)):
+        vals = fn(mod, fixed_num, count, width)
+        vals = repeat(dut.num_rows, vals)
+        fmt = "test_pipe_fp%d_%s_cornercases_%d"
+        runfp(dut, width, fmt % (width, name, i),
+                   fmod, fpfn, vals=vals)
 
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
