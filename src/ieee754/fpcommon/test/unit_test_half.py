@@ -33,6 +33,18 @@ def match(x, y):
         (x == y)
         )
 
+def create(s, e, x):
+    return (s<<15) | ((e+15) << 11) | m
+
+def inf(s):
+    return create(s, 16, 0)
+
+def nan(s):
+    return create(s, 16, 1<<11)
+
+def zero(s):
+    return s<<15
+
 def get_case(dut, a, b):
     yield dut.in_a.v.eq(a)
     yield dut.in_a.stb.eq(1)
