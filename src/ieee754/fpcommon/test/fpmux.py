@@ -10,7 +10,7 @@ from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
 
-class InputTest:
+class MuxInOut:
     def __init__(self, dut, width, fpkls, fpop, vals, single_op):
         self.dut = dut
         self.fpkls = fpkls
@@ -178,11 +178,9 @@ def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
     if vals is None:
         vals = create_random(dut.num_rows, width, single_op, n_vals)
 
-    test = InputTest(dut, width, fpkls, fpop, vals, single_op)
-    run_simulation(dut, [test.rcv(1), test.rcv(0),
-                         test.rcv(3), test.rcv(2),
-                         test.send(0), test.send(1),
-                         test.send(3), test.send(2),
-                        ],
-                   vcd_name="%s.vcd" % name)
-
+    test = MuxInOut(dut, width, fpkls, fpop, vals, single_op)
+    fns = []
+    for i in range(dut.num_rows):
+        fns.append(test.rcv(i))
+        fns.append(test.send(i))
+    run_simulation(dut, fns, vcd_name="%s.vcd" % name)
