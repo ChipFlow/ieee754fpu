@@ -33,14 +33,14 @@ def match(x, y):
         (x == y)
         )
 
-def create(s, e, x):
+def create(s, e, m):
     return (s<<15) | ((e+15) << 11) | m
 
 def inf(s):
     return create(s, 16, 0)
 
 def nan(s):
-    return create(s, 16, 1<<11)
+    return create(s, 16, 1<<10)
 
 def zero(s):
     return s<<15
