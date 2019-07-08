@@ -10,6 +10,9 @@ def get_mantissa(x):
 def get_exponent(x):
     return ((x & 0x7ff0000000000000) >> 52) - 1023
 
+def set_exponent(x, e):
+    return (x & ~0x7ff0000000000000) | ((e+1023) << 23)
+
 def get_sign(x):
     return ((x & 0x8000000000000000) >> 63)
 
@@ -34,7 +37,7 @@ def match(x, y):
         )
 
 def create(s, e, m):
-    return (s<<63) | ((e+1023) << 52) | m
+    return set_exponent((s<<63) | m, e)
 
 def inf(s):
     return create(s, 1024, 0)

@@ -8,7 +8,10 @@ def get_mantissa(x):
     return 0x3ff & x
 
 def get_exponent(x):
-    return ((x & 0xf800) >> 11) - 15
+    return ((x & 0x7800) >> 11) - 15
+
+def set_exponent(x, e):
+    return (x & ~0x7800) | ((e+15) << 11)
 
 def get_sign(x):
     return ((x & 0x8000) >> 15)
@@ -34,7 +37,7 @@ def match(x, y):
         )
 
 def create(s, e, m):
-    return (s<<15) | ((e+15) << 11) | m
+    return set_exponent((s<<15) | m, x)
 
 def inf(s):
     return create(s, 16, 0)
