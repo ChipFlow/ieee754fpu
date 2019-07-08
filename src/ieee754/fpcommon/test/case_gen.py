@@ -1,8 +1,9 @@
+from ieee754.fpcommon.test.fpmux import runfp, repeat, pipe_cornercases_repeat
+
 from random import randint
 from random import seed
 
 import sys
-from sfpy import Float32
 
 def corner_cases(mod):
     return [mod.zero(1), mod.zero(0),
@@ -68,4 +69,48 @@ def get_corner_rand(mod, fixed_num, maxcount, width):
     # random
     stimulus_b = [randint(0, 1<<width) for i in range(maxcount)]
     return zip(stimulus_a, stimulus_b)
+
+
+class PipeFPCase:
+    def __init__(self, dut, name, mod, fmod, width, fpfn, count):
+        self.dut = dut
+        self.name = name
+        self.mod = mod
+        self.fmod = fmod
+        self.width = width
+        self.fpfn = fpfn
+        self.count = count
+
+    def run(self, name, fn):
+        name = "%s_%s" % (self.name, name)
+        pipe_cornercases_repeat(self.dut, name, self.mod, self.fmod,
+                                self.width, fn, corner_cases, self.fpfn,
+                                self.count)
+
+    def run_cornercases(self):
+        vals = repeat(self.dut.num_rows, get_corner_cases(self.mod))
+        tname = "test_fp%s_pipe_fp%d_cornercases" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals)
+
+    def run_regressions(self, regressions_fn):
+        vals = repeat(self.dut.num_rows, regressions_fn())
+        tname = "test_fp%s_pipe_fp%d_regressions" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals)
+
+    def run_random(self):
+        tname = "test_fp%s_pipe_fp%d_rand" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn)
+
+
+def run_pipe_fp(dut, width, name, mod, fmod, regressions, fpfn, count):
+    pc = PipeFPCase(dut, name, mod, fmod, width, fpfn, count)
+    pc.run("rand1", get_rand1)
+    pc.run("n127", get_n127)
+    pc.run("noncan", get_nan_noncan)
+    pc.run("nearlyzero", get_nearly_zero)
+    pc.run("nearlyinf", get_nearly_inf)
+    pc.run("corner_rand", get_corner_rand)
+    pc.run_cornercases()
+    pc.run_regressions(regressions)
+    pc.run_random()
 
