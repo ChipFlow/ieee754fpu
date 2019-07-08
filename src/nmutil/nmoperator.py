@@ -93,9 +93,9 @@ class Visitor2:
             yield from self.iterator2(ao.fields[field_name], val)
 
     def arrayproxy_iter2(self, ao, ai):
-        print ("arrayproxy_iter2", ai.ports(), ai, ao)
+        #print ("arrayproxy_iter2", ai.ports(), ai, ao)
         for p in ai.ports():
-            print ("arrayproxy - p", p, p.name, ao)
+            #print ("arrayproxy - p", p, p.name, ao)
             op = getattr(ao, p.name)
             yield from self.iterator2(op, p)
 
