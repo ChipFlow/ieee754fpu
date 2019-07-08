@@ -135,7 +135,7 @@ class FPDIVMuxInOut(ReservationStations):
     """
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(width)
-        self.pspec = {)
+        self.pspec = {}
         self.pspec['width'] = width
         self.pspec['id_wid'] = self.id_wid
         self.pspec['op_wid'] = op_wid
