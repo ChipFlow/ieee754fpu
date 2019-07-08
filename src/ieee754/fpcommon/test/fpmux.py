@@ -157,7 +157,6 @@ def repeat(num_rows, vals):
     """
     vals = list(vals)
     n_to_repeat = len(vals) % num_rows
-    print (vals, vals[-1])
     return vals + [vals[-1]] * n_to_repeat
 
 

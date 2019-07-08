@@ -14,59 +14,52 @@ from sfpy import Float32
 from operator import add
 
 
-def test_pipe_fp32_rand1():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_rand1", unit_test_single, Float32,
-                                 32, get_rand1, corner_cases, add, 10)
+class PipeFPCase:
+    def __init__(self, dut, name, mod, fmod, width, cc, fpfn, count):
+        self.dut = dut
+        self.name = name
+        self.mod = mod
+        self.fmod = fmod
+        self.width = width
+        self.cc = cc
+        self.fpfn = fpfn
+        self.count = count
 
-def test_pipe_fp32_n127():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_n127", unit_test_single, Float32,
-                                 32, get_n127, corner_cases, add, 10)
+    def run(self, name, fn):
+        name = "%s_%s" % (self.name, name)
+        pipe_cornercases_repeat(self.dut, name, self.mod, self.fmod,
+                                self.width, fn, self.cc, self.fpfn,
+                                self.count)
 
-def test_pipe_fp32_nan_noncan():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_noncan", unit_test_single, Float32,
-                                 32, get_nan_noncan, corner_cases, add, 10)
+    def run_cornercases(self):
+        vals = repeat(self.dut.num_rows, get_corner_cases(self.mod))
+        tname = "test_fp%s_pipe_fp%d_cornercases" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals)
 
-def test_pipe_fp32_nearly_zero():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_nearlyzero", unit_test_single, Float32,
-                                 32, get_nearly_zero, corner_cases, add, 10)
+    def run_regressions(self, regressions_fn):
+        vals = repeat(self.dut.num_rows, regressions_fn())
+        tname = "test_fp%s_pipe_fp%d_regressions" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals)
 
-def test_pipe_fp32_nearly_inf():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_nearlyinf", unit_test_single, Float32,
-                                 32, get_nearly_inf, corner_cases, add, 10)
+    def run_random(self):
+        tname = "test_fp%s_pipe_fp%d_rand" % (self.name, self.width)
+        runfp(self.dut, self.width, tname, self.fmod, self.fpfn)
 
-def test_pipe_fp32_corner_rand():
-    dut = FPADDMuxInOut(32, 4)
-    pipe_cornercases_repeat(dut, "add_corner_rand", unit_test_single, Float32,
-                                 32, get_corner_rand, corner_cases, add, 10)
 
-def test_pipe_fp32_cornercases():
+def test_pipe_fp32():
     dut = FPADDMuxInOut(32, 4)
-    vals = repeat(dut.num_rows, get_corner_cases(unit_test_single))
-    runfp(dut, 32, "test_fpadd_pipe_fp32_cornercases", Float32, add, vals=vals)
-
-def test_pipe_fp32_regressions():
-    dut = FPADDMuxInOut(32, 4)
-    vals = repeat(dut.num_rows, regressions())
-    runfp(dut, 32, "test_fpadd_pipe_fp32_regressions", Float32, add, vals=vals)
-
-def test_pipe_fp32_rand():
-    dut = FPADDMuxInOut(32, 4)
-    runfp(dut, 32, "test_fpadd_pipe_fp32_rand", Float32, add)
+    pc = PipeFPCase(dut, "add", unit_test_single, Float32,
+                   32, corner_cases, add, 10)
+    pc.run("rand1", get_rand1)
+    pc.run("n127", get_n127)
+    pc.run("noncan", get_nan_noncan)
+    pc.run("nearlyzero", get_nearly_zero)
+    pc.run("nearlyinf", get_nearly_inf)
+    pc.run("corner_rand", get_corner_rand)
+    pc.run_cornercases()
+    pc.run_regressions(regressions)
+    pc.run_random()
 
 
 if __name__ == '__main__':
-    test_pipe_fp32_regressions()
-    test_pipe_fp32_cornercases()
-    test_pipe_fp32_rand()
-    test_pipe_fp32_rand1()
-    test_pipe_fp32_nan_noncan()
-    test_pipe_fp32_n127()
-    test_pipe_fp32_nearly_zero()
-    test_pipe_fp32_nearly_inf()
-    test_pipe_fp32_corner_rand()
-
+    test_pipe_fp32()
