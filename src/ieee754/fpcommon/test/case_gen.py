@@ -1,3 +1,22 @@
+"""FP Unit Test Infrastructure
+
+allows testing of:
+
+* random range against random range
+* +/- 0, +/- inf, +/- NaN permutations, all tested against all permutations
+* all of those permutations (+/- 0/inf/NaN) against the following:
+- nearly zero (random variations)
+- minimum non-zero exponent (random variations)
+- nearly infinite (random variations)
+- random versions of NaN (noncanonical NaN)
+- random numbers (at the full range)
+
+inversion of permutations also done, where appropriate (A,B and B,A)
+
+single-operand version also supported
+
+"""
+
 from ieee754.fpcommon.test.fpmux import runfp, repeat, pipe_cornercases_repeat
 
 from random import randint
