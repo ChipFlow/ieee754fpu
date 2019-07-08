@@ -36,6 +36,19 @@ def match(x, y):
         (x == y)
         )
 
+def create(s, e, x):
+    return (s<<31) | ((e+127) << 23) | m
+
+def inf(s):
+    return create(s, 128, 0)
+
+def nan(s):
+    return create(s, 128, 1<<23)
+
+def zero(s):
+    return s<<31
+
+
 def get_rs_case(dut, a, b, mid):
     in_a, in_b = dut.rs[0]
     out_z = dut.res[0]
