@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
@@ -227,3 +228,7 @@ class TestDivPipeCore(unittest.TestCase):
                                            log2_radix=1))
 
     # FIXME: add more test_* functions
+
+
+if __name__ == '__main__':
+    unittest.main()

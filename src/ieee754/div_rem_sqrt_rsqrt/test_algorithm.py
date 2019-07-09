@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
@@ -1129,3 +1130,7 @@ class TestFixedUDivRemSqrtRSqrt(unittest.TestCase):
                                   shifted_remainder=shifted_remainder):
                     self.assertEqual(obj.quotient_root, quotient)
                     self.assertEqual(obj.remainder, shifted_remainder)
+
+
+if __name__ == '__main__':
+    unittest.main()
