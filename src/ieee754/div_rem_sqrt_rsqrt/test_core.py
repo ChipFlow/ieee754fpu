@@ -75,38 +75,18 @@ class TestCaseData:
 def generate_test_case(core_config, dividend, divisor_radicand, alg_op):
     bit_width = core_config.bit_width
     fract_width = core_config.fract_width
-    if alg_op is Operation.UDivRem:
-        if divisor_radicand == 0:
-            return
-        quotient_root, remainder = div_rem(dividend,
-                                           divisor_radicand,
-                                           bit_width * 3,
-                                           False)
-        remainder <<= fract_width
-    elif alg_op is Operation.SqrtRem:
-        root_remainder = fixed_sqrt(Fixed.from_bits(divisor_radicand,
-                                                    fract_width,
-                                                    bit_width,
-                                                    False))
-        quotient_root = root_remainder.root.bits
-        remainder = root_remainder.remainder.bits << fract_width
-    else:
-        assert alg_op is Operation.RSqrtRem
-        if divisor_radicand == 0:
-            return
-        root_remainder = fixed_rsqrt(Fixed.from_bits(divisor_radicand,
-                                                     fract_width,
-                                                     bit_width,
-                                                     False))
-        quotient_root = root_remainder.root.bits
-        remainder = root_remainder.remainder.bits
-    if quotient_root >= (1 << bit_width):
-        return
+    obj = FixedUDivRemSqrtRSqrt(dividend,
+                                divisor_radicand,
+                                alg_op,
+                                bit_width,
+                                fract_width,
+                                core_config.log2_radix)
+    obj.calculate()
     yield TestCaseData(dividend,
                        divisor_radicand,
                        alg_op,
-                       quotient_root,
-                       remainder,
+                       obj.quotient_root,
+                       obj.remainder,
                        core_config)
 
 
@@ -145,7 +125,7 @@ def get_test_cases(core_config,
 
 
 class DivPipeCoreTestPipeline(Elaboratable):
-    def __init__(self, core_config, sync=True):
+    def __init__(self, core_config, sync):
         self.setup_stage = DivPipeCoreSetupStage(core_config)
         self.calculate_stages = [
             DivPipeCoreCalculateStage(core_config, stage_index)
@@ -202,22 +182,22 @@ class TestDivPipeCore(unittest.TestCase):
         base_name += f"_fract_width_{core_config.fract_width}"
         base_name += f"_radix_{1 << core_config.log2_radix}"
         with self.subTest(part="synthesize"):
-            dut = DivPipeCoreTestPipeline(core_config)
+            dut = DivPipeCoreTestPipeline(core_config, sync)
             vl = rtlil.convert(dut, ports=[*dut.i, *dut.o])
             with open(f"{base_name}.il", "w") as f:
                 f.write(vl)
-        dut = DivPipeCoreTestPipeline(core_config)
+        dut = DivPipeCoreTestPipeline(core_config, sync)
         with Simulator(dut,
                        vcd_file=open(f"{base_name}.vcd", "w"),
                        gtkw_file=open(f"{base_name}.gtkw", "w"),
                        traces=[*dut.traces()]) as sim:
             def generate_process():
                 for test_case in gen_test_cases():
+                    yield Tick()
                     yield dut.i.dividend.eq(test_case.dividend)
                     yield dut.i.divisor_radicand.eq(test_case.divisor_radicand)
                     yield dut.i.operation.eq(int(test_case.core_op))
-                    yield Delay(1e-6)
-                    yield Tick()
+                    yield Delay(0.9e-6)
 
             def check_process():
                 # sync with generator
@@ -229,14 +209,14 @@ class TestDivPipeCore(unittest.TestCase):
 
                 # now synched with generator
                 for test_case in gen_test_cases():
-                    yield Delay(1e-6)
+                    yield Tick()
+                    yield Delay(0.9e-6)
                     quotient_root = (yield dut.o.quotient_root)
                     remainder = (yield dut.o.remainder)
                     with self.subTest(test_case=str(test_case)):
                         self.assertEqual(quotient_root,
                                          test_case.quotient_root)
                         self.assertEqual(remainder, test_case.remainder)
-                    yield Tick()
             sim.add_clock(2e-6)
             sim.add_sync_process(generate_process)
             sim.add_sync_process(check_process)
@@ -248,6 +228,12 @@ class TestDivPipeCore(unittest.TestCase):
                                            log2_radix=1),
                          dividends=[*range(1 << 8),
                                     *range(1 << 8, 1 << 12, 1 << 4)],
+                         sync=False)
+
+    def test_bit_width_2_fract_width_1_radix_2(self):
+        self.handle_case(DivPipeCoreConfig(bit_width=2,
+                                           fract_width=1,
+                                           log2_radix=1),
                          sync=False)
 
     # FIXME: add more test_* functions

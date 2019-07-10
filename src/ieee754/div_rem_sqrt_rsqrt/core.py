@@ -69,7 +69,7 @@ class DivPipeCoreOperation(enum.Enum):
     def create_signal(cls, *, src_loc_at=0, **kwargs):
         """ Create a signal that can contain a ``DivPipeCoreOperation``. """
         return Signal(min=min(map(int, cls)),
-                      max=max(map(int, cls)),
+                      max=max(map(int, cls)) + 2,
                       src_loc_at=(src_loc_at + 1),
                       decoder=lambda v: str(cls(v)),
                       **kwargs)
@@ -305,31 +305,45 @@ class DivPipeCoreCalculateStage(Elaboratable):
         trial_compare_rhs_values = []
         pass_flags = []
         for trial_bits in range(radix):
-            tb = trial_bits << current_shift
-            tb_width = log2_radix + current_shift
-            shifted_trial_bits = Const(tb, tb_width)
-            shifted_trial_bits2 = Const(tb*2, tb_width+1)
-            shifted_trial_bits_sqrd = Const(tb * tb, tb_width * 2)
+            trial_bits_sig = Const(trial_bits, log2_radix)
+            trial_bits_sqrd_sig = Const(trial_bits * trial_bits,
+                                        log2_radix * 2)
+
+            dr_times_trial_bits = self.i.divisor_radicand * trial_bits_sig
+            dr_times_trial_bits_sqrd = self.i.divisor_radicand \
+                * trial_bits_sqrd_sig
+            qr_times_trial_bits = self.i.quotient_root * trial_bits_sig
+            rr_times_trial_bits = self.i.root_times_radicand * trial_bits_sig
 
             # UDivRem
             div_rhs = self.i.compare_rhs
-            if tb != 0:  # no point adding stuff that's multiplied by zero
-                div_factor1 = self.i.divisor_radicand * shifted_trial_bits2
-                div_rhs += div_factor1 << self.core_config.fract_width
+            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
+                div_term1 = dr_times_trial_bits
+                div_term1_shift = self.core_config.fract_width
+                div_term1_shift += current_shift
+                div_rhs += div_term1 << div_term1_shift
 
             # SqrtRem
             sqrt_rhs = self.i.compare_rhs
-            if tb != 0:  # no point adding stuff that's multiplied by zero
-                sqrt_factor1 = self.i.quotient_root * shifted_trial_bits2
-                sqrt_rhs += sqrt_factor1 << self.core_config.fract_width
-                sqrt_factor2 = shifted_trial_bits_sqrd
-                sqrt_rhs += sqrt_factor2 << self.core_config.fract_width
+            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
+                sqrt_term1 = qr_times_trial_bits
+                sqrt_term1_shift = self.core_config.fract_width
+                sqrt_term1_shift += current_shift + 1
+                sqrt_rhs += sqrt_term1 << sqrt_term1_shift
+                sqrt_term2 = trial_bits_sqrd_sig
+                sqrt_term2_shift = self.core_config.fract_width
+                sqrt_term2_shift += current_shift * 2
+                sqrt_rhs += sqrt_term2 << sqrt_term2_shift
 
             # RSqrtRem
             rsqrt_rhs = self.i.compare_rhs
-            if tb != 0:  # no point adding stuff that's multiplied by zero
-                rsqrt_rhs += self.i.root_times_radicand * shifted_trial_bits2
-                rsqrt_rhs += self.i.divisor_radicand * shifted_trial_bits_sqrd
+            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
+                rsqrt_term1 = rr_times_trial_bits
+                rsqrt_term1_shift = current_shift + 1
+                rsqrt_rhs += rsqrt_term1 << rsqrt_term1_shift
+                rsqrt_term2 = dr_times_trial_bits_sqrd
+                rsqrt_term2_shift = current_shift * 2
+                rsqrt_rhs += rsqrt_term2 << rsqrt_term2_shift
 
             trial_compare_rhs = Signal.like(
                 self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}",
@@ -362,19 +376,16 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 bit_value ^= pass_flags[j]
             m.d.comb += next_bits.part(i, 1).eq(bit_value)
 
-        next_compare_rhs = Signal(radix, reset_less=True)
-        l = []
+        next_compare_rhs = 0
         for i in range(radix):
-            next_flag = pass_flags[i + 1] if (i + 1 < radix) else Const(0)
-            flag = Signal(reset_less=True, name=f"flag{i}")
-            test = Signal(reset_less=True, name=f"test{i}")
-            # XXX TODO: check the width on this
-            m.d.comb += test.eq((pass_flags[i] & ~next_flag))
-            m.d.comb += flag.eq(Mux(test, trial_compare_rhs_values[i], 0))
-            l.append(flag)
+            next_flag = pass_flags[i + 1] if i + 1 < radix else 0
+            selected = Signal(name=f"selected_{i}", reset_less=True)
+            m.d.comb += selected.eq(pass_flags[i] & ~next_flag)
+            next_compare_rhs |= Mux(selected,
+                                    trial_compare_rhs_values[i],
+                                    0)
 
-        m.d.comb += next_compare_rhs.eq(Cat(*l))
-        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs.bool())
+        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs)
         m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
