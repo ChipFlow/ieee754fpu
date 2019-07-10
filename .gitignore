@@ -7,3 +7,4 @@ __pycache__
 *.il
 .eggs
 *.egg-info
+*.gtkw

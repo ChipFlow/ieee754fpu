@@ -49,7 +49,7 @@ class DivPipeCoreConfig:
         return (self.bit_width + self.log2_radix - 1) // self.log2_radix
 
 
-class DivPipeCoreOperation(enum.IntEnum):
+class DivPipeCoreOperation(enum.Enum):
     """ Operation for ``DivPipeCore``.
 
     :attribute UDivRem: unsigned divide/remainder.
@@ -61,13 +61,17 @@ class DivPipeCoreOperation(enum.IntEnum):
     SqrtRem = 1
     RSqrtRem = 2
 
+    def __int__(self):
+        """ Convert to int. """
+        return self.value
+
     @classmethod
     def create_signal(cls, *, src_loc_at=0, **kwargs):
         """ Create a signal that can contain a ``DivPipeCoreOperation``. """
-        return Signal(min=int(min(cls)),
-                      max=int(max(cls)),
+        return Signal(min=min(map(int, cls)),
+                      max=max(map(int, cls)),
                       src_loc_at=(src_loc_at + 1),
-                      decoder=cls,
+                      decoder=lambda v: str(cls(v)),
                       **kwargs)
 
 
@@ -239,10 +243,10 @@ class DivPipeCoreSetupStage(Elaboratable):
         m.d.comb += self.o.quotient_root.eq(0)
         m.d.comb += self.o.root_times_radicand.eq(0)
 
-        with m.If(self.i.operation == DivPipeCoreOperation.UDivRem):
+        with m.If(self.i.operation == int(DivPipeCoreOperation.UDivRem)):
             m.d.comb += self.o.compare_lhs.eq(self.i.dividend
                                               << self.core_config.fract_width)
-        with m.Elif(self.i.operation == DivPipeCoreOperation.SqrtRem):
+        with m.Elif(self.i.operation == int(DivPipeCoreOperation.SqrtRem)):
             m.d.comb += self.o.compare_lhs.eq(
                 self.i.divisor_radicand << (self.core_config.fract_width * 2))
         with m.Else():  # DivPipeCoreOperation.RSqrtRem
@@ -331,9 +335,9 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}",
                 reset_less=True)
 
-            with m.If(self.i.operation == DivPipeCoreOperation.UDivRem):
+            with m.If(self.i.operation == int(DivPipeCoreOperation.UDivRem)):
                 m.d.comb += trial_compare_rhs.eq(div_rhs)
-            with m.Elif(self.i.operation == DivPipeCoreOperation.SqrtRem):
+            with m.Elif(self.i.operation == int(DivPipeCoreOperation.SqrtRem)):
                 m.d.comb += trial_compare_rhs.eq(sqrt_rhs)
             with m.Else():  # DivPipeCoreOperation.RSqrtRem
                 m.d.comb += trial_compare_rhs.eq(rsqrt_rhs)
