@@ -24,7 +24,7 @@ class FPRoundData:
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.ctx.eq(i.ctx)]
+               self.ctx.eq(i.ctx)]
         return ret
 
 
@@ -50,12 +50,13 @@ class FPRoundMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.out_z.eq(self.i) # copies mid, z, out_do_z
-        with m.If(~self.i.out_do_z): # bypass wasn't enabled
+        m.d.comb += self.out_z.eq(self.i)  # copies muxid, z, out_do_z
+        with m.If(~self.i.out_do_z):  # bypass wasn't enabled
             with m.If(self.i.roundz):
-                m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1) # mantissa up
-                with m.If(self.i.z.m == self.i.z.m1s): # all 1s
-                    m.d.comb += self.out_z.z.e.eq(self.i.z.e + 1) # exponent up
+                m.d.comb += self.out_z.z.m.eq(self.i.z.m + 1)  # mantissa up
+                with m.If(self.i.z.m == self.i.z.m1s):  # all 1s
+                    # exponent up
+                    m.d.comb += self.out_z.z.e.eq(self.i.z.e + 1)
 
         return m
 
