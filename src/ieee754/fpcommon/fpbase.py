@@ -44,20 +44,10 @@ class MultiShift:
     def lshift(self, op, s):
         res = op << s
         return res[:len(op)]
-        res = op
-        for i in range(self.smax):
-            zeros = [0] * (1 << i)
-            res = Mux(s & (1 << i), Cat(zeros, res[0:-(1 << i)]), res)
-        return res
 
     def rshift(self, op, s):
         res = op >> s
         return res[:len(op)]
-        res = op
-        for i in range(self.smax):
-            zeros = [0] * (1 << i)
-            res = Mux(s & (1 << i), Cat(res[(1 << i):], zeros), res)
-        return res
 
 
 class FPNumBaseRecord:
