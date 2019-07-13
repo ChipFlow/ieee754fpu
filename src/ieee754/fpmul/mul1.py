@@ -38,13 +38,20 @@ class FPMulStage1Mod(FPState, Elaboratable):
         m = Module()
         m.d.comb += self.o.z.eq(self.i.z)
         with m.If(~self.i.out_do_z):
+            p = Signal(len(self.i.product), reset_less=True)
+            with m.If(self.i.product[-1]):
+                m.d.comb += p.eq(self.i.product)
+            with m.Else():
+                # get 1 bit of extra accuracy if the mantissa top bit is zero
+                m.d.comb += p.eq(self.i.product<<1)
+                m.d.comb += self.o.z.e.eq(self.i.z.e-1)
             mw = self.o.z.m_width
             m.d.comb += [
-                self.o.z.m.eq(self.i.product[mw+2:]),
-                self.o.of.m0.eq(self.i.product[mw+2]),
-                self.o.of.guard.eq(self.i.product[mw+1]),
-                self.o.of.round_bit.eq(self.i.product[mw]),
-                self.o.of.sticky.eq(self.i.product[0:mw].bool())
+                self.o.z.m.eq(p[mw+2:]),
+                self.o.of.m0.eq(p[mw+2]),
+                self.o.of.guard.eq(p[mw+1]),
+                self.o.of.round_bit.eq(p[mw]),
+                self.o.of.sticky.eq(p[0:mw].bool())
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
@@ -61,7 +68,6 @@ class FPMulStage1(FPState):
         width = pspec['width']
         self.mod = FPMulStage1Mod(pspec)
         self.out_z = FPNumBaseRecord(width, False)
-        self.out_of = Overflow()
         self.norm_stb = Signal()
 
     def setup(self, m, i):
@@ -71,7 +77,6 @@ class FPMulStage1(FPState):
 
         m.d.sync += self.norm_stb.eq(0) # sets to zero when not in mul1 state
 
-        m.d.sync += self.out_of.eq(self.mod.out_of)
         m.d.sync += self.out_z.eq(self.mod.out_z)
         m.d.sync += self.norm_stb.eq(1)
 
