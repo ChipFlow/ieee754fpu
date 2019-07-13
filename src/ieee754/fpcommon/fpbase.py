@@ -588,11 +588,13 @@ class FPOpOut(NextControl):
 
 
 class Overflow:  # (Elaboratable):
-    def __init__(self):
-        self.guard = Signal(reset_less=True)     # tot[2]
-        self.round_bit = Signal(reset_less=True)  # tot[1]
-        self.sticky = Signal(reset_less=True)    # tot[0]
-        self.m0 = Signal(reset_less=True)        # mantissa zero bit
+    def __init__(self, name=None):
+        if name is None:
+            name = ""
+        self.guard = Signal(reset_less=True, name=name+"guard")     # tot[2]
+        self.round_bit = Signal(reset_less=True, name=name+"round") # tot[1]
+        self.sticky = Signal(reset_less=True, name=name+"sticky")   # tot[0]
+        self.m0 = Signal(reset_less=True, name=name+"m0") # mantissa bit 0
 
         #self.roundz = Signal(reset_less=True)
 
@@ -611,6 +613,26 @@ class Overflow:  # (Elaboratable):
     @property
     def roundz(self):
         return self.guard & (self.round_bit | self.sticky | self.m0)
+
+
+class OverflowMod(Elaboratable, Overflow):
+    def __init__(self, name=None):
+        Overflow.__init__(self, name)
+        if name is None:
+            name = ""
+        self.roundz_out = Signal(reset_less=True, name=name+"roundz_out")
+
+    def __iter__(self):
+        yield from Overflow.__iter__(self)
+        yield self.roundz_out
+
+    def eq(self, inp):
+        return [self.roundz_out.eq(inp.roundz_out)] + Overflow.eq(self)
+
+    def elaborate(self, platform):
+        m = Module()
+        m.d.comb += self.roundz_out.eq(self.roundz)
+        return m
 
 
 class FPBase:
