@@ -60,7 +60,8 @@ class FPAlignModSingle(Elaboratable):
         insel_b.m.name = "i_b_m"
 
         # copy input to output (overridden below)
-        m.d.comb += self.o.eq(self.i)
+        m.d.comb += self.o.a.eq(insel_a)
+        m.d.comb += self.o.b.eq(insel_b)
 
         # normalisation increase/decrease conditions
         decrease_a = Signal(reset_less=True)
@@ -98,10 +99,9 @@ class FPAlignModSingle(Elaboratable):
                     self.o.b.m.eq(temp_b),
                 ]
 
-        #m.d.comb += self.o.roundz.eq(of.roundz_out)
-        #m.d.comb += self.o.ctx.eq(self.i.ctx)
-        #m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        #m.d.comb += self.o.oz.eq(self.i.oz)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
+        m.d.comb += self.o.oz.eq(self.i.oz)
 
         return m
 

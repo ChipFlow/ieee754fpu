@@ -1,8 +1,5 @@
 def regressions():
     yield 0x0002b017, 0xff3807ab
-    yield 0x0002b017, 0xff3807ab
-    return
-
     yield 0x40000000, 0x40000000
     yield 0x41400000, 0x40A00000
     yield 0xffcaeefa, 0x3f803262
