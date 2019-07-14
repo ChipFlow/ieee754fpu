@@ -157,7 +157,7 @@ class FPMulSpecialCasesDeNorm(FPState, SimpleHandshake):
         # only needed for break-out (early-out)
         # self.out_do_z = smod.o.out_do_z
 
-        self.o = dmod.o
+        self.o = amod.o # output is from last .o in the chain
 
     def process(self, i):
         return self.o
