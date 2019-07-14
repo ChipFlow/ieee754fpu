@@ -14,7 +14,7 @@ from ieee754.fpcommon.getop import FPPipeContext
 class FPAddStage0Data:
 
     def __init__(self, pspec):
-        width = pspec['width']
+        width = pspec.width
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)

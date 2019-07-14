@@ -14,7 +14,7 @@ from .postnormalise import FPNorm1Data
 class FPRoundData:
 
     def __init__(self, pspec):
-        width = pspec['width']
+        width = pspec.width
         self.z = FPNumBaseRecord(width, False)
         self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid

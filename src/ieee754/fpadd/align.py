@@ -16,7 +16,7 @@ from ieee754.fpcommon.getop import FPPipeContext
 class FPNumIn2Ops:
 
     def __init__(self, pspec):
-        width = pspec['width']
+        width = pspec.width
         self.a = FPNumBaseRecord(width)
         self.b = FPNumBaseRecord(width)
         self.z = FPNumBaseRecord(width, False)
@@ -136,7 +136,7 @@ class FPAddAlignSingleMod(Elaboratable):
         #m.submodules.align_out_b = self.o.b
 
         # temporary (muxed) input and output to be shifted
-        width = self.pspec['width']
+        width = self.pspec.width
         t_inp = FPNumBaseRecord(width)
         t_out = FPNumBaseRecord(width)
         espec = (len(self.i.a.e), True)
@@ -196,7 +196,7 @@ class FPAddAlignSingle(FPState):
 
     def __init__(self, pspec):
         FPState.__init__(self, "align")
-        width = pspec['width']
+        width = pspec.width
         self.mod = FPAddAlignSingleMod(pspec)
         self.out_a = FPNumIn(None, width)
         self.out_b = FPNumIn(None, width)

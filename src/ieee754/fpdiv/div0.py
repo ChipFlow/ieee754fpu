@@ -16,11 +16,11 @@ from ieee754.fpcommon.getop import FPPipeContext
 class FPDivStage0Data:
 
     def __init__(self, pspec):
-        self.z = FPNumBaseRecord(pspec['width'], False)
+        self.z = FPNumBaseRecord(pspec.width, False)
         self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(pspec['width'], reset_less=True)
+        self.oz = Signal(pspec.width, reset_less=True)
 
-        self.ctx = FPPipeContext(pspec['width'], pspec) # context: muxid, operator etc.
+        self.ctx = FPPipeContext(pspec.width, pspec) # context: muxid, operator etc.
         self.muxid = self.ctx.muxid             # annoying. complicated.
 
         # TODO: here is where Q and R would be put, and passed

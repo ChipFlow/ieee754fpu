@@ -15,7 +15,7 @@ from ieee754.fpcommon.getop import FPPipeContext
 class FPPackData:
 
     def __init__(self, pspec):
-        width = pspec['width']
+        width = pspec.width
         self.z = Signal(width, reset_less=True)    # result
         self.ctx = FPPipeContext(pspec)
 
@@ -63,7 +63,7 @@ class FPPackMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        z = FPNumBaseRecord(self.pspec['width'], False)
+        z = FPNumBaseRecord(self.pspec.width, False)
         m.submodules.pack_in_z = in_z = FPNumBase(self.i.z)
         #m.submodules.pack_out_z = out_z = FPNumOut(z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)

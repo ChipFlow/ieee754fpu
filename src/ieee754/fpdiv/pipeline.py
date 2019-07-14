@@ -70,6 +70,7 @@ from .specialcases import FPDIVSpecialCasesDeNorm
 from .divstages import (FPDivStagesSetup,
                         FPDivStagesIntermediate,
                         FPDivStagesFinal)
+from ieee754.pipeline import PipelineSpec
 
 
 class FPDIVBasePipe(ControlBase):
@@ -82,22 +83,22 @@ class FPDIVBasePipe(ControlBase):
 
         pipechain = []
         n_stages = 6      # TODO (depends on width)
-        n_comb_stages = 3 # TODO (depends on how many RS's we want)
-                          # to which the answer: "as few as possible"
-                          # is required.  too many ReservationStations
-                          # means "big problems".
+        n_comb_stages = 3  # TODO (depends on how many RS's we want)
+        # to which the answer: "as few as possible"
+        # is required.  too many ReservationStations
+        # means "big problems".
 
         for i in range(n_stages):
 
             # needs to convert input from pipestart ospec
             if i == 0:
                 kls = FPDivStagesSetup
-                n_comb_stages -= 1 # reduce due to work done at start
+                n_comb_stages -= 1  # reduce due to work done at start
 
             # needs to convert output to pipeend ispec
             elif i == n_stages - 1:
                 kls = FPDivStagesFinal
-                n_comb_stages -= 1 # FIXME - reduce due to work done at end?
+                n_comb_stages -= 1  # FIXME - reduce due to work done at end?
 
             # intermediary stage
             else:
@@ -133,15 +134,13 @@ class FPDIVMuxInOut(ReservationStations):
         :op_wid: - set this to the width of an operator which can
                    then be used to change the behaviour of the pipeline.
     """
+
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(width)
-        self.pspec = {}
-        self.pspec['width'] = width
-        self.pspec['id_wid'] = self.id_wid
-        self.pspec['op_wid'] = op_wid
+        self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # XXX TODO - a class (or function?) that takes the pspec (right here)
         # and creates... "something".  that "something" MUST have an eq function
-        # self.pspec['opkls'] = DivPipeCoreOperation
+        # self.pspec.opkls = DivPipeCoreOperation
         self.alu = FPDIVBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 

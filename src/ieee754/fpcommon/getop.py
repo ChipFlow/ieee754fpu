@@ -91,7 +91,7 @@ class FPPipeContext:
                                    "operator". instance must have an "eq"
                                    function.
         """
-        self.id_wid = pspec['id_wid']
+        self.id_wid = pspec.id_width
         self.op_wid = pspec.get('op_wid', 0)
         self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
         opkls = pspec.get('opkls', None)
@@ -116,7 +116,7 @@ class FPPipeContext:
 class FPADDBaseData:
 
     def __init__(self, pspec, n_ops=2):
-        width = pspec['width']
+        width = pspec.width
         self.ctx = FPPipeContext(pspec)
         ops = []
         for i in range(n_ops):

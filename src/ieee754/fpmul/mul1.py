@@ -65,7 +65,7 @@ class FPMulStage1(FPState):
 
     def __init__(self, pspec):
         FPState.__init__(self, "multiply_1")
-        width = pspec['width']
+        width = pspec.width
         self.mod = FPMulStage1Mod(pspec)
         self.out_z = FPNumBaseRecord(width, False)
         self.norm_stb = Signal()

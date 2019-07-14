@@ -29,6 +29,7 @@ from nmutil.singlepipe import SimpleHandshake, StageChain
 
 from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.pipeline import PipelineSpec
 
 
 class FPCVTSpecialCasesMod(Elaboratable):
@@ -64,18 +65,18 @@ class FPCVTSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        print ("in_width out", self.in_pspec['width'],
-                               self.out_pspec['width'])
-        a1 = FPNumBaseRecord(self.in_pspec['width'], False)
-        print ("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
+        print("in_width out", self.in_pspec.width,
+              self.out_pspec.width)
+        a1 = FPNumBaseRecord(self.in_pspec.width, False)
+        print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.d.comb += a1.v.eq(self.i.a)
         z1 = self.o.z
-        print ("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
+        print("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
         me = a1.rmw
         ms = a1.rmw - self.o.z.rmw
-        print ("ms-me", ms, me)
+        print("ms-me", ms, me)
 
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
@@ -96,7 +97,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
             m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
             m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            m.d.comb += self.o.of.m0.eq(a1.m[ms]) # bit of a1
+            m.d.comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
 
             m.d.comb += self.o.z.s.eq(a1.s)
             m.d.comb += self.o.z.e.eq(a1.e)
@@ -115,7 +116,7 @@ class FPCVTSpecialCasesMod(Elaboratable):
 
         # if a mantissa greater than 127, return inf
         with m.Elif(exp_gt127):
-            print ("inf", self.o.z.inf(a1.s))
+            print("inf", self.o.z.inf(a1.s))
             m.d.comb += self.o.z.inf(a1.s)
             m.d.comb += self.o.out_do_z.eq(1)
 
@@ -124,15 +125,15 @@ class FPCVTSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
             m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
             m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            m.d.comb += self.o.of.m0.eq(a1.m[ms]) # bit of a1
+            m.d.comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
 
             # XXX TODO: this is basically duplicating FPRoundMod. hmmm...
-            print ("alen", a1.e_start, z1.fp.N126, N126)
-            print ("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
+            print("alen", a1.e_start, z1.fp.N126, N126)
+            print("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
             mo = Signal(self.o.z.m_width-1)
             m.d.comb += mo.eq(a1.m[ms:me])
             with m.If(self.o.of.roundz):
-                with m.If((~mo == 0)): # all 1s
+                with m.If((~mo == 0)):  # all 1s
                     m.d.comb += self.o.z.create(a1.s, a1.e+1, mo+1)
                 with m.Else():
                     m.d.comb += self.o.z.create(a1.s, a1.e, mo+1)
@@ -161,7 +162,7 @@ class FPCVTSpecialCases(FPState):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
         m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
 
     def action(self, m):
@@ -208,20 +209,14 @@ class FPCVTMuxInOut(ReservationStations):
 
         Fan-in and Fan-out are combinatorial.
     """
+
     def __init__(self, in_width, out_width, num_rows, op_wid=0):
         self.op_wid = op_wid
         self.id_wid = num_bits(in_width)
         self.out_id_wid = num_bits(out_width)
 
-        self.in_pspec = {}
-        self.in_pspec['id_wid'] = self.id_wid
-        self.in_pspec['op_wid'] = self.op_wid
-        self.in_pspec['width'] = in_width
-
-        self.out_pspec = {}
-        self.out_pspec['id_wid'] = self.out_id_wid
-        self.out_pspec['op_wid'] = op_wid
-        self.out_pspec['width'] = out_width
+        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
+        self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
 
         self.alu = FPCVTBasePipe(self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)

@@ -14,7 +14,7 @@ from ieee754.fpcommon.getop import FPPipeContext
 class FPSCData:
 
     def __init__(self, pspec, m_extra):
-        width = pspec['width']
+        width = pspec.width
         # NOTE: difference between z and oz is that oz is created by
         # special-cases module(s) and will propagate, along with its
         # "bypass" signal out_do_z, through the pipeline, *disabling*

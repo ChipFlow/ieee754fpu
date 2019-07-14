@@ -16,7 +16,7 @@ from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from .specialcases import FPAddSpecialCasesDeNorm
 from .addstages import FPAddAlignSingleAdd
-
+from ieee754.pipeline import PipelineSpec
 
 
 class FPADDBasePipe(ControlBase):
@@ -46,10 +46,11 @@ class FPADDMuxInOut(ReservationStations):
 
         Fan-in and Fan-out are combinatorial.
     """
+
     def __init__(self, width, num_rows, op_wid=None):
         self.id_wid = num_bits(width)
         self.op_wid = op_wid
-        self.pspec = {'width': width, 'id_wid': self.id_wid, 'op_wid': op_wid}
+        self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         self.alu = FPADDBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 

@@ -17,7 +17,7 @@ from .postcalc import FPAddStage1Data
 class FPNorm1Data:
 
     def __init__(self, pspec):
-        width = pspec['width']
+        width = pspec.width
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)

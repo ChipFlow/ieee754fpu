@@ -39,7 +39,7 @@ class DivPipeBaseData:
     def __init__(self, config):
         """ Create a ``DivPipeBaseData`` instance. """
         self.config = config
-        width = config.pspec['width']
+        width = config.pspec.width
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 

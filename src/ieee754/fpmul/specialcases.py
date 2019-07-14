@@ -45,7 +45,7 @@ class FPMulSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        width = self.pspec['width']
+        width = self.pspec.width
         a1 = FPNumBaseRecord(width, False)
         b1 = FPNumBaseRecord(width, False)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
