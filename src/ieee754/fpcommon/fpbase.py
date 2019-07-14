@@ -9,6 +9,113 @@ from functools import reduce
 
 from nmutil.singlepipe import PrevControl, NextControl
 from nmutil.pipeline import ObjectProxy
+import math
+
+
+class FPFormat:
+    """ Class describing binary floating-point formats based on IEEE 754.
+
+    :attribute exponent_width: the number of bits in the exponent field.
+    :attribute mantissa_width: the number of bits stored in the mantissa
+        field.
+    :attribute has_int_bit: if the FP format has an explicit integer bit (like
+        the x87 80-bit format). The bit is considered part of the mantissa.
+    :attribute has_sign: if the FP format has a sign bit. (Some Vulkan
+        Image/Buffer formats are FP numbers without a sign bit.)
+    """
+
+    def __init__(self,
+                 exponent_width,
+                 mantissa_width,
+                 has_int_bit=False,
+                 has_sign=True):
+        """ Create ``FPFormat`` instance. """
+        self.exponent_width = exponent_width
+        self.mantissa_width = mantissa_width
+        self.has_int_bit = has_int_bit
+        self.has_sign = has_sign
+
+    def __eq__(self, other):
+        """ Check for equality. """
+        if not isinstance(other, FPFormat):
+            return NotImplemented
+        return (self.exponent_width == other.exponent_width
+                and self.mantissa_width == other.mantissa_width
+                and self.has_int_bit == other.has_int_bit
+                and self.has_sign == other.has_sign)
+
+    @staticmethod
+    def standard(width):
+        """ Get standard IEEE 754-2008 format.
+
+        :param width: bit-width of requested format.
+        :returns: the requested ``FPFormat`` instance.
+        """
+        if not instanceof(width, int):
+            raise TypeError()
+        if width == 16:
+            return FPFormat(5, 10)
+        if width == 32:
+            return FPFormat(8, 23)
+        if width == 64:
+            return FPFormat(11, 52)
+        if width == 128:
+            return FPFormat(15, 112)
+        if width > 128 and width % 32 == 0:
+            if width > 1000000:  # arbitrary upper limit
+                raise ValueError("width too big")
+            exponent_width = round(4 * math.log2(width)) - 13
+            return FPFormat(exponent_width, width - 1 - exponent_width)
+        raise ValueError("width must be the bit-width of a valid IEEE"
+                         " 754-2008 binary format")
+
+    def __repr__(self):
+        """ Get repr. """
+        if (self.width in (16, 32, 64, 128)
+                or (self.width > 128 and self.width % 32 == 0)):
+            if self == self.standard(self.width):
+                return f"FPFormat.standard({self.width})"
+        retval = f"FPFormat({self.exponent_width}, {self.mantissa_width}"
+        if self.has_int_bit is not False:
+            retval += f", {self.has_int_bit}"
+        if self.has_sign is not True:
+            retval += f", {self.has_sign}"
+        return retval + ")"
+
+    @property
+    def width(self):
+        """ Get the total number of bits in the FP format. """
+        return self.has_sign + self.exponent_width + self.mantissa_width
+
+    @property
+    def exponent_inf_nan(self):
+        """ Get the value of the exponent field designating infinity/NaN. """
+        return (1 << self.exponent_width) - 1
+
+    @property
+    def exponent_denormal_zero(self):
+        """ Get the value of the exponent field designating denormal/zero. """
+        return 0
+
+    @property
+    def exponent_min_normal(self):
+        """ Get the minimum value of the exponent field for normal numbers. """
+        return 1
+
+    @property
+    def exponent_max_normal(self):
+        """ Get the maximum value of the exponent field for normal numbers. """
+        return self.exponent_inf_nan - 1
+
+    @property
+    def exponent_bias(self):
+        """ Get the exponent bias. """
+        return (1 << (self.exponent_width - 1)) - 1
+
+    @property
+    def fraction_width(self):
+        """ Get the number of mantissa bits that are fraction bits. """
+        return self.mantissa_width - self.has_int_bit
 
 
 class MultiShiftR:
@@ -592,9 +699,9 @@ class Overflow:  # (Elaboratable):
         if name is None:
             name = ""
         self.guard = Signal(reset_less=True, name=name+"guard")     # tot[2]
-        self.round_bit = Signal(reset_less=True, name=name+"round") # tot[1]
+        self.round_bit = Signal(reset_less=True, name=name+"round")  # tot[1]
         self.sticky = Signal(reset_less=True, name=name+"sticky")   # tot[0]
-        self.m0 = Signal(reset_less=True, name=name+"m0") # mantissa bit 0
+        self.m0 = Signal(reset_less=True, name=name+"m0")  # mantissa bit 0
 
         #self.roundz = Signal(reset_less=True)
 
