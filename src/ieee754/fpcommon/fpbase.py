@@ -71,10 +71,11 @@ class FPFormat:
 
     def __repr__(self):
         """ Get repr. """
-        if (self.width in (16, 32, 64, 128)
-                or (self.width > 128 and self.width % 32 == 0)):
+        try:
             if self == self.standard(self.width):
                 return f"FPFormat.standard({self.width})"
+        except ValueError:
+            pass
         retval = f"FPFormat({self.exponent_width}, {self.mantissa_width}"
         if self.has_int_bit is not False:
             retval += f", {self.has_int_bit}"
