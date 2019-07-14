@@ -91,10 +91,10 @@ class FPPipeContext:
                                    "operator". instance must have an "eq"
                                    function.
         """
-        self.id_wid = pspec.id_width
-        self.op_wid = pspec.get('op_wid', 0)
+        self.id_wid = pspec.id_wid
+        self.op_wid = pspec.op_wid
         self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
-        opkls = pspec.get('opkls', None)
+        opkls = pspec.opkls
         if opkls is None:
             self.op = Signal(self.op_wid, reset_less=True)
         else:
