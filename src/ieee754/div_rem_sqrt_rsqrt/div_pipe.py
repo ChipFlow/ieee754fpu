@@ -5,20 +5,21 @@
 from .core import (DivPipeCoreConfig, DivPipeCoreInputData,
                    DivPipeCoreInterstageData, DivPipeCoreOutputData)
 from ieee754.fpcommon.getop import FPPipeContext
+from ieee754.fpcommon.fpbase import FPFormat
 
 
 class DivPipeConfig:
     """ Configuration for the div/rem/sqrt/rsqrt pipeline.
 
-    :attribute pspec: FIXME: document
+    :attribute pspec: ``PipelineSpec`` instance
     :attribute core_config: the ``DivPipeCoreConfig`` instance.
     """
 
-    def __init__(self, pspec):
+    def __init__(self, pspec, log2_radix=3):
         """ Create a ``DivPipeConfig`` instance. """
         self.pspec = pspec
-        # FIXME: get bit_width, fract_width, and log2_radix from pspec or pass
-        # in as arguments
+        bit_width = pspec.width
+        fract_width = FPFormat.standard(bit_width).fraction_width
         self.core_config = DivPipeCoreConfig(bit_width,
                                              fract_width,
                                              log2_radix)
