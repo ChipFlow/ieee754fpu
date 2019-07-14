@@ -7,7 +7,8 @@ from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
-from ieee754.fpcommon.fpbase import Overflow, FPNumBase, FPNumBaseRecord
+from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
+                                     FPNumBase, FPNumBaseRecord)
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.getop import FPPipeContext
@@ -61,17 +62,20 @@ class FPNorm1ModSingle(Elaboratable):
         pe = PriorityEncoder(mwid)
         m.submodules.norm_pe = pe
 
-        of = Overflow()
-        m.d.comb += self.o.roundz.eq(of.roundz)
+        of = OverflowMod("norm1of_")
 
         #m.submodules.norm1_out_z = self.o.z
-        #m.submodules.norm1_out_overflow = of
+        m.submodules.norm1_out_overflow = of
         #m.submodules.norm1_in_z = self.i.z
         #m.submodules.norm1_in_overflow = self.i.of
 
         i = self.ispec()
+        i.of.guard.name = "norm1_i_of_guard"
+        i.of.round_bit.name = "norm1_i_of_roundbit"
+        i.of.sticky.name = "norm1_i_of_sticky"
+        i.of.m0.name = "norm1_i_of_m0"
         m.submodules.norm1_insel_z = insel_z = FPNumBase(i.z)
-        #m.submodules.norm1_insel_overflow = i.of
+        #m.submodules.norm1_insel_overflow = iof = OverflowMod("iof")
 
         espec = (len(insel_z.e), True)
         ediff_n126 = Signal(espec, reset_less=True)
@@ -81,7 +85,7 @@ class FPNorm1ModSingle(Elaboratable):
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
         m.d.comb += self.o.z.eq(insel_z)
-        m.d.comb += of.eq(i.of)
+        m.d.comb += Overflow.eq(of, i.of)
         # normalisation increase/decrease conditions
         decrease = Signal(reset_less=True)
         increase = Signal(reset_less=True)
@@ -93,25 +97,31 @@ class FPNorm1ModSingle(Elaboratable):
                 # *sigh* not entirely obvious: count leading zeros (clz)
                 # with a PriorityEncoder: to find from the MSB
                 # we reverse the order of the bits.
-                temp_m = Signal(mwid, reset_less=True)
-                temp_s = Signal(mwid+1, reset_less=True)
+                temp_m = Signal(mwid+1, reset_less=True)
+                temp_r = Signal(mwid+2, reset_less=True) # mask
+                temp_s = Signal(mwid+2, reset_less=True)
                 clz = Signal((len(insel_z.e), True), reset_less=True)
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
                 limclz = Mux(insel_z.exp_sub_n126 > pe.o, pe.o,
                              insel_z.exp_sub_n126)
+                with m.If(temp_m[0]):
+                    # propagate low bit: do an ASL basically, except
+                    # i can't work out how to do it in nmigen sigh
+                    m.d.comb += temp_r.eq((temp_m[0] << clz) -1)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
-                    temp_m.eq(Cat(i.of.round_bit, i.of.guard, insel_z.m)),
+                    temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
+                                  insel_z.m)),
                     pe.i.eq(temp_m[::-1]),          # inverted
                     clz.eq(limclz),                 # count zeros from MSB down
-                    temp_s.eq(temp_m << clz),       # shift mantissa UP
+                    temp_s.eq((temp_m << clz) | temp_r), # shift mantissa UP
                     self.o.z.e.eq(insel_z.e - clz),  # DECREASE exponent
-                    self.o.z.m.eq(temp_s[2:]),    # exclude bits 0&1
-                    of.m0.eq(temp_s[2]),          # copy of mantissa[0]
+                    self.o.z.m.eq(temp_s[3:]),    # exclude bits 0&1
+                    of.m0.eq(temp_s[3]),          # copy of mantissa[0]
                     # overflow in bits 0..1: got shifted too (leave sticky)
-                    of.guard.eq(temp_s[1]),       # guard
-                    of.round_bit.eq(temp_s[0]),   # round
+                    of.guard.eq(temp_s[2]),       # guard
+                    of.round_bit.eq(temp_s[1]),   # round
                 ]
             # increase exponent
             with m.Elif(increase):
@@ -132,6 +142,7 @@ class FPNorm1ModSingle(Elaboratable):
                     self.o.z.e.eq(insel_z.e + ediff_n126),
                 ]
 
+        m.d.comb += self.o.roundz.eq(of.roundz_out)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.oz.eq(self.i.oz)
