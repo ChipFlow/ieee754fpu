@@ -108,6 +108,8 @@ class FPCVTUpConvertMod(Elaboratable):
                     m.d.comb += self.o.of.sticky.eq(0)
                     m.d.comb += self.o.of.m0.eq(a1.m[0])
                     m.d.comb += self.o.out_do_z.eq(0) # normalise
+                with m.Else():
+                    m.d.comb += self.o.z.zero(a1.s)
 
         # copy the context (muxid, operator)
         m.d.comb += self.o.oz.eq(self.o.z.v)
