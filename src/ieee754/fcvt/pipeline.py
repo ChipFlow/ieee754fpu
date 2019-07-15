@@ -41,7 +41,7 @@ class FPCVTUpConvertMod(Elaboratable):
         return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.out_pspec, e_extra=True)
+        return FPAddStage1Data(self.out_pspec, e_extra=False)
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -69,7 +69,7 @@ class FPCVTUpConvertMod(Elaboratable):
 
         me = a1.rmw
         ms = self.o.z.rmw - a1.rmw
-        print("ms-me", ms, me)
+        print("ms-me", ms, me, self.o.z.rmw, a1.rmw)
 
         # intermediaries
         exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
@@ -82,22 +82,32 @@ class FPCVTUpConvertMod(Elaboratable):
 
         m.d.comb += self.o.z.s.eq(a1.s)
         m.d.comb += self.o.z.e.eq(a1.e)
-        m.d.comb += self.o.z.m[-self.o.z.rmw-1:].eq(a1.m)
+        m.d.comb += self.o.z.m[ms:].eq(a1.m)
         m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m)
 
+        m.d.comb += self.o.of.guard.eq(0)
+        m.d.comb += self.o.of.round_bit.eq(0)
+        m.d.comb += self.o.of.sticky.eq(0)
+        m.d.comb += self.o.of.m0.eq(a1.m[0])
+
+        m.d.comb += self.o.out_do_z.eq(1)
         # if exp == top
         with m.If(a1.exp_128):
-            m.d.comb += self.o.z.create(a1.s, self.o.z.P128, self.o.z.m)
+            with m.If(~a1.m_zero):
+                #m.d.comb += self.o.z.create(a1.s, self.o.z.P128, self.o.z.m)
+                m.d.comb += self.o.z.nan(0)
+            with m.Else():
+                m.d.comb += self.o.z.inf(a1.s)
             m.d.comb += self.o.out_do_z.eq(1)
         with m.Else():
-            with m.If(a1.exp_zero):
-                with m.If(a1.m[:a1.rmw].bool()):
-                    m.d.comb += self.o.of.guard.eq(a1.m[a1.rmw-1])
-                    m.d.comb += self.o.of.round_bit.eq(a1.m[a1.rmw-2])
-                    m.d.comb += self.o.of.sticky.eq(1)
-                    m.d.comb += self.o.of.m0.eq(a1.m[a1.rmw])  # bit of a1
-                with m.Else():
-                    m.d.comb += self.o.out_do_z.eq(1)
+            with m.If(a1.exp_n127):
+                with m.If(~a1.m_zero):
+                    m.d.comb += self.o.z.m[ms:].eq(Cat(0, a1.m))
+                    m.d.comb += self.o.of.guard.eq(0)
+                    m.d.comb += self.o.of.round_bit.eq(0)
+                    m.d.comb += self.o.of.sticky.eq(0)
+                    m.d.comb += self.o.of.m0.eq(a1.m[0])
+                    m.d.comb += self.o.out_do_z.eq(0) # normalise
 
         # copy the context (muxid, operator)
         m.d.comb += self.o.oz.eq(self.o.z.v)
@@ -295,7 +305,7 @@ class FPCVTUpBasePipe(ControlBase):
     def __init__(self, in_pspec, out_pspec):
         ControlBase.__init__(self)
         self.pipe1 = FPCVTUpConvertDeNorm(in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
+        self.pipe2 = FPNormToPack(out_pspec, e_extra=False)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
 
