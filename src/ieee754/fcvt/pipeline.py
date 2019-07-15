@@ -2,14 +2,13 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module
+from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
 from ieee754.fpcommon.getop import FPADDBaseData
-from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpcommon.postcalc import FPAddStage1Data
@@ -22,17 +21,14 @@ from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState, FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 
-from nmigen import Module, Signal, Cat, Const, Elaboratable
-
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from nmutil.singlepipe import SimpleHandshake, StageChain
 
-from ieee754.fpcommon.fpbase import FPState, FPID
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.fpbase import FPState
 from ieee754.pipeline import PipelineSpec
 
 
-class FPCVTSpecialCasesMod(Elaboratable):
+class FPCVTDownConvertMod(Elaboratable):
     """ special cases: NaNs, infs, zeros, denormalised
         see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -148,13 +144,13 @@ class FPCVTSpecialCasesMod(Elaboratable):
         return m
 
 
-class FPCVTSpecialCases(FPState):
+class FPCVTDownConvert(FPState):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
     def __init__(self, in_width, out_width, id_wid):
         FPState.__init__(self, "special_cases")
-        self.mod = FPCVTSpecialCasesMod(in_width, out_width)
+        self.mod = FPCVTDownConvertMod(in_width, out_width)
         self.out_z = self.mod.ospec()
         self.out_do_z = Signal(reset_less=True)
 
@@ -173,13 +169,13 @@ class FPCVTSpecialCases(FPState):
             m.next = "denormalise"
 
 
-class FPCVTSpecialCasesDeNorm(FPState, SimpleHandshake):
+class FPCVTDownConvertDeNorm(FPState, SimpleHandshake):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
     def __init__(self, in_pspec, out_pspec):
         FPState.__init__(self, "special_cases")
-        sc = FPCVTSpecialCasesMod(in_pspec, out_pspec)
+        sc = FPCVTDownConvertMod(in_pspec, out_pspec)
         SimpleHandshake.__init__(self, sc)
         self.out = self.ospec(None)
 
@@ -187,7 +183,7 @@ class FPCVTSpecialCasesDeNorm(FPState, SimpleHandshake):
 class FPCVTBasePipe(ControlBase):
     def __init__(self, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTSpecialCasesDeNorm(in_pspec, out_pspec)
+        self.pipe1 = FPCVTDownConvertDeNorm(in_pspec, out_pspec)
         self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
