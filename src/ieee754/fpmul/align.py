@@ -1,7 +1,6 @@
 # IEEE Floating Point Multiplier
 
 from nmigen import Module, Signal, Cat, Mux, Elaboratable
-from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
@@ -9,12 +8,8 @@ from nmutil.singlepipe import (StageChain, SimpleHandshake)
 
 from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
                                      FPNumBase, FPNumBaseRecord)
-from ieee754.fpcommon.fpbase import MultiShiftRMerge
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.getop import FPPipeContext
-
-
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 
@@ -45,12 +40,6 @@ class FPAlignModSingle(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        mwid = self.o.z.m_width
-        pe_a = PriorityEncoder(mwid)
-        pe_b = PriorityEncoder(mwid)
-        m.submodules.norm_pe_a = pe_a
-        m.submodules.norm_pe_b = pe_b
-
         self.o.a.m.name = "o_a_m"
         self.o.b.m.name = "o_b_m"
 
@@ -58,6 +47,18 @@ class FPAlignModSingle(Elaboratable):
         m.submodules.norm1_insel_b = insel_b = FPNumBase(self.i.b)
         insel_a.m.name = "i_a_m"
         insel_b.m.name = "i_b_m"
+
+        mwid = self.o.z.m_width
+        msb_a = FPMSBHigh(mwid, len(insel_a.e))
+        msb_b = FPMSBHigh(mwid, len(insel_b.e))
+        m.submodules.norm_pe_a = msb_a
+        m.submodules.norm_pe_b = msb_b
+
+        # connect to msb_a/b module
+        m.d.comb += msb_a.m_in.eq(insel_a.m)
+        m.d.comb += msb_a.e_in.eq(insel_a.e)
+        m.d.comb += msb_b.m_in.eq(insel_b.m)
+        m.d.comb += msb_b.e_in.eq(insel_b.e)
 
         # copy input to output (overridden below)
         m.d.comb += self.o.a.eq(insel_a)
@@ -72,31 +73,14 @@ class FPAlignModSingle(Elaboratable):
         # ok this is near-identical to FPNorm.  TODO: modularise
         with m.If(~self.i.out_do_z):
             with m.If(decrease_a):
-                # *sigh* not entirely obvious: count leading zeros (clz)
-                # with a PriorityEncoder: to find from the MSB
-                # we reverse the order of the bits.
-                temp_a = Signal(mwid, reset_less=True)
-                clz_a = Signal((len(insel_a.e), True), reset_less=True)
                 m.d.comb += [
-                    pe_a.i.eq(insel_a.m[::-1]),      # inverted
-                    clz_a.eq(pe_a.o),                # count zeros from MSB down
-                    temp_a.eq((insel_a.m << clz_a)), # shift mantissa UP
-                    self.o.a.e.eq(insel_a.e - clz_a), # DECREASE exponent
-                    self.o.a.m.eq(temp_a),
+                    self.o.a.e.eq(msb_a.e_out),
+                    self.o.a.m.eq(msb_a.m_out),
                 ]
-
             with m.If(decrease_b):
-                # *sigh* not entirely obvious: count leading zeros (clz)
-                # with a PriorityEncoder: to find from the MSB
-                # we reverse the order of the bits.
-                temp_b = Signal(mwid, reset_less=True)
-                clz_b = Signal((len(insel_b.e), True), reset_less=True)
                 m.d.comb += [
-                    pe_b.i.eq(insel_b.m[::-1]),      # inverted
-                    clz_b.eq(pe_b.o),                # count zeros from MSB down
-                    temp_b.eq((insel_b.m << clz_b)), # shift mantissa UP
-                    self.o.b.e.eq(insel_b.e - clz_b), # DECREASE exponent
-                    self.o.b.m.eq(temp_b),
+                    self.o.b.e.eq(msb_b.e_out),
+                    self.o.b.m.eq(msb_b.m_out),
                 ]
 
         m.d.comb += self.o.ctx.eq(self.i.ctx)

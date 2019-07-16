@@ -42,10 +42,11 @@ class FPMSBHigh(Elaboratable):
         temp = Signal(mwid, reset_less=True)
         clz = Signal((len(self.e_out), True), reset_less=True)
         m.d.comb += [
-            pe.i.eq(insel.m[::-1]),       # inverted
+            pe.i.eq(self.m_in[::-1]),       # inverted
             clz.eq(pe.o),                 # count zeros from MSB down
             temp.eq((self.m_in << clz)),  # shift mantissa UP
-            self.e_out.eq(insel.e - clz), # DECREASE exponent
+            self.e_out.eq(self.e_in - clz), # DECREASE exponent
             self.m_out.eq(temp),
         ]
 
+        return m
