@@ -71,35 +71,34 @@ class FPCVTUpConvertMod(Elaboratable):
         ms = self.o.z.rmw - a1.rmw
         print("ms-me", ms, me, self.o.z.rmw, a1.rmw)
 
+        # conversion can mostly be done manually...
         m.d.comb += self.o.z.s.eq(a1.s)
         m.d.comb += self.o.z.e.eq(a1.e)
         m.d.comb += self.o.z.m[ms:].eq(a1.m)
-        m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m)
+        m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
 
+        # initialise rounding to all zeros (deactivate)
         m.d.comb += self.o.of.guard.eq(0)
         m.d.comb += self.o.of.round_bit.eq(0)
         m.d.comb += self.o.of.sticky.eq(0)
         m.d.comb += self.o.of.m0.eq(a1.m[0])
 
+        # most special cases active (except tiny-number normalisation, below)
         m.d.comb += self.o.out_do_z.eq(1)
-        # if exp == top
+
+        # detect NaN/Inf first
         with m.If(a1.exp_128):
             with m.If(~a1.m_zero):
-                #m.d.comb += self.o.z.create(a1.s, self.o.z.P128, self.o.z.m)
-                m.d.comb += self.o.z.nan(0)
+                m.d.comb += self.o.z.nan(0) # RISC-V wants normalised NaN
             with m.Else():
-                m.d.comb += self.o.z.inf(a1.s)
-            m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.inf(a1.s) # RISC-V wants signed INF
         with m.Else():
             with m.If(a1.exp_n127):
                 with m.If(~a1.m_zero):
                     m.d.comb += self.o.z.m[ms:].eq(Cat(0, a1.m))
-                    m.d.comb += self.o.of.guard.eq(0)
-                    m.d.comb += self.o.of.round_bit.eq(0)
-                    m.d.comb += self.o.of.sticky.eq(0)
-                    m.d.comb += self.o.of.m0.eq(a1.m[0])
-                    m.d.comb += self.o.out_do_z.eq(0) # normalise
+                    m.d.comb += self.o.out_do_z.eq(0) # activate normalisation
                 with m.Else():
+                    # RISC-V zero needs actual zero
                     m.d.comb += self.o.z.zero(a1.s)
 
         # copy the context (muxid, operator)
