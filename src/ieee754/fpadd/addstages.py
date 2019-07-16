@@ -11,9 +11,9 @@ from nmutil.singlepipe import (StageChain, SimpleHandshake,
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
-from .align import FPAddAlignSingleMod
-from .add0 import FPAddStage0Mod
-from .add1 import FPAddStage1Mod
+from ieee754.fpadd.align import FPAddAlignSingleMod
+from ieee754.fpadd.add0 import FPAddStage0Mod
+from ieee754.fpadd.add1 import FPAddStage1Mod
 
 
 class FPAddAlignSingleAdd(FPState, SimpleHandshake):
