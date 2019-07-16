@@ -3,7 +3,6 @@
 # 2013-12-12
 
 from nmigen import Module, Signal, Cat, Mux, Elaboratable
-from nmigen.lib.coding import PriorityEncoder
 from nmigen.cli import main, verilog
 from math import log
 
@@ -12,6 +11,7 @@ from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.getop import FPPipeContext
+from ieee754.fpcommon.msbhigh import FPMSBHigh
 from .postcalc import FPAddStage1Data
 
 
@@ -58,10 +58,6 @@ class FPNorm1ModSingle(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        mwid = self.o.z.m_width+2
-        pe = PriorityEncoder(mwid)
-        m.submodules.norm_pe = pe
-
         of = OverflowMod("norm1of_")
 
         #m.submodules.norm1_out_z = self.o.z
@@ -78,9 +74,14 @@ class FPNorm1ModSingle(Elaboratable):
         #m.submodules.norm1_insel_overflow = iof = OverflowMod("iof")
 
         espec = (len(insel_z.e), True)
+        mwid = self.o.z.m_width+2
+
         ediff_n126 = Signal(espec, reset_less=True)
         msr = MultiShiftRMerge(mwid+2, espec)
         m.submodules.multishift_r = msr
+
+        msb = FPMSBHigh(mwid, espec[0], True)
+        m.submodules.norm_msb = msb
 
         m.d.comb += i.eq(self.i)
         # initialise out from in (overridden below)
@@ -94,34 +95,21 @@ class FPNorm1ModSingle(Elaboratable):
         # decrease exponent
         with m.If(~self.i.out_do_z):
             with m.If(decrease):
-                # *sigh* not entirely obvious: count leading zeros (clz)
-                # with a PriorityEncoder: to find from the MSB
-                # we reverse the order of the bits.
-                temp_m = Signal(mwid+1, reset_less=True)
-                temp_r = Signal(mwid+2, reset_less=True) # mask
-                temp_s = Signal(mwid+2, reset_less=True)
-                clz = Signal((len(insel_z.e), True), reset_less=True)
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
-                limclz = Mux(insel_z.exp_sub_n126 > pe.o, pe.o,
-                             insel_z.exp_sub_n126)
-                with m.If(temp_m[0]):
-                    # propagate low bit: do an ASL basically, except
-                    # i can't work out how to do it in nmigen sigh
-                    m.d.comb += temp_r.eq((temp_m[0] << clz) -1)
+                temp_m = Signal(mwid+1, reset_less=True)
+                m.d.comb += msb.limclz.eq(insel_z.exp_sub_n126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
-                    temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
+                    msb.m_in.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
                                   insel_z.m)),
-                    pe.i.eq(temp_m[::-1]),          # inverted
-                    clz.eq(limclz),                 # count zeros from MSB down
-                    temp_s.eq((temp_m << clz) | temp_r), # shift mantissa UP
-                    self.o.z.e.eq(insel_z.e - clz),  # DECREASE exponent
-                    self.o.z.m.eq(temp_s[3:]),    # exclude bits 0&1
-                    of.m0.eq(temp_s[3]),          # copy of mantissa[0]
+                    msb.e_in.eq(insel_z.e),
+                    self.o.z.e.eq(msb.e_out),
+                    self.o.z.m.eq(msb.m_out[3:]),    # exclude bits 0&1
+                    of.m0.eq(msb.m_out[3]),          # copy of mantissa[0]
                     # overflow in bits 0..1: got shifted too (leave sticky)
-                    of.guard.eq(temp_s[2]),       # guard
-                    of.round_bit.eq(temp_s[1]),   # round
+                    of.guard.eq(msb.m_out[2]),       # guard
+                    of.round_bit.eq(msb.m_out[1]),   # round
                 ]
             # increase exponent
             with m.Elif(increase):
