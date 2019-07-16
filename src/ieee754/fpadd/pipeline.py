@@ -1,6 +1,36 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE Floating Point Adder Pipeline
+
+Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=75
+
+Stack looks like this:
+
+* scnorm    - FPMulSpecialCasesDeNorm
+* addalign  - FPAddAlignSingleAdd
+* normpack  - FPNormToPack
+
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
+------                             ospec FPSCData
+
+                StageChain: FPMULSpecialCasesMod,
+                            FPAddDeNormMod
+                            FPAlignModSingle
+
+addalign  - FPAddAlignSingleAdd    ispec FPSCData
+--------                           ospec FPAddStage1Data
+
+                StageChain: FPAddAlignSingleMod
+                            FPAddStage0Mod
+                            FPAddStage1Mod
+
+normpack  - FPNormToPack           ispec FPAddStage1Data
+--------                           ospec FPPackData
+
+                StageChain: Norm1ModSingle,
+                            RoundMod,
+                            CorrectionsMod,
+                            PackMod
+
+"""
 
 from nmigen import Module
 from nmigen.cli import main, verilog
