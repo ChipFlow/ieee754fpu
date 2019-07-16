@@ -80,7 +80,7 @@ class FPNorm1ModSingle(Elaboratable):
         msr = MultiShiftRMerge(mwid+2, espec)
         m.submodules.multishift_r = msr
 
-        msb = FPMSBHigh(mwid, espec[0], True)
+        msb = FPMSBHigh(mwid+1, espec[0], True)
         m.submodules.norm_msb = msb
 
         m.d.comb += i.eq(self.i)
@@ -97,7 +97,6 @@ class FPNorm1ModSingle(Elaboratable):
             with m.If(decrease):
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
-                temp_m = Signal(mwid+1, reset_less=True)
                 m.d.comb += msb.limclz.eq(insel_z.exp_sub_n126)
                 m.d.comb += [
                     # cat round and guard bits back into the mantissa
