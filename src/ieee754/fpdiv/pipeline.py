@@ -66,10 +66,10 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
-from .specialcases import FPDIVSpecialCasesDeNorm
-from .divstages import (FPDivStagesSetup,
-                        FPDivStagesIntermediate,
-                        FPDivStagesFinal)
+from ieee754.fpdiv.specialcases import FPDIVSpecialCasesDeNorm
+from ieee754.fpdiv.divstages import (FPDivStagesSetup,
+                                     FPDivStagesIntermediate,
+                                     FPDivStagesFinal)
 from ieee754.pipeline import PipelineSpec
 
 
@@ -140,7 +140,9 @@ class FPDIVMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # XXX TODO - a class (or function?) that takes the pspec (right here)
         # and creates... "something".  that "something" MUST have an eq function
-        # self.pspec.opkls = DivPipeCoreOperation
+        # new_pspec = deepcopy(self.pspec)
+        # new_pspec.opkls = DivPipeCoreOperation
+        # self.alu = FPDIVBasePipe(new_pspec)
         self.alu = FPDIVBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
 
