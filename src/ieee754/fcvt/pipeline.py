@@ -71,15 +71,6 @@ class FPCVTUpConvertMod(Elaboratable):
         ms = self.o.z.rmw - a1.rmw
         print("ms-me", ms, me, self.o.z.rmw, a1.rmw)
 
-        # intermediaries
-        exp_sub_n126 = Signal((a1.e_width, True), reset_less=True)
-        exp_gt127 = Signal(reset_less=True)
-        # constants from z1, at the bit-width of a1.
-        N126 = Const(z1.fp.N126.value, (a1.e_width, True))
-        P127 = Const(z1.fp.P127.value, (a1.e_width, True))
-        m.d.comb += exp_sub_n126.eq(a1.e - N126)
-        m.d.comb += exp_gt127.eq(a1.e > P127)
-
         m.d.comb += self.o.z.s.eq(a1.s)
         m.d.comb += self.o.z.e.eq(a1.e)
         m.d.comb += self.o.z.m[ms:].eq(a1.m)
