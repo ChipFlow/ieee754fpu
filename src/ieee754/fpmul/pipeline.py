@@ -1,6 +1,41 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE Floating Point Multiplier Pipeline
+
+Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=77
+
+Stack looks like this:
+
+* scnorm    - FPMulSpecialCasesDeNorm
+* mulstages - FPMulstages
+* normpack  - FPNormToPack
+
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
+------                             ospec FPSCData
+
+                StageChain: FPMULSpecialCasesMod,
+                            FPAddDeNormMod
+                            FPAlignModSingle
+
+mulstages - FPMulStages            ispec FPSCData
+---------                          ospec FPAddStage1Data
+
+                StageChain: FPMulStage0Mod
+                            FPMulStage1Mod
+
+normpack  - FPNormToPack           ispec FPAddStage1Data
+--------                           ospec FPPackData
+
+                StageChain: Norm1ModSingle,
+                            RoundMod,
+                            CorrectionsMod,
+                            PackMod
+
+This is the *current* stack.  FPMulStage0Mod is where the actual
+mantissa multiply takes place, which in the case of FP64 is a
+single (massive) combinatorial block.  This can be fixed by using
+a multi-stage fixed-point multiplier pipeline, which was implemented
+in #60: http://bugs.libre-riscv.org/show_bug.cgi?id=60
+
+"""
 
 from nmigen import Module
 from nmigen.cli import main, verilog

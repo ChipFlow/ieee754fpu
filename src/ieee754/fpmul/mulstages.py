@@ -15,7 +15,7 @@ from .mul1 import FPMulStage1Mod
 class FPMulStages(FPState, SimpleHandshake):
 
     def __init__(self, pspec):
-        FPState.__init__(self, "align")
+        FPState.__init__(self, "mulstages")
         self.pspec = pspec
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
