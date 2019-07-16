@@ -30,6 +30,12 @@ normpack  - FPNormToPack           ispec FPAddStage1Data
                             CorrectionsMod,
                             PackMod
 
+This pipeline has a 3 clock latency, and, with the separation into
+separate "modules", it is quite clear how to create longer-latency
+pipelines (if needed) - just create a new, longer top-level (FPADDBasePipe
+alternative) and construct shorter pipe stages using the building blocks,
+RoundMod, FPAddStage0Mod etc.
+
 """
 
 from nmigen import Module
