@@ -12,6 +12,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.msbhigh import FPMSBHigh
 
 
 from nmigen import Module, Signal, Elaboratable
@@ -26,6 +27,85 @@ from nmutil.singlepipe import SimpleHandshake, StageChain
 
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.pipeline import PipelineSpec
+
+
+class FPCVTIntToFloatMod(Elaboratable):
+    """ FP integer conversion.
+
+        TODO: dynamic selection of signed/unsigned
+    """
+    def __init__(self, in_pspec, out_pspec):
+        self.in_pspec = in_pspec
+        self.out_pspec = out_pspec
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPADDBaseData(self.in_pspec)
+
+    def ospec(self):
+        return FPAddStage1Data(self.out_pspec, e_extra=True)
+
+    def setup(self, m, i):
+        """ links module to inputs and outputs
+        """
+        m.submodules.upconvert = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
+
+    def elaborate(self, platform):
+        m = Module()
+
+        #m.submodules.sc_out_z = self.o.z
+
+        # decode: XXX really should move to separate stage
+        print("in_width out", self.in_pspec.width,
+              self.out_pspec.width)
+        print("a1", self.in_pspec.width)
+        z1 = self.o.z
+        print("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
+
+        me = self.in_pspec.width
+        ms = self.o.z.rmw - me
+        print("ms-me", ms, me, self.o.z.rmw)
+
+        # 3 extra bits for guard/round/sticky
+        msb = FPMSBHigh(me+3, z1.e_width)
+        m.submodules.norm_msb = msb
+
+        # set input from full INT
+        m.d.comb += msb.m_in.eq(Cat(0, 0, 0, self.i.a)) # g/r/s + input
+        m.d.comb += msb.e_in.eq(me)                     # exp = int width
+
+        # conversion can mostly be done manually...
+        zo = self.o.z
+        m.d.comb += zo.s.eq(0)  # unsigned for now
+        m.d.comb += zo.e.eq(msb.e_out)
+        m.d.comb += zo.m[ms:].eq(msb.m_out[3:])
+        m.d.comb += zo.create(zo.s, zo.e, zo.m) # ... here
+
+        # initialise rounding (but only activate if needed)
+        m.d.comb += self.o.of.guard.eq(msb.m_out[2])
+        m.d.comb += self.o.of.round_bit.eq(msb.m_out[1])
+        m.d.comb += self.o.of.sticky.eq(msb.m_out[1])
+        m.d.comb += self.o.of.m0.eq(msb.m_out[3])
+
+        # special cases active by default
+        m.d.comb += self.o.out_do_z.eq(1)
+
+        # detect zero
+        with m.If(~self.i.a.bool()):
+            m.d.comb += self.o.z.zero(0)
+        with m.Else():
+            m.d.comb += self.o.out_do_z.eq(0) # activate normalisation
+
+        # copy the context (muxid, operator)
+        m.d.comb += self.o.oz.eq(self.o.z.v)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+
+        return m
 
 
 class FPCVTUpConvertMod(Elaboratable):
@@ -221,6 +301,31 @@ class FPCVTDownConvertMod(Elaboratable):
         return m
 
 
+class FPCVTIntToFloat(FPState):
+    """ Up-conversion
+    """
+
+    def __init__(self, in_width, out_width, id_wid):
+        FPState.__init__(self, "inttofloat")
+        self.mod = FPCVTIntToFloatMod(in_width, out_width)
+        self.out_z = self.mod.ospec()
+        self.out_do_z = Signal(reset_less=True)
+
+    def setup(self, m, i):
+        """ links module to inputs and outputs
+        """
+        self.mod.setup(m, i, self.out_do_z)
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
+        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
+
+    def action(self, m):
+        self.idsync(m)
+        with m.If(self.out_do_z):
+            m.next = "put_z"
+        with m.Else():
+            m.next = "denormalise"
+
+
 class FPCVTUpConvert(FPState):
     """ Up-conversion
     """
@@ -271,6 +376,17 @@ class FPCVTDownConvert(FPState):
             m.next = "denormalise"
 
 
+class FPCVTIntToFloatDeNorm(FPState, SimpleHandshake):
+    """ Upconvert
+    """
+
+    def __init__(self, in_pspec, out_pspec):
+        FPState.__init__(self, "inttofloat")
+        sc = FPCVTIntToFloatMod(in_pspec, out_pspec)
+        SimpleHandshake.__init__(self, sc)
+        self.out = self.ospec(None)
+
+
 class FPCVTUpConvertDeNorm(FPState, SimpleHandshake):
     """ Upconvert
     """
@@ -291,6 +407,22 @@ class FPCVTDownConvertDeNorm(FPState, SimpleHandshake):
         sc = FPCVTDownConvertMod(in_pspec, out_pspec)
         SimpleHandshake.__init__(self, sc)
         self.out = self.ospec(None)
+
+
+class FPCVTIntBasePipe(ControlBase):
+    def __init__(self, in_pspec, out_pspec):
+        ControlBase.__init__(self)
+        self.pipe1 = FPCVTIntToFloatDeNorm(in_pspec, out_pspec)
+        self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
+
+        self._eqs = self.connect([self.pipe1, self.pipe2])
+
+    def elaborate(self, platform):
+        m = ControlBase.elaborate(self, platform)
+        m.submodules.toint = self.pipe1
+        m.submodules.normpack = self.pipe2
+        m.d.comb += self._eqs
+        return m
 
 
 class FPCVTUpBasePipe(ControlBase):
@@ -325,6 +457,34 @@ class FPCVTDownBasePipe(ControlBase):
         return m
 
 
+class FPCVTIntMuxInOut(ReservationStations):
+    """ Reservation-Station version of FPCVT int-to-float pipeline.
+
+        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * 2-stage multiplier pipeline
+        * fan-out on outputs (an array of FPPackData: z,mid)
+
+        Fan-in and Fan-out are combinatorial.
+    """
+
+    def __init__(self, in_width, out_width, num_rows, op_wid=0):
+        self.op_wid = op_wid
+        self.id_wid = num_bits(in_width)
+        self.out_id_wid = num_bits(out_width)
+
+        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
+        self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
+
+        self.alu = FPCVTIntBasePipe(self.in_pspec, self.out_pspec)
+        ReservationStations.__init__(self, num_rows)
+
+    def i_specfn(self):
+        return FPADDBaseData(self.in_pspec)
+
+    def o_specfn(self):
+        return FPPackData(self.out_pspec)
+
+
 class FPCVTUpMuxInOut(ReservationStations):
     """ Reservation-Station version of FPCVT up pipeline.
 
@@ -351,6 +511,7 @@ class FPCVTUpMuxInOut(ReservationStations):
 
     def o_specfn(self):
         return FPPackData(self.out_pspec)
+
 
 class FPCVTDownMuxInOut(ReservationStations):
     """ Reservation-Station version of FPCVT pipeline.
