@@ -22,6 +22,9 @@ def fcvt_64(x):
 def fcvt_32(x):
     return sfpy.float.ui32_to_f32(x)
 
+def fcvt_64_to_32(x):
+    return sfpy.float.ui64_to_f32(x)
+
 def fcvt_16(x):
     return sfpy.float.ui32_to_f16(x)
 
@@ -42,6 +45,14 @@ def test_int_pipe_ui32_f64():
     runfp(dut, 32, "test_fcvt_int_pipe_ui32_64", to_uint32, fcvt_64, True,
           n_vals=100)
 
+def test_int_pipe_ui64_f32():
+    # ok, doing 33 bits here because it's pretty pointless (not entirely)
+    # to do random numbers statistically likely 99.999% of the time to be
+    # converted to Inf
+    dut = FPCVTIntMuxInOut(64, 32, 4)
+    runfp(dut, 33, "test_fcvt_int_pipe_ui64_32", to_uint64, fcvt_64_to_32, True,
+          n_vals=100)
+
 def test_int_pipe_ui64_f16():
     # ok, doing 17 bits here because it's pretty pointless (not entirely)
     # to do random numbers statistically likely 99.999% of the time to be
@@ -60,6 +71,7 @@ def test_int_pipe_ui32_f16():
 
 if __name__ == '__main__':
     for i in range(200):
+        test_int_pipe_ui64_f32()
         test_int_pipe_ui32_f16()
         test_int_pipe_ui64_f16()
         test_int_pipe_ui16_f32()
