@@ -49,7 +49,7 @@ class FPCVTIntToFloatMod(Elaboratable):
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        m.submodules.upconvert = self
+        m.submodules.intconvert = self
         m.d.comb += self.i.eq(i)
 
     def process(self, i):
@@ -68,8 +68,9 @@ class FPCVTIntToFloatMod(Elaboratable):
         print("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
         me = self.in_pspec.width
-        ms = self.o.z.rmw - me
-        print("ms-me", ms, me, self.o.z.rmw)
+        mz = self.o.z.rmw
+        ms = mz - me
+        print("ms-me", ms, me, mz)
 
         # 3 extra bits for guard/round/sticky
         msb = FPMSBHigh(me+3, z1.e_width)
@@ -82,15 +83,29 @@ class FPCVTIntToFloatMod(Elaboratable):
         # conversion can mostly be done manually...
         zo = self.o.z
         m.d.comb += zo.s.eq(0)  # unsigned for now
-        m.d.comb += zo.e.eq(msb.e_out)
-        m.d.comb += zo.m[ms:].eq(msb.m_out[3:])
+        if ms < 0:
+            # larger int to smaller FP (uint32/64 -> fp16 most likely)
+            m.d.comb += zo.e.eq(msb.e_out-1)
+            m.d.comb += zo.m[ms-1:].eq(msb.m_out[-mz-1:])
+        else:
+            # smaller int to larger FP
+            m.d.comb += zo.e.eq(msb.e_out)
+            m.d.comb += zo.m[ms:].eq(msb.m_out[3:])
         m.d.comb += zo.create(zo.s, zo.e, zo.m) # ... here
 
         # initialise rounding (but only activate if needed)
-        m.d.comb += self.o.of.guard.eq(msb.m_out[2])
-        m.d.comb += self.o.of.round_bit.eq(msb.m_out[1])
-        m.d.comb += self.o.of.sticky.eq(msb.m_out[1])
-        m.d.comb += self.o.of.m0.eq(msb.m_out[3])
+        if ms < 0:
+            # larger int to smaller FP (uint32/64 -> fp16 most likely)
+            m.d.comb += self.o.of.guard.eq(msb.m_out[-mz-2])
+            m.d.comb += self.o.of.round_bit.eq(msb.m_out[-mz-3])
+            m.d.comb += self.o.of.sticky.eq(msb.m_out[:-mz-3].bool())
+            m.d.comb += self.o.of.m0.eq(msb.m_out[-mz-1])
+        else:
+            # smaller int to larger FP
+            m.d.comb += self.o.of.guard.eq(msb.m_out[2])
+            m.d.comb += self.o.of.round_bit.eq(msb.m_out[1])
+            m.d.comb += self.o.of.sticky.eq(msb.m_out[:1].bool())
+            m.d.comb += self.o.of.m0.eq(msb.m_out[3])
 
         # special cases active by default
         m.d.comb += self.o.out_do_z.eq(1)

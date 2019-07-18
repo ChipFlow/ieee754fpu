@@ -13,30 +13,56 @@ def to_uint16(x):
 def to_uint32(x):
     return x
 
+def to_uint64(x):
+    return x
+
 def fcvt_64(x):
     return sfpy.float.ui32_to_f64(x)
 
 def fcvt_32(x):
     return sfpy.float.ui32_to_f32(x)
 
-def test_int_pipe_fp16_32():
+def fcvt_16(x):
+    return sfpy.float.ui32_to_f16(x)
+
+def test_int_pipe_ui16_f32():
+    # XXX softfloat-3 doesn't have ui16_to_xxx so use ui32 instead.
+    # should be fine.
     dut = FPCVTIntMuxInOut(16, 32, 4)
-    runfp(dut, 16, "test_fcvt_int_pipe_fp16_32", to_uint16, fcvt_32, True,
+    runfp(dut, 16, "test_fcvt_int_pipe_ui16_f32", to_uint16, fcvt_32, True,
           n_vals=100)
 
-def test_int_pipe_fp16_64():
+def test_int_pipe_ui16_f64():
     dut = FPCVTIntMuxInOut(16, 64, 4)
-    runfp(dut, 16, "test_fcvt_int_pipe_fp16_64", to_uint16, fcvt_64, True,
+    runfp(dut, 16, "test_fcvt_int_pipe_ui16_f64", to_uint16, fcvt_64, True,
           n_vals=100)
 
-def test_int_pipe_fp32_64():
+def test_int_pipe_ui32_f64():
     dut = FPCVTIntMuxInOut(32, 64, 4)
-    runfp(dut, 32, "test_fcvt_int_pipe_fp32_64", to_uint32, fcvt_64, True,
+    runfp(dut, 32, "test_fcvt_int_pipe_ui32_64", to_uint32, fcvt_64, True,
+          n_vals=100)
+
+def test_int_pipe_ui64_f16():
+    # ok, doing 17 bits here because it's pretty pointless (not entirely)
+    # to do random numbers statistically likely 99.999% of the time to be
+    # converted to Inf
+    dut = FPCVTIntMuxInOut(64, 16, 4)
+    runfp(dut, 17, "test_fcvt_int_pipe_ui64_16", to_uint64, fcvt_16, True,
+          n_vals=100)
+
+def test_int_pipe_ui32_f16():
+    # ok, doing 17 bits here because it's pretty pointless (not entirely)
+    # to do random numbers statistically likely 99.999% of the time to be
+    # converted to Inf
+    dut = FPCVTIntMuxInOut(32, 16, 4)
+    runfp(dut, 17, "test_fcvt_int_pipe_ui32_16", to_uint32, fcvt_16, True,
           n_vals=100)
 
 if __name__ == '__main__':
     for i in range(200):
-        test_int_pipe_fp16_32()
-        test_int_pipe_fp16_64()
-        test_int_pipe_fp32_64()
+        test_int_pipe_ui32_f16()
+        test_int_pipe_ui64_f16()
+        test_int_pipe_ui16_f32()
+        test_int_pipe_ui16_f64()
+        test_int_pipe_ui32_f64()
 
