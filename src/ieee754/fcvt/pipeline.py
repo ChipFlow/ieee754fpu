@@ -93,6 +93,16 @@ class FPCVTIntToFloatMod(Elaboratable):
             m.d.comb += zo.m[ms:].eq(msb.m_out[3:])
         m.d.comb += zo.create(zo.s, zo.e, zo.m) # ... here
 
+        # note: post-normalisation actually appears to be capable of
+        # detecting overflow to infinity (FPPackMod).  so it's ok to
+        # drop the bits into the mantissa (with a fixed exponent),
+        # do some rounding (which might result in exceeding the
+        # range of the target FP by re-increasing the exponent),
+        # and basically *not* have to do any kind of range-checking
+        # here: just set up guard/round/sticky, drop the INT into the
+        # mantissa, and away we go.  XXX TODO: see if FPNormaliseMod
+        # is even necessary.  it probably isn't
+
         # initialise rounding (but only activate if needed)
         if ms < 0:
             # larger int to smaller FP (uint32/64 -> fp16 most likely)
