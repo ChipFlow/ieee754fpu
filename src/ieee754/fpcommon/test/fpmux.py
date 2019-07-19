@@ -11,11 +11,12 @@ from nmigen.cli import verilog, rtlil
 
 
 class MuxInOut:
-    def __init__(self, dut, width, fpkls, fpop, vals, single_op):
+    def __init__(self, dut, width, fpkls, fpop, vals, single_op, opcode):
         self.dut = dut
         self.fpkls = fpkls
         self.fpop = fpop
         self.single_op = single_op
+        self.opcode = opcode
         self.di = {}
         self.do = {}
         self.tlen = len(vals) // dut.num_rows
@@ -48,6 +49,8 @@ class MuxInOut:
             rs = self.dut.p[muxid]
             yield rs.valid_i.eq(1)
             yield rs.data_i.a.eq(op1)
+            if self.opcode is not None:
+                yield rs.data_i.ctx.op.eq(self.opcode)
             if not self.single_op:
                 yield rs.data_i.b.eq(op2)
             yield rs.data_i.muxid.eq(muxid)
@@ -188,7 +191,8 @@ def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
                    fmod, fpfn, vals=vals, single_op=single_op)
 
 
-def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
+def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
+          vals=None, opcode=None):
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("%s.il" % name, "w") as f:
         f.write(vl)
@@ -196,7 +200,7 @@ def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10, vals=None):
     if vals is None:
         vals = create_random(dut.num_rows, width, single_op, n_vals)
 
-    test = MuxInOut(dut, width, fpkls, fpop, vals, single_op)
+    test = MuxInOut(dut, width, fpkls, fpop, vals, single_op, opcode=opcode)
     fns = []
     for i in range(dut.num_rows):
         fns.append(test.rcv(i))

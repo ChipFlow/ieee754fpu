@@ -30,9 +30,10 @@ from ieee754.pipeline import PipelineSpec
 
 
 class FPCVTIntToFloatMod(Elaboratable):
-    """ FP integer conversion.
+    """ FP integer conversion: copes with 16/32/64 int to 16/32/64 fp.
 
-        TODO: dynamic selection of signed/unsigned
+        self.ctx.i.op & 0x1 == 0x1 : SIGNED int
+        self.ctx.i.op & 0x1 == 0x0 : UNSIGNED int
     """
     def __init__(self, in_pspec, out_pspec):
         self.in_pspec = in_pspec
@@ -76,22 +77,38 @@ class FPCVTIntToFloatMod(Elaboratable):
         msb = FPMSBHigh(me+3, z1.e_width)
         m.submodules.norm_msb = msb
 
+        # signed or unsigned, use operator context
+        signed = Signal(reset_less=True)
+        m.d.comb += signed.eq(self.i.ctx.op[0])
+
+        # copy of mantissa (one less bit if signed)
+        mantissa = Signal(me, reset_less=True)
+
+        # detect signed/unsigned.  key case: -ve numbers need inversion
+        # to +ve because the FP sign says if it's -ve or not.
+        with m.If(signed):
+            m.d.comb += z1.s.eq(self.i.a[-1])      # sign in top bit of a
+            with m.If(z1.s):
+                m.d.comb += mantissa.eq(-self.i.a) # invert input if sign -ve
+            with m.Else():
+                m.d.comb += mantissa.eq(self.i.a)  # leave as-is
+        with m.Else():
+            m.d.comb += mantissa.eq(self.i.a)      # unsigned, use full a
+            m.d.comb += z1.s.eq(0)
+
         # set input from full INT
-        m.d.comb += msb.m_in.eq(Cat(0, 0, 0, self.i.a)) # g/r/s + input
+        m.d.comb += msb.m_in.eq(Cat(0, 0, 0, mantissa)) # g/r/s + input
         m.d.comb += msb.e_in.eq(me)                     # exp = int width
 
-        # conversion can mostly be done manually...
-        zo = self.o.z
-        m.d.comb += zo.s.eq(0)  # unsigned for now
         if ms < 0:
             # larger int to smaller FP (uint32/64 -> fp16 most likely)
-            m.d.comb += zo.e.eq(msb.e_out-1)
-            m.d.comb += zo.m[ms-1:].eq(msb.m_out[-mz-1:])
+            m.d.comb += z1.e.eq(msb.e_out-1)
+            m.d.comb += z1.m[ms-1:].eq(msb.m_out[-mz-1:])
         else:
             # smaller int to larger FP
-            m.d.comb += zo.e.eq(msb.e_out)
-            m.d.comb += zo.m[ms:].eq(msb.m_out[3:])
-        m.d.comb += zo.create(zo.s, zo.e, zo.m) # ... here
+            m.d.comb += z1.e.eq(msb.e_out)
+            m.d.comb += z1.m[ms:].eq(msb.m_out[3:])
+        m.d.comb += z1.create(z1.s, z1.e, z1.m) # ... here
 
         # note: post-normalisation actually appears to be capable of
         # detecting overflow to infinity (FPPackMod).  so it's ok to
