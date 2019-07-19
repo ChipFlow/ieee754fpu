@@ -28,6 +28,13 @@ from nmutil.singlepipe import SimpleHandshake, StageChain
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.pipeline import PipelineSpec
 
+class SignedOp:
+    def __init__(self):
+        self.signed = Signal(reset_less=True)
+
+    def eq(self, i):
+        return [self.signed.eq(i)]
+
 
 class FPCVTIntToFloatMod(Elaboratable):
     """ FP integer conversion: copes with 16/32/64 int to 16/32/64 fp.
