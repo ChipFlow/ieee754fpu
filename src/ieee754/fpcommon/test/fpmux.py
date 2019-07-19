@@ -161,6 +161,8 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
 
                 #op1 = 0x1841
 
+                #op1 = 0x3449f9a9
+
                 vals.append((op1,))
             else:
                 op1 = randint(0, (1<<width)-1)

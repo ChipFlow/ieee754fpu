@@ -107,10 +107,16 @@ class FPCVTIntToFloatMod(Elaboratable):
         m.d.comb += msb.m_in.eq(Cat(0, 0, 0, mantissa)) # g/r/s + input
         m.d.comb += msb.e_in.eq(me)                     # exp = int width
 
-        if ms < 0:
-            # larger int to smaller FP (uint32/64 -> fp16 most likely)
+        # to do with FP16... not yet resolved why
+        alternative = ms < 0
+
+        if alternative:
             m.d.comb += z1.e.eq(msb.e_out-1)
-            m.d.comb += z1.m[ms-1:].eq(msb.m_out[-mz-1:])
+            if mz == 16:
+                # larger int to smaller FP (uint32/64 -> fp16 most likely)
+                m.d.comb += z1.m[ms-1:].eq(msb.m_out[-mz-1:])
+            else: # 32? XXX weirdness...
+                m.d.comb += z1.m.eq(msb.m_out[-mz-1:])
         else:
             # smaller int to larger FP
             m.d.comb += z1.e.eq(msb.e_out)
@@ -128,7 +134,7 @@ class FPCVTIntToFloatMod(Elaboratable):
         # is even necessary.  it probably isn't
 
         # initialise rounding (but only activate if needed)
-        if ms < 0:
+        if alternative:
             # larger int to smaller FP (uint32/64 -> fp16 most likely)
             m.d.comb += self.o.of.guard.eq(msb.m_out[-mz-2])
             m.d.comb += self.o.of.round_bit.eq(msb.m_out[-mz-3])
