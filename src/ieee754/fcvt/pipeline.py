@@ -112,11 +112,12 @@ class FPCVTIntToFloatMod(Elaboratable):
 
         if alternative:
             m.d.comb += z1.e.eq(msb.e_out-1)
+            mmsb = msb.m_out[-mz-1:]
             if mz == 16:
                 # larger int to smaller FP (uint32/64 -> fp16 most likely)
-                m.d.comb += z1.m[ms-1:].eq(msb.m_out[-mz-1:])
+                m.d.comb += z1.m[ms-1:].eq(mmsb)
             else: # 32? XXX weirdness...
-                m.d.comb += z1.m.eq(msb.m_out[-mz-1:])
+                m.d.comb += z1.m.eq(mmsb)
         else:
             # smaller int to larger FP
             m.d.comb += z1.e.eq(msb.e_out)
