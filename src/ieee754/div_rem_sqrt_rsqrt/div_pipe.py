@@ -133,8 +133,29 @@ class DivPipeBaseStage:
 # FIXME: in DivPipeSetupStage.elaborate
 # DivPipeBaseStage._elaborate(self, m, platform)
 
-# FIXME: in DivPipeCalculateStage.elaborate
-# DivPipeBaseStage._elaborate(self, m, platform)
 
-# FIXME: in DivPipeFinalStage.elaborate
-# DivPipeBaseStage._elaborate(self, m, platform)
+class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
+
+    def __init__(self, pspec, stage_index):
+        # XXX TODO: get core_config from pspec
+        DivPipeCoreCalculateStage.__init__(core_config, stage_index)
+        self.pspec = pspec
+
+    def elaborate(self, platform):
+        m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
+        self._elaborate(m, platform)
+        return m
+
+
+class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
+
+    def __init__(self, pspec, stage_index):
+        # XXX TODO: get core_config from pspec
+        DivPipeCoreFinalStage.__init__(core_config, stage_index)
+        self.pspec = pspec
+
+    def elaborate(self, platform):
+        m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
+        self._elaborate(m, platform)
+        return m
+
