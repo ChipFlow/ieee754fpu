@@ -126,12 +126,23 @@ class DivPipeBaseStage:
     """ Base Mix-in for DivPipe*Stage. """
 
     def _elaborate(self, m, platform):
+        m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
-# FIXME: in DivPipeSetupStage.elaborate
-# DivPipeBaseStage._elaborate(self, m, platform)
+
+class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
+
+    def __init__(self, pspec):
+        # XXX TODO: get core_config from pspec
+        DivPipeCoreSetupStage.__init__(core_config)
+        self.pspec = pspec
+
+    def elaborate(self, platform):
+        m = DivPipeCoreSetupStage(platform) # XXX TODO: out_do_z logic!
+        self._elaborate(m, platform)
+        return m
 
 
 class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
