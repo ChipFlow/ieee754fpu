@@ -84,6 +84,7 @@ class FPDIVBasePipe(ControlBase):
         pipechain = []
         n_stages = 6      # TODO (depends on width)
         n_comb_stages = 3  # TODO (depends on how many RS's we want)
+        stage_idx = 0
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
@@ -104,7 +105,9 @@ class FPDIVBasePipe(ControlBase):
             else:
                 kls = FPDivStagesIntermediate
 
-            pipechain.append(kls(self.pspec, n_comb_stages))
+            pipechain.append(kls(self.pspec, n_comb_stages, stage_idx))
+            stage_idx += n_comb_stages # increment so that each CalcStage
+                                       # gets a (correct) unique index
 
         # start and end: unpack/specialcases then normalisation/packing
         pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
