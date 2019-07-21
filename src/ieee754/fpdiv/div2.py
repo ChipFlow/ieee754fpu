@@ -21,8 +21,7 @@ class FPDivStage2Mod(FPState, Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
-        # TODO: DivPipeCoreInterstageData
-        return FPDivStage0Data(self.pspec) # Q/Rem in...
+        return DivPipeOutputData(self.pspec) # Q/Rem in...
 
     def ospec(self):
         # XXX REQUIRED.  MUST NOT BE CHANGED.  this is the format
@@ -58,11 +57,12 @@ class FPDivStage2Mod(FPState, Elaboratable):
         with m.If(~self.i.out_do_z):
             mw = self.o.z.m_width
             m.d.comb += [
-                self.o.z.m.eq(self.i.product[mw+2:]),
-                self.o.of.m0.eq(self.i.product[mw+2]),
-                self.o.of.guard.eq(self.i.product[mw+1]),
-                self.o.of.round_bit.eq(self.i.product[mw]),
-                self.o.of.sticky.eq(self.i.product[0:mw].bool())
+                self.o.z.m.eq(self.i.quotient_root[mw+2:]),
+                self.o.of.m0.eq(self.i.quotient_root[mw+2]), # copy of LSB
+                self.o.of.guard.eq(self.i.quotient_root[mw+1]),
+                self.o.of.round_bit.eq(self.i.quotient_root[mw]),
+                self.o.of.sticky.eq(Cat(self.i.remainder,
+                                        self.i.quotient_root[:mw]).bool())
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
