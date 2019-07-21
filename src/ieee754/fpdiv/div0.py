@@ -46,8 +46,7 @@ class FPDivStage0Mod(Elaboratable):
         return FPSCData(self.pspec, False)
 
     def ospec(self):
-        # XXX TODO: replace with DivPipeCoreInputData, here
-        return FPDivStage0Data(self.pspec)
+        return DivPipeInputData(self.pspec)
 
     def process(self, i):
         return self.o

@@ -98,13 +98,11 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
     def ispec(self):
         # TODO - this is for FPDivStage1Mod
-        # XXX TODO: replace with "intermediary" (DivPipeInterstageData)
-        return FPDivStage0Data(self.pspec) # DIV ispec (loop)
+        return DivPipeInterstageData(self.pspec) # DIV ispec (loop)
 
     def ospec(self):
         # TODO - this is for FPDivStage1Mod
-        # XXX TODO: replace with "intermediary" (DivPipeInterstageData)
-        return FPDivStage0Data(self.pspec) # DIV ospec (loop)
+        return DivPipeInterstageData(self.pspec) # DIV ospec (loop)
 
     def setup(self, m, i):
         """ links module to inputs and outputs.
