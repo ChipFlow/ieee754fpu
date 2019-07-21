@@ -10,6 +10,7 @@ from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
+from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
 
 
 # TODO: delete (replace by DivPipeCoreInputData)
@@ -72,24 +73,15 @@ class FPDivStage0Mod(Elaboratable):
         # it is PURELY the *ENTRY* point into the chain, performing
         # "preparation" work.
 
-        # delete this
-        # store intermediate tests (and zero-extended mantissas)
-        am0 = Signal(len(self.i.a.m)+1, reset_less=True)
-        bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        m.d.comb += [
-                     am0.eq(Cat(self.i.a.m, 0)),
-                     bm0.eq(Cat(self.i.b.m, 0))
-                    ]
-
         with m.If(~self.i.out_do_z):
             # do conversion here, of both self.i.a and self.i.b,
             # into DivPipeCoreInputData dividend and divisor.
 
-            m.d.comb += [self.o.z.e.eq(self.i.a.e + self.i.b.e + 1),
-                         # TODO: no, not product, first stage Q and R etc. etc.
-                         # go here.
-                         self.o.product.eq(am0 * bm0 * 4),
+            m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s)
+                         self.o.dividend.eq(self.i.a.m), # TODO: check
+                         self.o.divisor_radicand.eq(self.i.b.m), # TODO: check
+                         self.o.operation.eq(Const(0)) # TODO (set from ctx.op)
                 ]
 
         # these are required and must not be touched
