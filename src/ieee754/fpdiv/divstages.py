@@ -41,8 +41,6 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
 
             note: this is a pure *combinatorial* module (StageChain).
             therefore each sub-module must also be combinatorial
-            (and not do too much: in particular, n_stages must be
-            reduced slightly when either self.end=True or self.begin=True)
         """
 
         divstages = []
@@ -99,7 +97,6 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
             note: this is a pure *combinatorial* module (StageChain).
             therefore each sub-module must also be combinatorial
-            (and not do too much)
         """
 
         divstages = []
@@ -148,7 +145,6 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
 
             note: this is a pure *combinatorial* module (StageChain).
             therefore each sub-module must also be combinatorial
-            (and not do too much)
         """
 
         # takes the DIV pipeline/chain data and munges it
