@@ -15,8 +15,8 @@ import math
 class FPFormat:
     """ Class describing binary floating-point formats based on IEEE 754.
 
-    :attribute exponent_width: the number of bits in the exponent field.
-    :attribute mantissa_width: the number of bits stored in the mantissa
+    :attribute e_width: the number of bits in the exponent field.
+    :attribute m_width: the number of bits stored in the mantissa
         field.
     :attribute has_int_bit: if the FP format has an explicit integer bit (like
         the x87 80-bit format). The bit is considered part of the mantissa.
@@ -25,13 +25,13 @@ class FPFormat:
     """
 
     def __init__(self,
-                 exponent_width,
-                 mantissa_width,
+                 e_width,
+                 m_width,
                  has_int_bit=False,
                  has_sign=True):
         """ Create ``FPFormat`` instance. """
-        self.exponent_width = exponent_width
-        self.mantissa_width = mantissa_width
+        self.e_width = e_width
+        self.m_width = m_width
         self.has_int_bit = has_int_bit
         self.has_sign = has_sign
 
@@ -39,10 +39,10 @@ class FPFormat:
         """ Check for equality. """
         if not isinstance(other, FPFormat):
             return NotImplemented
-        return (self.exponent_width == other.exponent_width
-                and self.mantissa_width == other.mantissa_width
-                and self.has_int_bit == other.has_int_bit
-                and self.has_sign == other.has_sign)
+        return (self.e_width == other.e_width and
+                self.m_width == other.m_width and
+                self.has_int_bit == other.has_int_bit and
+                self.has_sign == other.has_sign)
 
     @staticmethod
     def standard(width):
@@ -64,8 +64,8 @@ class FPFormat:
         if width > 128 and width % 32 == 0:
             if width > 1000000:  # arbitrary upper limit
                 raise ValueError("width too big")
-            exponent_width = round(4 * math.log2(width)) - 13
-            return FPFormat(exponent_width, width - 1 - exponent_width)
+            e_width = round(4 * math.log2(width)) - 13
+            return FPFormat(e_width, width - 1 - e_width)
         raise ValueError("width must be the bit-width of a valid IEEE"
                          " 754-2008 binary format")
 
@@ -76,7 +76,7 @@ class FPFormat:
                 return f"FPFormat.standard({self.width})"
         except ValueError:
             pass
-        retval = f"FPFormat({self.exponent_width}, {self.mantissa_width}"
+        retval = f"FPFormat({self.e_width}, {self.m_width}"
         if self.has_int_bit is not False:
             retval += f", {self.has_int_bit}"
         if self.has_sign is not True:
@@ -86,12 +86,12 @@ class FPFormat:
     @property
     def width(self):
         """ Get the total number of bits in the FP format. """
-        return self.has_sign + self.exponent_width + self.mantissa_width
+        return self.has_sign + self.e_width + self.m_width
 
     @property
     def exponent_inf_nan(self):
         """ Get the value of the exponent field designating infinity/NaN. """
-        return (1 << self.exponent_width) - 1
+        return (1 << self.e_width) - 1
 
     @property
     def exponent_denormal_zero(self):
@@ -111,12 +111,12 @@ class FPFormat:
     @property
     def exponent_bias(self):
         """ Get the exponent bias. """
-        return (1 << (self.exponent_width - 1)) - 1
+        return (1 << (self.e_width - 1)) - 1
 
     @property
     def fraction_width(self):
         """ Get the number of mantissa bits that are fraction bits. """
-        return self.mantissa_width - self.has_int_bit
+        return self.m_width - self.has_int_bit
 
 
 class MultiShiftR:
