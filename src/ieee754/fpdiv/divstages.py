@@ -21,10 +21,11 @@ from .div0 import FPDivStage0Data
 
 class FPDivStagesSetup(FPState, SimpleHandshake):
 
-    def __init__(self, pspec, n_stages):
+    def __init__(self, pspec, n_stages, stage_offs):
         FPState.__init__(self, "divsetup")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
+        self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
@@ -54,11 +55,12 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
         divstages.append(DivPipeSetupStage(self.pspec))
 
         # here is where the intermediary stages are added.
-        # n_stages is adjusted (in pipeline.py), reduced to take
-        # into account the extra processing that self.begin and self.end
-        # will add.
+        # n_stages is adjusted (by pipeline.py), reduced to take
+        # into account extra processing that FPDivStage0Mod and DivPipeSetup
+        # might add.
         for count in range(self.n_stages): # number of combinatorial stages
-            divstages.append(DivPipeCalculateStage(self.pspec, count))
+            idx = count + self.stage_offs
+            divstages.append(DivPipeCalculateStage(self.pspec, idx))
 
         chain = StageChain(divstages)
         chain.setup(m, i)
@@ -76,10 +78,11 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
 
 class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
-    def __init__(self, pspec, n_stages):
+    def __init__(self, pspec, n_stages, stage_offs):
         FPState.__init__(self, "divintermediate")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
+        self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
@@ -106,7 +109,8 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
         # into account the extra processing that self.begin and self.end
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
-            divstages.append(DivPipeCalculateStage(self.pspec, count))
+            idx = count + self.stage_offs
+            divstages.append(DivPipeCalculateStage(self.pspec, idx))
 
         chain = StageChain(divstages)
         chain.setup(m, i)
@@ -124,15 +128,15 @@ class FPDivStagesIntermediary(FPState, SimpleHandshake):
 
 class FPDivStagesFinal(FPState, SimpleHandshake):
 
-    def __init__(self, pspec, n_stages):
+    def __init__(self, pspec, n_stages, stage_offs):
         FPState.__init__(self, "divfinal")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
+        self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
         SimpleHandshake.__init__(self, self) # pipeline is its own stage
         self.m1o = self.ospec()
 
     def ispec(self):
-        # XXX TODO: replace with "intermediary" (?)
         return DivPipeInterstageData(self.pspec) # DIV ispec (loop)
 
     def ospec(self):
@@ -157,7 +161,8 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
         # into account the extra processing that self.begin and self.end
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
-            divstages.append(DivPipeCalculateStage(pspec, count))
+            idx = count + self.stage_offs
+            divstages.append(DivPipeCalculateStage(pspec, idx))
 
         # does the final conversion from intermediary to output data
         divstages.append(DivPipeFinalStage(pspec))
