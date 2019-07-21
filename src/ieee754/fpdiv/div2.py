@@ -54,8 +54,28 @@ class FPDivStage2Mod(FPState, Elaboratable):
         # NOTE: this phase does NOT do ACTUAL DIV processing, it ONLY
         # does "conversion" *out* of the Q/REM last stage
 
+        # NOTE: see FPDivStage0Mod comment.  the quotient is assumed
+        # to be in the range 0.499999-recurring to 1.999998.  normalisation
+        # will take care of that, *however*, it *might* be necessary to
+        # subtract 1 from the exponent and have one extra bit in the
+        # mantissa to compensate.  this is pretty much exactly what's
+        # done in FPMUL, due to 0.5-0.9999 * 0.5-0.9999 also producing
+        # values within the range 0.5 to 1.999998
+
         with m.If(~self.i.out_do_z):
             mw = self.o.z.m_width
+            # TODO: compensate for answer being in range 0.49999 to 1.99998
+            p = Signal(len(self.i.quotient_root), reset_less=True)
+            with m.If(self.i.quotient_root[-1]):
+                m.d.comb += p.eq(self.i.quotient_root)
+            with m.Else():
+                # get 1 bit of extra accuracy if the mantissa top bit is zero
+                m.d.comb += p.eq(self.i.quotient_root<<1)
+                m.d.comb += self.o.z.e.eq(self.i.z.e-1)
+
+            # TODO: use p here instead of quotient_root, direct.
+            # XXX what to do about remainder? shift that as well?
+            # hmm, how about concatenate remainder and quotient...
             m.d.comb += [
                 self.o.z.m.eq(self.i.quotient_root[mw+2:]),
                 self.o.of.m0.eq(self.i.quotient_root[mw+2]), # copy of LSB
