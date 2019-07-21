@@ -13,6 +13,7 @@ from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh
+from ieee754.fpcommon.fpbase import MultiShiftRMerge
 
 
 from nmigen import Module, Signal, Elaboratable
@@ -28,12 +29,106 @@ from nmutil.singlepipe import SimpleHandshake, StageChain
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.pipeline import PipelineSpec
 
+
 class SignedOp:
     def __init__(self):
         self.signed = Signal(reset_less=True)
 
     def eq(self, i):
         return [self.signed.eq(i)]
+
+
+class FPCVTFloatToIntMod(Elaboratable):
+    """ integer to FP conversion: copes with 16/32/64 fp to 16/32/64 int/uint
+
+        self.ctx.i.op & 0x1 == 0x1 : SIGNED int
+        self.ctx.i.op & 0x1 == 0x0 : UNSIGNED int
+
+        Note: this is a single-stage conversion that goes direct to FPPackData
+    """
+    def __init__(self, in_pspec, out_pspec):
+        self.in_pspec = in_pspec
+        self.out_pspec = out_pspec
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FPADDBaseData(self.in_pspec)
+
+    def ospec(self):
+        return FPPackData(self.out_pspec)
+
+    def setup(self, m, i):
+        """ links module to inputs and outputs
+        """
+        m.submodules.upconvert = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
+
+    def elaborate(self, platform):
+        m = Module()
+
+        #m.submodules.sc_out_z = self.o.z
+
+        # decode: XXX really should move to separate stage
+        print("in_width out", self.in_pspec.width,
+              self.out_pspec.width)
+        a1 = FPNumBaseRecord(self.in_pspec.width, False)
+        print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
+        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
+        m.d.comb += a1.v.eq(self.i.a)
+        z1 = self.o.z
+        mz = len(self.o.z)
+        print("z1", mz)
+
+        me = a1.rmw
+        ms = mz - me
+        print("ms-me", ms, me)
+
+        espec = (len(a1.e_width), True)
+        ediff_intwid = Signal(espec, reset_less=True)
+
+        # conversion can mostly be done manually...
+        m.d.comb += self.o.z.s.eq(a1.s)
+        m.d.comb += self.o.z.e.eq(a1.e)
+        m.d.comb += self.o.z.m[ms:].eq(a1.m)
+        m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
+
+        signed = Signal(reset_less=True)
+        m.d.comb += signed.eq(self.i.ctx.op[0])
+
+        # special cases
+        with m.If(a1.exp_n127):
+            m.d.comb += self.o.z.eq(0)
+
+        # signed, exp too big
+        with m.Elif(signed & (a1.e > Const(mz-1, espec))):
+            with m.If(a1.s): # negative FP, so negative overrun
+                m.d.comb += self.o.z.eq(-(1<<(mz-1)))
+            with m.Else(): # positive FP, so positive overrun
+                m.d.comb += self.o.z.eq((1<<(mz-1)-1))
+
+        # unsigned, exp too big
+        with m.Elif((~signed) & (a1.e > Const(mz, espec))):
+            with m.If(a1.s): # negative FP, so negative overrun (zero)
+                m.d.comb += self.o.z.eq(0)
+            with m.Else(): # positive FP, so positive overrun (max INT)
+                m.d.comb += self.o.z.eq((1<<(mz)-1))
+
+        # ok exp should be in range: shift it...
+        with m.Else():
+            mantissa = Signal(z1, reset_less=True)
+            l = [0] * ms + [1] + a1.m
+            m.d.comb += mantissa.eq(Cat(*l) >> a1.e)
+            m.d.comb += self.o.z.eq(mantissa)
+
+        # copy the context (muxid, operator)
+        m.d.comb += self.o.oz.eq(self.o.z.v)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
+
+        return m
 
 
 class FPCVTIntToFloatMod(Elaboratable):
