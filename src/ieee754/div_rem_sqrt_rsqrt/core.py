@@ -376,16 +376,19 @@ class DivPipeCoreCalculateStage(Elaboratable):
                 bit_value ^= pass_flags[j]
             m.d.comb += next_bits.part(i, 1).eq(bit_value)
 
-        next_compare_rhs = 0
+        # XXX using a list to accumulate the bits and then using bool
+        # is IMPORTANT.  if done using |= it results in a chain of OR gates.
+        l = [] # next_compare_rhs
         for i in range(radix):
             next_flag = pass_flags[i + 1] if i + 1 < radix else 0
             selected = Signal(name=f"selected_{i}", reset_less=True)
             m.d.comb += selected.eq(pass_flags[i] & ~next_flag)
-            next_compare_rhs |= Mux(selected,
-                                    trial_compare_rhs_values[i],
-                                    0)
+            l.append(Mux(selected, trial_compare_rhs_values[i], 0)
 
-        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs)
+        # concatenate the list of Mux results together and OR them using
+        # the bool operator.
+        m.d.comb += self.o.compare_rhs.eq(Cat(*l).bool())
+
         m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
