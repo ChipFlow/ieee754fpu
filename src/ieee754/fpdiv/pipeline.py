@@ -141,6 +141,11 @@ class FPDIVMuxInOut(ReservationStations):
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(width)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
+        # get the standard mantissa width, store in the pspec
+        # (used in DivPipeBaseStage.get_core_config)
+        p = FPFormat.standard(width)
+        self.pspec.m_width = p.m_width
+
         # XXX TODO - a class (or function?) that takes the pspec (right here)
         # and creates... "something".  that "something" MUST have an eq function
         # new_pspec = deepcopy(self.pspec)

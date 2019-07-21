@@ -1,4 +1,4 @@
-"""IEEE754 Floating Point Divider 
+"""IEEE754 Floating Point Divider
 
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
@@ -82,11 +82,20 @@ class FPDivStage0Mod(Elaboratable):
             # result is therefore 0.4999999 (0.5/0.99999) and 1.9999998
             # (0.99999/0.5).
 
+            # zero-extend the mantissas (room for sticky/guard)
+            # plus the extra MSB.  See DivPipeBaseStage.get_core_config
+            am0 = Signal(len(self.i.a.m)+3, reset_less=True)
+            bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
+            m.d.comb += [
+                         am0.eq(Cat(0, 0, self.i.a.m, 0)),
+                         bm0.eq(Cat(0, 0, self.i.b.m, 0))
+                        ]
+
             m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s)
-                         self.o.dividend.eq(self.i.a.m), # TODO: check
-                         self.o.divisor_radicand.eq(self.i.b.m), # TODO: check
-                         self.o.operation.eq(Const(0)) # TODO (set from ctx.op)
+                         self.o.dividend.eq(am0), # TODO: check
+                         self.o.divisor_radicand.eq(bm0), # TODO: check
+                         self.o.operation.eq(Const(0)) # TODO check: DIV
                 ]
 
         # these are required and must not be touched
@@ -98,7 +107,7 @@ class FPDivStage0Mod(Elaboratable):
 
 
 class FPDivStage0(FPState):
-    """ First stage of div.  
+    """ First stage of div.
     """
 
     def __init__(self, pspec):

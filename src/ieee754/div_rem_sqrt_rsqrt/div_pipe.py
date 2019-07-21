@@ -132,8 +132,10 @@ class DivPipeBaseStage:
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
     def get_core_config(self):
-        width = self.pspec.width
-        return DivPipeCoreConfig(width+2, 0, 1)
+        m_width = self.pspec.m_width # mantissa width
+        # 4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
+        # then there is guard and round at the LSB end
+        return DivPipeCoreConfig(m_width+4, 0, log_radix=2)
 
 
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
