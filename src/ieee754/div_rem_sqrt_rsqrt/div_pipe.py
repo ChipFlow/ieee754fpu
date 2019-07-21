@@ -131,12 +131,15 @@ class DivPipeBaseStage:
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
+    def get_core_config(self):
+        width = self.pspec.width
+        return DivPipeCoreConfig(width+2, 0, 1)
+
 
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 
     def __init__(self, pspec):
-        # XXX TODO: get core_config from pspec
-        DivPipeCoreSetupStage.__init__(core_config)
+        DivPipeCoreSetupStage.__init__(self.get_core_config())
         self.pspec = pspec
 
     def elaborate(self, platform):
@@ -148,8 +151,7 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
 
     def __init__(self, pspec, stage_index):
-        # XXX TODO: get core_config from pspec
-        DivPipeCoreCalculateStage.__init__(core_config, stage_index)
+        DivPipeCoreCalculateStage.__init__(self.get_core_config(), stage_index)
         self.pspec = pspec
 
     def elaborate(self, platform):
@@ -161,8 +163,7 @@ class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
 class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
 
     def __init__(self, pspec, stage_index):
-        # XXX TODO: get core_config from pspec
-        DivPipeCoreFinalStage.__init__(core_config, stage_index)
+        DivPipeCoreFinalStage.__init__(self.get_core_config(), stage_index)
         self.pspec = pspec
 
     def elaborate(self, platform):
