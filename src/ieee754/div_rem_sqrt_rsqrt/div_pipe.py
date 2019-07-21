@@ -5,7 +5,7 @@
 from .core import (DivPipeCoreConfig, DivPipeCoreInputData,
                    DivPipeCoreInterstageData, DivPipeCoreOutputData)
 from ieee754.fpcommon.getop import FPPipeContext
-from ieee754.fpcommon.fpbase import FPFormat
+from ieee754.fpcommon.fpbase import FPFormat, FPNumBaseRecord
 
 
 class DivPipeConfig:
@@ -28,6 +28,9 @@ class DivPipeConfig:
 class DivPipeBaseData:
     """ input data base type for ``DivPipe``.
 
+    :attribute z: a convenient way to carry the sign and exponent through
+                  the pipeline from when they were computed right at the
+                  start.
     :attribute out_do_z: FIXME: document
     :attribute oz: FIXME: document
     :attribute ctx: FIXME: document
@@ -41,6 +44,7 @@ class DivPipeBaseData:
         """ Create a ``DivPipeBaseData`` instance. """
         self.config = config
         width = config.pspec.width
+        self.z = FPNumBaseRecord(width, False) # s and e carried: m ignored
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
@@ -50,13 +54,14 @@ class DivPipeBaseData:
 
     def __iter__(self):
         """ Get member signals. """
+        yield from self.z
         yield self.out_do_z
         yield self.oz
         yield from self.ctx
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return [self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+        return [self.z.eq(rhz.z, self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.ctx.eq(i.ctx)]
 
 
