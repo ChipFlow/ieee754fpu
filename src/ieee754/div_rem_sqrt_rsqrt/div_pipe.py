@@ -2,8 +2,14 @@
 # See Notices.txt for copyright information
 """ div/rem/sqrt/rsqrt pipeline. """
 
-from .core import (DivPipeCoreConfig, DivPipeCoreInputData,
-                   DivPipeCoreInterstageData, DivPipeCoreOutputData)
+from ieee754.div_rem_sqrt_rsqrt.core import (DivPipeCoreConfig,
+                                             DivPipeCoreInputData,
+                                             DivPipeCoreInterstageData,
+                                             DivPipeCoreOutputData,
+                                             DivPipeCoreSetupStage,
+                                             DivPipeCoreCalculateStage,
+                                             DivPipeCoreFinalStage,
+                                            )
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.fpbase import FPFormat, FPNumBaseRecord
 
@@ -61,7 +67,7 @@ class DivPipeBaseData:
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return [self.z.eq(rhz.z, self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
+        return [self.z.eq(rhs.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
                 self.ctx.eq(i.ctx)]
 
 

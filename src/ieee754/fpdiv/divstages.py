@@ -74,7 +74,7 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
         m.next = "normalise_1"
 
 
-class FPDivStagesIntermediary(FPState, SimpleHandshake):
+class FPDivStagesIntermediate(FPState, SimpleHandshake):
 
     def __init__(self, pspec, n_stages, stage_offs):
         FPState.__init__(self, "divintermediate")

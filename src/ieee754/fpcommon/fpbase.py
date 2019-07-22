@@ -51,8 +51,6 @@ class FPFormat:
         :param width: bit-width of requested format.
         :returns: the requested ``FPFormat`` instance.
         """
-        if not instanceof(width, int):
-            raise TypeError()
         if width == 16:
             return FPFormat(5, 10)
         if width == 32:

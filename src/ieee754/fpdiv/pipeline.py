@@ -64,6 +64,7 @@ from nmutil.concurrentunit import ReservationStations, num_bits
 
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
+from ieee754.fpcommon.fpbase import FPFormat
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpdiv.specialcases import FPDIVSpecialCasesDeNorm
