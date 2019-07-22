@@ -135,6 +135,14 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
         self.pspec = pspec
         DivPipeCoreSetupStage.__init__(self, pspec.core_config)
 
+    def ispec(self):
+        """ Get the input spec for this pipeline stage."""
+        return DivPipeInputData(self.pspec)
+
+    def ospec(self):
+        """ Get the output spec for this pipeline stage."""
+        return DivPipeInterstageData(self.pspec)
+
     def elaborate(self, platform):
         m = DivPipeCoreSetupStage(platform) # XXX TODO: out_do_z logic!
         self._elaborate(m, platform)
@@ -147,6 +155,14 @@ class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
         self.pspec = pspec
         DivPipeCoreCalculateStage.__init__(self, pspec.core_config, stage_index)
 
+    def ispec(self):
+        """ Get the input spec for this pipeline stage."""
+        return DivPipeInterstageData(self.pspec)
+
+    def ospec(self):
+        """ Get the output spec for this pipeline stage."""
+        return DivPipeInterstageData(self.pspec)
+
     def elaborate(self, platform):
         m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
         self._elaborate(m, platform)
@@ -158,6 +174,14 @@ class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
     def __init__(self, pspec, stage_index):
         self.pspec = pspec
         DivPipeCoreFinalStage.__init__(self, pspec.core_config, stage_index)
+
+    def ispec(self):
+        """ Get the input spec for this pipeline stage."""
+        return DivPipeInterstageData(self.pspec)
+
+    def ospec(self):
+        """ Get the output spec for this pipeline stage."""
+        return DivPipeOutputData(self.pspec)
 
     def elaborate(self, platform):
         m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!

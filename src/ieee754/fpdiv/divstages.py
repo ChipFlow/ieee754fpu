@@ -21,7 +21,6 @@ from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
 # TODO: write these
 from .div0 import FPDivStage0Mod
 from .div2 import FPDivStage2Mod
-from .div0 import FPDivStage0Data
 
 
 class FPDivStagesSetup(FPState, SimpleHandshake):

@@ -3,7 +3,7 @@
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
 
-from nmigen import Module, Signal, Cat, Elaboratable
+from nmigen import Module, Signal, Cat, Elaboratable, Const
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)

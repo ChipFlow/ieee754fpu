@@ -8,7 +8,6 @@ from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.postcalc import FPAddStage1Data
-from .div0 import FPDivStage0Data # XXX TODO: replace
 
 
 class FPDivStage2Mod(FPState, Elaboratable):
