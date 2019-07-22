@@ -35,8 +35,6 @@ class FPDivStage2Mod(FPState, Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.div1 = self
-        #m.submodules.div1_out_overflow = self.o.of
-
         m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
