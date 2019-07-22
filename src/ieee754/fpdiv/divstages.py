@@ -162,10 +162,10 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
         # will add.
         for count in range(self.n_stages): # number of combinatorial stages
             idx = count + self.stage_offs
-            divstages.append(DivPipeCalculateStage(pspec, idx))
+            divstages.append(DivPipeCalculateStage(self.pspec, idx))
 
         # does the final conversion from intermediary to output data
-        divstages.append(DivPipeFinalStage(pspec))
+        divstages.append(DivPipeFinalStage(self.pspec))
 
         # does conversion from DivPipeOutputData into
         # FPAddStage1Data format (bad name, TODO, doesn't matter),

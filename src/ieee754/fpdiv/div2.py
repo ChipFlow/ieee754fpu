@@ -3,11 +3,12 @@
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
 
-from nmigen import Module, Signal, Elaboratable
+from nmigen import Module, Signal, Elaboratable, Cat
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeOutputData
 
 
 class FPDivStage2Mod(FPState, Elaboratable):

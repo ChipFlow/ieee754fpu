@@ -81,8 +81,8 @@ class FPDIVBasePipe(ControlBase):
         ControlBase.__init__(self)
 
         pipechain = []
-        n_stages = 6      # TODO (depends on width)
-        n_comb_stages = 3  # TODO (depends on how many RS's we want)
+        max_n_comb_stages = 2  # TODO (depends on how many RS's we want)
+        n_stages = pspec.fpformat.m_width // max_n_comb_stages
         stage_idx = 0
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
@@ -90,6 +90,7 @@ class FPDIVBasePipe(ControlBase):
 
         for i in range(n_stages):
 
+            n_comb_stages = max_n_comb_stages
             # needs to convert input from pipestart ospec
             if i == 0:
                 kls = FPDivStagesSetup
@@ -151,7 +152,11 @@ class FPDIVMuxInOut(ReservationStations):
         # (used in DivPipeBaseStage.get_core_config)
         fpformat = FPFormat.standard(width)
         log2_radix = 2
-        cfg = DivPipeCoreConfig(width, fpformat.fraction_width, log2_radix)
+
+        # 4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
+        # then there is guard and round at the LSB end
+        cfg = DivPipeCoreConfig(width+4, fpformat.fraction_width, log2_radix)
+
         self.pspec.fpformat = fpformat
         self.pspec.log2_radix = log2_radix
         self.pspec.core_config = cfg

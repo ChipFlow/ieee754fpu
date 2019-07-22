@@ -122,17 +122,12 @@ class DivPipeBaseStage:
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
-    def get_core_config(self):
-        m_width = self.pspec.m_width # mantissa width
-        # 4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
-        # then there is guard and round at the LSB end
-        return DivPipeCoreConfig(m_width+4, 0, log_radix=2)
-
 
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 
     def __init__(self, pspec):
         self.pspec = pspec
+        print ("DivPipeSetupStage", pspec, pspec.core_config)
         DivPipeCoreSetupStage.__init__(self, pspec.core_config)
 
     def ispec(self):
@@ -144,7 +139,8 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
         return DivPipeInterstageData(self.pspec)
 
     def elaborate(self, platform):
-        m = DivPipeCoreSetupStage(platform) # XXX TODO: out_do_z logic!
+        # XXX TODO: out_do_z logic!
+        m = DivPipeCoreSetupStage.elaborate(self, platform)
         self._elaborate(m, platform)
         return m
 
@@ -164,16 +160,17 @@ class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
         return DivPipeInterstageData(self.pspec)
 
     def elaborate(self, platform):
-        m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
+        # XXX TODO: out_do_z logic!
+        m = DivPipeCoreCalculateStage.elaborate(self, platform)
         self._elaborate(m, platform)
         return m
 
 
 class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
 
-    def __init__(self, pspec, stage_index):
+    def __init__(self, pspec):
         self.pspec = pspec
-        DivPipeCoreFinalStage.__init__(self, pspec.core_config, stage_index)
+        DivPipeCoreFinalStage.__init__(self, pspec.core_config)
 
     def ispec(self):
         """ Get the input spec for this pipeline stage."""
@@ -184,7 +181,8 @@ class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
         return DivPipeOutputData(self.pspec)
 
     def elaborate(self, platform):
-        m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
+        # XXX TODO: out_do_z logic!
+        m = DivPipeCoreFinalStage.elaborate(self, platform)
         self._elaborate(m, platform)
         return m
 
