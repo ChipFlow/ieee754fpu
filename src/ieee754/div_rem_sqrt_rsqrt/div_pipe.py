@@ -2,6 +2,7 @@
 # See Notices.txt for copyright information
 """ div/rem/sqrt/rsqrt pipeline. """
 
+from nmigen import Signal
 from ieee754.div_rem_sqrt_rsqrt.core import (DivPipeCoreConfig,
                                              DivPipeCoreInputData,
                                              DivPipeCoreInterstageData,
@@ -12,23 +13,6 @@ from ieee754.div_rem_sqrt_rsqrt.core import (DivPipeCoreConfig,
                                             )
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.fpbase import FPFormat, FPNumBaseRecord
-
-
-class DivPipeConfig:
-    """ Configuration for the div/rem/sqrt/rsqrt pipeline.
-
-    :attribute pspec: ``PipelineSpec`` instance
-    :attribute core_config: the ``DivPipeCoreConfig`` instance.
-    """
-
-    def __init__(self, pspec, log2_radix=3):
-        """ Create a ``DivPipeConfig`` instance. """
-        self.pspec = pspec
-        bit_width = pspec.width
-        fract_width = FPFormat.standard(bit_width).fraction_width
-        self.core_config = DivPipeCoreConfig(bit_width,
-                                             fract_width,
-                                             log2_radix)
 
 
 class DivPipeBaseData:
@@ -46,15 +30,15 @@ class DivPipeBaseData:
     :attribute config: the ``DivPipeConfig`` instance.
     """
 
-    def __init__(self, config):
+    def __init__(self, pspec):
         """ Create a ``DivPipeBaseData`` instance. """
-        self.config = config
-        width = config.pspec.width
+        self.pspec = pspec
+        width = pspec.width
         self.z = FPNumBaseRecord(width, False) # s and e carried: m ignored
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
-        self.ctx = FPPipeContext(config.pspec)  # context: muxid, operator etc.
+        self.ctx = FPPipeContext(pspec)  # context: muxid, operator etc.
         # FIXME: add proper muxid explanation somewhere and refer to it here
         self.muxid = self.ctx.muxid  # annoying. complicated.
 
@@ -67,17 +51,17 @@ class DivPipeBaseData:
 
     def eq(self, rhs):
         """ Assign member signals. """
-        return [self.z.eq(rhs.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.ctx.eq(i.ctx)]
+        return [self.z.eq(rhs.z), self.out_do_z.eq(rhs.out_do_z),
+                self.oz.eq(rhs.oz), self.ctx.eq(rhs.ctx)]
 
 
 class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
     """ input data type for ``DivPipe``. """
 
-    def __init__(self, config):
+    def __init__(self, pspec):
         """ Create a ``DivPipeInputData`` instance. """
-        DivPipeCoreInputData.__init__(self, config.core_config)
-        DivPipeBaseData.__init__(self, config)
+        DivPipeCoreInputData.__init__(self, pspec.core_config)
+        DivPipeBaseData.__init__(self, pspec)
 
     def __iter__(self):
         """ Get member signals. """
@@ -93,10 +77,10 @@ class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
 class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
     """ interstage data type for ``DivPipe``. """
 
-    def __init__(self, config):
+    def __init__(self, pspec):
         """ Create a ``DivPipeInterstageData`` instance. """
-        DivPipeCoreInterstageData.__init__(self, config.core_config)
-        DivPipeBaseData.__init__(self, config)
+        DivPipeCoreInterstageData.__init__(self, pspec.core_config)
+        DivPipeBaseData.__init__(self, pspec)
 
     def __iter__(self):
         """ Get member signals. """
@@ -112,10 +96,10 @@ class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
 class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
     """ output data type for ``DivPipe``. """
 
-    def __init__(self, config):
+    def __init__(self, pspec):
         """ Create a ``DivPipeOutputData`` instance. """
-        DivPipeCoreOutputData.__init__(self, config.core_config)
-        DivPipeBaseData.__init__(self, config)
+        DivPipeCoreOutputData.__init__(self, pspec.core_config)
+        DivPipeBaseData.__init__(self, pspec)
 
     def __iter__(self):
         """ Get member signals. """

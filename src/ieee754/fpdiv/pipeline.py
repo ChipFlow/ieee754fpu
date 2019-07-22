@@ -72,6 +72,7 @@ from ieee754.fpdiv.divstages import (FPDivStagesSetup,
                                      FPDivStagesIntermediate,
                                      FPDivStagesFinal)
 from ieee754.pipeline import PipelineSpec
+from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreConfig
 
 
 class FPDIVBasePipe(ControlBase):
@@ -110,8 +111,8 @@ class FPDIVBasePipe(ControlBase):
         self.pipechain = pipechain
 
         # start and end: unpack/specialcases then normalisation/packing
-        self.pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
-        self.pipeend = FPNormToPack(self.pspec)
+        self.pipestart = pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
+        self.pipeend = pipeend = FPNormToPack(self.pspec)
 
         self._eqs = self.connect([pipestart] + pipechain + [pipeend])
 
@@ -148,8 +149,12 @@ class FPDIVMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec
         # (used in DivPipeBaseStage.get_core_config)
-        p = FPFormat.standard(width)
-        self.pspec.m_width = p.m_width
+        fpformat = FPFormat.standard(width)
+        log2_radix = 2
+        cfg = DivPipeCoreConfig(width, fpformat.fraction_width, log2_radix)
+        self.pspec.fpformat = fpformat
+        self.pspec.log2_radix = log2_radix
+        self.pspec.core_config = cfg
 
         # XXX TODO - a class (or function?) that takes the pspec (right here)
         # and creates... "something".  that "something" MUST have an eq function
