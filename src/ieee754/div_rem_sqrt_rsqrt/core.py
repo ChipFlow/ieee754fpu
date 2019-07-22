@@ -96,8 +96,6 @@ class DivPipeCoreInputData:
                                reset_less=reset_less)
         self.divisor_radicand = Signal(core_config.bit_width,
                                        reset_less=reset_less)
-
-        # FIXME: this goes into (is replaced by) self.ctx.op
         self.operation = \
             DivPipeCoreOperation.create_signal(reset_less=reset_less)
 
@@ -105,13 +103,13 @@ class DivPipeCoreInputData:
         """ Get member signals. """
         yield self.dividend
         yield self.divisor_radicand
-        yield self.operation  # FIXME: delete.  already covered by self.ctx
+        yield self.operation
 
     def eq(self, rhs):
         """ Assign member signals. """
         return [self.dividend.eq(rhs.dividend),
                 self.divisor_radicand.eq(rhs.divisor_radicand),
-                self.operation.eq(rhs.operation),  # FIXME: delete.
+                self.operation.eq(rhs.operation),
                 ]
 
 
@@ -145,7 +143,6 @@ class DivPipeCoreInterstageData:
         self.core_config = core_config
         self.divisor_radicand = Signal(core_config.bit_width,
                                        reset_less=reset_less)
-        # FIXME: delete self.operation.  already covered by self.ctx.op
         self.operation = \
             DivPipeCoreOperation.create_signal(reset_less=reset_less)
         self.quotient_root = Signal(core_config.bit_width,
@@ -160,7 +157,7 @@ class DivPipeCoreInterstageData:
     def __iter__(self):
         """ Get member signals. """
         yield self.divisor_radicand
-        yield self.operation  # FIXME: delete.  already in self.ctx.op
+        yield self.operation
         yield self.quotient_root
         yield self.root_times_radicand
         yield self.compare_lhs
@@ -169,7 +166,7 @@ class DivPipeCoreInterstageData:
     def eq(self, rhs):
         """ Assign member signals. """
         return [self.divisor_radicand.eq(rhs.divisor_radicand),
-                self.operation.eq(rhs.operation),  # FIXME: delete.
+                self.operation.eq(rhs.operation),
                 self.quotient_root.eq(rhs.quotient_root),
                 self.root_times_radicand.eq(rhs.root_times_radicand),
                 self.compare_lhs.eq(rhs.compare_lhs),
