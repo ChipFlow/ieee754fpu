@@ -66,12 +66,12 @@ class FPDIVSpecialCasesMod(Elaboratable):
         # if a is NaN or b is NaN return NaN
         with m.If(abnan):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.nan(1)
+            m.d.comb += self.o.z.nan(0)
 
         # if a is inf and b is Inf return NaN
-        with m.Elif(abnan):
+        with m.Elif(abinf):
             m.d.comb += self.o.out_do_z.eq(1)
-            m.d.comb += self.o.z.nan(1)
+            m.d.comb += self.o.z.nan(0)
 
         # if a is inf return inf
         with m.Elif(a1.is_inf):
@@ -89,7 +89,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.z.zero(sabx)
             # b is zero return NaN
             with m.If(b1.is_zero):
-                m.d.comb += self.o.z.nan(1)
+                m.d.comb += self.o.z.nan(0)
 
         # if b is zero return Inf
         with m.Elif(b1.is_zero):
