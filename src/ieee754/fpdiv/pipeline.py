@@ -98,12 +98,12 @@ class FPDIVBasePipe(ControlBase):
             # needs to convert input from pipestart ospec
             if i == 0:
                 kls = FPDivStagesSetup
-                n_comb_stages -= 1  # reduce due to work done at start
+                #n_comb_stages -= 1  # reduce due to work done at start?
 
             # needs to convert output to pipeend ispec
             elif i == n_stages - 1:
                 kls = FPDivStagesFinal
-                n_comb_stages -= 1  # FIXME - reduce due to work done at end?
+                #n_comb_stages -= 1  # FIXME - reduce due to work done at end?
 
             # intermediary stage
             else:
