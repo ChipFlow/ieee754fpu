@@ -101,7 +101,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
             m.d.comb += self.o.out_do_z.eq(0)
 
         m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.mid.eq(self.i.mid)
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 

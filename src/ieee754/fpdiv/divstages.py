@@ -12,7 +12,11 @@ from nmutil.singlepipe import (StageChain, SimpleHandshake)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
-from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInterstageData
+from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
+                                                 DivPipeSetupStage,
+                                                 DivPipeCalculateStage,
+                                                 DivPipeFinalStage,
+                                                )
 
 # TODO: write these
 from .div0 import FPDivStage0Mod

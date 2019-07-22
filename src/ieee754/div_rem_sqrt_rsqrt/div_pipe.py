@@ -89,6 +89,7 @@ class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
 
     def eq(self, rhs):
         """ Assign member signals. """
+        print (self, rhs)
         return DivPipeCoreInterstageData.eq(self, rhs) + \
             DivPipeBaseData.eq(self, rhs)
 
@@ -131,8 +132,8 @@ class DivPipeBaseStage:
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 
     def __init__(self, pspec):
-        DivPipeCoreSetupStage.__init__(self.get_core_config())
         self.pspec = pspec
+        DivPipeCoreSetupStage.__init__(self, pspec.core_config)
 
     def elaborate(self, platform):
         m = DivPipeCoreSetupStage(platform) # XXX TODO: out_do_z logic!
@@ -143,8 +144,8 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
 
     def __init__(self, pspec, stage_index):
-        DivPipeCoreCalculateStage.__init__(self.get_core_config(), stage_index)
         self.pspec = pspec
+        DivPipeCoreCalculateStage.__init__(self, pspec.core_config, stage_index)
 
     def elaborate(self, platform):
         m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
@@ -155,8 +156,8 @@ class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
 class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
 
     def __init__(self, pspec, stage_index):
-        DivPipeCoreFinalStage.__init__(self.get_core_config(), stage_index)
         self.pspec = pspec
+        DivPipeCoreFinalStage.__init__(self, pspec.core_config, stage_index)
 
     def elaborate(self, platform):
         m = DivPipeCoreCalculateStage(platform) # XXX TODO: out_do_z logic!
