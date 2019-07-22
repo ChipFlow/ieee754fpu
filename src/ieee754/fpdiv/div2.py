@@ -63,15 +63,15 @@ class FPDivStage2Mod(FPState, Elaboratable):
         with m.If(~self.i.out_do_z):
             mw = self.o.z.m_width
             # TODO: compensate for answer being in range 0.49999 to 1.99998
-            pl = len(self.i.quotient_root) + len(self.i.remainder)
+            pl = len(self.i.quotient_root) + 1
             pt = Signal(pl, reset_less=True)
-            m.d.comb += pt.eq(Cat(self.i.remainder, self.i.quotient_root))
+            m.d.comb += pt.eq(Cat(0, self.i.quotient_root))
             p = Signal(pl-1, reset_less=True) # drop top bit
             with m.If(self.i.quotient_root[-1]):
-                m.d.comb += p.eq(pt)
+                m.d.comb += p.eq(pt[1:])
             with m.Else():
                 # get 1 bit of extra accuracy if the mantissa top bit is zero
-                m.d.comb += p.eq(pt << 1)
+                m.d.comb += p.eq(pt)
                 m.d.comb += self.o.z.e.eq(self.i.z.e-1)
 
             # TODO: use p here instead of quotient_root, direct.
@@ -82,7 +82,7 @@ class FPDivStage2Mod(FPState, Elaboratable):
                 self.o.of.m0.eq(p[-mw]), # copy of LSB
                 self.o.of.guard.eq(p[-mw-1]),
                 self.o.of.round_bit.eq(p[-mw-2]),
-                self.o.of.sticky.eq(p[:-mw-2].bool())
+                self.o.of.sticky.eq(p[:-mw-2].bool() | self.i.remainder.bool())
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
