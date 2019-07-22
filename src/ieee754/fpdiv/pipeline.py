@@ -11,7 +11,7 @@ scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
                             FPAddDeNormMod
 
 pipediv0 - FPDivStagesSetup        ispec FPSCData
---------                           ospec DivPipeCoreInterstageData
+--------                           ospec DivPipeInterstageData
 
                 StageChain: FPDivStage0Mod,
                             DivPipeSetupStage,
@@ -19,8 +19,8 @@ pipediv0 - FPDivStagesSetup        ispec FPSCData
                             ...
                             DivPipeCalculateStage
 
-pipediv1 - FPDivStagesIntermediate ispec DivPipeCoreInterstageData
---------                           ospec DivPipeCoreInterstageData
+pipediv1 - FPDivStagesIntermediate ispec DivPipeInterstageData
+--------                           ospec DivPipeInterstageData
 
                 StageChain: DivPipeCalculateStage,
                             ...
