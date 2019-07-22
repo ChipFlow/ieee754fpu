@@ -71,7 +71,7 @@ class FPDivStage0Mod(Elaboratable):
 
             m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                         self.o.dividend.eq(am0), # TODO: check
+                         self.o.dividend[-len(am0):].eq(am0), # TODO: check
                          self.o.divisor_radicand.eq(bm0), # TODO: check
                          self.o.operation.eq(Const(0)) # TODO check: DIV
                 ]
