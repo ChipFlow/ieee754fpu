@@ -66,7 +66,9 @@ class FPDivStage0Mod(Elaboratable):
             bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
             m.d.comb += [
                          am0.eq(Cat(0, 0, self.i.a.m, 0)),
-                         bm0.eq(Cat(0, 0, self.i.b.m, 0))
+                         bm0.eq(Cat(0, 0, self.i.b.m, 0)),
+                         #am0.eq(0x392),
+                         #bm0.eq(0x1110),
                         ]
 
             m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
