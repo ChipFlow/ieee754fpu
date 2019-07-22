@@ -89,7 +89,7 @@ class FPDIVBasePipe(ControlBase):
         # XXX BUG - subtracting 4 from number of stages stops assert
         # probably related to having to add 4 in FPDivMuxInOut
         radix = pspec.log2_radix
-        n_stages = pspec.core_config.bit_width // (max_n_comb_stages * radix)
+        n_stages = pspec.core_config.n_stages // max_n_comb_stages
         stage_idx = 0
 
         for i in range(n_stages):
@@ -135,6 +135,8 @@ class FPDIVBasePipe(ControlBase):
 
         return m
 
+def roundup(x, mod):
+    return x if x % mod == 0 else x + mod - x % mod
 
 class FPDIVMuxInOut(ReservationStations):
     """ Reservation-Station version of FPDIV pipeline.
@@ -154,11 +156,12 @@ class FPDIVMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec HOWEVER...
         fmt = FPFormat.standard(width)
-        # ...4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
-        # then there is guard and round at the LSB end
-        fmt.m_width += 4
-        # TODO: make fmt.m_width a modulo of log2_radix
         log2_radix = 2
+
+        # ...4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
+        # then there is guard and round at the LSB end.
+        # also: round up to nearest radix
+        fmt.m_width = roundup(fmt.m_width + 4, log2_radix)
 
         cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)
 
