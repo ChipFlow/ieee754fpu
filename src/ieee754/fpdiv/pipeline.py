@@ -82,11 +82,15 @@ class FPDIVBasePipe(ControlBase):
 
         pipechain = []
         max_n_comb_stages = 2  # TODO (depends on how many RS's we want)
-        n_stages = pspec.fpformat.m_width // max_n_comb_stages
-        stage_idx = 0
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
+
+        # XXX BUG - subtracting 4 from number of stages stops assert
+        # probably related to having to add 4 in FPDivMuxInOut
+        radix = pspec.log2_radix
+        n_stages = pspec.core_config.bit_width // (max_n_comb_stages * radix)
+        stage_idx = 0
 
         for i in range(n_stages):
 
@@ -148,16 +152,17 @@ class FPDIVMuxInOut(ReservationStations):
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(width)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
-        # get the standard mantissa width, store in the pspec
-        # (used in DivPipeBaseStage.get_core_config)
-        fpformat = FPFormat.standard(width)
+        # get the standard mantissa width, store in the pspec HOWEVER...
+        fmt = FPFormat.standard(width)
+        # ...4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
+        # then there is guard and round at the LSB end
+        fmt.m_width += 4
+        # TODO: make fmt.m_width a modulo of log2_radix
         log2_radix = 2
 
-        # 4 extra bits on the mantissa: MSB is zero, MSB-1 is 1
-        # then there is guard and round at the LSB end
-        cfg = DivPipeCoreConfig(width+4, fpformat.fraction_width, log2_radix)
+        cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)
 
-        self.pspec.fpformat = fpformat
+        self.pspec.fpformat = fmt
         self.pspec.log2_radix = log2_radix
         self.pspec.core_config = cfg
 
