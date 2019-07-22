@@ -66,7 +66,7 @@ class FPDivStage2Mod(FPState, Elaboratable):
             pl = len(self.i.quotient_root) + len(self.i.remainder)
             pt = Signal(pl, reset_less=True)
             m.d.comb += pt.eq(Cat(self.i.remainder, self.i.quotient_root))
-            p = Signal(pl, reset_less=True)
+            p = Signal(pl-1, reset_less=True) # drop top bit
             with m.If(self.i.quotient_root[-1]):
                 m.d.comb += p.eq(pt)
             with m.Else():
@@ -78,11 +78,11 @@ class FPDivStage2Mod(FPState, Elaboratable):
             # XXX what to do about remainder? shift that as well?
             # hmm, how about concatenate remainder and quotient...
             m.d.comb += [
-                self.o.z.m.eq(p[-mw-2:]),
-                self.o.of.m0.eq(p[-mw-2]), # copy of LSB
+                self.o.z.m.eq(p[-mw:]),
+                self.o.of.m0.eq(p[-mw]), # copy of LSB
                 self.o.of.guard.eq(p[-mw-1]),
-                self.o.of.round_bit.eq(p[-mw]),
-                self.o.of.sticky.eq(p[:-mw].bool())
+                self.o.of.round_bit.eq(p[-mw-2]),
+                self.o.of.sticky.eq(p[:-mw-2].bool())
             ]
 
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
