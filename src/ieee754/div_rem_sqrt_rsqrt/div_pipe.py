@@ -71,7 +71,7 @@ class DivPipeInputData(DivPipeCoreInputData, DivPipeBaseData):
     def eq(self, rhs):
         """ Assign member signals. """
         return DivPipeCoreInputData.eq(self, rhs) + \
-            DivPipeBaseData.eq(self, rhs)
+               DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
@@ -91,7 +91,7 @@ class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
         """ Assign member signals. """
         print (self, rhs)
         return DivPipeCoreInterstageData.eq(self, rhs) + \
-            DivPipeBaseData.eq(self, rhs)
+               DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
@@ -110,7 +110,7 @@ class DivPipeOutputData(DivPipeCoreOutputData, DivPipeBaseData):
     def eq(self, rhs):
         """ Assign member signals. """
         return DivPipeCoreOutputData.eq(self, rhs) + \
-            DivPipeBaseData.eq(self, rhs)
+               DivPipeBaseData.eq(self, rhs)
 
 
 class DivPipeBaseStage:
