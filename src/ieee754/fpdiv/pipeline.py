@@ -76,11 +76,8 @@ from ieee754.pipeline import PipelineSpec
 
 class FPDIVBasePipe(ControlBase):
     def __init__(self, pspec):
-        ControlBase.__init__(self)
         self.pspec = pspec
-
-    def elaborate(self, platform):
-        m = ControlBase.elaborate(self, platform)
+        ControlBase.__init__(self)
 
         pipechain = []
         n_stages = 6      # TODO (depends on width)
@@ -110,18 +107,25 @@ class FPDIVBasePipe(ControlBase):
             stage_idx += n_comb_stages # increment so that each CalcStage
                                        # gets a (correct) unique index
 
+        self.pipechain = pipechain
+
         # start and end: unpack/specialcases then normalisation/packing
-        pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
-        pipeend = FPNormToPack(self.pspec)
+        self.pipestart = FPDIVSpecialCasesDeNorm(self.pspec)
+        self.pipeend = FPNormToPack(self.pspec)
+
+        self._eqs = self.connect([pipestart] + pipechain + [pipeend])
+
+    def elaborate(self, platform):
+        m = ControlBase.elaborate(self, platform)
 
         # add submodules
-        m.submodules.scnorm = pipestart
-        for i, p in enumerate(pipechain):
+        m.submodules.scnorm = self.pipestart
+        for i, p in enumerate(self.pipechain):
             setattr(m.submodules, "pipediv%d" % i, p)
-        m.submodules.normpack = pipeend
+        m.submodules.normpack = self.pipeend
 
         # ControlBase.connect creates the "eqs" needed to connect each pipe
-        m.d.comb += self.connect([pipestart] + pipechain + [pipeend])
+        m.d.comb += self._eqs
 
         return m
 
