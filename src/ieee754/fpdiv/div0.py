@@ -13,28 +13,6 @@ from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
 
 
-# TODO: delete (replace by DivPipeCoreInputData)
-class FPDivStage0Data:
-
-    def __init__(self, pspec):
-        self.z = FPNumBaseRecord(pspec.width, False)
-        self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(pspec.width, reset_less=True)
-
-        self.ctx = FPPipeContext(pspec.width, pspec) # context: muxid, operator etc.
-        self.muxid = self.ctx.muxid             # annoying. complicated.
-
-        # TODO: here is where Q and R would be put, and passed
-        # down to Stage1 processing.
-
-        mw = (self.z.m_width)*2 - 1 + 3 # sticky/round/guard bits + (2*mant) - 1
-        self.product = Signal(mw, reset_less=True)
-
-    def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.product.eq(i.product), self.ctx.eq(i.ctx)]
-
-
 class FPDivStage0Mod(Elaboratable):
 
     def __init__(self, pspec):
@@ -66,7 +44,7 @@ class FPDivStage0Mod(Elaboratable):
         # pipeline chain) - see ospec.
 
         # INPUT SPEC: FPSCData
-        # OUTPUT SPEC: DivPipeCoreInputData
+        # OUTPUT SPEC: DivPipeInputData
 
         # NOTE: this stage does *NOT* do *ACTUAL* DIV processing,
         # it is PURELY the *ENTRY* point into the chain, performing
@@ -74,7 +52,7 @@ class FPDivStage0Mod(Elaboratable):
 
         with m.If(~self.i.out_do_z):
             # do conversion here, of both self.i.a and self.i.b,
-            # into DivPipeCoreInputData dividend and divisor.
+            # into DivPipeInputData dividend and divisor.
 
             # the mantissas, having been de-normalised (and containing
             # a "1" in the MSB) represent numbers in the range 0.5 to
