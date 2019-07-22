@@ -10,6 +10,7 @@ from nmutil.singlepipe import SimpleHandshake, StageChain
 from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
+from ieee754.fpmul.align import FPAlignModSingle
 
 
 class FPDIVSpecialCasesMod(Elaboratable):
@@ -147,21 +148,22 @@ class FPDIVSpecialCasesDeNorm(FPState, SimpleHandshake):
         return FPADDBaseData(self.pspec) # SpecialCases ispec
 
     def ospec(self):
-        return FPSCData(self.pspec, False) # DeNorm ospec
+        return FPSCData(self.pspec, False) # Align ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
         smod = FPDIVSpecialCasesMod(self.pspec)
         dmod = FPAddDeNormMod(self.pspec, False)
+        amod = FPAlignModSingle(self.pspec, False)
 
-        chain = StageChain([smod, dmod])
+        chain = StageChain([smod, dmod, amod])
         chain.setup(m, i)
 
         # only needed for break-out (early-out)
         # self.out_do_z = smod.o.out_do_z
 
-        self.o = dmod.o
+        self.o = amod.o
 
     def process(self, i):
         return self.o
