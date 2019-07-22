@@ -81,7 +81,7 @@ class FPDIVBasePipe(ControlBase):
         ControlBase.__init__(self)
 
         pipechain = []
-        max_n_comb_stages = 3  # TODO (depends on how many RS's we want)
+        max_n_comb_stages = 2  # TODO (depends on how many RS's we want)
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
@@ -90,6 +90,7 @@ class FPDIVBasePipe(ControlBase):
         # probably related to having to add 4 in FPDivMuxInOut
         radix = pspec.log2_radix
         n_stages = pspec.core_config.n_stages // max_n_comb_stages
+        print ("n_stages", pspec.core_config.n_stages, n_stages)
         stage_idx = 0
 
         for i in range(n_stages):
@@ -163,6 +164,7 @@ class FPDIVMuxInOut(ReservationStations):
         # then there is guard, round and sticky at the LSB end.
         # also: round up to nearest radix
         fmt.m_width = roundup(fmt.m_width + 5, log2_radix)
+        print ("width", fmt.m_width)
 
         cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)
 
