@@ -163,7 +163,13 @@ class FPDIVMuxInOut(ReservationStations):
         # ...5 extra bits on the mantissa: MSB is zero, MSB-1 is 1
         # then there is guard, round and sticky at the LSB end.
         # also: round up to nearest radix
-        fmt.m_width = roundup(fmt.m_width + 5, log2_radix)
+        if width == 16:
+            extra = 5
+        elif width == 32:
+            extra = 6
+        elif width == 64:
+            extra = 5
+        fmt.m_width = roundup(fmt.m_width + extra, log2_radix)
         print ("width", fmt.m_width)
 
         cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)

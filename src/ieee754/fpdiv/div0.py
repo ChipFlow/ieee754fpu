@@ -54,6 +54,12 @@ class FPDivStage0Mod(Elaboratable):
             # do conversion here, of both self.i.a and self.i.b,
             # into DivPipeInputData dividend and divisor.
 
+            if self.pspec.width == 16:
+                extra = 3
+            elif self.pspec.width == 32:
+                extra = 4
+            elif self.pspec.width == 64:
+                extra = 3
             # the mantissas, having been de-normalised (and containing
             # a "1" in the MSB) represent numbers in the range 0.5 to
             # 0.9999999-recurring.  the min and max range of the
@@ -73,7 +79,7 @@ class FPDivStage0Mod(Elaboratable):
 
             m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                         self.o.dividend[len(self.i.a.m)+3:].eq(am0), # TODO: check
+                         self.o.dividend[len(self.i.a.m)+extra:].eq(am0), # TODO: check
                          self.o.divisor_radicand.eq(bm0), # TODO: check
                          self.o.operation.eq(Const(0)) # TODO check: DIV
                 ]
