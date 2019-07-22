@@ -81,7 +81,7 @@ class FPDIVBasePipe(ControlBase):
         ControlBase.__init__(self)
 
         pipechain = []
-        max_n_comb_stages = 2  # TODO (depends on how many RS's we want)
+        max_n_comb_stages = 3  # TODO (depends on how many RS's we want)
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
@@ -138,6 +138,7 @@ class FPDIVBasePipe(ControlBase):
 def roundup(x, mod):
     return x if x % mod == 0 else x + mod - x % mod
 
+
 class FPDIVMuxInOut(ReservationStations):
     """ Reservation-Station version of FPDIV pipeline.
 
@@ -151,7 +152,7 @@ class FPDIVMuxInOut(ReservationStations):
                    then be used to change the behaviour of the pipeline.
     """
 
-    def __init__(self, width, num_rows, op_wid=0):
+    def __init__(self, width, num_rows, op_wid=1):
         self.id_wid = num_bits(width)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec HOWEVER...

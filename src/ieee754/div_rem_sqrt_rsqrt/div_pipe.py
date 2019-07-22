@@ -117,10 +117,10 @@ class DivPipeBaseStage:
     """ Base Mix-in for DivPipe*Stage. """
 
     def _elaborate(self, m, platform):
+        m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.z.eq(self.i.z)
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
 
 
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):

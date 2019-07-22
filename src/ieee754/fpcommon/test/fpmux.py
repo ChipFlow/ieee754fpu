@@ -168,8 +168,9 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 op1 = randint(0, (1<<width)-1)
                 op2 = randint(0, (1<<width)-1)
 
-                op1 = 0x4000
                 op2 = 0x4000
+                op1 = 0x4300
+                #op2 = 0x3c00
                 vals.append((op1, op2,))
     return vals
 
