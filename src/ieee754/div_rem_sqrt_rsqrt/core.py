@@ -44,7 +44,7 @@ class DivPipeCoreConfig:
             + f"{self.fract_width}, {self.log2_radix})"
 
     @property
-    def num_calculate_stages(self):
+    def n_stages(self):
         """ Get the number of ``DivPipeCoreCalculateStage`` needed. """
         return (self.bit_width + self.log2_radix - 1) // self.log2_radix
 
@@ -265,7 +265,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
     def __init__(self, core_config, stage_index):
         """ Create a ``DivPipeCoreSetupStage`` instance. """
         self.core_config = core_config
-        assert stage_index in range(core_config.num_calculate_stages)
+        assert stage_index in range(core_config.n_stages)
         self.stage_index = stage_index
         self.i = self.ispec()
         self.o = self.ospec()

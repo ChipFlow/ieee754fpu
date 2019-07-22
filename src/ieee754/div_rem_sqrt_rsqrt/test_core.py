@@ -180,11 +180,11 @@ class DivPipeCoreTestPipeline(Elaboratable):
         self.setup_stage = DivPipeCoreSetupStage(core_config)
         self.calculate_stages = [
             DivPipeCoreCalculateStage(core_config, stage_index)
-            for stage_index in range(core_config.num_calculate_stages)]
+            for stage_index in range(core_config.n_stages)]
         self.final_stage = DivPipeCoreFinalStage(core_config)
         self.interstage_signals = [
             DivPipeCoreInterstageData(core_config, reset_less=True)
-            for i in range(core_config.num_calculate_stages + 1)]
+            for i in range(core_config.n_stages + 1)]
         self.i = DivPipeCoreInputData(core_config, reset_less=True)
         self.o = DivPipeCoreOutputData(core_config, reset_less=True)
         self.sync = sync
@@ -245,7 +245,7 @@ class TestDivPipeCore(unittest.TestCase):
                 # sync with generator
                 if sync:
                     yield
-                    for _ in range(core_config.num_calculate_stages):
+                    for _ in range(core_config.n_stages):
                         yield
                     yield
 
