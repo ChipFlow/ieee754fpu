@@ -163,7 +163,7 @@ class FPDIVMuxInOut(ReservationStations):
         # also: round up to nearest radix
         fmt.m_width = roundup(fmt.m_width + 4, log2_radix)
 
-        cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)
+        cfg = DivPipeCoreConfig(fmt.m_width, 0*fmt.fraction_width, log2_radix)
 
         self.pspec.fpformat = fmt
         self.pspec.log2_radix = log2_radix
