@@ -108,6 +108,17 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.If(a1.s):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
+
+            # if a is inf return inf
+            with m.Elif(a1.is_inf):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.inf(sabx)
+
+            # if a is zero return zero
+            with m.Elif(a1.is_zero):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.zero(0)
+
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
                 m.d.comb += self.o.out_do_z.eq(0)
