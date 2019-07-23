@@ -369,9 +369,13 @@ class DivPipeCoreCalculateStage(Elaboratable):
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
         m = Module()
+
+        # copy invariant inputs to outputs (for next stage)
         m.d.comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
         m.d.comb += self.o.operation.eq(self.i.operation)
         m.d.comb += self.o.compare_lhs.eq(self.i.compare_lhs)
+
+        # constants
         log2_radix = self.core_config.log2_radix
         current_shift = self.core_config.bit_width
         current_shift -= self.stage_index * log2_radix
@@ -379,12 +383,15 @@ class DivPipeCoreCalculateStage(Elaboratable):
         assert log2_radix > 0
         current_shift -= log2_radix
         radix = 1 << log2_radix
+
+        # trials within this radix range.  carried out by Trial module,
+        # results stored in pass_flags.  pass_flags are unary priority.
         trial_compare_rhs_values = []
         pfl = []
         for trial_bits in range(radix):
-            t = Trial(self.core_config, trial_bits,
-                          current_shift, log2_radix)
+            t = Trial(self.core_config, trial_bits, current_shift, log2_radix)
             setattr(m.submodules, "trial%d" % trial_bits, t)
+
             m.d.comb += t.divisor_radicand.eq(self.i.divisor_radicand)
             m.d.comb += t.quotient_root.eq(self.i.quotient_root)
             m.d.comb += t.root_times_radicand.eq(self.i.root_times_radicand)
@@ -396,6 +403,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
             m.d.comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
             pfl.append(pass_flag)
+
         pass_flags = Signal(radix, reset_less=True)
         m.d.comb += pass_flags.eq(Cat(*pfl))
 
@@ -419,7 +427,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         ta = Array(trial_compare_rhs_values)
         m.d.comb += self.o.compare_rhs.eq(ta[next_bits])
 
-        # creae outputs for next phase
+        # create outputs for next phase
         m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
