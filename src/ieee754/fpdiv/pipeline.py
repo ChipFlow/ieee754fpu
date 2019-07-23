@@ -87,15 +87,17 @@ class FPDIVBasePipe(ControlBase):
 
         # get number of stages, set up loop.
         n_stages = pspec.core_config.n_stages
-        n_comb_stages = self.pspec.n_comb_stages
+        max_n_comb_stages = self.pspec.n_comb_stages
         print ("n_stages", n_stages)
         stage_idx = 0
 
         end = False
         while not end:
 
+            n_comb_stages = max_n_comb_stages
             # needs to convert input from pipestart ospec
             if stage_idx == 0:
+                n_comb_stages -= 1
                 kls = FPDivStagesSetup # does n_comb_stages-1 calcs as well
 
             # needs to convert output to pipeend ispec
