@@ -81,21 +81,38 @@ class FPDivStage0Mod(Elaboratable):
             # result is therefore 0.4999999 (0.5/0.99999) and 1.9999998
             # (0.99999/0.5).
 
-            # zero-extend the mantissas (room for sticky/round/guard)
-            # plus the extra MSB.
-            am0 = Signal(len(self.i.a.m)+3, reset_less=True)
-            bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
-            m.d.comb += [
-                         am0.eq(Cat(0,0,0,self.i.a.m, 0)),
-                         bm0.eq(Cat(0,0,0,self.i.b.m, 0)),
-                        ]
+            # DIV
+            with m.If(self.i.ctx.op == 0):
+                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
+                bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
+                m.d.comb += [
+                             am0.eq(Cat(0,0,0,self.i.a.m, 0)),
+                             bm0.eq(Cat(0,0,0,self.i.b.m, 0)),
+                            ]
 
-            m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
-                         self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                         self.o.dividend[len(self.i.a.m)+extra:].eq(am0),
-                         self.o.divisor_radicand.eq(bm0),
-                         self.o.operation.eq(Const(0)) # XXX DIV operation
-                ]
+                # zero-extend the mantissas (room for sticky/round/guard)
+                # plus the extra MSB.
+                m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
+                             self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
+                             self.o.dividend[len(self.i.a.m)+extra:].eq(am0),
+                             self.o.divisor_radicand.eq(bm0),
+                             self.o.operation.eq(Const(0)) # XXX DIV operation
+                    ]
+
+            # SQRT
+            with m.Elif(self.i.ctx.op == 1):
+                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
+                with m.If(self.i.a.e[0]):
+                    m.d.comb += am0.eq(Cat(0,0, self.i.a.m, 0))
+                    m.d.comb += self.o.z.e.eq(((self.i.a.e+1) >> 1))
+                with m.Else():
+                    m.d.comb += am0.eq(Cat(0, 0, 0, self.i.a.m))
+                    m.d.comb += self.o.z.e.eq((self.i.a.e >> 1))
+
+                m.d.comb += [self.o.z.s.eq(self.i.a.s),
+                             self.o.divisor_radicand.eq(am0),
+                             self.o.operation.eq(Const(1)) # XXX SQRT operation
+                    ]
 
         # these are required and must not be touched
         m.d.comb += self.o.oz.eq(self.i.oz)
