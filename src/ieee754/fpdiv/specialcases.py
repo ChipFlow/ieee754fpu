@@ -115,7 +115,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
                 m.d.comb += self.o.z.inf(sabx)
 
             # if a is NaN return NaN
-            with m.If(a1.is_nan):
+            with m.Elif(a1.is_nan):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
 
