@@ -81,35 +81,34 @@ class FPDIVBasePipe(ControlBase):
         ControlBase.__init__(self)
 
         pipechain = []
-        max_n_comb_stages = 2  # TODO (depends on how many RS's we want)
+        n_comb_stages = 3  # TODO (depends on how many RS's we want)
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
 
-        # XXX BUG - subtracting 4 from number of stages stops assert
-        # probably related to having to add 4 in FPDivMuxInOut
-        radix = pspec.log2_radix
-        n_stages = pspec.core_config.n_stages // max_n_comb_stages
-        print ("n_stages", pspec.core_config.n_stages, n_stages)
+        # get number of stages, set up loop.
+        n_stages = pspec.core_config.n_stages
+        print ("n_stages", n_stages)
         stage_idx = 0
 
-        for i in range(n_stages):
+        end = False
+        while not end:
 
-            n_comb_stages = max_n_comb_stages
             # needs to convert input from pipestart ospec
-            if i == 0:
-                kls = FPDivStagesSetup
-                #n_comb_stages -= 1  # reduce due to work done at start?
+            if stage_idx == 0:
+                kls = FPDivStagesSetup # does n_comb_stages-1 calcs as well
 
             # needs to convert output to pipeend ispec
-            elif i == n_stages - 1:
-                kls = FPDivStagesFinal
-                #n_comb_stages -= 1  # FIXME - reduce due to work done at end?
+            elif stage_idx + n_comb_stages >= n_stages:
+                kls = FPDivStagesFinal # does n_comb_stages-1 calcs as well
+                end = True
+                n_comb_stages = n_stages - stage_idx
 
             # intermediary stage
             else:
-                kls = FPDivStagesIntermediate
+                kls = FPDivStagesIntermediate # does n_comb_stages calcs
 
+            # create (in each pipe) a StageChain n_comb_stages in length
             pipechain.append(kls(self.pspec, n_comb_stages, stage_idx))
             stage_idx += n_comb_stages # increment so that each CalcStage
                                        # gets a (correct) unique index
