@@ -55,11 +55,24 @@ class FPDivStage0Mod(Elaboratable):
             # into DivPipeInputData dividend and divisor.
 
             if self.pspec.width == 16:
-                extra = 3
+                if self.pspec.log2_radix == 1:
+                    extra = 2
+                elif self.pspec.log2_radix == 3:
+                    extra = 2
+                else:
+                    extra = 3
             elif self.pspec.width == 32:
-                extra = 4
+                if self.pspec.log2_radix == 1:
+                    extra = 3
+                else:
+                    extra = 4
             elif self.pspec.width == 64:
-                extra = 3
+                if self.pspec.log2_radix == 1:
+                    extra = 2
+                elif self.pspec.log2_radix == 3:
+                    extra = 2
+                else:
+                    extra = 3
             # the mantissas, having been de-normalised (and containing
             # a "1" in the MSB) represent numbers in the range 0.5 to
             # 0.9999999-recurring.  the min and max range of the

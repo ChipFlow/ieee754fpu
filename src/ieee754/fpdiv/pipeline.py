@@ -81,13 +81,13 @@ class FPDIVBasePipe(ControlBase):
         ControlBase.__init__(self)
 
         pipechain = []
-        n_comb_stages = 3  # TODO (depends on how many RS's we want)
         # to which the answer: "as few as possible"
         # is required.  too many ReservationStations
         # means "big problems".
 
         # get number of stages, set up loop.
         n_stages = pspec.core_config.n_stages
+        n_comb_stages = self.pspec.n_comb_stages
         print ("n_stages", n_stages)
         stage_idx = 0
 
@@ -157,7 +157,8 @@ class FPDIVMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec HOWEVER...
         fmt = FPFormat.standard(width)
-        log2_radix = 2
+        log2_radix = 3     # tested options so far: 1, 2 and 3.
+        n_comb_stages = 3  # TODO (depends on how many RS's we want)
 
         # ...5 extra bits on the mantissa: MSB is zero, MSB-1 is 1
         # then there is guard, round and sticky at the LSB end.
@@ -175,6 +176,7 @@ class FPDIVMuxInOut(ReservationStations):
 
         self.pspec.fpformat = fmt
         self.pspec.log2_radix = log2_radix
+        self.pspec.n_comb_stages = n_comb_stages
         self.pspec.core_config = cfg
 
         # XXX TODO - a class (or function?) that takes the pspec (right here)
