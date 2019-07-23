@@ -54,6 +54,7 @@ class FPDivStage0Mod(Elaboratable):
             # do conversion here, of both self.i.a and self.i.b,
             # into DivPipeInputData dividend and divisor.
 
+            # XXX *sigh* magic constants...
             if self.pspec.width == 16:
                 if self.pspec.log2_radix == 1:
                     extra = 2
