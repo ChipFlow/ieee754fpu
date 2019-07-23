@@ -103,11 +103,11 @@ class FPDivStage0Mod(Elaboratable):
             with m.Elif(self.i.ctx.op == 1):
                 am0 = Signal(len(self.i.a.m)+3, reset_less=True)
                 with m.If(self.i.a.e[0]):
-                    m.d.comb += am0.eq(Cat(0,0, self.i.a.m, 0))
-                    m.d.comb += self.o.z.e.eq(((self.i.a.e+1) >> 1))
+                    m.d.comb += am0.eq(Cat(self.i.a.m, 0)<<(extra-2))
+                    m.d.comb += self.o.z.e.eq(((self.i.a.e+1) >> 1)+1)
                 with m.Else():
-                    m.d.comb += am0.eq(Cat(0, 0, 0, self.i.a.m))
-                    m.d.comb += self.o.z.e.eq((self.i.a.e >> 1))
+                    m.d.comb += am0.eq(Cat(0, self.i.a.m)<<(extra-2))
+                    m.d.comb += self.o.z.e.eq((self.i.a.e >> 1)+1)
 
                 m.d.comb += [self.o.z.s.eq(self.i.a.s),
                              self.o.divisor_radicand.eq(am0),
