@@ -75,6 +75,8 @@ class DivPipeCoreOperation(enum.Enum):
                       **kwargs)
 
 
+DP = DivPipeCoreOperation
+
 class DivPipeCoreInputData:
     """ input data type for ``DivPipeCore``.
 
@@ -96,8 +98,7 @@ class DivPipeCoreInputData:
                                reset_less=reset_less)
         self.divisor_radicand = Signal(core_config.bit_width,
                                        reset_less=reset_less)
-        self.operation = \
-            DivPipeCoreOperation.create_signal(reset_less=reset_less)
+        self.operation = DP.create_signal(reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -143,8 +144,7 @@ class DivPipeCoreInterstageData:
         self.core_config = core_config
         self.divisor_radicand = Signal(core_config.bit_width,
                                        reset_less=reset_less)
-        self.operation = \
-            DivPipeCoreOperation.create_signal(reset_less=reset_less)
+        self.operation = DP.create_signal(reset_less=reset_less)
         self.quotient_root = Signal(core_config.bit_width,
                                     reset_less=reset_less)
         self.root_times_radicand = Signal(core_config.bit_width * 2,
@@ -240,10 +240,10 @@ class DivPipeCoreSetupStage(Elaboratable):
         m.d.comb += self.o.quotient_root.eq(0)
         m.d.comb += self.o.root_times_radicand.eq(0)
 
-        with m.If(self.i.operation == int(DivPipeCoreOperation.UDivRem)):
+        with m.If(self.i.operation == int(DP.UDivRem)):
             m.d.comb += self.o.compare_lhs.eq(self.i.dividend
                                               << self.core_config.fract_width)
-        with m.Elif(self.i.operation == int(DivPipeCoreOperation.SqrtRem)):
+        with m.Elif(self.i.operation == int(DP.SqrtRem)):
             m.d.comb += self.o.compare_lhs.eq(
                 self.i.divisor_radicand << (self.core_config.fract_width * 2))
         with m.Else():  # DivPipeCoreOperation.RSqrtRem
@@ -312,46 +312,51 @@ class DivPipeCoreCalculateStage(Elaboratable):
             qr_times_trial_bits = self.i.quotient_root * trial_bits_sig
             rr_times_trial_bits = self.i.root_times_radicand * trial_bits_sig
 
-            # UDivRem
-            div_rhs = self.i.compare_rhs
-            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
-                div_term1 = dr_times_trial_bits
-                div_term1_shift = self.core_config.fract_width
-                div_term1_shift += current_shift
-                div_rhs += div_term1 << div_term1_shift
-
-            # SqrtRem
-            sqrt_rhs = self.i.compare_rhs
-            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
-                sqrt_term1 = qr_times_trial_bits
-                sqrt_term1_shift = self.core_config.fract_width
-                sqrt_term1_shift += current_shift + 1
-                sqrt_rhs += sqrt_term1 << sqrt_term1_shift
-                sqrt_term2 = trial_bits_sqrd_sig
-                sqrt_term2_shift = self.core_config.fract_width
-                sqrt_term2_shift += current_shift * 2
-                sqrt_rhs += sqrt_term2 << sqrt_term2_shift
-
-            # RSqrtRem
-            rsqrt_rhs = self.i.compare_rhs
-            if trial_bits != 0:  # no point adding stuff that's multiplied by zero
-                rsqrt_term1 = rr_times_trial_bits
-                rsqrt_term1_shift = current_shift + 1
-                rsqrt_rhs += rsqrt_term1 << rsqrt_term1_shift
-                rsqrt_term2 = dr_times_trial_bits_sqrd
-                rsqrt_term2_shift = current_shift * 2
-                rsqrt_rhs += rsqrt_term2 << rsqrt_term2_shift
-
             trial_compare_rhs = Signal.like(
                 self.o.compare_rhs, name=f"trial_compare_rhs_{trial_bits}",
                 reset_less=True)
+            m.d.comb += trial_compare_rhs.eq(self.i.compare_rhs)
 
-            with m.If(self.i.operation == int(DivPipeCoreOperation.UDivRem)):
-                m.d.comb += trial_compare_rhs.eq(div_rhs)
-            with m.Elif(self.i.operation == int(DivPipeCoreOperation.SqrtRem)):
-                m.d.comb += trial_compare_rhs.eq(sqrt_rhs)
-            with m.Else():  # DivPipeCoreOperation.RSqrtRem
-                m.d.comb += trial_compare_rhs.eq(rsqrt_rhs)
+            if trial_bits != 0:  # no point adding multiply by zero
+                # UDivRem
+                with m.If(self.i.operation == int(DP.UDivRem)):
+                    div_rhs = self.i.compare_rhs
+
+                    div_term1 = dr_times_trial_bits
+                    div_term1_shift = self.core_config.fract_width
+                    div_term1_shift += current_shift
+                    div_rhs += div_term1 << div_term1_shift
+
+                    m.d.comb += trial_compare_rhs.eq(div_rhs)
+
+                # SqrtRem
+                with m.Elif(self.i.operation == int(DP.SqrtRem)):
+                    sqrt_rhs = self.i.compare_rhs
+
+                    sqrt_term1 = qr_times_trial_bits
+                    sqrt_term1_shift = self.core_config.fract_width
+                    sqrt_term1_shift += current_shift + 1
+                    sqrt_rhs += sqrt_term1 << sqrt_term1_shift
+                    sqrt_term2 = trial_bits_sqrd_sig
+                    sqrt_term2_shift = self.core_config.fract_width
+                    sqrt_term2_shift += current_shift * 2
+                    sqrt_rhs += sqrt_term2 << sqrt_term2_shift
+
+                    m.d.comb += trial_compare_rhs.eq(sqrt_rhs)
+
+                # RSqrtRem
+                with m.Else():
+                    rsqrt_rhs = self.i.compare_rhs
+
+                    rsqrt_term1 = rr_times_trial_bits
+                    rsqrt_term1_shift = current_shift + 1
+                    rsqrt_rhs += rsqrt_term1 << rsqrt_term1_shift
+                    rsqrt_term2 = dr_times_trial_bits_sqrd
+                    rsqrt_term2_shift = current_shift * 2
+                    rsqrt_rhs += rsqrt_term2 << rsqrt_term2_shift
+
+                    m.d.comb += trial_compare_rhs.eq(rsqrt_rhs)
+
             trial_compare_rhs_values.append(trial_compare_rhs)
 
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
