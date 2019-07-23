@@ -416,7 +416,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         # compare_lhs >= compare_rhs is a pipeline invariant).
 
         m.submodules.pe = pe = PriorityEncoder(radix)
-        next_bits = Signal(log2_radix+1, reset_less=True)
+        next_bits = Signal(log2_radix, reset_less=True)
         m.d.comb += pe.i.eq(~pass_flags)
         with m.If(~pe.n):
             m.d.comb += next_bits.eq(pe.o-1)
