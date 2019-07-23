@@ -89,7 +89,7 @@ class DivPipeInterstageData(DivPipeCoreInterstageData, DivPipeBaseData):
 
     def eq(self, rhs):
         """ Assign member signals. """
-        print (self, rhs)
+        #print (self, rhs)
         return DivPipeCoreInterstageData.eq(self, rhs) + \
                DivPipeBaseData.eq(self, rhs)
 
@@ -127,7 +127,7 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 
     def __init__(self, pspec):
         self.pspec = pspec
-        print ("DivPipeSetupStage", pspec, pspec.core_config)
+        #print ("DivPipeSetupStage", pspec, pspec.core_config)
         DivPipeCoreSetupStage.__init__(self, pspec.core_config)
 
     def ispec(self):

@@ -161,7 +161,9 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
 
                 #op1 = 0x1841
 
+                # FSQRT
                 #op1 = 0x3449f9a9
+                #op1 = 0x1ba94baa
 
                 vals.append((op1,))
             else:
