@@ -120,7 +120,8 @@ def get_corner_rand(mod, fixed_num, maxcount, width, single_op=False):
 
 
 class PipeFPCase:
-    def __init__(self, dut, name, mod, fmod, width, fpfn, count, single_op):
+    def __init__(self, dut, name, mod, fmod, width, fpfn, count,
+                 single_op, opcode):
         self.dut = dut
         self.name = name
         self.mod = mod
@@ -129,36 +130,42 @@ class PipeFPCase:
         self.fpfn = fpfn
         self.count = count
         self.single_op = single_op
+        self.opcode = opcode
 
     def run(self, name, fn):
         name = "%s_%s" % (self.name, name)
         pipe_cornercases_repeat(self.dut, name, self.mod, self.fmod,
                                 self.width, fn, corner_cases, self.fpfn,
-                                self.count, self.single_op)
+                                self.count, self.single_op,
+                                opcode=self.opcode)
 
     def run_cornercases(self):
         ccs = get_corner_cases(self.mod, self.single_op)
         vals = repeat(self.dut.num_rows, ccs)
         tname = "test_fp%s_pipe_fp%d_cornercases" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals,
-              single_op=self.single_op)
+              single_op=self.single_op,
+                                opcode=self.opcode)
 
     def run_regressions(self, regressions_fn):
         vals = repeat(self.dut.num_rows, regressions_fn())
         #print ("regressions", self.single_op, vals)
         tname = "test_fp%s_pipe_fp%d_regressions" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn, vals=vals,
-              single_op=self.single_op)
+              single_op=self.single_op,
+                                opcode=self.opcode)
 
     def run_random(self):
         tname = "test_fp%s_pipe_fp%d_rand" % (self.name, self.width)
         runfp(self.dut, self.width, tname, self.fmod, self.fpfn,
-              single_op=self.single_op)
+              single_op=self.single_op,
+                                opcode=self.opcode)
 
 
 def run_pipe_fp(dut, width, name, mod, fmod, regressions, fpfn, count,
-                single_op=False):
-    pc = PipeFPCase(dut, name, mod, fmod, width, fpfn, count, single_op)
+                single_op=False,
+                opcode=None):
+    pc = PipeFPCase(dut, name, mod, fmod, width, fpfn, count, single_op, opcode)
     pc.run_regressions(regressions)
     pc.run_cornercases()
     pc.run("rand1", get_rand1)

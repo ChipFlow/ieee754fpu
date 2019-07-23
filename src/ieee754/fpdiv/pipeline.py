@@ -154,7 +154,7 @@ class FPDIVMuxInOut(ReservationStations):
                    then be used to change the behaviour of the pipeline.
     """
 
-    def __init__(self, width, num_rows, op_wid=1):
+    def __init__(self, width, num_rows, op_wid=2):
         self.id_wid = num_bits(width)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec HOWEVER...

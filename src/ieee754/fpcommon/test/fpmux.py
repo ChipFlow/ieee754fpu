@@ -171,6 +171,11 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op2 = 0x4000
                 #op1 = 0x3c50
                 #op2 = 0x3e00
+                #op2 = 0xb371
+                #op1 = 0x4400
+                #op1 = 0x656c
+                op1 = 0x738c
+
                 vals.append((op1, op2,))
     return vals
 
@@ -187,14 +192,14 @@ def repeat(num_rows, vals):
 
 
 def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
-                            single_op=False):
+                            single_op=False, opcode=None):
     for i, fixed_num in enumerate(cc(mod)):
         vals = fn(mod, fixed_num, count, width, single_op)
         vals = repeat(dut.num_rows, vals)
         #print ("repeat", i, fn, single_op, list(vals))
         fmt = "test_pipe_fp%d_%s_cornercases_%d"
         runfp(dut, width, fmt % (width, name, i),
-                   fmod, fpfn, vals=vals, single_op=single_op)
+                   fmod, fpfn, vals=vals, single_op=single_op, opcode=opcode)
 
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
