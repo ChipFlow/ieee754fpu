@@ -83,8 +83,8 @@ class FPDivStage0Mod(Elaboratable):
 
             # DIV
             with m.If(self.i.ctx.op == 0):
-                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
-                bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
+                am0 = Signal(len(self.i.a.m)+1, reset_less=True)
+                bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
                 m.d.comb += [
                              am0.eq(Cat(self.i.a.m, 0)),
                              bm0.eq(Cat(self.i.b.m, 0)),
