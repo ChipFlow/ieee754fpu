@@ -398,12 +398,16 @@ class DivPipeCoreCalculateStage(Elaboratable):
             m.d.comb += t.compare_rhs.eq(self.i.compare_rhs)
             m.d.comb += t.operation.eq(self.i.operation)
 
+            # get the trial output
             trial_compare_rhs_values.append(t.trial_compare_rhs)
 
+            # make the trial comparison against the [invariant] lhs.
+            # trial_compare_rhs is always decreasing as trial_bits increases
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
             m.d.comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
             pfl.append(pass_flag)
 
+        # Cat all the pass flags list together (easier to handle, below)
         pass_flags = Signal(radix, reset_less=True)
         m.d.comb += pass_flags.eq(Cat(*pfl))
 
