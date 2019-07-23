@@ -104,8 +104,13 @@ class FPDIVSpecialCasesMod(Elaboratable):
 
         with m.If(self.i.ctx.op == 1): # SQRT
 
+            # if a is zero return zero
+            with m.If(a1.is_zero):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.zero(a1.s)
+
             # -ve number is NaN
-            with m.If(a1.s):
+            with m.Elif(a1.s):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
 
@@ -118,11 +123,6 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.Elif(a1.is_nan):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
-
-            # if a is zero return zero
-            with m.Elif(a1.is_zero):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(0)
 
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
