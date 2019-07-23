@@ -1,0 +1,3 @@
+def regressions():
+    yield  0x3c50, 0x3e00,
+    yield  0x3c00, 0x3e00,
