@@ -18,7 +18,8 @@ Formulas solved are:
 The remainder is the left-hand-side of the comparison minus the
 right-hand-side of the comparison in the above formulas.
 """
-from nmigen import (Elaboratable, Module, Signal, Const, Mux, Cat)
+from nmigen import (Elaboratable, Module, Signal, Const, Mux, Cat, Array)
+from nmigen.lib.coding import PriorityEncoder
 import enum
 
 
@@ -398,7 +399,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         pass_flags = Signal(radix, reset_less=True)
         m.d.comb += pass_flags.eq(Cat(*pfl))
 
-        # convert pass_flags to next_bits.
+        # convert pass_flags (unary priority) to next_bits (binary index)
         #
         # Assumes that for each set bit in pass_flag, all previous bits are
         # also set.
@@ -406,30 +407,19 @@ class DivPipeCoreCalculateStage(Elaboratable):
         # Assumes that pass_flag[0] is always set (since
         # compare_lhs >= compare_rhs is a pipeline invariant).
 
-        next_bits = Signal(log2_radix, reset_less=True)
-        l = []
-        for i in range(log2_radix):
-            bit_value = 1
-            for j in range(0, radix, 1 << i):
-                bit_value ^= pass_flags[j]
-            bv = Signal(reset_less=True)
-            m.d.comb += bv.eq(bit_value)
-            l.append(bv)
-        m.d.comb += next_bits.eq(Cat(*l))
+        m.submodules.pe = pe = PriorityEncoder(radix)
+        next_bits = Signal(log2_radix+1, reset_less=True)
+        m.d.comb += pe.i.eq(~pass_flags)
+        with m.If(~pe.n):
+            m.d.comb += next_bits.eq(pe.o-1)
+        with m.Else():
+            m.d.comb += next_bits.eq(radix-1)
 
-        # merge/select multi-bit trial_compare_rhs_values, to go
-        # into compare_rhs. XXX (only one of these will succeed?)
-        next_compare_rhs = 0
-        for i in range(radix):
-            next_flag = Signal(name=f"next_flag{i}", reset_less=True)
-            selected = Signal(name=f"selected_{i}", reset_less=True)
-            m.d.comb += next_flag.eq(~pass_flags[i + 1] if i + 1 < radix else 1)
-            m.d.comb += selected.eq(pass_flags[i] & next_flag)
-            next_compare_rhs |= Mux(selected,
-                                    trial_compare_rhs_values[i],
-                                    0)
+        # get the highest passing rhs trial (indexed by next_bits)
+        ta = Array(trial_compare_rhs_values)
+        m.d.comb += self.o.compare_rhs.eq(ta[next_bits])
 
-        m.d.comb += self.o.compare_rhs.eq(next_compare_rhs)
+        # creae outputs for next phase
         m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
