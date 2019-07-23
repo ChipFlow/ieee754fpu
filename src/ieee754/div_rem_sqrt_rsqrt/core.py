@@ -379,7 +379,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         current_shift -= log2_radix
         radix = 1 << log2_radix
         trial_compare_rhs_values = []
-        pass_flags = []
+        pfl = []
         for trial_bits in range(radix):
             t = Trial(self.core_config, trial_bits,
                           current_shift, log2_radix)
@@ -394,7 +394,9 @@ class DivPipeCoreCalculateStage(Elaboratable):
 
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
             m.d.comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
-            pass_flags.append(pass_flag)
+            pfl.append(pass_flag)
+        pass_flags = Signal(radix, reset_less=True)
+        m.d.comb += pass_flags.eq(Cat(*pfl))
 
         # convert pass_flags to next_bits.
         #
@@ -405,19 +407,24 @@ class DivPipeCoreCalculateStage(Elaboratable):
         # compare_lhs >= compare_rhs is a pipeline invariant).
 
         next_bits = Signal(log2_radix, reset_less=True)
+        l = []
         for i in range(log2_radix):
             bit_value = 1
             for j in range(0, radix, 1 << i):
                 bit_value ^= pass_flags[j]
-            m.d.comb += next_bits.part(i, 1).eq(bit_value)
+            bv = Signal(reset_less=True)
+            m.d.comb += bv.eq(bit_value)
+            l.append(bv)
+        m.d.comb += next_bits.eq(Cat(*l))
 
         # merge/select multi-bit trial_compare_rhs_values, to go
         # into compare_rhs. XXX (only one of these will succeed?)
         next_compare_rhs = 0
         for i in range(radix):
-            next_flag = pass_flags[i + 1] if i + 1 < radix else 0
+            next_flag = Signal(name=f"next_flag{i}", reset_less=True)
             selected = Signal(name=f"selected_{i}", reset_less=True)
-            m.d.comb += selected.eq(pass_flags[i] & ~next_flag)
+            m.d.comb += next_flag.eq(~pass_flags[i + 1] if i + 1 < radix else 1)
+            m.d.comb += selected.eq(pass_flags[i] & next_flag)
             next_compare_rhs |= Mux(selected,
                                     trial_compare_rhs_values[i],
                                     0)
