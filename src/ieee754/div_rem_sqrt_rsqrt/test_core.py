@@ -257,8 +257,10 @@ class TestDivPipeCore(unittest.TestCase):
                     remainder = (yield dut.o.remainder)
                     with self.subTest(test_case=str(test_case)):
                         self.assertEqual(quotient_root,
-                                         test_case.quotient_root)
-                        self.assertEqual(remainder, test_case.remainder)
+                                         test_case.quotient_root,
+                                         str(test_case))
+                        self.assertEqual(remainder, test_case.remainder,
+                                         str(test_case))
             sim.add_clock(2e-6)
             sim.add_sync_process(generate_process)
             sim.add_sync_process(check_process)
