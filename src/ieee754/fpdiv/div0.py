@@ -86,8 +86,8 @@ class FPDivStage0Mod(Elaboratable):
                 am0 = Signal(len(self.i.a.m)+3, reset_less=True)
                 bm0 = Signal(len(self.i.b.m)+3, reset_less=True)
                 m.d.comb += [
-                             am0.eq(Cat(0,0,0,self.i.a.m, 0)),
-                             bm0.eq(Cat(0,0,0,self.i.b.m, 0)),
+                             am0.eq(Cat(self.i.a.m, 0)),
+                             bm0.eq(Cat(self.i.b.m, 0)),
                             ]
 
                 # zero-extend the mantissas (room for sticky/round/guard)
