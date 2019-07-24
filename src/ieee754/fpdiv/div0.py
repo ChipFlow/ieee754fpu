@@ -114,6 +114,21 @@ class FPDivStage0Mod(Elaboratable):
                              self.o.operation.eq(Const(1)) # XXX SQRT operation
                     ]
 
+            # RSQRT
+            with m.Elif(self.i.ctx.op == 2):
+                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
+                with m.If(self.i.a.e[0]):
+                    m.d.comb += am0.eq(Cat(self.i.a.m, 0)<<(extra-2))
+                    m.d.comb += self.o.z.e.eq(-((self.i.a.e+1) >> 1)+1)
+                with m.Else():
+                    m.d.comb += am0.eq(Cat(0, self.i.a.m)<<(extra-2))
+                    m.d.comb += self.o.z.e.eq((self.i.a.e >> 1)+1)
+
+                m.d.comb += [self.o.z.s.eq(self.i.a.s),
+                             self.o.divisor_radicand.eq(am0),
+                             self.o.operation.eq(Const(2)) # XXX RSQRT operation
+                    ]
+
         # these are required and must not be touched
         m.d.comb += self.o.oz.eq(self.i.oz)
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
