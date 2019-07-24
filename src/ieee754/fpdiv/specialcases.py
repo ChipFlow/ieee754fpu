@@ -128,6 +128,32 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.Else():
                 m.d.comb += self.o.out_do_z.eq(0)
 
+        with m.If(self.i.ctx.op == 2): # RSQRT
+
+            # if a is zero return NaN
+            with m.If(a1.is_zero):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.nan(0)
+
+            # -ve number is NaN
+            with m.Elif(a1.s):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.nan(0)
+
+            # if a is inf return zero
+            with m.Elif(a1.is_inf):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.zero(sabx)
+
+            # if a is NaN return NaN
+            with m.Elif(a1.is_nan):
+                m.d.comb += self.o.out_do_z.eq(1)
+                m.d.comb += self.o.z.nan(0)
+
+            # Denormalised Number checks next, so pass a/b data through
+            with m.Else():
+                m.d.comb += self.o.out_do_z.eq(0)
+
 
         m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
