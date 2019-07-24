@@ -172,6 +172,8 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0x48f0
                 #op1 = 0x429
                 #op1 = 0x2631
+                #op1 = 0x3001
+                #op1 = 0x3f2ad8eb
 
                 vals.append((op1,))
             else:

@@ -25,6 +25,6 @@ def test_pipe_rsqrt_fp64():
           single_op=True, opcode=2, n_vals=100)
 
 if __name__ == '__main__':
-    test_pipe_rsqrt_fp16()
     test_pipe_rsqrt_fp32()
+    test_pipe_rsqrt_fp16()
     test_pipe_rsqrt_fp64()
