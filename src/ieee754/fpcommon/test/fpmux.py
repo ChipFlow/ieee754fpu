@@ -170,6 +170,7 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0x4400
                 #op1 = 0x4800
                 #op1 = 0x48f0
+                #op1 = 0x429
 
                 vals.append((op1,))
             else:
