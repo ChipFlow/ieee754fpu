@@ -288,23 +288,27 @@ class TestDivPipeCore(unittest.TestCase):
                                              fract_width=4,
                                              log2_radix=1))
 
+    @unittest.skip("really slow")
     def test_bit_width_32_fract_width_24_radix_8_comb(self):
         self.handle_config(DivPipeCoreConfig(bit_width=32,
                                              fract_width=24,
                                              log2_radix=3),
                            sync=False)
 
+    @unittest.skip("really slow")
     def test_bit_width_32_fract_width_24_radix_8(self):
         self.handle_config(DivPipeCoreConfig(bit_width=32,
                                              fract_width=24,
                                              log2_radix=3))
 
+    @unittest.skip("really slow")
     def test_bit_width_32_fract_width_28_radix_8_comb(self):
         self.handle_config(DivPipeCoreConfig(bit_width=32,
                                              fract_width=28,
                                              log2_radix=3),
                            sync=False)
 
+    @unittest.skip("really slow")
     def test_bit_width_32_fract_width_28_radix_8(self):
         self.handle_config(DivPipeCoreConfig(bit_width=32,
                                              fract_width=28,
