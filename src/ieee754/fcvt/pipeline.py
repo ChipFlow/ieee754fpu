@@ -2,6 +2,9 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
+import sys
+import functools
+
 from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
 
@@ -452,151 +455,22 @@ class FPCVTDownConvertMod(Elaboratable):
         return m
 
 
-class FPCVTIntToFloat(FPState):
-    """ Up-conversion
+class FPCVTConvertDeNorm(FPState, SimpleHandshake):
+    """ FPConversion and De-norm
     """
 
-    def __init__(self, in_width, out_width, id_wid):
-        FPState.__init__(self, "inttofloat")
-        self.mod = FPCVTIntToFloatMod(in_width, out_width)
-        self.out_z = self.mod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
-        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
-
-    def action(self, m):
-        self.idsync(m)
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
-            m.next = "denormalise"
-
-
-class FPCVTUpConvert(FPState):
-    """ Up-conversion
-    """
-
-    def __init__(self, in_width, out_width, id_wid):
-        FPState.__init__(self, "upconvert")
-        self.mod = FPCVTUpConvertMod(in_width, out_width)
-        self.out_z = self.mod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
-        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
-
-    def action(self, m):
-        self.idsync(m)
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
-            m.next = "denormalise"
-
-
-class FPCVTDownConvert(FPState):
-    """ special cases: NaNs, infs, zeros, denormalised
-    """
-
-    def __init__(self, in_width, out_width, id_wid):
-        FPState.__init__(self, "special_cases")
-        self.mod = FPCVTDownConvertMod(in_width, out_width)
-        self.out_z = self.mod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
-        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
-
-    def action(self, m):
-        self.idsync(m)
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
-            m.next = "denormalise"
-
-
-class FPCVTIntToFloatDeNorm(FPState, SimpleHandshake):
-    """ Upconvert
-    """
-
-    def __init__(self, in_pspec, out_pspec):
-        FPState.__init__(self, "inttofloat")
-        sc = FPCVTIntToFloatMod(in_pspec, out_pspec)
+    def __init__(self, modkls, in_pspec, out_pspec):
+        FPState.__init__(self, "cvt")
+        sc = modkls(in_pspec, out_pspec)
         SimpleHandshake.__init__(self, sc)
         self.out = self.ospec(None)
 
 
-class FPCVTUpConvertDeNorm(FPState, SimpleHandshake):
-    """ Upconvert
-    """
-
-    def __init__(self, in_pspec, out_pspec):
-        FPState.__init__(self, "upconvert")
-        sc = FPCVTUpConvertMod(in_pspec, out_pspec)
-        SimpleHandshake.__init__(self, sc)
-        self.out = self.ospec(None)
-
-
-class FPCVTDownConvertDeNorm(FPState, SimpleHandshake):
-    """ downconvert
-    """
-
-    def __init__(self, in_pspec, out_pspec):
-        FPState.__init__(self, "downconvert")
-        sc = FPCVTDownConvertMod(in_pspec, out_pspec)
-        SimpleHandshake.__init__(self, sc)
-        self.out = self.ospec(None)
-
-
-class FPCVTIntBasePipe(ControlBase):
-    def __init__(self, in_pspec, out_pspec):
+class FPCVTBasePipe(ControlBase):
+    def __init__(self, modkls, e_extra, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTIntToFloatDeNorm(in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
-
-        self._eqs = self.connect([self.pipe1, self.pipe2])
-
-    def elaborate(self, platform):
-        m = ControlBase.elaborate(self, platform)
-        m.submodules.toint = self.pipe1
-        m.submodules.normpack = self.pipe2
-        m.d.comb += self._eqs
-        return m
-
-
-class FPCVTUpBasePipe(ControlBase):
-    def __init__(self, in_pspec, out_pspec):
-        ControlBase.__init__(self)
-        self.pipe1 = FPCVTUpConvertDeNorm(in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_pspec, e_extra=False)
-
-        self._eqs = self.connect([self.pipe1, self.pipe2])
-
-    def elaborate(self, platform):
-        m = ControlBase.elaborate(self, platform)
-        m.submodules.up = self.pipe1
-        m.submodules.normpack = self.pipe2
-        m.d.comb += self._eqs
-        return m
-
-
-class FPCVTDownBasePipe(ControlBase):
-    def __init__(self, in_pspec, out_pspec):
-        ControlBase.__init__(self)
-        self.pipe1 = FPCVTDownConvertDeNorm(in_pspec, out_pspec)
-        self.pipe2 = FPNormToPack(out_pspec, e_extra=True)
+        self.pipe1 = FPCVTConvertDeNorm(modkls, in_pspec, out_pspec)
+        self.pipe2 = FPNormToPack(out_pspec, e_extra=e_extra)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
 
@@ -608,63 +482,7 @@ class FPCVTDownBasePipe(ControlBase):
         return m
 
 
-class FPCVTIntMuxInOut(ReservationStations):
-    """ Reservation-Station version of FPCVT int-to-float pipeline.
-
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
-        * 2-stage multiplier pipeline
-        * fan-out on outputs (an array of FPPackData: z,mid)
-
-        Fan-in and Fan-out are combinatorial.
-    """
-
-    def __init__(self, in_width, out_width, num_rows, op_wid=0):
-        self.op_wid = op_wid
-        self.id_wid = num_bits(in_width)
-        self.out_id_wid = num_bits(out_width)
-
-        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
-        self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
-
-        self.alu = FPCVTIntBasePipe(self.in_pspec, self.out_pspec)
-        ReservationStations.__init__(self, num_rows)
-
-    def i_specfn(self):
-        return FPADDBaseData(self.in_pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.out_pspec)
-
-
-class FPCVTUpMuxInOut(ReservationStations):
-    """ Reservation-Station version of FPCVT up pipeline.
-
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
-        * 2-stage multiplier pipeline
-        * fan-out on outputs (an array of FPPackData: z,mid)
-
-        Fan-in and Fan-out are combinatorial.
-    """
-
-    def __init__(self, in_width, out_width, num_rows, op_wid=0):
-        self.op_wid = op_wid
-        self.id_wid = num_bits(in_width)
-        self.out_id_wid = num_bits(out_width)
-
-        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
-        self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
-
-        self.alu = FPCVTUpBasePipe(self.in_pspec, self.out_pspec)
-        ReservationStations.__init__(self, num_rows)
-
-    def i_specfn(self):
-        return FPADDBaseData(self.in_pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.out_pspec)
-
-
-class FPCVTDownMuxInOut(ReservationStations):
+class FPCVTMuxInOutBase(ReservationStations):
     """ Reservation-Station version of FPCVT pipeline.
 
         * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
@@ -674,7 +492,8 @@ class FPCVTDownMuxInOut(ReservationStations):
         Fan-in and Fan-out are combinatorial.
     """
 
-    def __init__(self, in_width, out_width, num_rows, op_wid=0):
+    def __init__(self, modkls, e_extra, in_width, out_width,
+                       num_rows, op_wid=0):
         self.op_wid = op_wid
         self.id_wid = num_bits(in_width)
         self.out_id_wid = num_bits(out_width)
@@ -682,7 +501,7 @@ class FPCVTDownMuxInOut(ReservationStations):
         self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
         self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
 
-        self.alu = FPCVTDownBasePipe(self.in_pspec, self.out_pspec)
+        self.alu = FPCVTBasePipe(modkls, e_extra, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
@@ -690,3 +509,23 @@ class FPCVTDownMuxInOut(ReservationStations):
 
     def o_specfn(self):
         return FPPackData(self.out_pspec)
+
+
+def getkls(*args, **kwargs):
+    print ("getkls", args, kwargs)
+    return FPCVTMuxInOutBase(*args, **kwargs)
+
+
+# factory which creates near-identical class structures that differ by
+# the module and the e_extra argument.  at some point it would be good
+# to merge these into a single dynamic "thing" that takes an operator.
+# however, the difference(s) in the bitwidths makes that a little less
+# straightforward.
+muxfactoryinput = [("FPCVTDownMuxInOut", FPCVTDownConvertMod, True, ),
+                   ("FPCVTUpMuxInOut",   FPCVTUpConvertMod,   False, ),
+                   ("FPCVTIntMuxInOut",   FPCVTIntToFloatMod,   True, ),
+                  ]
+
+for (name, kls, e_extra) in muxfactoryinput:
+    fn = functools.partial(getkls, kls, e_extra)
+    setattr(sys.modules[__name__], name, fn)
