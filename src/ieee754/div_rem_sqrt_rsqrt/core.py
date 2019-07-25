@@ -78,6 +78,7 @@ class DivPipeCoreOperation(enum.Enum):
 
 DP = DivPipeCoreOperation
 
+
 class DivPipeCoreInputData:
     """ input data type for ``DivPipeCore``.
 
@@ -249,7 +250,7 @@ class DivPipeCoreSetupStage(Elaboratable):
                 self.i.divisor_radicand << (self.core_config.fract_width * 2))
         with m.Else():  # DivPipeCoreOperation.RSqrtRem
             m.d.comb += self.o.compare_lhs.eq(
-                1 << (self.core_config.fract_width * 2)) # XXX reduced from 3
+                1 << (self.core_config.fract_width * 3))
 
         m.d.comb += self.o.compare_rhs.eq(0)
         m.d.comb += self.o.operation.eq(self.i.operation)
