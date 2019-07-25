@@ -130,25 +130,26 @@ class FPDIVSpecialCasesMod(Elaboratable):
 
         with m.If(self.i.ctx.op == 2): # RSQRT
 
-            # if a is zero return NaN
-            with m.If(a1.is_zero):
+            # if a is NaN return canonical NaN
+            with m.If(a1.is_nan):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
 
-            # -ve number is NaN
+            # if a is +/- zero return +/- INF
+            with m.Elif(a1.is_zero):
+                m.d.comb += self.o.out_do_z.eq(1)
+                # this includes the "weird" case 1/sqrt(-0) == -Inf
+                m.d.comb += self.o.z.inf(a1.s)
+
+            # -ve number is canonical NaN
             with m.Elif(a1.s):
                 m.d.comb += self.o.out_do_z.eq(1)
                 m.d.comb += self.o.z.nan(0)
 
-            # if a is inf return zero
+            # if a is inf return zero (-ve already excluded, above)
             with m.Elif(a1.is_inf):
                 m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(sabx)
-
-            # if a is NaN return NaN
-            with m.Elif(a1.is_nan):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                m.d.comb += self.o.z.zero(0)
 
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
