@@ -5,18 +5,19 @@
 import sys
 import functools
 
-from nmigen import Module, Signal, Cat, Const, Elaboratable
+from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
+from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh
-from ieee754.fpcommon.fpbase import MultiShiftRMerge
+from ieee754.fpcommon.exphigh import FPEXPHigh
 
 
 from nmigen import Module, Signal, Elaboratable
@@ -83,21 +84,21 @@ class FPCVTFloatToIntMod(Elaboratable):
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.d.comb += a1.v.eq(self.i.a)
         z1 = self.o.z
-        mz = len(self.o.z)
+        mz = len(z1)
         print("z1", mz)
 
         me = a1.rmw
         ms = mz - me
         print("ms-me", ms, me)
 
-        espec = (len(a1.e_width), True)
+        espec = (a1.e_width, True)
         ediff_intwid = Signal(espec, reset_less=True)
 
         # conversion can mostly be done manually...
-        m.d.comb += self.o.z.s.eq(a1.s)
-        m.d.comb += self.o.z.e.eq(a1.e)
-        m.d.comb += self.o.z.m[ms:].eq(a1.m)
-        m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
+        #m.d.comb += self.o.z.s.eq(a1.s)
+        #m.d.comb += self.o.z.e.eq(a1.e)
+        #m.d.comb += self.o.z.m[ms:].eq(a1.m)
+        #m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
 
         signed = Signal(reset_less=True)
         m.d.comb += signed.eq(self.i.ctx.op[0])
@@ -120,15 +121,30 @@ class FPCVTFloatToIntMod(Elaboratable):
             with m.Else(): # positive FP, so positive overrun (max INT)
                 m.d.comb += self.o.z.eq((1<<(mz)-1))
 
-        # ok exp should be in range: shift it...
+        # ok exp should be in range: shift and round it
         with m.Else():
-            mantissa = Signal(z1, reset_less=True)
-            l = [0] * ms + [1] + a1.m
-            m.d.comb += mantissa.eq(Cat(*l) >> a1.e)
+            mantissa = Signal(mz, reset_less=True)
+            l = [0] * ms + [1] + [a1.m]
+            m.d.comb += mantissa.eq(Cat(*l))
             m.d.comb += self.o.z.eq(mantissa)
 
+            # shift
+            msr = FPEXPHigh(mz+3, espec[0])
+            m.submodules.norm_exp = msr
+            m.d.comb += [msr.m_in[3:].eq(mantissa),
+                         msr.e_in.eq(a1.e),
+                         msr.ediff.eq(Mux(signed, mz-1, mz))
+                        ]
+
+            of = Overflow()
+            m.d.comb += of.guard.eq(msr.m_out[2])
+            m.d.comb += of.round_bit.eq(msr.m_out[1])
+            m.d.comb += of.sticky.eq(msr.m_out[0])
+            m.d.comb += of.m0.eq(msr.m_out[3])
+            m.d.comb += self.o.z.eq(msr.m_out[3:])
+
         # copy the context (muxid, operator)
-        m.d.comb += self.o.oz.eq(self.o.z.v)
+        #m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
@@ -466,6 +482,23 @@ class FPCVTConvertDeNorm(FPState, SimpleHandshake):
         self.out = self.ospec(None)
 
 
+class FPCVTFtoIntBasePipe(ControlBase):
+    def __init__(self, modkls, e_extra, in_pspec, out_pspec):
+        ControlBase.__init__(self)
+        self.pipe1 = FPCVTConvertDeNorm(modkls, in_pspec, out_pspec)
+        #self.pipe2 = FPNormToPack(out_pspec, e_extra=e_extra)
+
+        #self._eqs = self.connect([self.pipe1, self.pipe2])
+        self._eqs = self.connect([self.pipe1, ])
+
+    def elaborate(self, platform):
+        m = ControlBase.elaborate(self, platform)
+        m.submodules.down = self.pipe1
+        #m.submodules.normpack = self.pipe2
+        m.d.comb += self._eqs
+        return m
+
+
 class FPCVTBasePipe(ControlBase):
     def __init__(self, modkls, e_extra, in_pspec, out_pspec):
         ControlBase.__init__(self)
@@ -493,7 +526,7 @@ class FPCVTMuxInOutBase(ReservationStations):
     """
 
     def __init__(self, modkls, e_extra, in_width, out_width,
-                       num_rows, op_wid=0):
+                       num_rows, op_wid=0, pkls=FPCVTBasePipe):
         self.op_wid = op_wid
         self.id_wid = num_bits(in_width)
         self.out_id_wid = num_bits(out_width)
@@ -501,7 +534,7 @@ class FPCVTMuxInOutBase(ReservationStations):
         self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
         self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
 
-        self.alu = FPCVTBasePipe(modkls, e_extra, self.in_pspec, self.out_pspec)
+        self.alu = pkls(modkls, e_extra, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
@@ -529,3 +562,21 @@ muxfactoryinput = [("FPCVTDownMuxInOut", FPCVTDownConvertMod, True, ),
 for (name, kls, e_extra) in muxfactoryinput:
     fn = functools.partial(getkls, kls, e_extra)
     setattr(sys.modules[__name__], name, fn)
+
+
+class FPCVTF2IntMuxInOut(FPCVTMuxInOutBase):
+    """ Reservation-Station version of FPCVT pipeline.
+
+        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * 2-stage multiplier pipeline
+        * fan-out on outputs (an array of FPPackData: z,mid)
+
+        Fan-in and Fan-out are combinatorial.
+    """
+
+    def __init__(self, in_width, out_width, num_rows, op_wid=0):
+        FPCVTMuxInOutBase.__init__(self, FPCVTFloatToIntMod, False,
+                                         in_width, out_width,
+                                         num_rows, op_wid,
+                                         pkls=FPCVTFtoIntBasePipe)
+

@@ -38,7 +38,10 @@ class MuxInOut:
                     #print ("test", hex(op1), hex(op2))
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
                     self.di[muxid][i] = (op1, op2)
-                self.do[muxid].append(res.bits)
+                if hasattr(res, "bits"):
+                    self.do[muxid].append(res.bits)
+                else:
+                    self.do[muxid].append(res) # for FP to INT
 
     def send(self, muxid):
         for i in range(self.tlen):
@@ -63,7 +66,11 @@ class MuxInOut:
             if self.single_op:
                 fop1 = self.fpkls(op1)
                 res = self.fpop(fop1)
-                print ("send", muxid, i, hex(op1), hex(res.bits),
+                if hasattr(res, "bits"):
+                    r = res.bits
+                else:
+                    r = res
+                print ("send", muxid, i, hex(op1), hex(r),
                                fop1, res)
             else:
                 fop1 = self.fpkls(op1)
