@@ -107,6 +107,10 @@ class FPCVTFloatToIntMod(Elaboratable):
         with m.If(a1.exp_n127):
             m.d.comb += self.o.z.eq(0)
 
+        # unsigned, -ve, return 0
+        with m.Elif((~signed) & a1.s):
+            m.d.comb += self.o.z.eq(0)
+
         # signed, exp too big
         with m.Elif(signed & (a1.e > Const(mz-1, espec))):
             with m.If(a1.s): # negative FP, so negative overrun
@@ -123,17 +127,18 @@ class FPCVTFloatToIntMod(Elaboratable):
 
         # ok exp should be in range: shift and round it
         with m.Else():
-            mantissa = Signal(mz, reset_less=True)
-            l = [0] * ms + [1] + [a1.m]
-            m.d.comb += mantissa.eq(Cat(*l))
+            mlen = max(a1.m_width, mz) + 5
+            mantissa = Signal(mlen, reset_less=True)
+            l = [0] * 2 + [a1.m[:-1]] + [1]
+            m.d.comb += mantissa[-a1.m_width-3:].eq(Cat(*l))
             m.d.comb += self.o.z.eq(mantissa)
 
             # shift
-            msr = FPEXPHigh(mz+3, espec[0])
+            msr = FPEXPHigh(mlen, espec[0])
             m.submodules.norm_exp = msr
-            m.d.comb += [msr.m_in[3:].eq(mantissa),
+            m.d.comb += [msr.m_in.eq(mantissa),
                          msr.e_in.eq(a1.e),
-                         msr.ediff.eq(Mux(signed, mz-1, mz))
+                         msr.ediff.eq(Mux(signed, mz-1, mz)-a1.e)
                         ]
 
             of = Overflow()
