@@ -93,7 +93,7 @@ class FPClassMod(Elaboratable):
                 m.d.comb += self.o.z.eq(1<<9) # | a quiet NaN
 
         # subnormal
-        with m.Elif(a1.exp_n126): 
+        with m.Elif(a1.exp_n126 & ~a1.m_zero):
             with m.If(a1.s):
                 m.d.comb += self.o.z.eq(1<<2) # | a negative subnormal number.
             with m.Else():

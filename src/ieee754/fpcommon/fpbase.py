@@ -9,6 +9,7 @@ from functools import reduce
 
 from nmutil.singlepipe import PrevControl, NextControl
 from nmutil.pipeline import ObjectProxy
+import unittest
 import math
 
 
@@ -81,15 +82,77 @@ class FPFormat:
             retval += f", {self.has_sign}"
         return retval + ")"
 
+    def get_sign(self, x):
+        """ returns the sign of its input number, x (assumes number is signed)
+        """
+        return x >> (self.e_width + self.m_width)
+
+    def get_exponent(self, x):
+        """ returns the exponent of its input number, x
+        """
+        x = ((x >> self.m_width) & self.exponent_inf_nan)
+        return x - self.exponent_bias
+
+    def get_mantissa(self, x):
+        """ returns the mantissa of its input number, x
+        """
+        return x & self.mantissa_mask
+
+    def is_zero(self, x):
+        """ returns true if x is subnormal (exp at minimum
+        """
+        e_sub = self.exponent_denormal_zero - self.exponent_bias
+        print ("e_sub", e_sub)
+        return self.get_exponent(x) == e_sub and self.get_mantissa(x) == 0
+
+    def is_subnormal(self, x):
+        """ returns true if x is subnormal (exp at minimum
+        """
+        e_sub = self.exponent_denormal_zero - self.exponent_bias
+        print ("e_sub", e_sub)
+        return self.get_exponent(x) == e_sub and self.get_mantissa(x) != 0
+
+    def is_inf(self, x):
+        """ returns true if x is infinite
+        """
+        return (self.get_exponent(x) == self.emax and
+                self.get_mantissa(x) == 0)
+
+    def is_nan(self, x):
+        """ returns true if x is nan
+        """
+        highbit = 1<<self.m_width
+        return (self.get_exponent(x) == self.emax and
+                self.get_mantissa(x) != 0 and
+                self.get_mantissa(x) & highbit == 0)
+
+    def is_nan_signalling(self, x):
+        """ returns true if x is a signalling nan
+        """
+        highbit = 1<<self.m_width
+        return (self.get_exponent(x) == self.emax and
+                self.get_mantissa(x) & highbit != 0)
+
     @property
     def width(self):
         """ Get the total number of bits in the FP format. """
         return self.has_sign + self.e_width + self.m_width
 
     @property
+    def mantissa_mask(self):
+        """ Get the value of the exponent field designating infinity/NaN. """
+        return (1 << self.m_width) - 1
+
+    @property
     def exponent_inf_nan(self):
         """ Get the value of the exponent field designating infinity/NaN. """
         return (1 << self.e_width) - 1
+
+    @property
+    def emax(self):
+        """ get the maximum exponent (minus bias)
+        """
+        return self.exponent_inf_nan - self.exponent_bias
 
     @property
     def exponent_denormal_zero(self):
@@ -116,6 +179,88 @@ class FPFormat:
         """ Get the number of mantissa bits that are fraction bits. """
         return self.m_width - self.has_int_bit
 
+
+class TestFPFormat(unittest.TestCase):
+    """ very quick test for FPFormat
+    """
+
+    def test_fpformat_fp64(self):
+        f64 = FPFormat.standard(64)
+        from sfpy import Float64
+        x = Float64(1.0).bits
+        print (hex(x))
+
+        self.assertEqual(f64.get_exponent(x), 0)
+        x = Float64(2.0).bits
+        print (hex(x))
+        self.assertEqual(f64.get_exponent(x), 1)
+
+        x = Float64(1.5).bits
+        m = f64.get_mantissa(x)
+        print (hex(x), hex(m))
+        self.assertEqual(m, 0x8000000000000)
+
+        s = f64.get_sign(x)
+        print (hex(x), hex(s))
+        self.assertEqual(s, 0)
+
+        x = Float64(-1.5).bits
+        s = f64.get_sign(x)
+        print (hex(x), hex(s))
+        self.assertEqual(s, 1)
+
+    def test_fpformat_fp32(self):
+        f32 = FPFormat.standard(32)
+        from sfpy import Float32
+        x = Float32(1.0).bits
+        print (hex(x))
+
+        self.assertEqual(f32.get_exponent(x), 0)
+        x = Float32(2.0).bits
+        print (hex(x))
+        self.assertEqual(f32.get_exponent(x), 1)
+
+        x = Float32(1.5).bits
+        m = f32.get_mantissa(x)
+        print (hex(x), hex(m))
+        self.assertEqual(m, 0x400000)
+
+        # NaN test
+        x = Float32(-1.0).sqrt()
+        x = x.bits
+        i = f32.is_nan(x)
+        print (hex(x), "nan", f32.get_exponent(x), f32.emax,
+               f32.get_mantissa(x), i)
+        self.assertEqual(i, True)
+
+        # Inf test
+        x = Float32(1e36) * Float32(1e36) * Float32(1e36)
+        x = x.bits
+        i = f32.is_inf(x)
+        print (hex(x), "inf", f32.get_exponent(x), f32.emax,
+               f32.get_mantissa(x), i)
+        self.assertEqual(i, True)
+
+        # subnormal
+        x = Float32(1e-41)
+        x = x.bits
+        i = f32.is_subnormal(x)
+        print (hex(x), "sub", f32.get_exponent(x), f32.emax,
+               f32.get_mantissa(x), i)
+        self.assertEqual(i, True)
+
+        x = Float32(0.0)
+        x = x.bits
+        i = f32.is_subnormal(x)
+        print (hex(x), "sub", f32.get_exponent(x), f32.emax,
+               f32.get_mantissa(x), i)
+        self.assertEqual(i, False)
+
+        # zero
+        i = f32.is_zero(x)
+        print (hex(x), "zero", f32.get_exponent(x), f32.emax,
+               f32.get_mantissa(x), i)
+        self.assertEqual(i, True)
 
 class MultiShiftR:
 
@@ -903,3 +1048,7 @@ class FPID:
     def idsync(self, m):
         if self.id_wid is not None:
             m.d.sync += self.out_mid.eq(self.in_mid)
+
+
+if __name__ == '__main__':
+    unittest.main()

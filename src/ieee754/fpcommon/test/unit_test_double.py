@@ -10,19 +10,19 @@ def get_mantissa(x):
     return x & 0x000fffffffffffff
 
 def get_exponent(x):
-    return ((x & 0x7ff0000000000000) >> 52) - 1023
+    return ((x & 0x7ff0000000000000) >> 52) - (max_e-1)
 
 def set_exponent(x, e):
-    return (x & ~0x7ff0000000000000) | ((e+1023) << 52)
+    return (x & ~0x7ff0000000000000) | ((e+(max_e-1)) << 52)
 
 def get_sign(x):
     return ((x & 0x8000000000000000) >> 63)
 
 def is_nan(x):
-    return get_exponent(x) == 1024 and get_mantissa(x) != 0
+    return get_exponent(x) == max_e and get_mantissa(x) != 0
 
 def is_inf(x):
-    return get_exponent(x) == 1024 and get_mantissa(x) == 0
+    return get_exponent(x) == max_e and get_mantissa(x) == 0
 
 def is_pos_inf(x):
     return is_inf(x) and not get_sign(x)
