@@ -71,39 +71,21 @@ class FPClassMod(Elaboratable):
 
         # FCLASS: work out the "type" of the FP number
 
-        # Inf
-        with m.If(a1.is_inf):
-            with m.If(a1.s):
-                m.d.comb += self.o.z.eq(1<<0) # | −inf.
-            with m.Else():
-                m.d.comb += self.o.z.eq(1<<7) # | +inf.
+        finite_nzero = Signal(reset_less=True)
+        m.d.comb += finite_nzero.eq(~a1.is_nan & ~a1.is_inf & ~a1.is_zero)
+        subnormal = a1.exp_lt_n126
 
-        # Zero
-        with m.Elif(a1.is_zero):
-            with m.If(a1.s):
-                m.d.comb += self.o.z.eq(1<<3) # | −0.
-            with m.Else():
-                m.d.comb += self.o.z.eq(1<<4) # | +0.
-
-        # NaN
-        with m.Elif(a1.exp_gt127): 
-            with m.If(a1.m_msbzero): # signalling NaN
-                m.d.comb += self.o.z.eq(1<<8) # | a signaling NaN.
-            with m.Else():
-                m.d.comb += self.o.z.eq(1<<9) # | a quiet NaN
-
-        # subnormal
-        with m.Elif(a1.exp_n126 & ~a1.m_zero):
-            with m.If(a1.s):
-                m.d.comb += self.o.z.eq(1<<2) # | a negative subnormal number.
-            with m.Else():
-                m.d.comb += self.o.z.eq(1<<5) # | a positive subnormal number.
-
-        # normal
-        with m.Elif(a1.s):
-            m.d.comb += self.o.z.eq(1<<1) # | a negative normal number.
-        with m.Else():
-            m.d.comb += self.o.z.eq(1<<6) # | a positive normal number.
+        m.d.comb += self.o.z.eqCat(
+                    a1.s   & a1.is_inf,                 # | −inf.
+                    a1.s   & finite_nzero & ~subnormal, # | -normal number.
+                    a1.s   & finite_nzero &  subnormal, # | -subnormal number.
+                    a1.s & a1.is_zero,                  # | −0.
+                    ~a1.s & a1.is_zero,                 # | +0.
+                    ~a1.s & finite_nzero &  subnormal,  # | +subnormal number.
+                    ~a1.s & finite_nzero & ~subnormal,  # | +normal number.
+                    ~a1.s & a1.is_inf,                  # | +inf.
+                    a1.is_denormalised,                 # | a signaling NaN.
+                    a1.is_nan & ~a1.is_denormalised)    # | a quiet NaN
 
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
