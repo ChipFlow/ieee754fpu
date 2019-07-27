@@ -116,14 +116,14 @@ class FPCVTFloatToIntMod(Elaboratable):
             with m.If(a1.s): # negative FP, so negative overrun
                 m.d.comb += self.o.z.eq(-(1<<(mz-1)))
             with m.Else(): # positive FP, so positive overrun
-                m.d.comb += self.o.z.eq((1<<(mz-1)-1))
+                m.d.comb += self.o.z.eq((1<<(mz-1))-1)
 
         # unsigned, exp too big
         with m.Elif((~signed) & (a1.e > Const(mz, espec))):
             with m.If(a1.s): # negative FP, so negative overrun (zero)
                 m.d.comb += self.o.z.eq(0)
             with m.Else(): # positive FP, so positive overrun (max INT)
-                m.d.comb += self.o.z.eq((1<<(mz)-1))
+                m.d.comb += self.o.z.eq((1<<(mz))-1)
 
         # ok exp should be in range: shift and round it
         with m.Else():
@@ -146,7 +146,11 @@ class FPCVTFloatToIntMod(Elaboratable):
             m.d.comb += of.round_bit.eq(msr.m_out[1])
             m.d.comb += of.sticky.eq(msr.m_out[0])
             m.d.comb += of.m0.eq(msr.m_out[3])
-            m.d.comb += self.o.z.eq(msr.m_out[3:])
+
+            with m.If(of.roundz):
+                m.d.comb += self.o.z.eq(msr.m_out[3:]+1)
+            with m.Else():
+                m.d.comb += self.o.z.eq(msr.m_out[3:])
 
         # copy the context (muxid, operator)
         #m.d.comb += self.o.oz.eq(self.o.z.v)

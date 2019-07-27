@@ -184,7 +184,8 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
 
                 # f2int
                 #op1 = 0x4dc0
-                op1 = 0x3b81
+                #op1 = 0x3b81
+                op1 = 0xfcb6
 
                 vals.append((op1,))
             else:
