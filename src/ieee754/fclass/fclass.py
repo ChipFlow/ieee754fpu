@@ -48,7 +48,8 @@ class FPClassMod(Elaboratable):
         finite_nzero = Signal(reset_less=True)
         msbzero = Signal(reset_less=True)
         is_sig_nan = Signal(reset_less=True)
-        # XXX use *REAL* mantissa width to detect msb
+        # XXX use *REAL* mantissa width to detect msb.
+        # XXX do NOT use a1.m_msbzero because it has extra bitspace
         m.d.comb += msbzero.eq(a1.m[a1.rmw-1] == 0) # sigh, 1 extra msb bit
         m.d.comb += finite_nzero.eq(~a1.is_nan & ~a1.is_inf & ~a1.is_zero)
         m.d.comb += is_sig_nan.eq(a1.exp_128 & (msbzero) & (~a1.m_zero))
