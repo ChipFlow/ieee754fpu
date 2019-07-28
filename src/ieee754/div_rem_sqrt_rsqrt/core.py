@@ -38,6 +38,7 @@ class DivPipeCoreConfig:
         self.bit_width = bit_width
         self.fract_width = fract_width
         self.log2_radix = log2_radix
+        print(f"{self}: n_stages={self.n_stages}")
 
     def __repr__(self):
         """ Get repr. """
@@ -383,6 +384,10 @@ class DivPipeCoreCalculateStage(Elaboratable):
         log2_radix = min(log2_radix, current_shift)
         assert log2_radix > 0
         current_shift -= log2_radix
+        print(f"DivPipeCoreCalc: stage {self.stage_index}"
+              + f" of {self.core_config.n_stages} handling "
+              + f"bits [{current_shift}, {current_shift+log2_radix})"
+              + f" of {self.core_config.bit_width}")
         radix = 1 << log2_radix
 
         # trials within this radix range.  carried out by Trial module,
