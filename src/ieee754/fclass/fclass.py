@@ -54,6 +54,9 @@ class FPClassMod(Elaboratable):
         m.d.comb += is_sig_nan.eq(a1.exp_128 & (msbzero) & (~a1.m_zero))
         subnormal = a1.exp_n127
 
+        # this is hardware-optimal but very hard to understand.
+        # see unit test test_fclass_pipe.py fclass() for what's
+        # going on.
         m.d.comb += self.o.z.eq(Cat(
                     a1.s   & a1.is_inf,                 # | −inf.
                     a1.s   & finite_nzero & ~subnormal, # | -normal number.

@@ -10,6 +10,10 @@ from sfpy import Float64, Float32, Float16
 
 def fclass(wid, x):
     """ analyses the FP number and returns a RISC-V "FCLASS" unary bitfield
+
+        this is easy to understand however it has redundant checks (which
+        don't matter because performance of *testing* is not hardware-critical)
+        see FPClassMod for a hardware-optimal (hard-to-read) version
     """
     x = x.bits
     fmt = FPFormat.standard(wid)
