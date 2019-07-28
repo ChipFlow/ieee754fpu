@@ -4,25 +4,30 @@ from random import seed
 
 from sfpy import Float64
 
-max_e = 1024
+from ieee754.fpcommon.fpbase import FPFormat
+
+
+fmt = FPFormat.standard(64)
+
+max_e = fmt.exponent_inf_nan- fmt.exponent_bias
 
 def get_mantissa(x):
-    return x & 0x000fffffffffffff
+    return fmt.get_mantissa(x)
 
 def get_exponent(x):
-    return ((x & 0x7ff0000000000000) >> 52) - (max_e-1)
+    return fmt.get_exponent(x)
 
 def set_exponent(x, e):
     return (x & ~0x7ff0000000000000) | ((e+(max_e-1)) << 52)
 
 def get_sign(x):
-    return ((x & 0x8000000000000000) >> 63)
+    return fmt.get_sign(x)
 
 def is_nan(x):
-    return get_exponent(x) == max_e and get_mantissa(x) != 0
+    return fmt.is_nan(x)
 
 def is_inf(x):
-    return get_exponent(x) == max_e and get_mantissa(x) == 0
+    return fmt.is_inf(x)
 
 def is_pos_inf(x):
     return is_inf(x) and not get_sign(x)
