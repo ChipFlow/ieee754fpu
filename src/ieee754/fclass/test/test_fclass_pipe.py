@@ -44,12 +44,34 @@ def fclass_16(x):
     return fclass(16, x)
 
 
+def fclass_32(x):
+    return fclass(32, x)
+
+
+def fclass_64(x):
+    return fclass(64, x)
+
+
 def test_class_pipe_f16():
     dut = FPClassMuxInOut(16, 16, 4, op_wid=1)
-    runfp(dut, 16, "test_fcvt_class_pipe_f16", Float16, fclass_16,
+    runfp(dut, 16, "test_fclass_pipe_f16", Float16, fclass_16,
+                True, n_vals=100)
+
+
+def test_class_pipe_f32():
+    dut = FPClassMuxInOut(32, 32, 4, op_wid=1)
+    runfp(dut, 32, "test_fclass_pipe_f32", Float32, fclass_32,
+                True, n_vals=100)
+
+
+def test_class_pipe_f64():
+    dut = FPClassMuxInOut(64, 64, 4, op_wid=1)
+    runfp(dut, 64, "test_fclass_pipe_f64", Float64, fclass_64,
                 True, n_vals=100)
 
 
 if __name__ == '__main__':
     for i in range(200):
         test_class_pipe_f16()
+        test_class_pipe_f32()
+        test_class_pipe_f64()

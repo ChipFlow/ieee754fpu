@@ -52,7 +52,7 @@ class FPClassMod(Elaboratable):
     def setup(self, m, i):
         """ links module to inputs and outputs
         """
-        m.submodules.upconvert = self
+        m.submodules.fclass = self
         m.d.comb += self.i.eq(i)
 
     def process(self, i):
@@ -116,7 +116,7 @@ class FPClassBasePipe(ControlBase):
 
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
-        m.submodules.down = self.pipe1
+        m.submodules.fclass = self.pipe1
         m.d.comb += self._eqs
         return m
 
