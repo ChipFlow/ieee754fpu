@@ -156,15 +156,11 @@ class FPDIVMuxInOut(ReservationStations):
     """
 
     def __init__(self, width, num_rows, op_wid=2):
-        self.id_wid = num_bits(width)
+        self.id_wid = num_bits(width)  # FIXME: shouldn't this be num_rows?
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
-        # get the standard mantissa width, store in the pspec HOWEVER...
+        # get the standard mantissa width, store in the pspec
         fmt = FPFormat.standard(width)
         log2_radix = 3     # tested options so far: 1, 2 and 3.
-
-        # TODO (depends on how many RS's we want)
-        #n_comb_stages = width // (2 * log2_radix)  # 2 compute steps per stage
-        n_comb_stages = 2  # FIXME: switch back
 
         fraction_width = fmt.fraction_width
 
@@ -175,6 +171,8 @@ class FPDIVMuxInOut(ReservationStations):
         # DivPipeCoreCalculateStage just internally reduces log2_radix on
         # the last stage
         cfg = DivPipeCoreConfig(fmt.width, fraction_width, log2_radix)
+
+        n_comb_stages = (cfg.n_stages + 1) // 2  # 2 compute steps per stage
 
         self.pspec.fpformat = fmt
         self.pspec.n_comb_stages = n_comb_stages
