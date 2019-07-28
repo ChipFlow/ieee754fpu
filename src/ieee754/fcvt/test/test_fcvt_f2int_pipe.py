@@ -28,6 +28,9 @@ def fcvt_f32_ui32(x):
 def fcvt_64_to_32(x):
     return sfpy.float.ui64_to_f32(x)
 
+def fcvt_f64_ui64(x):
+    return sfpy.float.f64_to_ui64(x)
+
 def fcvt_f16_ui32(x):
     return sfpy.float.f16_to_ui32(x)
 
@@ -105,8 +108,14 @@ def test_int_pipe_ui32_f16():
     runfp(dut, 17, "test_fcvt_int_pipe_ui32_16", to_uint32, fcvt_16, True,
           n_vals=100)
 
+def test_int_pipe_f64_ui64():
+    dut = FPCVTF2IntMuxInOut(64, 64, 4, op_wid=1)
+    runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui64", Float64, fcvt_f64_ui64,
+                    True, n_vals=100)
+
 if __name__ == '__main__':
     for i in range(200):
+        test_int_pipe_f64_ui64()
         test_int_pipe_f32_ui32()
         test_int_pipe_f16_ui16()
         continue
