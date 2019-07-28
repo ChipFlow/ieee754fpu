@@ -119,17 +119,21 @@ class FPFormat:
     def is_nan(self, x):
         """ returns true if x is nan
         """
-        highbit = 1<<self.m_width
+        highbit = 1<<(self.m_width-1)
         return (self.get_exponent(x) == self.emax and
                 self.get_mantissa(x) != 0 and
-                self.get_mantissa(x) & highbit == 0)
+                self.get_mantissa(x) & highbit != 0)
 
     def is_nan_signalling(self, x):
         """ returns true if x is a signalling nan
         """
-        highbit = 1<<self.m_width
-        return (self.get_exponent(x) == self.emax and
-                self.get_mantissa(x) & highbit != 0)
+        highbit = 1<<(self.m_width-1)
+        print ("m", self.get_mantissa(x), self.get_mantissa(x) != 0,
+                self.get_mantissa(x) & highbit)
+
+        return ((self.get_exponent(x) == self.emax) and
+                (self.get_mantissa(x) != 0) and
+                (self.get_mantissa(x) & highbit) == 0)
 
     @property
     def width(self):
@@ -480,6 +484,8 @@ class FPNumBase(FPNumBaseRecord, Elaboratable):
         return self.exp_gt127
 
     def _is_denormalised(self):
+        # XXX NOT to be used for "official" quiet NaN tests!
+        # particularly when the MSB has been extended
         return (self.exp_n126) & (self.m_msbzero)
 
 

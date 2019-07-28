@@ -185,7 +185,15 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 # f2int
                 #op1 = 0x4dc0
                 #op1 = 0x3b81
-                op1 = 0xfcb6
+                #op1 = 0xfcb6
+
+                # FCLASS
+                #op1 = 0x87d1
+                #op1 = 0x75e
+                #op1 = 0x7f8c
+                #op1 = 0x7c57
+                #op1 = 0xfea8
+                #op1 = 0xfd57
 
                 vals.append((op1,))
             else:

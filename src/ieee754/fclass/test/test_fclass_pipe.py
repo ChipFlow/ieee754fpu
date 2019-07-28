@@ -11,6 +11,9 @@ from sfpy import Float64, Float32, Float16
 def fclass(wid, x):
     x = x.bits
     fmt = FPFormat.standard(wid)
+    print (hex(x), "exp", fmt.get_exponent(x), fmt.emax,
+                    "m", hex(fmt.get_mantissa(x)),
+                    fmt.get_mantissa(x) & (1<<fmt.m_width-1))
     if fmt.is_inf(x):
         if fmt.get_sign(x):
             return 1<<0
@@ -21,7 +24,7 @@ def fclass(wid, x):
             return 1<<3
         else:
             return 1<<4
-    if fmt.get_exponent(x) == fmt.emax:
+    if fmt.get_exponent(x) == fmt.emax and fmt.get_mantissa(x) != 0:
         if fmt.is_nan_signalling(x):
             return 1<<8
         else:

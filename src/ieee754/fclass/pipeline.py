@@ -72,8 +72,13 @@ class FPClassMod(Elaboratable):
         # FCLASS: work out the "type" of the FP number
 
         finite_nzero = Signal(reset_less=True)
+        msbzero = Signal(reset_less=True)
+        is_sig_nan = Signal(reset_less=True)
+        # XXX use *REAL* mantissa width to detect msb
+        m.d.comb += msbzero.eq(a1.m[a1.rmw-1] == 0) # sigh, 1 extra msb bit
         m.d.comb += finite_nzero.eq(~a1.is_nan & ~a1.is_inf & ~a1.is_zero)
-        subnormal = a1.exp_lt_n126
+        m.d.comb += is_sig_nan.eq(a1.exp_128 & (msbzero) & (~a1.m_zero))
+        subnormal = a1.exp_n127
 
         m.d.comb += self.o.z.eq(Cat(
                     a1.s   & a1.is_inf,                 # | −inf.
@@ -84,8 +89,8 @@ class FPClassMod(Elaboratable):
                     ~a1.s & finite_nzero &  subnormal,  # | +subnormal number.
                     ~a1.s & finite_nzero & ~subnormal,  # | +normal number.
                     ~a1.s & a1.is_inf,                  # | +inf.
-                    a1.is_denormalised,                 # | a signaling NaN.
-                    a1.is_nan & ~a1.is_denormalised))   # | a quiet NaN
+                    is_sig_nan,                         # | a signaling NaN.
+                    a1.is_nan & ~is_sig_nan))           # | a quiet NaN
 
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
