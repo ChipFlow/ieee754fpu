@@ -40,10 +40,10 @@ class FPFormat:
         """ Check for equality. """
         if not isinstance(other, FPFormat):
             return NotImplemented
-        return (self.e_width == other.e_width and
-                self.m_width == other.m_width and
-                self.has_int_bit == other.has_int_bit and
-                self.has_sign == other.has_sign)
+        return (self.e_width == other.e_width
+                and self.m_width == other.m_width
+                and self.has_int_bit == other.has_int_bit
+                and self.has_sign == other.has_sign)
 
     @staticmethod
     def standard(width):
@@ -319,7 +319,12 @@ class FPNumBaseRecord:
     """ Floating-point Base Number Class
     """
 
-    def __init__(self, width, m_extra=True, e_extra=False):
+    def __init__(self, width, m_extra=True, e_extra=False, name=None):
+        if name is None:
+            name = ""
+            # assert false, "missing name"
+        else:
+            name += "_"
         self.width = width
         m_width = {16: 11, 32: 24, 64: 53}[width]  # 1 extra bit (overflow)
         e_width = {16: 7,  32: 10, 64: 13}[width]  # 2 extra bits (overflow)
@@ -343,10 +348,12 @@ class FPNumBaseRecord:
         self.e_start = self.rmw
         self.e_end = self.rmw + self.e_width - 2  # for decoding
 
-        self.v = Signal(width, reset_less=True)      # Latched copy of value
-        self.m = Signal(m_width, reset_less=True)    # Mantissa
-        self.e = Signal((e_width, True), reset_less=True)  # exp+2 bits, signed
-        self.s = Signal(reset_less=True)           # Sign bit
+        self.v = Signal(width, reset_less=True,
+                        name=name+"v")  # Latched copy of value
+        self.m = Signal(m_width, reset_less=True, name=name+"m")  # Mantissa
+        self.e = Signal((e_width, True),
+                        reset_less=True, name=name+"e")  # exp+2 bits, signed
+        self.s = Signal(reset_less=True, name=name+"s")  # Sign bit
 
         self.fp = self
         self.drop_in(self)
