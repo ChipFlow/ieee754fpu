@@ -20,7 +20,7 @@ class FPNorm1Data:
     def __init__(self, pspec):
         width = pspec.width
         self.roundz = Signal(reset_less=True, name="norm1_roundz")
-        self.z = FPNumBaseRecord(width, False)
+        self.z = FPNumBaseRecord(width, False, name="z")
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.ctx = FPPipeContext(pspec)
@@ -28,7 +28,7 @@ class FPNorm1Data:
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.roundz.eq(i.roundz), self.ctx.eq(i.ctx)]
+               self.roundz.eq(i.roundz), self.ctx.eq(i.ctx)]
         return ret
 
 
@@ -132,7 +132,7 @@ class FPNorm1ModSingle(Elaboratable):
                     of.m0.eq(msr.m_out[3]),   # copy of mantissa[0]
                     # overflow in bits 0..2: got shifted too (leave sticky)
                     of.guard.eq(msr.m_out[2]),     # guard
-                    of.round_bit.eq(msr.m_out[1]), # round
+                    of.round_bit.eq(msr.m_out[1]),  # round
                     of.sticky.eq(msr.m_out[0]),    # sticky
                     # now exponent
                     self.o.z.e.eq(msr.e_out),
@@ -188,14 +188,14 @@ class FPNorm1ModMulti:
         increase = Signal(reset_less=True)
         m.d.comb += decrease.eq(in_z.m_msbzero & in_z.exp_gt_n126)
         m.d.comb += increase.eq(in_z.exp_lt_n126)
-        m.d.comb += self.out_norm.eq(decrease | increase) # loop-end
+        m.d.comb += self.out_norm.eq(decrease | increase)  # loop-end
         # decrease exponent
         with m.If(decrease):
             m.d.comb += [
                 self.out_z.e.eq(in_z.e - 1),  # DECREASE exponent
-                self.out_z.m.eq(in_z.m << 1), # shift mantissa UP
-                self.out_z.m[0].eq(in_of.guard), # steal guard (was tot[2])
-                self.out_of.guard.eq(in_of.round_bit), # round (was tot[1])
+                self.out_z.m.eq(in_z.m << 1),  # shift mantissa UP
+                self.out_z.m[0].eq(in_of.guard),  # steal guard (was tot[2])
+                self.out_of.guard.eq(in_of.round_bit),  # round (was tot[1])
                 self.out_of.round_bit.eq(0),        # reset round bit
                 self.out_of.m0.eq(in_of.guard),
             ]
@@ -203,7 +203,7 @@ class FPNorm1ModMulti:
         with m.Elif(increase):
             m.d.comb += [
                 self.out_z.e.eq(in_z.e + 1),  # INCREASE exponent
-                self.out_z.m.eq(in_z.m >> 1), # shift mantissa DOWN
+                self.out_z.m.eq(in_z.m >> 1),  # shift mantissa DOWN
                 self.out_of.guard.eq(in_z.m[0]),
                 self.out_of.m0.eq(in_z.m[1]),
                 self.out_of.round_bit.eq(in_of.guard),
@@ -259,7 +259,8 @@ class FPNorm1Multi(FPState):
                        self.out_z, self.out_norm)
 
         m.d.comb += self.stb.eq(norm_stb)
-        m.d.sync += self.ack.eq(0) # sets to zero when not in normalise_1 state
+        # sets to zero when not in normalise_1 state
+        m.d.sync += self.ack.eq(0)
 
     def action(self, m):
         m.d.comb += self.in_accept.eq((~self.ack) & (self.stb))
@@ -277,5 +278,3 @@ class FPNorm1Multi(FPState):
             m.next = "round"
             m.d.sync += self.ack.eq(1)
             m.d.sync += self.out_roundz.eq(self.mod.out_of.roundz)
-
-
