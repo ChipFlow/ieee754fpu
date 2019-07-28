@@ -110,6 +110,7 @@ class FPCVTFloatToIntMod(Elaboratable):
             with m.Else():
                 m.d.comb += self.o.z.eq((1<<mz)-1) # NaN overflow
 
+        # zero exponent: definitely out of range of INT.  zero...
         with m.Elif(a1.exp_n127):
             m.d.comb += self.o.z.eq(0)
 
@@ -160,8 +161,9 @@ class FPCVTFloatToIntMod(Elaboratable):
             with m.Else():
                 m.d.comb += mround.eq(msr.m_out[3:])
 
+            # check sign
             with m.If(signed & a1.s):
-                m.d.comb += self.o.z.eq(-mround)
+                m.d.comb += self.o.z.eq(-mround) # inverted
             with m.Else():
                 m.d.comb += self.o.z.eq(mround)
 
