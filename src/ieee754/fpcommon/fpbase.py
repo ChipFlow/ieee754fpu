@@ -102,14 +102,12 @@ class FPFormat:
         """ returns true if x is subnormal (exp at minimum
         """
         e_sub = self.exponent_denormal_zero - self.exponent_bias
-        print ("e_sub", e_sub)
         return self.get_exponent(x) == e_sub and self.get_mantissa(x) == 0
 
     def is_subnormal(self, x):
         """ returns true if x is subnormal (exp at minimum
         """
         e_sub = self.exponent_denormal_zero - self.exponent_bias
-        print ("e_sub", e_sub)
         return self.get_exponent(x) == e_sub and self.get_mantissa(x) != 0
 
     def is_inf(self, x):

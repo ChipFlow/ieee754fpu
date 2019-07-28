@@ -75,7 +75,7 @@ class FPClassMod(Elaboratable):
         m.d.comb += finite_nzero.eq(~a1.is_nan & ~a1.is_inf & ~a1.is_zero)
         subnormal = a1.exp_lt_n126
 
-        m.d.comb += self.o.z.eqCat(
+        m.d.comb += self.o.z.eq(Cat(
                     a1.s   & a1.is_inf,                 # | −inf.
                     a1.s   & finite_nzero & ~subnormal, # | -normal number.
                     a1.s   & finite_nzero &  subnormal, # | -subnormal number.
@@ -85,7 +85,7 @@ class FPClassMod(Elaboratable):
                     ~a1.s & finite_nzero & ~subnormal,  # | +normal number.
                     ~a1.s & a1.is_inf,                  # | +inf.
                     a1.is_denormalised,                 # | a signaling NaN.
-                    a1.is_nan & ~a1.is_denormalised)    # | a quiet NaN
+                    a1.is_nan & ~a1.is_denormalised))   # | a quiet NaN
 
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
