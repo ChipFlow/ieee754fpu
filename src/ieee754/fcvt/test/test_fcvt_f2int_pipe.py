@@ -107,8 +107,8 @@ def test_int_pipe_ui32_f16():
 
 if __name__ == '__main__':
     for i in range(200):
-        test_int_pipe_f16_ui16()
         test_int_pipe_f32_ui32()
+        test_int_pipe_f16_ui16()
         continue
         test_int_pipe_i32_f32()
         test_int_pipe_i16_f32()

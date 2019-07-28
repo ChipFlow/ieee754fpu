@@ -115,14 +115,14 @@ class FPCVTFloatToIntMod(Elaboratable):
             m.d.comb += self.o.z.eq(0)
 
         # signed, exp too big
-        with m.Elif(signed & (a1.e > Const(mz-1, espec))):
+        with m.Elif(signed & (a1.e >= Const(mz-1, espec))):
             with m.If(a1.s): # negative FP, so negative overrun
                 m.d.comb += self.o.z.eq(-(1<<(mz-1)))
             with m.Else(): # positive FP, so positive overrun
                 m.d.comb += self.o.z.eq((1<<(mz-1))-1)
 
         # unsigned, exp too big
-        with m.Elif((~signed) & (a1.e > Const(mz, espec))):
+        with m.Elif((~signed) & (a1.e >= Const(mz, espec))):
             with m.If(a1.s): # negative FP, so negative overrun (zero)
                 m.d.comb += self.o.z.eq(0)
             with m.Else(): # positive FP, so positive overrun (max INT)
