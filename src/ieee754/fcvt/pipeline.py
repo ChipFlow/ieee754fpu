@@ -150,6 +150,7 @@ class FPCVTFloatToIntMod(Elaboratable):
             m.d.comb += of.sticky.eq(msr.m_out[0])
             m.d.comb += of.m0.eq(msr.m_out[3])
 
+            # XXX TODO: check if this overflows the mantissa
             with m.If(of.roundz):
                 m.d.comb += self.o.z.eq(msr.m_out[3:]+1)
             with m.Else():
