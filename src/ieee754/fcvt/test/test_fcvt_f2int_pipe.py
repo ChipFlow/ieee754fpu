@@ -37,6 +37,18 @@ def fcvt_f16_ui32(x):
 def fcvt_f16_ui16(x):
     return sfpy.float.f16_to_ui32(x) & 0xffff
 
+def fcvt_f16_i16(x):
+    x = sfpy.float.f16_to_i32(x)
+    if x >= 0x7fff:
+        return 0x7fff
+    if x <= -0x8000:
+        return 0x8000
+    return x & 0xffff
+
+def fcvt_f32_i32(x):
+    return sfpy.float.f32_to_i32(x) & 0xffffffff
+
+
 ######################
 # signed int to fp
 ######################
@@ -57,6 +69,16 @@ def test_int_pipe_i32_f32():
     dut = FPCVTIntMuxInOut(32, 32, 4, op_wid=1)
     runfp(dut, 32, "test_fcvt_int_pipe_i32_f32", to_int32, fcvt_i32_f32, True,
           n_vals=100, opcode=0x1)
+
+def test_int_pipe_f32_i32():
+    dut = FPCVTF2IntMuxInOut(32, 32, 4, op_wid=1)
+    runfp(dut, 32, "test_fcvt_f2int_pipe_f32_i32", Float32, fcvt_f32_i32,
+                True, n_vals=100, opcode=0x1)
+
+def test_int_pipe_f16_i16():
+    dut = FPCVTF2IntMuxInOut(16, 16, 4, op_wid=1)
+    runfp(dut, 16, "test_fcvt_f2int_pipe_f16_i16", Float16, fcvt_f16_i16,
+                True, n_vals=100, opcode=0x1)
 
 ######################
 # fp to unsigned int 
@@ -115,6 +137,9 @@ def test_int_pipe_f64_ui64():
 
 if __name__ == '__main__':
     for i in range(200):
+        test_int_pipe_f16_i16()
+        test_int_pipe_f32_i32()
+        continue
         test_int_pipe_f64_ui64()
         test_int_pipe_f32_ui32()
         test_int_pipe_f16_ui16()

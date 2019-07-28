@@ -105,7 +105,10 @@ class FPCVTFloatToIntMod(Elaboratable):
 
         # special cases
         with m.If(a1.is_nan):
-            m.d.comb += self.o.z.eq((1<<mz)-1) # NaN overflow
+            with m.If(signed):
+                m.d.comb += self.o.z.eq((1<<(mz-1))-1) # signed NaN overflow
+            with m.Else():
+                m.d.comb += self.o.z.eq((1<<mz)-1) # NaN overflow
 
         with m.Elif(a1.exp_n127):
             m.d.comb += self.o.z.eq(0)
@@ -141,7 +144,7 @@ class FPCVTFloatToIntMod(Elaboratable):
             m.submodules.norm_exp = msr
             m.d.comb += [msr.m_in.eq(mantissa),
                          msr.e_in.eq(a1.e),
-                         msr.ediff.eq(Mux(signed, mz-1, mz)-a1.e)
+                         msr.ediff.eq(Mux(signed, mz, mz)-a1.e)
                         ]
 
             of = Overflow()
@@ -151,10 +154,16 @@ class FPCVTFloatToIntMod(Elaboratable):
             m.d.comb += of.m0.eq(msr.m_out[3])
 
             # XXX TODO: check if this overflows the mantissa
+            mround = Signal(mlen, reset_less=True)
             with m.If(of.roundz):
-                m.d.comb += self.o.z.eq(msr.m_out[3:]+1)
+                m.d.comb += mround.eq(msr.m_out[3:]+1)
             with m.Else():
-                m.d.comb += self.o.z.eq(msr.m_out[3:])
+                m.d.comb += mround.eq(msr.m_out[3:])
+
+            with m.If(signed & a1.s):
+                m.d.comb += self.o.z.eq(-mround)
+            with m.Else():
+                m.d.comb += self.o.z.eq(mround)
 
         # copy the context (muxid, operator)
         #m.d.comb += self.o.oz.eq(self.o.z.v)

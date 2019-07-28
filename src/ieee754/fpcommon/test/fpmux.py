@@ -193,6 +193,12 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0xfcb6
                 #op1 = 0x4f8d77b3
 
+                # f2int signed
+                #op1 = 0xc913
+                #op1 = 0x7b97
+                #op1 = 0xaae2
+                #op1 = 0x7fca
+
                 # FCLASS
                 #op1 = 0x87d1
                 #op1 = 0x75e
