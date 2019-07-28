@@ -73,16 +73,15 @@ class FPCVTFloatToIntMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
-        #m.submodules.sc_out_z = self.o.z
-
-        # decode: XXX really should move to separate stage
+        # set up FP Num decoder
         print("in_width out", self.in_pspec.width,
               self.out_pspec.width)
         a1 = FPNumBaseRecord(self.in_pspec.width, False)
         print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.d.comb += a1.v.eq(self.i.a)
+        comb += a1.v.eq(self.i.a)
         z1 = self.o.z
         mz = len(z1)
         print("z1", mz)
@@ -92,84 +91,77 @@ class FPCVTFloatToIntMod(Elaboratable):
         print("ms-me", ms, me)
 
         espec = (a1.e_width, True)
-        ediff_intwid = Signal(espec, reset_less=True)
-
-        # conversion can mostly be done manually...
-        #m.d.comb += self.o.z.s.eq(a1.s)
-        #m.d.comb += self.o.z.e.eq(a1.e)
-        #m.d.comb += self.o.z.m[ms:].eq(a1.m)
-        #m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
 
         signed = Signal(reset_less=True)
-        m.d.comb += signed.eq(self.i.ctx.op[0])
+        comb += signed.eq(self.i.ctx.op[0])
 
         # special cases
         with m.If(a1.is_nan):
             with m.If(signed):
-                m.d.comb += self.o.z.eq((1<<(mz-1))-1) # signed NaN overflow
+                comb += self.o.z.eq((1<<(mz-1))-1) # signed NaN overflow
             with m.Else():
-                m.d.comb += self.o.z.eq((1<<mz)-1) # NaN overflow
+                comb += self.o.z.eq((1<<mz)-1) # NaN overflow
 
         # zero exponent: definitely out of range of INT.  zero...
         with m.Elif(a1.exp_n127):
-            m.d.comb += self.o.z.eq(0)
+            comb += self.o.z.eq(0)
 
         # unsigned, -ve, return 0
         with m.Elif((~signed) & a1.s):
-            m.d.comb += self.o.z.eq(0)
+            comb += self.o.z.eq(0)
 
         # signed, exp too big
         with m.Elif(signed & (a1.e >= Const(mz-1, espec))):
             with m.If(a1.s): # negative FP, so negative overrun
-                m.d.comb += self.o.z.eq(-(1<<(mz-1)))
+                comb += self.o.z.eq(-(1<<(mz-1)))
             with m.Else(): # positive FP, so positive overrun
-                m.d.comb += self.o.z.eq((1<<(mz-1))-1)
+                comb += self.o.z.eq((1<<(mz-1))-1)
 
         # unsigned, exp too big
         with m.Elif((~signed) & (a1.e >= Const(mz, espec))):
             with m.If(a1.s): # negative FP, so negative overrun (zero)
-                m.d.comb += self.o.z.eq(0)
+                comb += self.o.z.eq(0)
             with m.Else(): # positive FP, so positive overrun (max INT)
-                m.d.comb += self.o.z.eq((1<<(mz))-1)
+                comb += self.o.z.eq((1<<(mz))-1)
 
         # ok exp should be in range: shift and round it
         with m.Else():
             mlen = max(a1.m_width, mz) + 5
             mantissa = Signal(mlen, reset_less=True)
             l = [0] * 2 + [a1.m[:-1]] + [1]
-            m.d.comb += mantissa[-a1.m_width-3:].eq(Cat(*l))
-            m.d.comb += self.o.z.eq(mantissa)
+            comb += mantissa[-a1.m_width-3:].eq(Cat(*l))
+            comb += self.o.z.eq(mantissa)
 
             # shift
             msr = FPEXPHigh(mlen, espec[0])
             m.submodules.norm_exp = msr
-            m.d.comb += [msr.m_in.eq(mantissa),
+            comb += [msr.m_in.eq(mantissa),
                          msr.e_in.eq(a1.e),
                          msr.ediff.eq(Mux(signed, mz, mz)-a1.e)
                         ]
 
             of = Overflow()
-            m.d.comb += of.guard.eq(msr.m_out[2])
-            m.d.comb += of.round_bit.eq(msr.m_out[1])
-            m.d.comb += of.sticky.eq(msr.m_out[0])
-            m.d.comb += of.m0.eq(msr.m_out[3])
+            comb += of.guard.eq(msr.m_out[2])
+            comb += of.round_bit.eq(msr.m_out[1])
+            comb += of.sticky.eq(msr.m_out[0])
+            comb += of.m0.eq(msr.m_out[3])
 
             # XXX TODO: check if this overflows the mantissa
             mround = Signal(mlen, reset_less=True)
             with m.If(of.roundz):
-                m.d.comb += mround.eq(msr.m_out[3:]+1)
+                comb += mround.eq(msr.m_out[3:]+1)
             with m.Else():
-                m.d.comb += mround.eq(msr.m_out[3:])
+                comb += mround.eq(msr.m_out[3:])
 
             # check sign
             with m.If(signed & a1.s):
-                m.d.comb += self.o.z.eq(-mround) # inverted
+                comb += self.o.z.eq(-mround) # inverted
             with m.Else():
-                m.d.comb += self.o.z.eq(mround)
+                comb += self.o.z.eq(mround)
 
         # copy the context (muxid, operator)
-        #m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        #comb += self.o.oz.eq(self.o.z.v)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
@@ -196,7 +188,7 @@ class FPCVTIntToFloatMod(Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.intconvert = self
-        m.d.comb += self.i.eq(i)
+        comb += self.i.eq(i)
 
     def process(self, i):
         return self.o
@@ -224,7 +216,7 @@ class FPCVTIntToFloatMod(Elaboratable):
 
         # signed or unsigned, use operator context
         signed = Signal(reset_less=True)
-        m.d.comb += signed.eq(self.i.ctx.op[0])
+        comb += signed.eq(self.i.ctx.op[0])
 
         # copy of mantissa (one less bit if signed)
         mantissa = Signal(me, reset_less=True)
@@ -232,35 +224,35 @@ class FPCVTIntToFloatMod(Elaboratable):
         # detect signed/unsigned.  key case: -ve numbers need inversion
         # to +ve because the FP sign says if it's -ve or not.
         with m.If(signed):
-            m.d.comb += z1.s.eq(self.i.a[-1])      # sign in top bit of a
+            comb += z1.s.eq(self.i.a[-1])      # sign in top bit of a
             with m.If(z1.s):
-                m.d.comb += mantissa.eq(-self.i.a) # invert input if sign -ve
+                comb += mantissa.eq(-self.i.a) # invert input if sign -ve
             with m.Else():
-                m.d.comb += mantissa.eq(self.i.a)  # leave as-is
+                comb += mantissa.eq(self.i.a)  # leave as-is
         with m.Else():
-            m.d.comb += mantissa.eq(self.i.a)      # unsigned, use full a
-            m.d.comb += z1.s.eq(0)
+            comb += mantissa.eq(self.i.a)      # unsigned, use full a
+            comb += z1.s.eq(0)
 
         # set input from full INT
-        m.d.comb += msb.m_in.eq(Cat(0, 0, 0, mantissa)) # g/r/s + input
-        m.d.comb += msb.e_in.eq(me)                     # exp = int width
+        comb += msb.m_in.eq(Cat(0, 0, 0, mantissa)) # g/r/s + input
+        comb += msb.e_in.eq(me)                     # exp = int width
 
         # to do with FP16... not yet resolved why
         alternative = ms < 0
 
         if alternative:
-            m.d.comb += z1.e.eq(msb.e_out-1)
+            comb += z1.e.eq(msb.e_out-1)
             mmsb = msb.m_out[-mz-1:]
             if mz == 16:
                 # larger int to smaller FP (uint32/64 -> fp16 most likely)
-                m.d.comb += z1.m[ms-1:].eq(mmsb)
+                comb += z1.m[ms-1:].eq(mmsb)
             else: # 32? XXX weirdness...
-                m.d.comb += z1.m.eq(mmsb)
+                comb += z1.m.eq(mmsb)
         else:
             # smaller int to larger FP
-            m.d.comb += z1.e.eq(msb.e_out)
-            m.d.comb += z1.m[ms:].eq(msb.m_out[3:])
-        m.d.comb += z1.create(z1.s, z1.e, z1.m) # ... here
+            comb += z1.e.eq(msb.e_out)
+            comb += z1.m[ms:].eq(msb.m_out[3:])
+        comb += z1.create(z1.s, z1.e, z1.m) # ... here
 
         # note: post-normalisation actually appears to be capable of
         # detecting overflow to infinity (FPPackMod).  so it's ok to
@@ -275,29 +267,29 @@ class FPCVTIntToFloatMod(Elaboratable):
         # initialise rounding (but only activate if needed)
         if alternative:
             # larger int to smaller FP (uint32/64 -> fp16 most likely)
-            m.d.comb += self.o.of.guard.eq(msb.m_out[-mz-2])
-            m.d.comb += self.o.of.round_bit.eq(msb.m_out[-mz-3])
-            m.d.comb += self.o.of.sticky.eq(msb.m_out[:-mz-3].bool())
-            m.d.comb += self.o.of.m0.eq(msb.m_out[-mz-1])
+            comb += self.o.of.guard.eq(msb.m_out[-mz-2])
+            comb += self.o.of.round_bit.eq(msb.m_out[-mz-3])
+            comb += self.o.of.sticky.eq(msb.m_out[:-mz-3].bool())
+            comb += self.o.of.m0.eq(msb.m_out[-mz-1])
         else:
             # smaller int to larger FP
-            m.d.comb += self.o.of.guard.eq(msb.m_out[2])
-            m.d.comb += self.o.of.round_bit.eq(msb.m_out[1])
-            m.d.comb += self.o.of.sticky.eq(msb.m_out[:1].bool())
-            m.d.comb += self.o.of.m0.eq(msb.m_out[3])
+            comb += self.o.of.guard.eq(msb.m_out[2])
+            comb += self.o.of.round_bit.eq(msb.m_out[1])
+            comb += self.o.of.sticky.eq(msb.m_out[:1].bool())
+            comb += self.o.of.m0.eq(msb.m_out[3])
 
         # special cases active by default
-        m.d.comb += self.o.out_do_z.eq(1)
+        comb += self.o.out_do_z.eq(1)
 
         # detect zero
         with m.If(~self.i.a.bool()):
-            m.d.comb += self.o.z.zero(0)
+            comb += self.o.z.zero(0)
         with m.Else():
-            m.d.comb += self.o.out_do_z.eq(0) # activate normalisation
+            comb += self.o.out_do_z.eq(0) # activate normalisation
 
         # copy the context (muxid, operator)
-        m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.o.z.v)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
@@ -321,7 +313,7 @@ class FPCVTUpConvertMod(Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.upconvert = self
-        m.d.comb += self.i.eq(i)
+        comb += self.i.eq(i)
 
     def process(self, i):
         return self.o
@@ -337,7 +329,7 @@ class FPCVTUpConvertMod(Elaboratable):
         a1 = FPNumBaseRecord(self.in_pspec.width, False)
         print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.d.comb += a1.v.eq(self.i.a)
+        comb += a1.v.eq(self.i.a)
         z1 = self.o.z
         print("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
@@ -346,38 +338,38 @@ class FPCVTUpConvertMod(Elaboratable):
         print("ms-me", ms, me, self.o.z.rmw, a1.rmw)
 
         # conversion can mostly be done manually...
-        m.d.comb += self.o.z.s.eq(a1.s)
-        m.d.comb += self.o.z.e.eq(a1.e)
-        m.d.comb += self.o.z.m[ms:].eq(a1.m)
-        m.d.comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
+        comb += self.o.z.s.eq(a1.s)
+        comb += self.o.z.e.eq(a1.e)
+        comb += self.o.z.m[ms:].eq(a1.m)
+        comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
 
         # initialise rounding to all zeros (deactivate)
-        m.d.comb += self.o.of.guard.eq(0)
-        m.d.comb += self.o.of.round_bit.eq(0)
-        m.d.comb += self.o.of.sticky.eq(0)
-        m.d.comb += self.o.of.m0.eq(a1.m[0])
+        comb += self.o.of.guard.eq(0)
+        comb += self.o.of.round_bit.eq(0)
+        comb += self.o.of.sticky.eq(0)
+        comb += self.o.of.m0.eq(a1.m[0])
 
         # most special cases active (except tiny-number normalisation, below)
-        m.d.comb += self.o.out_do_z.eq(1)
+        comb += self.o.out_do_z.eq(1)
 
         # detect NaN/Inf first
         with m.If(a1.exp_128):
             with m.If(~a1.m_zero):
-                m.d.comb += self.o.z.nan(0) # RISC-V wants normalised NaN
+                comb += self.o.z.nan(0) # RISC-V wants normalised NaN
             with m.Else():
-                m.d.comb += self.o.z.inf(a1.s) # RISC-V wants signed INF
+                comb += self.o.z.inf(a1.s) # RISC-V wants signed INF
         with m.Else():
             with m.If(a1.exp_n127):
                 with m.If(~a1.m_zero):
-                    m.d.comb += self.o.z.m[ms:].eq(Cat(0, a1.m))
-                    m.d.comb += self.o.out_do_z.eq(0) # activate normalisation
+                    comb += self.o.z.m[ms:].eq(Cat(0, a1.m))
+                    comb += self.o.out_do_z.eq(0) # activate normalisation
                 with m.Else():
                     # RISC-V zero needs actual zero
-                    m.d.comb += self.o.z.zero(a1.s)
+                    comb += self.o.z.zero(a1.s)
 
         # copy the context (muxid, operator)
-        m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.o.z.v)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
@@ -401,7 +393,7 @@ class FPCVTDownConvertMod(Elaboratable):
         """ links module to inputs and outputs
         """
         m.submodules.downconvert = self
-        m.d.comb += self.i.eq(i)
+        comb += self.i.eq(i)
 
     def process(self, i):
         return self.o
@@ -417,7 +409,7 @@ class FPCVTDownConvertMod(Elaboratable):
         a1 = FPNumBaseRecord(self.in_pspec.width, False)
         print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.d.comb += a1.v.eq(self.i.a)
+        comb += a1.v.eq(self.i.a)
         z1 = self.o.z
         print("z1", z1.width, z1.rmw, z1.e_width, z1.e_start, z1.e_end)
 
@@ -431,66 +423,66 @@ class FPCVTDownConvertMod(Elaboratable):
         # constants from z1, at the bit-width of a1.
         N126 = Const(z1.fp.N126.value, (a1.e_width, True))
         P127 = Const(z1.fp.P127.value, (a1.e_width, True))
-        m.d.comb += exp_sub_n126.eq(a1.e - N126)
-        m.d.comb += exp_gt127.eq(a1.e > P127)
+        comb += exp_sub_n126.eq(a1.e - N126)
+        comb += exp_gt127.eq(a1.e > P127)
 
         # if a zero, return zero (signed)
         with m.If(a1.exp_n127):
-            m.d.comb += self.o.z.zero(a1.s)
-            m.d.comb += self.o.out_do_z.eq(1)
+            comb += self.o.z.zero(a1.s)
+            comb += self.o.out_do_z.eq(1)
 
         # if a range outside z's min range (-126)
         with m.Elif(exp_sub_n126 < 0):
-            m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
-            m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
-            m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            m.d.comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
+            comb += self.o.of.guard.eq(a1.m[ms-1])
+            comb += self.o.of.round_bit.eq(a1.m[ms-2])
+            comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
+            comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
 
-            m.d.comb += self.o.z.s.eq(a1.s)
-            m.d.comb += self.o.z.e.eq(a1.e)
-            m.d.comb += self.o.z.m.eq(a1.m[-self.o.z.rmw-1:])
-            m.d.comb += self.o.z.m[-1].eq(1)
+            comb += self.o.z.s.eq(a1.s)
+            comb += self.o.z.e.eq(a1.e)
+            comb += self.o.z.m.eq(a1.m[-self.o.z.rmw-1:])
+            comb += self.o.z.m[-1].eq(1)
 
         # if a is inf return inf
         with m.Elif(a1.is_inf):
-            m.d.comb += self.o.z.inf(a1.s)
-            m.d.comb += self.o.out_do_z.eq(1)
+            comb += self.o.z.inf(a1.s)
+            comb += self.o.out_do_z.eq(1)
 
         # if a is NaN return NaN
         with m.Elif(a1.is_nan):
-            m.d.comb += self.o.z.nan(0)
-            m.d.comb += self.o.out_do_z.eq(1)
+            comb += self.o.z.nan(0)
+            comb += self.o.out_do_z.eq(1)
 
         # if a mantissa greater than 127, return inf
         with m.Elif(exp_gt127):
             print("inf", self.o.z.inf(a1.s))
-            m.d.comb += self.o.z.inf(a1.s)
-            m.d.comb += self.o.out_do_z.eq(1)
+            comb += self.o.z.inf(a1.s)
+            comb += self.o.out_do_z.eq(1)
 
         # ok after all that, anything else should fit fine (whew)
         with m.Else():
-            m.d.comb += self.o.of.guard.eq(a1.m[ms-1])
-            m.d.comb += self.o.of.round_bit.eq(a1.m[ms-2])
-            m.d.comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            m.d.comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
+            comb += self.o.of.guard.eq(a1.m[ms-1])
+            comb += self.o.of.round_bit.eq(a1.m[ms-2])
+            comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
+            comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
 
             # XXX TODO: this is basically duplicating FPRoundMod. hmmm...
             print("alen", a1.e_start, z1.fp.N126, N126)
             print("m1", self.o.z.rmw, a1.m[-self.o.z.rmw-1:])
             mo = Signal(self.o.z.m_width-1)
-            m.d.comb += mo.eq(a1.m[ms:me])
+            comb += mo.eq(a1.m[ms:me])
             with m.If(self.o.of.roundz):
                 with m.If((~mo == 0)):  # all 1s
-                    m.d.comb += self.o.z.create(a1.s, a1.e+1, mo+1)
+                    comb += self.o.z.create(a1.s, a1.e+1, mo+1)
                 with m.Else():
-                    m.d.comb += self.o.z.create(a1.s, a1.e, mo+1)
+                    comb += self.o.z.create(a1.s, a1.e, mo+1)
             with m.Else():
-                m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
-            m.d.comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
+            comb += self.o.out_do_z.eq(1)
 
         # copy the context (muxid, operator)
-        m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.o.z.v)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
