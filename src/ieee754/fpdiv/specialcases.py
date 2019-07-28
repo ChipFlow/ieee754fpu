@@ -1,4 +1,4 @@
-# IEEE Floating Point Multiplier 
+# IEEE Floating Point Multiplier
 
 from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
@@ -45,15 +45,15 @@ class FPDIVSpecialCasesMod(Elaboratable):
         #m.submodules.sc_out_z = self.o.z
 
         # decode: XXX really should move to separate stage
-        a1 = FPNumBaseRecord(self.pspec.width, False)
-        b1 = FPNumBaseRecord(self.pspec.width, False)
+        a1 = FPNumBaseRecord(self.pspec.width, False, name="a1")
+        b1 = FPNumBaseRecord(self.pspec.width, False, name="b1")
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
         m.d.comb += [a1.v.eq(self.i.a),
                      b1.v.eq(self.i.b),
                      self.o.a.eq(a1),
                      self.o.b.eq(b1)
-                    ]
+                     ]
 
         sabx = Signal(reset_less=True)   # sign a xor b (sabx, get it?)
         m.d.comb += sabx.eq(a1.s ^ b1.s)
@@ -64,7 +64,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
         abinf = Signal(reset_less=True)
         m.d.comb += abinf.eq(a1.is_inf & b1.is_inf)
 
-        with m.If(self.i.ctx.op == 0): # DIV
+        with m.If(self.i.ctx.op == 0):  # DIV
             # if a is NaN or b is NaN return NaN
             with m.If(abnan):
                 m.d.comb += self.o.out_do_z.eq(1)
@@ -102,7 +102,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.Else():
                 m.d.comb += self.o.out_do_z.eq(0)
 
-        with m.If(self.i.ctx.op == 1): # SQRT
+        with m.If(self.i.ctx.op == 1):  # SQRT
 
             # if a is zero return zero
             with m.If(a1.is_zero):
@@ -128,7 +128,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.Else():
                 m.d.comb += self.o.out_do_z.eq(0)
 
-        with m.If(self.i.ctx.op == 2): # RSQRT
+        with m.If(self.i.ctx.op == 2):  # RSQRT
 
             # if a is NaN return canonical NaN
             with m.If(a1.is_nan):
@@ -155,7 +155,6 @@ class FPDIVSpecialCasesMod(Elaboratable):
             with m.Else():
                 m.d.comb += self.o.out_do_z.eq(0)
 
-
         m.d.comb += self.o.oz.eq(self.o.z.v)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
@@ -178,7 +177,7 @@ class FPDIVSpecialCases(FPState):
         """ links module to inputs and outputs
         """
         self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
+        m.d.sync += self.out_z.v.eq(self.mod.out_z.v)  # only take the output
         m.d.sync += self.out_z.mid.eq(self.mod.o.mid)  # (and mid)
 
     def action(self, m):
@@ -196,14 +195,14 @@ class FPDIVSpecialCasesDeNorm(FPState, SimpleHandshake):
     def __init__(self, pspec):
         FPState.__init__(self, "special_cases")
         self.pspec = pspec
-        SimpleHandshake.__init__(self, self) # pipe is its own stage
+        SimpleHandshake.__init__(self, self)  # pipe is its own stage
         self.out = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.pspec) # SpecialCases ispec
+        return FPADDBaseData(self.pspec)  # SpecialCases ispec
 
     def ospec(self):
-        return FPSCData(self.pspec, False) # Align ospec
+        return FPSCData(self.pspec, False)  # Align ospec
 
     def setup(self, m, i):
         """ links module to inputs and outputs
@@ -230,5 +229,3 @@ class FPDIVSpecialCasesDeNorm(FPState, SimpleHandshake):
         #with m.Else():
             m.d.sync += self.out.eq(self.process(None))
             m.next = "align"
-
-
