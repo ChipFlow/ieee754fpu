@@ -25,3 +25,6 @@ class PipelineSpec:
         self.id_wid = id_width
         self.op_wid = op_wid
         self.opkls = opkls
+        self.core_config = None
+        self.fpformat = None
+        self.n_comb_stages = None
