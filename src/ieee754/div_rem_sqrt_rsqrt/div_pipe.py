@@ -10,7 +10,7 @@ from ieee754.div_rem_sqrt_rsqrt.core import (DivPipeCoreConfig,
                                              DivPipeCoreSetupStage,
                                              DivPipeCoreCalculateStage,
                                              DivPipeCoreFinalStage,
-                                            )
+                                             )
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.fpbase import FPFormat, FPNumBaseRecord
 
@@ -34,7 +34,8 @@ class DivPipeBaseData:
         """ Create a ``DivPipeBaseData`` instance. """
         self.pspec = pspec
         width = pspec.width
-        self.z = FPNumBaseRecord(width, False) # s and e carried: m ignored
+        # s and e carried: m ignored
+        self.z = FPNumBaseRecord(width, False, name="z")
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
 
@@ -124,6 +125,7 @@ class DivPipeBaseStage:
 
 
 class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
+    """ FIXME: add docs. """
 
     def __init__(self, pspec):
         self.pspec = pspec
@@ -146,10 +148,11 @@ class DivPipeSetupStage(DivPipeBaseStage, DivPipeCoreSetupStage):
 
 
 class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
+    """ FIXME: add docs. """
 
-    def __init__(self, pspec, stage_index):
+    def __init__(self, pspec, stage_idx):
         self.pspec = pspec
-        DivPipeCoreCalculateStage.__init__(self, pspec.core_config, stage_index)
+        DivPipeCoreCalculateStage.__init__(self, pspec.core_config, stage_idx)
 
     def ispec(self):
         """ Get the input spec for this pipeline stage."""
@@ -167,6 +170,7 @@ class DivPipeCalculateStage(DivPipeBaseStage, DivPipeCoreCalculateStage):
 
 
 class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
+    """ FIXME: add docs. """
 
     def __init__(self, pspec):
         self.pspec = pspec
@@ -185,4 +189,3 @@ class DivPipeFinalStage(DivPipeBaseStage, DivPipeCoreFinalStage):
         m = DivPipeCoreFinalStage.elaborate(self, platform)
         self._elaborate(m, platform)
         return m
-
