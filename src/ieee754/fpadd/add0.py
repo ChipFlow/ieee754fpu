@@ -51,44 +51,43 @@ class FPAddStage0Mod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        #m.submodules.add0_in_a = self.i.a
-        #m.submodules.add0_in_b = self.i.b
-        #m.submodules.add0_out_z = self.o.z
+        comb = m.d.comb
 
         # store intermediate tests (and zero-extended mantissas)
         seq = Signal(reset_less=True)
         mge = Signal(reset_less=True)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        m.d.comb += [seq.eq(self.i.a.s == self.i.b.s),
+        comb += [seq.eq(self.i.a.s == self.i.b.s),
                      mge.eq(self.i.a.m >= self.i.b.m),
                      am0.eq(Cat(self.i.a.m, 0)),
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]
         # same-sign (both negative or both positive) add mantissas
         with m.If(~self.i.out_do_z):
-            m.d.comb += self.o.z.e.eq(self.i.a.e)
+            comb += self.o.z.e.eq(self.i.a.e)
             with m.If(seq):
-                m.d.comb += [
+                comb += [
                     self.o.tot.eq(am0 + bm0),
                     self.o.z.s.eq(self.i.a.s)
                 ]
             # a mantissa greater than b, use a
             with m.Elif(mge):
-                m.d.comb += [
+                comb += [
                     self.o.tot.eq(am0 - bm0),
                     self.o.z.s.eq(self.i.a.s)
                 ]
             # b mantissa greater than a, use b
             with m.Else():
-                m.d.comb += [
+                comb += [
                     self.o.tot.eq(bm0 - am0),
                     self.o.z.s.eq(self.i.b.s)
             ]
 
-        m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        # pass-through context
+        comb += self.o.oz.eq(self.i.oz)
+        comb += self.o.out_do_z.eq(self.i.out_do_z)
+        comb += self.o.ctx.eq(self.i.ctx)
         return m
 
 
