@@ -5,6 +5,7 @@
 __pycache__
 *.v
 *.il
+*.il.*
 .eggs
 *.egg-info
 *.gtkw
