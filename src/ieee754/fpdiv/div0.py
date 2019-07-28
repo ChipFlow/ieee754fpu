@@ -3,7 +3,7 @@
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
 
-from nmigen import Module, Signal, Cat, Elaboratable, Const
+from nmigen import Module, Signal, Cat, Elaboratable, Const, Mux
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
@@ -11,6 +11,7 @@ from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
+from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 
 
 class FPDivStage0Mod(Elaboratable):
@@ -50,84 +51,75 @@ class FPDivStage0Mod(Elaboratable):
         # it is PURELY the *ENTRY* point into the chain, performing
         # "preparation" work.
 
+        # mantissas start in the range [1.0, 2.0)
+
+        is_div = Signal(reset_less=True)
+        need_exp_adj = Signal(reset_less=True)
+
+        # ``self.i.a.rmw`` fractional bits and 2 integer bits
+        adj_a_m_fract_width = self.i.a.rmw
+        adj_a_m = Signal(self.i.a.rmw + 2, reset_less=True)
+
+        adj_a_e = Signal((len(self.i.a.e), True), reset_less=True)
+
+        m.d.comb += [is_div.eq(self.i.ctx.op == int(DPCOp.UDivRem)),
+                     need_exp_adj.eq(~is_div & self.i.a.e[0]),
+                     adj_a_m.eq(self.i.a.m << need_exp_adj),
+                     adj_a_e.eq(self.i.a.e - need_exp_adj)]
+
+        # adj_a_m now in the range [1.0, 4.0) for sqrt/rsqrt
+        # and [1.0, 2.0) for div
+
+        dividend_fract_width = self.pspec.core_config.fract_width * 2
+        dividend = Signal(len(self.o.dividend),
+                          reset_less=True)
+
+        divr_rad_fract_width = self.pspec.core_config.fract_width
+        divr_rad = Signal(len(self.o.divisor_radicand),
+                          reset_less=True)
+
+        a_m_fract_width = self.i.a.rmw
+        b_m_fract_width = self.i.b.rmw
+
+        m.d.comb += [
+            dividend.eq(self.i.a.m << (
+                dividend_fract_width - a_m_fract_width)),
+            divr_rad.eq(Mux(is_div,
+                            self.i.b.m << (
+                                divr_rad_fract_width - b_m_fract_width),
+                            adj_a_m << (
+                                divr_rad_fract_width - adj_a_m_fract_width))),
+        ]
+
+        m.d.comb += [
+            self.o.dividend.eq(dividend),
+            self.o.divisor_radicand.eq(divr_rad),
+        ]
+
+        # set default since it's not always set; non-zero value for debugging
+        m.d.comb += self.o.operation.eq(1)
+
         with m.If(~self.i.out_do_z):
-            # do conversion here, of both self.i.a and self.i.b,
-            # into DivPipeInputData dividend and divisor.
-
-            # XXX *sigh* magic constants...
-            if self.pspec.width == 16:
-                if self.pspec.log2_radix == 1:
-                    extra = 2
-                elif self.pspec.log2_radix == 3:
-                    extra = 2
-                else:
-                    extra = 3
-            elif self.pspec.width == 32:
-                if self.pspec.log2_radix == 1:
-                    extra = 3
-                else:
-                    extra = 4
-            elif self.pspec.width == 64:
-                if self.pspec.log2_radix == 1:
-                    extra = 2
-                elif self.pspec.log2_radix == 3:
-                    extra = 2
-                else:
-                    extra = 3
-
-            # the mantissas, having been de-normalised (and containing
-            # a "1" in the MSB) represent numbers in the range 0.5 to
-            # 0.9999999-recurring.  the min and max range of the
-            # result is therefore 0.4999999 (0.5/0.99999) and 1.9999998
-            # (0.99999/0.5).
-
             # DIV
-            with m.If(self.i.ctx.op == 0):
-                am0 = Signal(len(self.i.a.m)+1, reset_less=True)
-                bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-                m.d.comb += [
-                             am0.eq(Cat(self.i.a.m, 0)),
-                             bm0.eq(Cat(self.i.b.m, 0)),
-                            ]
-
-                # zero-extend the mantissas (room for sticky/round/guard)
-                # plus the extra MSB.
-                m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e + 1),
+            with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
+                m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
                              self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                             self.o.dividend[len(self.i.a.m)+extra:].eq(am0),
-                             self.o.divisor_radicand.eq(bm0),
-                             self.o.operation.eq(Const(0)) # XXX DIV operation
-                    ]
+                             self.o.operation.eq(int(DPCOp.UDivRem))
+                             ]
 
             # SQRT
-            with m.Elif(self.i.ctx.op == 1):
-                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
-                with m.If(self.i.a.e[0]):
-                    m.d.comb += am0.eq(Cat(self.i.a.m, 0)<<(extra-2))
-                    m.d.comb += self.o.z.e.eq(((self.i.a.e+1) >> 1)+1)
-                with m.Else():
-                    m.d.comb += am0.eq(Cat(0, self.i.a.m)<<(extra-2))
-                    m.d.comb += self.o.z.e.eq((self.i.a.e >> 1)+1)
-
-                m.d.comb += [self.o.z.s.eq(self.i.a.s),
-                             self.o.divisor_radicand.eq(am0),
-                             self.o.operation.eq(Const(1)) # XXX SQRT operation
-                    ]
+            with m.Elif(self.i.ctx.op == int(DPCOp.SqrtRem)):
+                m.d.comb += [self.o.z.e.eq(adj_a_e >> 1),
+                             self.o.z.s.eq(self.i.a.s),
+                             self.o.operation.eq(int(DPCOp.SqrtRem))
+                             ]
 
             # RSQRT
-            with m.Elif(self.i.ctx.op == 2):
-                am0 = Signal(len(self.i.a.m)+3, reset_less=True)
-                with m.If(self.i.a.e[0]):
-                    m.d.comb += am0.eq(Cat(self.i.a.m, 0)<<(extra-3))
-                    m.d.comb += self.o.z.e.eq(-((self.i.a.e+1) >> 1)+4)
-                with m.Else():
-                    m.d.comb += am0.eq(Cat(self.i.a.m)<<(extra-2))
-                    m.d.comb += self.o.z.e.eq(-(self.i.a.e >> 1)+4)
-
-                m.d.comb += [self.o.z.s.eq(self.i.a.s),
-                             self.o.divisor_radicand.eq(am0),
-                             self.o.operation.eq(Const(2)) # XXX RSQRT operation
-                    ]
+            with m.Elif(self.i.ctx.op == int(DPCOp.RSqrtRem)):
+                m.d.comb += [self.o.z.e.eq(-(adj_a_e >> 1)),
+                             self.o.z.s.eq(self.i.a.s),
+                             self.o.operation.eq(int(DPCOp.RSqrtRem))
+                             ]
 
         # these are required and must not be touched
         m.d.comb += self.o.oz.eq(self.i.oz)

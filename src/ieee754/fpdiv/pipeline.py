@@ -88,7 +88,7 @@ class FPDIVBasePipe(ControlBase):
         # get number of stages, set up loop.
         n_stages = pspec.core_config.n_stages
         max_n_comb_stages = self.pspec.n_comb_stages
-        print ("n_stages", n_stages)
+        print("n_stages", n_stages)
         stage_idx = 0
 
         end = False
@@ -98,22 +98,22 @@ class FPDIVBasePipe(ControlBase):
             # needs to convert input from pipestart ospec
             if stage_idx == 0:
                 n_comb_stages -= 1
-                kls = FPDivStagesSetup # does n_comb_stages-1 calcs as well
+                kls = FPDivStagesSetup  # does n_comb_stages-1 calcs as well
 
             # needs to convert output to pipeend ispec
             elif stage_idx + n_comb_stages >= n_stages:
-                kls = FPDivStagesFinal # does n_comb_stages-1 calcs as well
+                kls = FPDivStagesFinal  # does n_comb_stages-1 calcs as well
                 end = True
                 n_comb_stages = n_stages - stage_idx
 
             # intermediary stage
             else:
-                kls = FPDivStagesIntermediate # does n_comb_stages calcs
+                kls = FPDivStagesIntermediate  # does n_comb_stages calcs
 
             # create (in each pipe) a StageChain n_comb_stages in length
             pipechain.append(kls(self.pspec, n_comb_stages, stage_idx))
-            stage_idx += n_comb_stages # increment so that each CalcStage
-                                       # gets a (correct) unique index
+            stage_idx += n_comb_stages  # increment so that each CalcStage
+            # gets a (correct) unique index
 
         self.pipechain = pipechain
 
@@ -136,6 +136,7 @@ class FPDIVBasePipe(ControlBase):
         m.d.comb += self._eqs
 
         return m
+
 
 def roundup(x, mod):
     return x if x % mod == 0 else x + mod - x % mod
@@ -160,24 +161,22 @@ class FPDIVMuxInOut(ReservationStations):
         # get the standard mantissa width, store in the pspec HOWEVER...
         fmt = FPFormat.standard(width)
         log2_radix = 3     # tested options so far: 1, 2 and 3.
-        n_comb_stages = 3  # TODO (depends on how many RS's we want)
 
-        # ...5 extra bits on the mantissa: MSB is zero, MSB-1 is 1
-        # then there is guard, round and sticky at the LSB end.
-        # also: round up to nearest radix
-        if width == 16:
-            extra = 5
-        elif width == 32:
-            extra = 6
-        elif width == 64:
-            extra = 5
-        fmt.m_width = roundup(fmt.m_width + extra, log2_radix)
-        print ("width", fmt.m_width)
+        # TODO (depends on how many RS's we want)
+        #n_comb_stages = width // (2 * log2_radix)  # 2 compute steps per stage
+        n_comb_stages = 2  # FIXME: switch back
 
-        cfg = DivPipeCoreConfig(fmt.m_width, fmt.fraction_width, log2_radix)
+        fraction_width = fmt.fraction_width
+
+        # extra bits needed: guard + round
+        fraction_width += 2
+
+        # rounding width to a multiple of log2_radix is not needed,
+        # DivPipeCoreCalculateStage just internally reduces log2_radix on
+        # the last stage
+        cfg = DivPipeCoreConfig(fmt.width, fraction_width, log2_radix)
 
         self.pspec.fpformat = fmt
-        self.pspec.log2_radix = log2_radix
         self.pspec.n_comb_stages = n_comb_stages
         self.pspec.core_config = cfg
 
