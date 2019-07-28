@@ -78,9 +78,11 @@ class FPAddSpecialCasesMod(Elaboratable):
         bexp128s = Signal(reset_less=True)
         m.d.comb += bexp128s.eq(b1.exp_128 & s_nomatch)
 
+        # default bypass
+        m.d.comb += self.o.out_do_z.eq(1)
+
         # if a is NaN or b is NaN return NaN
         with m.If(abnan):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.nan(0)
 
         # XXX WEIRDNESS for FP16 non-canonical NaN handling
@@ -108,7 +110,6 @@ class FPAddSpecialCasesMod(Elaboratable):
 
         # if a is inf return inf (or NaN)
         with m.Elif(a1.is_inf):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.inf(a1.s)
             # if a is inf and signs don't match return NaN
             with m.If(bexp128s):
@@ -116,27 +117,22 @@ class FPAddSpecialCasesMod(Elaboratable):
 
         # if b is inf return inf
         with m.Elif(b1.is_inf):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.inf(b1.s)
 
         # if a is zero and b zero return signed-a/b
         with m.Elif(abz):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(a1.s & b1.s, b1.e, b1.m[3:-1])
 
         # if a is zero return b
         with m.Elif(a1.is_zero):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(b1.s, b1.e, b1.m[3:-1])
 
         # if b is zero return a
         with m.Elif(b1.is_zero):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.create(a1.s, a1.e, a1.m[3:-1])
 
         # if a equal to -b return zero (+ve zero)
         with m.Elif(aeqmb):
-            m.d.comb += self.o.out_do_z.eq(1)
             m.d.comb += self.o.z.zero(0)
 
         # Denormalised Number checks next, so pass a/b data through
