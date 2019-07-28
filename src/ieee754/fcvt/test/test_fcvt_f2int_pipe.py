@@ -31,6 +31,9 @@ def fcvt_64_to_32(x):
 def fcvt_f16_ui32(x):
     return sfpy.float.f16_to_ui32(x)
 
+def fcvt_f16_ui16(x):
+    return sfpy.float.f16_to_ui32(x) & 0xffff
+
 ######################
 # signed int to fp
 ######################
@@ -60,7 +63,7 @@ def test_int_pipe_f16_ui16():
     # XXX softfloat-3 doesn't have ui16_to_xxx so use ui32 instead.
     # should be fine.
     dut = FPCVTF2IntMuxInOut(16, 16, 4, op_wid=1)
-    runfp(dut, 16, "test_fcvt_f2int_pipe_f16_ui16", Float16, fcvt_f16_ui32,
+    runfp(dut, 16, "test_fcvt_f2int_pipe_f16_ui16", Float16, fcvt_f16_ui16,
                 True, n_vals=100)
 
 def test_int_pipe_ui16_f64():

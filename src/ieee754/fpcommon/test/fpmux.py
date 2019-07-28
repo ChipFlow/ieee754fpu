@@ -191,6 +191,7 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0x4dc0
                 #op1 = 0x3b81
                 #op1 = 0xfcb6
+                #op1 = 0x4f8d77b3
 
                 # FCLASS
                 #op1 = 0x87d1

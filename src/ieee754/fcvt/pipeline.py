@@ -104,7 +104,10 @@ class FPCVTFloatToIntMod(Elaboratable):
         m.d.comb += signed.eq(self.i.ctx.op[0])
 
         # special cases
-        with m.If(a1.exp_n127):
+        with m.If(a1.is_nan):
+            m.d.comb += self.o.z.eq((1<<mz)-1) # NaN overflow
+
+        with m.Elif(a1.exp_n127):
             m.d.comb += self.o.z.eq(0)
 
         # unsigned, -ve, return 0
