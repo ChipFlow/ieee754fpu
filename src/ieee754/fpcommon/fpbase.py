@@ -82,58 +82,67 @@ class FPFormat:
             retval += f", {self.has_sign}"
         return retval + ")"
 
-    def get_sign(self, x):
-        """ returns the sign of its input number, x (assumes number is signed)
+    def get_sign_field(self, x):
+        """ returns the sign bit of its input number, x
+            (assumes FPFormat is set to signed - has_sign=True)
         """
         return x >> (self.e_width + self.m_width)
+
+    def get_exponent_field(self, x):
+        """ returns the raw exponent of its input number, x (no bias subtracted)
+        """
+        x = ((x >> self.m_width) & self.exponent_inf_nan)
+        return x
 
     def get_exponent(self, x):
         """ returns the exponent of its input number, x
         """
-        x = ((x >> self.m_width) & self.exponent_inf_nan)
-        return x - self.exponent_bias
+        return self.get_exponent_field(x) - self.exponent_bias
 
-    def get_mantissa(self, x):
+    def get_mantissa_field(self, x):
         """ returns the mantissa of its input number, x
         """
         return x & self.mantissa_mask
 
     def is_zero(self, x):
-        """ returns true if x is subnormal (exp at minimum
+        """ returns true if x is +/- zero
         """
-        e_sub = self.exponent_denormal_zero - self.exponent_bias
-        return self.get_exponent(x) == e_sub and self.get_mantissa(x) == 0
+        return (self.get_exponent(x) == self.e_sub and
+                self.get_mantissa_field(x) == 0)
 
     def is_subnormal(self, x):
-        """ returns true if x is subnormal (exp at minimum
+        """ returns true if x is subnormal (exp at minimum)
         """
-        e_sub = self.exponent_denormal_zero - self.exponent_bias
-        return self.get_exponent(x) == e_sub and self.get_mantissa(x) != 0
+        return (self.get_exponent(x) == self.e_sub and
+                self.get_mantissa_field(x) != 0)
 
     def is_inf(self, x):
         """ returns true if x is infinite
         """
-        return (self.get_exponent(x) == self.emax and
-                self.get_mantissa(x) == 0)
+        return (self.get_exponent(x) == self.e_max and
+                self.get_mantissa_field(x) == 0)
 
     def is_nan(self, x):
-        """ returns true if x is nan
+        """ returns true if x is a nan (quiet or signalling)
+        """
+        return (self.get_exponent(x) == self.e_max and
+                self.get_mantissa_field(x) != 0)
+
+    def is_quiet_nan(self, x):
+        """ returns true if x is a quiet nan
         """
         highbit = 1<<(self.m_width-1)
-        return (self.get_exponent(x) == self.emax and
-                self.get_mantissa(x) != 0 and
-                self.get_mantissa(x) & highbit != 0)
+        return (self.get_exponent(x) == self.e_max and
+                self.get_mantissa_field(x) != 0 and
+                self.get_mantissa_field(x) & highbit != 0)
 
-    def is_nan_signalling(self, x):
+    def is_nan_signaling(self, x):
         """ returns true if x is a signalling nan
         """
         highbit = 1<<(self.m_width-1)
-        print ("m", self.get_mantissa(x), self.get_mantissa(x) != 0,
-                self.get_mantissa(x) & highbit)
-
-        return ((self.get_exponent(x) == self.emax) and
-                (self.get_mantissa(x) != 0) and
-                (self.get_mantissa(x) & highbit) == 0)
+        return ((self.get_exponent(x) == self.e_max) and
+                (self.get_mantissa_field(x) != 0) and
+                (self.get_mantissa_field(x) & highbit) == 0)
 
     @property
     def width(self):
@@ -142,7 +151,7 @@ class FPFormat:
 
     @property
     def mantissa_mask(self):
-        """ Get the value of the exponent field designating infinity/NaN. """
+        """ Get a mantissa mask based on the mantissa width """
         return (1 << self.m_width) - 1
 
     @property
@@ -151,11 +160,14 @@ class FPFormat:
         return (1 << self.e_width) - 1
 
     @property
-    def emax(self):
+    def e_max(self):
         """ get the maximum exponent (minus bias)
         """
         return self.exponent_inf_nan - self.exponent_bias
 
+    @property
+    def e_sub(self):
+        return self.exponent_denormal_zero - self.exponent_bias
     @property
     def exponent_denormal_zero(self):
         """ Get the value of the exponent field designating denormal/zero. """
@@ -198,16 +210,16 @@ class TestFPFormat(unittest.TestCase):
         self.assertEqual(f64.get_exponent(x), 1)
 
         x = Float64(1.5).bits
-        m = f64.get_mantissa(x)
+        m = f64.get_mantissa_field(x)
         print (hex(x), hex(m))
         self.assertEqual(m, 0x8000000000000)
 
-        s = f64.get_sign(x)
+        s = f64.get_sign_field(x)
         print (hex(x), hex(s))
         self.assertEqual(s, 0)
 
         x = Float64(-1.5).bits
-        s = f64.get_sign(x)
+        s = f64.get_sign_field(x)
         print (hex(x), hex(s))
         self.assertEqual(s, 1)
 
@@ -223,7 +235,7 @@ class TestFPFormat(unittest.TestCase):
         self.assertEqual(f32.get_exponent(x), 1)
 
         x = Float32(1.5).bits
-        m = f32.get_mantissa(x)
+        m = f32.get_mantissa_field(x)
         print (hex(x), hex(m))
         self.assertEqual(m, 0x400000)
 
@@ -231,37 +243,37 @@ class TestFPFormat(unittest.TestCase):
         x = Float32(-1.0).sqrt()
         x = x.bits
         i = f32.is_nan(x)
-        print (hex(x), "nan", f32.get_exponent(x), f32.emax,
-               f32.get_mantissa(x), i)
+        print (hex(x), "nan", f32.get_exponent(x), f32.e_max,
+               f32.get_mantissa_field(x), i)
         self.assertEqual(i, True)
 
         # Inf test
         x = Float32(1e36) * Float32(1e36) * Float32(1e36)
         x = x.bits
         i = f32.is_inf(x)
-        print (hex(x), "inf", f32.get_exponent(x), f32.emax,
-               f32.get_mantissa(x), i)
+        print (hex(x), "inf", f32.get_exponent(x), f32.e_max,
+               f32.get_mantissa_field(x), i)
         self.assertEqual(i, True)
 
         # subnormal
         x = Float32(1e-41)
         x = x.bits
         i = f32.is_subnormal(x)
-        print (hex(x), "sub", f32.get_exponent(x), f32.emax,
-               f32.get_mantissa(x), i)
+        print (hex(x), "sub", f32.get_exponent(x), f32.e_max,
+               f32.get_mantissa_field(x), i)
         self.assertEqual(i, True)
 
         x = Float32(0.0)
         x = x.bits
         i = f32.is_subnormal(x)
-        print (hex(x), "sub", f32.get_exponent(x), f32.emax,
-               f32.get_mantissa(x), i)
+        print (hex(x), "sub", f32.get_exponent(x), f32.e_max,
+               f32.get_mantissa_field(x), i)
         self.assertEqual(i, False)
 
         # zero
         i = f32.is_zero(x)
-        print (hex(x), "zero", f32.get_exponent(x), f32.emax,
-               f32.get_mantissa(x), i)
+        print (hex(x), "zero", f32.get_exponent(x), f32.e_max,
+               f32.get_mantissa_field(x), i)
         self.assertEqual(i, True)
 
 class MultiShiftR:

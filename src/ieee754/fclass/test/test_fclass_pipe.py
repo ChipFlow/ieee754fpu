@@ -9,32 +9,34 @@ import sfpy
 from sfpy import Float64, Float32, Float16
 
 def fclass(wid, x):
+    """ analyses the FP number and returns a RISC-V "FCLASS" unary bitfield
+    """
     x = x.bits
     fmt = FPFormat.standard(wid)
-    print (hex(x), "exp", fmt.get_exponent(x), fmt.emax,
-                    "m", hex(fmt.get_mantissa(x)),
-                    fmt.get_mantissa(x) & (1<<fmt.m_width-1))
+    print (hex(x), "exp", fmt.get_exponent(x), fmt.e_max,
+                    "m", hex(fmt.get_mantissa_field(x)),
+                    fmt.get_mantissa_field(x) & (1<<fmt.m_width-1))
     if fmt.is_inf(x):
-        if fmt.get_sign(x):
+        if fmt.get_sign_field(x):
             return 1<<0
         else:
             return 1<<7
     if fmt.is_zero(x):
-        if fmt.get_sign(x):
+        if fmt.get_sign_field(x):
             return 1<<3
         else:
             return 1<<4
-    if fmt.get_exponent(x) == fmt.emax and fmt.get_mantissa(x) != 0:
-        if fmt.is_nan_signalling(x):
+    if fmt.get_exponent(x) == fmt.e_max and fmt.get_mantissa_field(x) != 0:
+        if fmt.is_nan_signaling(x):
             return 1<<8
         else:
             return 1<<9
-    if fmt.is_subnormal(x) and fmt.get_mantissa(x) != 0:
-        if fmt.get_sign(x):
+    if fmt.is_subnormal(x) and fmt.get_mantissa_field(x) != 0:
+        if fmt.get_sign_field(x):
             return 1<<2
         else:
             return 1<<5
-    if fmt.get_sign(x):
+    if fmt.get_sign_field(x):
         return 1<<1
     else:
         return 1<<6
