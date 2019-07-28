@@ -6,11 +6,12 @@ from nmigen import Signal
 from ieee754.fpcommon.fpbase import Overflow, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPPipeContext
 
+
 class FPAddStage1Data:
 
     def __init__(self, pspec, e_extra=False):
         width = pspec.width
-        self.z = FPNumBaseRecord(width, False, e_extra)
+        self.z = FPNumBaseRecord(width, False, e_extra, name="z")
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
         self.of = Overflow()
