@@ -70,14 +70,14 @@ class MuxInOut:
                     r = res.bits
                 else:
                     r = res
-                print ("send", muxid, i, hex(op1), hex(r),
-                               fop1, res)
+                print("send", muxid, i, hex(op1), hex(r),
+                              fop1, res)
             else:
                 fop1 = self.fpkls(op1)
                 fop2 = self.fpkls(op2)
                 res = self.fpop(fop1, fop2)
-                print ("send", muxid, i, hex(op1), hex(op2), hex(res.bits),
-                               fop1, fop2, res)
+                print("send", muxid, i, hex(op1), hex(op2), hex(res.bits),
+                              fop1, fop2, res)
 
             yield rs.valid_i.eq(0)
             # wait random period of time before queueing another value
@@ -87,7 +87,7 @@ class MuxInOut:
         yield rs.valid_i.eq(0)
         yield
 
-        print ("send ended", muxid)
+        print("send ended", muxid)
 
         ## wait random period of time before queueing another value
         #for i in range(randint(0, 3)):
@@ -119,8 +119,8 @@ class MuxInOut:
 
             out_i = 0
 
-            print ("recv", out_muxid, hex(out_z), "expected",
-                        hex(self.do[muxid][out_i] ))
+            print("recv", out_muxid, hex(out_z), "expected",
+                  hex(self.do[muxid][out_i]))
 
             # see if this output has occurred already, delete it if it has
             assert muxid == out_muxid, "out_muxid %d not correct %d" % \
@@ -131,7 +131,7 @@ class MuxInOut:
             # check if there's any more outputs
             if len(self.do[muxid]) == 0:
                 break
-        print ("recv ended", muxid)
+        print("recv ended", muxid)
 
 
 def create_random(num_rows, width, single_op=False, n_vals=10):
@@ -139,7 +139,7 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
     for muxid in range(num_rows):
         for i in range(n_vals):
             if single_op:
-                op1 = randint(0, (1<<width)-1)
+                op1 = randint(0, (1 << width)-1)
                 #op1 = 0x40900000
                 #op1 = 0x94607b66
                 #op1 = 0x889cd8c
@@ -172,6 +172,11 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0x3449f9a9
                 #op1 = 0x1ba94baa
 
+                #if i % 2:
+                #    op1 = 0x0001
+                #else:
+                #    op1 = 0x3C00
+
                 # FRSQRT
                 #op1 = 0x3686
                 #op1 = 0x4400
@@ -197,8 +202,10 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
 
                 vals.append((op1,))
             else:
-                op1 = randint(0, (1<<width)-1)
-                op2 = randint(0, (1<<width)-1)
+                op1 = randint(0, (1 << width)-1)
+                op2 = randint(0, (1 << width)-1)
+                # op1 = 0x3F800000  # 1.0f32
+                # op2 = 0x40000000  # 2.0f32
 
                 #op2 = 0x4000
                 #op1 = 0x3c50
@@ -231,7 +238,7 @@ def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
         #print ("repeat", i, fn, single_op, list(vals))
         fmt = "test_pipe_fp%d_%s_cornercases_%d"
         runfp(dut, width, fmt % (width, name, i),
-                   fmod, fpfn, vals=vals, single_op=single_op, opcode=opcode)
+              fmod, fpfn, vals=vals, single_op=single_op, opcode=opcode)
 
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
