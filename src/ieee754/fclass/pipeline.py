@@ -1,100 +1,25 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+# IEEE754 FCLASS Module
+# Copyright (C) 2019 Luke Kenneth Casson Leighon <lkcl@lkcl.net>
 
-import sys
-import functools
 
-from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
+from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.pack import FPPackData
-from ieee754.fpcommon.normtopack import FPNormToPack
-from ieee754.fpcommon.postcalc import FPAddStage1Data
-from ieee754.fpcommon.msbhigh import FPMSBHigh
-from ieee754.fpcommon.exphigh import FPEXPHigh
 
 
-from nmigen import Module, Signal, Elaboratable
-from math import log
-
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState, FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 
-from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from nmutil.singlepipe import SimpleHandshake, StageChain
 
 from ieee754.fpcommon.fpbase import FPState
+from ieee754.fclass.fclass import FPClassMod
 from ieee754.pipeline import PipelineSpec
-
-
-class FPClassMod(Elaboratable):
-    """ obtains floating point information (zero, nan, inf etc.)
-    """
-    def __init__(self, in_pspec, out_pspec):
-        self.in_pspec = in_pspec
-        self.out_pspec = out_pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
-
-    def ispec(self):
-        return FPADDBaseData(self.in_pspec)
-
-    def ospec(self):
-        return FPPackData(self.out_pspec)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.fclass = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
-
-    def elaborate(self, platform):
-        m = Module()
-
-        # decode incoming FP number
-        print("in_width out", self.in_pspec.width,
-              self.out_pspec.width)
-        a1 = FPNumBaseRecord(self.in_pspec.width, False)
-        print("a1", a1.width, a1.rmw, a1.e_width, a1.e_start, a1.e_end)
-        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.d.comb += a1.v.eq(self.i.a)
-
-        # FCLASS: work out the "type" of the FP number
-
-        finite_nzero = Signal(reset_less=True)
-        msbzero = Signal(reset_less=True)
-        is_sig_nan = Signal(reset_less=True)
-        # XXX use *REAL* mantissa width to detect msb
-        m.d.comb += msbzero.eq(a1.m[a1.rmw-1] == 0) # sigh, 1 extra msb bit
-        m.d.comb += finite_nzero.eq(~a1.is_nan & ~a1.is_inf & ~a1.is_zero)
-        m.d.comb += is_sig_nan.eq(a1.exp_128 & (msbzero) & (~a1.m_zero))
-        subnormal = a1.exp_n127
-
-        m.d.comb += self.o.z.eq(Cat(
-                    a1.s   & a1.is_inf,                 # | −inf.
-                    a1.s   & finite_nzero & ~subnormal, # | -normal number.
-                    a1.s   & finite_nzero &  subnormal, # | -subnormal number.
-                    a1.s & a1.is_zero,                  # | −0.
-                    ~a1.s & a1.is_zero,                 # | +0.
-                    ~a1.s & finite_nzero &  subnormal,  # | +subnormal number.
-                    ~a1.s & finite_nzero & ~subnormal,  # | +normal number.
-                    ~a1.s & a1.is_inf,                  # | +inf.
-                    is_sig_nan,                         # | a signaling NaN.
-                    a1.is_nan & ~is_sig_nan))           # | a quiet NaN
-
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
-
-        return m
 
 
 class FPFClassPipe(FPState, SimpleHandshake):
@@ -108,9 +33,13 @@ class FPFClassPipe(FPState, SimpleHandshake):
         self.out = self.ospec(None)
 
 
+# XXX not used because there isn't anything to "join" (no pipe chain)
+# keeping this code around just in case FPClass has to be split into
+# two [unlikely but hey]
 class FPClassBasePipe(ControlBase):
-    def __init__(self, modkls, e_extra, in_pspec, out_pspec):
+    def __init__(self, modkls, in_pspec, out_pspec):
         ControlBase.__init__(self)
+        # redundant because there's only one "thing" here.
         self.pipe1 = FPFClassPipe(modkls, in_pspec, out_pspec)
         self._eqs = self.connect([self.pipe1, ])
 
@@ -119,8 +48,6 @@ class FPClassBasePipe(ControlBase):
         m.submodules.fclass = self.pipe1
         m.d.comb += self._eqs
         return m
-
-
 
 
 class FPClassMuxInOutBase(ReservationStations):
@@ -133,7 +60,7 @@ class FPClassMuxInOutBase(ReservationStations):
         Fan-in and Fan-out are combinatorial.
     """
 
-    def __init__(self, modkls, e_extra, in_width, out_width,
+    def __init__(self, modkls, in_width, out_width,
                        num_rows, op_wid=0, pkls=FPClassBasePipe):
         self.op_wid = op_wid
         self.id_wid = num_bits(in_width)
@@ -142,7 +69,7 @@ class FPClassMuxInOutBase(ReservationStations):
         self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
         self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
 
-        self.alu = pkls(modkls, e_extra, self.in_pspec, self.out_pspec)
+        self.alu = pkls(modkls, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
@@ -163,8 +90,9 @@ class FPClassMuxInOut(FPClassMuxInOutBase):
     """
 
     def __init__(self, in_width, out_width, num_rows, op_wid=0):
-        FPClassMuxInOutBase.__init__(self, FPClassMod, False,
+        FPClassMuxInOutBase.__init__(self, FPClassMod,
                                          in_width, out_width,
                                          num_rows, op_wid,
-                                         pkls=FPClassBasePipe)
+                                         pkls=FPFClassPipe)
+                                         #pkls=FPClassBasePipe)
 
