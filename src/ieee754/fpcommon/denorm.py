@@ -19,9 +19,9 @@ class FPSCData:
         # special-cases module(s) and will propagate, along with its
         # "bypass" signal out_do_z, through the pipeline, *disabling*
         # all processing of all subsequent stages.
-        self.a = FPNumBaseRecord(width, m_extra)   # operand a
-        self.b = FPNumBaseRecord(width, m_extra)   # operand b
-        self.z = FPNumBaseRecord(width, False)     # denormed result
+        self.a = FPNumBaseRecord(width, m_extra, name="a")   # operand a
+        self.b = FPNumBaseRecord(width, m_extra, name="b")   # operand b
+        self.z = FPNumBaseRecord(width, False, name="z")     # denormed result
         self.oz = Signal(width, reset_less=True)   # "finished" (bypass) result
         self.out_do_z = Signal(reset_less=True)    # "bypass" enabled
         self.ctx = FPPipeContext(pspec)
@@ -37,7 +37,7 @@ class FPSCData:
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.a.eq(i.a), self.b.eq(i.b), self.ctx.eq(i.ctx)]
+               self.a.eq(i.a), self.b.eq(i.b), self.ctx.eq(i.ctx)]
         return ret
 
 
@@ -76,15 +76,15 @@ class FPAddDeNormMod(FPState, Elaboratable):
             # XXX hmmm, don't like repeating identical code
             m.d.comb += self.o.a.eq(self.i.a)
             with m.If(in_a.exp_n127):
-                m.d.comb += self.o.a.e.eq(self.i.a.N126) # limit a exponent
+                m.d.comb += self.o.a.e.eq(self.i.a.N126)  # limit a exponent
             with m.Else():
-                m.d.comb += self.o.a.m[-1].eq(1) # set top mantissa bit
+                m.d.comb += self.o.a.m[-1].eq(1)  # set top mantissa bit
 
             m.d.comb += self.o.b.eq(self.i.b)
             with m.If(in_b.exp_n127):
-                m.d.comb += self.o.b.e.eq(self.i.b.N126) # limit a exponent
+                m.d.comb += self.o.b.e.eq(self.i.b.N126)  # limit a exponent
             with m.Else():
-                m.d.comb += self.o.b.m[-1].eq(1) # set top mantissa bit
+                m.d.comb += self.o.b.m[-1].eq(1)  # set top mantissa bit
 
         m.d.comb += self.o.ctx.eq(self.i.ctx)
         m.d.comb += self.o.z.eq(self.i.z)
@@ -113,5 +113,3 @@ class FPAddDeNorm(FPState):
     def action(self, m):
         # Denormalised Number checks
         m.next = "align"
-
-
