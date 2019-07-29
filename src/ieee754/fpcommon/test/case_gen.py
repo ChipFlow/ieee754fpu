@@ -166,7 +166,8 @@ def run_pipe_fp(dut, width, name, mod, fmod, regressions, fpfn, count,
                 single_op=False,
                 opcode=None):
     pc = PipeFPCase(dut, name, mod, fmod, width, fpfn, count, single_op, opcode)
-    pc.run_regressions(regressions)
+    if regressions:
+        pc.run_regressions(regressions)
     pc.run_cornercases()
     pc.run("rand1", get_rand1)
     pc.run("n127", get_n127)
