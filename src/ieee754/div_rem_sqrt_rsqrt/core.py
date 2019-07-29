@@ -97,10 +97,10 @@ class DivPipeCoreInputData:
     def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreInputData`` instance. """
         self.core_config = core_config
-        self.dividend = Signal(core_config.bit_width + core_config.fract_width,
-                               reset_less=reset_less)
-        self.divisor_radicand = Signal(core_config.bit_width,
-                                       reset_less=reset_less)
+        bw = core_config.bit_width
+        fw = core_config.fract_width
+        self.dividend = Signal(bw + fw, reset_less=reset_less)
+        self.divisor_radicand = Signal(bw, reset_less=reset_less)
         self.operation = DP.create_signal(reset_less=reset_less)
 
     def __iter__(self):
@@ -145,17 +145,13 @@ class DivPipeCoreInterstageData:
     def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
-        self.divisor_radicand = Signal(core_config.bit_width,
-                                       reset_less=reset_less)
+        bw = core_config.bit_width
+        self.divisor_radicand = Signal(bw, reset_less=reset_less)
         self.operation = DP.create_signal(reset_less=reset_less)
-        self.quotient_root = Signal(core_config.bit_width,
-                                    reset_less=reset_less)
-        self.root_times_radicand = Signal(core_config.bit_width * 2,
-                                          reset_less=reset_less)
-        self.compare_lhs = Signal(core_config.bit_width * 3,
-                                  reset_less=reset_less)
-        self.compare_rhs = Signal(core_config.bit_width * 3,
-                                  reset_less=reset_less)
+        self.quotient_root = Signal(bw, reset_less=reset_less)
+        self.root_times_radicand = Signal(bw * 2, reset_less=reset_less)
+        self.compare_lhs = Signal(bw * 3, reset_less=reset_less)
+        self.compare_rhs = Signal(bw * 3, reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -192,10 +188,9 @@ class DivPipeCoreOutputData:
     def __init__(self, core_config, reset_less=True):
         """ Create a ``DivPipeCoreOutputData`` instance. """
         self.core_config = core_config
-        self.quotient_root = Signal(core_config.bit_width,
-                                    reset_less=reset_less)
-        self.remainder = Signal(core_config.bit_width * 3,
-                                reset_less=reset_less)
+        bw = core_config.bit_width
+        self.quotient_root = Signal(bw, reset_less=reset_less)
+        self.remainder = Signal(bw * 3, reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -346,8 +341,8 @@ class DivPipeCoreCalculateStage(Elaboratable):
 
     def __init__(self, core_config, stage_index):
         """ Create a ``DivPipeCoreSetupStage`` instance. """
-        self.core_config = core_config
         assert stage_index in range(core_config.n_stages)
+        self.core_config = core_config
         self.stage_index = stage_index
         self.i = self.ispec()
         self.o = self.ospec()
