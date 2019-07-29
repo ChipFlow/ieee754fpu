@@ -38,6 +38,7 @@ class FPDivStage0Mod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
         # XXX TODO, actual DIV code here.  this class would be
         # "step one" which takes the pre-normalised data (see ispec) and
@@ -62,26 +63,24 @@ class FPDivStage0Mod(Elaboratable):
 
         adj_a_e = Signal((len(self.i.a.e), True), reset_less=True)
 
-        m.d.comb += [is_div.eq(self.i.ctx.op == int(DPCOp.UDivRem)),
-                     need_exp_adj.eq(~is_div & self.i.a.e[0]),
-                     adj_a_m.eq(self.i.a.m << need_exp_adj),
-                     adj_a_e.eq(self.i.a.e - need_exp_adj)]
+        comb += [is_div.eq(self.i.ctx.op == int(DPCOp.UDivRem)),
+                 need_exp_adj.eq(~is_div & self.i.a.e[0]),
+                 adj_a_m.eq(self.i.a.m << need_exp_adj),
+                 adj_a_e.eq(self.i.a.e - need_exp_adj)]
 
         # adj_a_m now in the range [1.0, 4.0) for sqrt/rsqrt
         # and [1.0, 2.0) for div
 
         dividend_fract_width = self.pspec.core_config.fract_width * 2
-        dividend = Signal(len(self.o.dividend),
-                          reset_less=True)
+        dividend = Signal(len(self.o.dividend), reset_less=True)
 
         divr_rad_fract_width = self.pspec.core_config.fract_width
-        divr_rad = Signal(len(self.o.divisor_radicand),
-                          reset_less=True)
+        divr_rad = Signal(len(self.o.divisor_radicand), reset_less=True)
 
         a_m_fract_width = self.i.a.rmw
         b_m_fract_width = self.i.b.rmw
 
-        m.d.comb += [
+        comb += [
             dividend.eq(self.i.a.m << (
                 dividend_fract_width - a_m_fract_width)),
             divr_rad.eq(Mux(is_div,
@@ -91,40 +90,39 @@ class FPDivStage0Mod(Elaboratable):
                                 divr_rad_fract_width - adj_a_m_fract_width))),
         ]
 
-        m.d.comb += [
-            self.o.dividend.eq(dividend),
-            self.o.divisor_radicand.eq(divr_rad),
+        comb += [self.o.dividend.eq(dividend),
+                 self.o.divisor_radicand.eq(divr_rad),
         ]
 
         # set default since it's not always set; non-zero value for debugging
-        m.d.comb += self.o.operation.eq(1)
+        comb += self.o.operation.eq(1)
 
         with m.If(~self.i.out_do_z):
             # DIV
             with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
-                m.d.comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
-                             self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                             self.o.operation.eq(int(DPCOp.UDivRem))
-                             ]
+                comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
+                         self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
+                         self.o.operation.eq(int(DPCOp.UDivRem))
+                        ]
 
             # SQRT
             with m.Elif(self.i.ctx.op == int(DPCOp.SqrtRem)):
-                m.d.comb += [self.o.z.e.eq(adj_a_e >> 1),
-                             self.o.z.s.eq(self.i.a.s),
-                             self.o.operation.eq(int(DPCOp.SqrtRem))
-                             ]
+                comb += [self.o.z.e.eq(adj_a_e >> 1),
+                         self.o.z.s.eq(self.i.a.s),
+                         self.o.operation.eq(int(DPCOp.SqrtRem))
+                        ]
 
             # RSQRT
             with m.Elif(self.i.ctx.op == int(DPCOp.RSqrtRem)):
-                m.d.comb += [self.o.z.e.eq(-(adj_a_e >> 1)),
-                             self.o.z.s.eq(self.i.a.s),
-                             self.o.operation.eq(int(DPCOp.RSqrtRem))
-                             ]
+                comb += [self.o.z.e.eq(-(adj_a_e >> 1)),
+                         self.o.z.s.eq(self.i.a.s),
+                         self.o.operation.eq(int(DPCOp.RSqrtRem))
+                        ]
 
         # these are required and must not be touched
-        m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.i.oz)
+        comb += self.o.out_do_z.eq(self.i.out_do_z)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
