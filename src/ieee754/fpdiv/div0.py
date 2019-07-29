@@ -1,12 +1,15 @@
 """IEEE754 Floating Point Divider
 
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jacob Lifshay
+
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
 
 from nmigen import Module, Signal, Cat, Elaboratable, Const, Mux
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import (FPNumBaseRecord, Overflow)
+from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
@@ -15,6 +18,14 @@ from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 
 
 class FPDivStage0Mod(Elaboratable):
+    """ DIV/SQRT/RSQRT "preparation" module.
+
+        adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),
+        puts exponent (and sign) into data structures for passing through to
+        the end, and puts the (adjusted) mantissa into the processing engine.
+
+        no *actual* processing occurs here: it is *purely* preparation work.
+    """
 
     def __init__(self, pspec):
         self.pspec = pspec
@@ -39,18 +50,6 @@ class FPDivStage0Mod(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
-
-        # XXX TODO, actual DIV code here.  this class would be
-        # "step one" which takes the pre-normalised data (see ispec) and
-        # *begins* the processing phase (enters the massive DIV
-        # pipeline chain) - see ospec.
-
-        # INPUT SPEC: FPSCData
-        # OUTPUT SPEC: DivPipeInputData
-
-        # NOTE: this stage does *NOT* do *ACTUAL* DIV processing,
-        # it is PURELY the *ENTRY* point into the chain, performing
-        # "preparation" work.
 
         # mantissas start in the range [1.0, 2.0)
 
