@@ -47,7 +47,8 @@ normpack - FPNormToPack            ispec FPAddStage1Data
 
 the number of combinatorial StageChains (n_comb_stages) in
 FPDivStages is an argument arranged to get the length of the whole
-pipeline down to sane numbers.
+pipeline down to sane numbers.  it specifies the number of "blocks"
+that will be combinatorially chained together.
 
 the reason for keeping the number of stages down is that for every
 pipeline clock delay, a corresponding ReservationStation is needed.
