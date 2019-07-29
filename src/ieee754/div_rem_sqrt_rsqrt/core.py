@@ -238,23 +238,24 @@ class DivPipeCoreSetupStage(Elaboratable):
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
         m = Module()
+        comb = m.d.comb
 
-        m.d.comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
-        m.d.comb += self.o.quotient_root.eq(0)
-        m.d.comb += self.o.root_times_radicand.eq(0)
+        comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
+        comb += self.o.quotient_root.eq(0)
+        comb += self.o.root_times_radicand.eq(0)
 
         with m.If(self.i.operation == int(DP.UDivRem)):
-            m.d.comb += self.o.compare_lhs.eq(self.i.dividend
+            comb += self.o.compare_lhs.eq(self.i.dividend
                                               << self.core_config.fract_width)
         with m.Elif(self.i.operation == int(DP.SqrtRem)):
-            m.d.comb += self.o.compare_lhs.eq(
+            comb += self.o.compare_lhs.eq(
                 self.i.divisor_radicand << (self.core_config.fract_width * 2))
         with m.Else():  # DivPipeCoreOperation.RSqrtRem
-            m.d.comb += self.o.compare_lhs.eq(
+            comb += self.o.compare_lhs.eq(
                 1 << (self.core_config.fract_width * 3))
 
-        m.d.comb += self.o.compare_rhs.eq(0)
-        m.d.comb += self.o.operation.eq(self.i.operation)
+        comb += self.o.compare_rhs.eq(0)
+        comb += self.o.operation.eq(self.i.operation)
 
         return m
 
@@ -276,6 +277,7 @@ class Trial(Elaboratable):
     def elaborate(self, platform):
 
         m = Module()
+        comb = m.d.comb
 
         dr = self.divisor_radicand
         qr = self.quotient_root
@@ -288,12 +290,12 @@ class Trial(Elaboratable):
         tblen = self.core_config.bit_width+self.log2_radix
         tblen2 = self.core_config.bit_width+self.log2_radix*2
         dr_times_trial_bits_sqrd = Signal(tblen2, reset_less=True)
-        m.d.comb += dr_times_trial_bits_sqrd.eq(dr * trial_bits_sqrd_sig)
+        comb += dr_times_trial_bits_sqrd.eq(dr * trial_bits_sqrd_sig)
 
         # UDivRem
         with m.If(self.operation == int(DP.UDivRem)):
             dr_times_trial_bits = Signal(tblen, reset_less=True)
-            m.d.comb += dr_times_trial_bits.eq(dr * trial_bits_sig)
+            comb += dr_times_trial_bits.eq(dr * trial_bits_sig)
             div_rhs = self.compare_rhs
 
             div_term1 = dr_times_trial_bits
@@ -301,12 +303,12 @@ class Trial(Elaboratable):
             div_term1_shift += self.current_shift
             div_rhs += div_term1 << div_term1_shift
 
-            m.d.comb += self.trial_compare_rhs.eq(div_rhs)
+            comb += self.trial_compare_rhs.eq(div_rhs)
 
         # SqrtRem
         with m.Elif(self.operation == int(DP.SqrtRem)):
             qr_times_trial_bits = Signal((tblen+1)*2, reset_less=True)
-            m.d.comb += qr_times_trial_bits.eq(qr * trial_bits_sig)
+            comb += qr_times_trial_bits.eq(qr * trial_bits_sig)
             sqrt_rhs = self.compare_rhs
 
             sqrt_term1 = qr_times_trial_bits
@@ -318,12 +320,12 @@ class Trial(Elaboratable):
             sqrt_term2_shift += self.current_shift * 2
             sqrt_rhs += sqrt_term2 << sqrt_term2_shift
 
-            m.d.comb += self.trial_compare_rhs.eq(sqrt_rhs)
+            comb += self.trial_compare_rhs.eq(sqrt_rhs)
 
         # RSqrtRem
         with m.Else():
             rr_times_trial_bits = Signal((tblen+1)*3, reset_less=True)
-            m.d.comb += rr_times_trial_bits.eq(rr * trial_bits_sig)
+            comb += rr_times_trial_bits.eq(rr * trial_bits_sig)
             rsqrt_rhs = self.compare_rhs
 
             rsqrt_term1 = rr_times_trial_bits
@@ -333,7 +335,7 @@ class Trial(Elaboratable):
             rsqrt_term2_shift = self.current_shift * 2
             rsqrt_rhs += rsqrt_term2 << rsqrt_term2_shift
 
-            m.d.comb += self.trial_compare_rhs.eq(rsqrt_rhs)
+            comb += self.trial_compare_rhs.eq(rsqrt_rhs)
 
         return m
 
@@ -371,11 +373,12 @@ class DivPipeCoreCalculateStage(Elaboratable):
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
         m = Module()
+        comb = m.d.comb
 
         # copy invariant inputs to outputs (for next stage)
-        m.d.comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
-        m.d.comb += self.o.operation.eq(self.i.operation)
-        m.d.comb += self.o.compare_lhs.eq(self.i.compare_lhs)
+        comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
+        comb += self.o.operation.eq(self.i.operation)
+        comb += self.o.compare_lhs.eq(self.i.compare_lhs)
 
         # constants
         log2_radix = self.core_config.log2_radix
@@ -398,11 +401,11 @@ class DivPipeCoreCalculateStage(Elaboratable):
             t = Trial(self.core_config, trial_bits, current_shift, log2_radix)
             setattr(m.submodules, "trial%d" % trial_bits, t)
 
-            m.d.comb += t.divisor_radicand.eq(self.i.divisor_radicand)
-            m.d.comb += t.quotient_root.eq(self.i.quotient_root)
-            m.d.comb += t.root_times_radicand.eq(self.i.root_times_radicand)
-            m.d.comb += t.compare_rhs.eq(self.i.compare_rhs)
-            m.d.comb += t.operation.eq(self.i.operation)
+            comb += t.divisor_radicand.eq(self.i.divisor_radicand)
+            comb += t.quotient_root.eq(self.i.quotient_root)
+            comb += t.root_times_radicand.eq(self.i.root_times_radicand)
+            comb += t.compare_rhs.eq(self.i.compare_rhs)
+            comb += t.operation.eq(self.i.operation)
 
             # get the trial output
             trial_compare_rhs_values.append(t.trial_compare_rhs)
@@ -410,12 +413,12 @@ class DivPipeCoreCalculateStage(Elaboratable):
             # make the trial comparison against the [invariant] lhs.
             # trial_compare_rhs is always decreasing as trial_bits increases
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
-            m.d.comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
+            comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
             pfl.append(pass_flag)
 
         # Cat all the pass flags list together (easier to handle, below)
         pass_flags = Signal(radix, reset_less=True)
-        m.d.comb += pass_flags.eq(Cat(*pfl))
+        comb += pass_flags.eq(Cat(*pfl))
 
         # convert pass_flags (unary priority) to next_bits (binary index)
         #
@@ -427,22 +430,22 @@ class DivPipeCoreCalculateStage(Elaboratable):
 
         m.submodules.pe = pe = PriorityEncoder(radix)
         next_bits = Signal(log2_radix, reset_less=True)
-        m.d.comb += pe.i.eq(~pass_flags)
+        comb += pe.i.eq(~pass_flags)
         with m.If(~pe.n):
-            m.d.comb += next_bits.eq(pe.o-1)
+            comb += next_bits.eq(pe.o-1)
         with m.Else():
-            m.d.comb += next_bits.eq(radix-1)
+            comb += next_bits.eq(radix-1)
 
         # get the highest passing rhs trial (indexed by next_bits)
         ta = Array(trial_compare_rhs_values)
-        m.d.comb += self.o.compare_rhs.eq(ta[next_bits])
+        comb += self.o.compare_rhs.eq(ta[next_bits])
 
         # create outputs for next phase
-        m.d.comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
+        comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
                                                   + ((self.i.divisor_radicand
                                                       * next_bits)
                                                      << current_shift))
-        m.d.comb += self.o.quotient_root.eq(self.i.quotient_root
+        comb += self.o.quotient_root.eq(self.i.quotient_root
                                             | (next_bits << current_shift))
         return m
 
@@ -476,9 +479,10 @@ class DivPipeCoreFinalStage(Elaboratable):
     def elaborate(self, platform):
         """ Elaborate into ``Module``. """
         m = Module()
+        comb = m.d.comb
 
-        m.d.comb += self.o.quotient_root.eq(self.i.quotient_root)
-        m.d.comb += self.o.remainder.eq(self.i.compare_lhs
+        comb += self.o.quotient_root.eq(self.i.quotient_root)
+        comb += self.o.remainder.eq(self.i.compare_lhs
                                         - self.i.compare_rhs)
 
         return m
