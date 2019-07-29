@@ -163,6 +163,8 @@ class FPDIVMuxInOut(ReservationStations):
         fmt = FPFormat.standard(width)
         log2_radix = 3     # tested options so far: 1, 2 and 3.
 
+        n_comb_stages = 2  # 2 compute stages per pipeline stage
+
         fraction_width = fmt.fraction_width
 
         # extra bits needed: guard + round
@@ -172,8 +174,6 @@ class FPDIVMuxInOut(ReservationStations):
         # DivPipeCoreCalculateStage just internally reduces log2_radix on
         # the last stage
         cfg = DivPipeCoreConfig(fmt.width, fraction_width, log2_radix)
-
-        n_comb_stages = (cfg.n_stages + 1) // 2  # 2 compute steps per stage
 
         self.pspec.fpformat = fmt
         self.pspec.n_comb_stages = n_comb_stages
