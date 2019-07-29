@@ -244,16 +244,17 @@ class DivPipeCoreSetupStage(Elaboratable):
         comb += self.o.quotient_root.eq(0)
         comb += self.o.root_times_radicand.eq(0)
 
-        with m.If(self.i.operation == int(DP.UDivRem)):
-            comb += self.o.compare_lhs.eq(self.i.dividend
-                                              << self.core_config.fract_width)
-        with m.Elif(self.i.operation == int(DP.SqrtRem)):
-            comb += self.o.compare_lhs.eq(
-                self.i.divisor_radicand << (self.core_config.fract_width * 2))
-        with m.Else():  # DivPipeCoreOperation.RSqrtRem
-            comb += self.o.compare_lhs.eq(
-                1 << (self.core_config.fract_width * 3))
+        lhs = Signal(self.core_config.bit_width * 3, reset_less=True)
+        fw = self.core_config.fract_width
 
+        with m.If(self.i.operation == int(DP.UDivRem)):
+            comb += lhs.eq(self.i.dividend << fw)
+        with m.Elif(self.i.operation == int(DP.SqrtRem)):
+            comb += lhs.eq(self.i.divisor_radicand << (fw * 2))
+        with m.Else():  # DivPipeCoreOperation.RSqrtRem
+            comb += lhs.eq(1 << (fw * 3))
+
+        comb += self.o.compare_lhs.eq(lhs)
         comb += self.o.compare_rhs.eq(0)
         comb += self.o.operation.eq(self.i.operation)
 
@@ -441,12 +442,12 @@ class DivPipeCoreCalculateStage(Elaboratable):
         comb += self.o.compare_rhs.eq(ta[next_bits])
 
         # create outputs for next phase
-        comb += self.o.root_times_radicand.eq(self.i.root_times_radicand
-                                                  + ((self.i.divisor_radicand
-                                                      * next_bits)
-                                                     << current_shift))
-        comb += self.o.quotient_root.eq(self.i.quotient_root
-                                            | (next_bits << current_shift))
+        qr = self.i.quotient_root | (next_bits << current_shift)
+        rr = self.i.root_times_radicand + ((self.i.divisor_radicand * next_bits)
+                                                     << current_shift)
+        comb += self.o.quotient_root.eq(qr)
+        comb += self.o.root_times_radicand.eq(rr)
+
         return m
 
 
@@ -482,7 +483,6 @@ class DivPipeCoreFinalStage(Elaboratable):
         comb = m.d.comb
 
         comb += self.o.quotient_root.eq(self.i.quotient_root)
-        comb += self.o.remainder.eq(self.i.compare_lhs
-                                        - self.i.compare_rhs)
+        comb += self.o.remainder.eq(self.i.compare_lhs - self.i.compare_rhs)
 
         return m
