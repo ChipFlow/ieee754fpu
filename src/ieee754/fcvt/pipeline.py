@@ -97,11 +97,10 @@ class FPCVTMuxInOutBase(ReservationStations):
     def __init__(self, modkls, e_extra, in_width, out_width,
                        num_rows, op_wid=0, pkls=FPCVTBasePipe):
         self.op_wid = op_wid
-        self.id_wid = num_bits(in_width)
-        self.out_id_wid = num_bits(out_width)
+        self.id_wid = num_bits(num_rows)
 
-        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
-        self.out_pspec = PipelineSpec(out_width, self.out_id_wid, op_wid)
+        self.in_pspec = PipelineSpec(in_width, id_wid, self.op_wid)
+        self.out_pspec = PipelineSpec(out_width, id_wid, op_wid)
 
         self.alu = pkls(modkls, e_extra, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)

@@ -84,7 +84,7 @@ class FPADDMuxInOut(ReservationStations):
     """
 
     def __init__(self, width, num_rows, op_wid=None):
-        self.id_wid = num_bits(width)
+        self.id_wid = num_bits(num_rows)
         self.op_wid = op_wid
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         self.alu = FPADDBasePipe(self.pspec)

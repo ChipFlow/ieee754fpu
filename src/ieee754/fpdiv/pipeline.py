@@ -156,7 +156,7 @@ class FPDIVMuxInOut(ReservationStations):
     """
 
     def __init__(self, width, num_rows, op_wid=2):
-        self.id_wid = num_bits(width)  # FIXME: shouldn't this be num_rows?
+        self.id_wid = num_bits(num_rows)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         # get the standard mantissa width, store in the pspec
         fmt = FPFormat.standard(width)
