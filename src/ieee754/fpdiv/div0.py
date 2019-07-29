@@ -54,43 +54,34 @@ class FPDivStage0Mod(Elaboratable):
 
         # mantissas start in the range [1.0, 2.0)
 
+        # intermediary temp signals
         is_div = Signal(reset_less=True)
         need_exp_adj = Signal(reset_less=True)
 
-        # ``self.i.a.rmw`` fractional bits and 2 integer bits
-        adj_a_m_fract_width = self.i.a.rmw
+        # "adjusted" - ``self.i.a.rmw`` fractional bits and 2 integer bits
+        adj_a_mw = self.i.a.rmw
         adj_a_m = Signal(self.i.a.rmw + 2, reset_less=True)
-
         adj_a_e = Signal((len(self.i.a.e), True), reset_less=True)
 
+        # adjust (shift) the exponent so that it is even, but only for [r]sqrt
         comb += [is_div.eq(self.i.ctx.op == int(DPCOp.UDivRem)),
-                 need_exp_adj.eq(~is_div & self.i.a.e[0]),
+                 need_exp_adj.eq(~is_div & self.i.a.e[0]), # even? !div? adjust
                  adj_a_m.eq(self.i.a.m << need_exp_adj),
                  adj_a_e.eq(self.i.a.e - need_exp_adj)]
 
         # adj_a_m now in the range [1.0, 4.0) for sqrt/rsqrt
         # and [1.0, 2.0) for div
 
-        dividend_fract_width = self.pspec.core_config.fract_width * 2
-        dividend = Signal(len(self.o.dividend), reset_less=True)
-
-        divr_rad_fract_width = self.pspec.core_config.fract_width
+        fw = self.pspec.core_config.fract_width
         divr_rad = Signal(len(self.o.divisor_radicand), reset_less=True)
 
-        a_m_fract_width = self.i.a.rmw
-        b_m_fract_width = self.i.b.rmw
+        # real mantissa fractional widths
+        a_mw = self.i.a.rmw
+        b_mw = self.i.b.rmw
 
-        comb += [
-            dividend.eq(self.i.a.m << (
-                dividend_fract_width - a_m_fract_width)),
-            divr_rad.eq(Mux(is_div,
-                            self.i.b.m << (
-                                divr_rad_fract_width - b_m_fract_width),
-                            adj_a_m << (
-                                divr_rad_fract_width - adj_a_m_fract_width))),
-        ]
-
-        comb += [self.o.dividend.eq(dividend),
+        comb += [self.o.dividend.eq(self.i.a.m << (fw*2 - a_mw)),
+                 divr_rad.eq(Mux(is_div, self.i.b.m << (fw - b_mw),
+                                         adj_a_m << (fw - adj_a_mw))),
                  self.o.divisor_radicand.eq(divr_rad),
         ]
 
