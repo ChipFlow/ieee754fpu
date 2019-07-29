@@ -1,5 +1,8 @@
 """IEEE Floating Point Divider
 
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jacob Lifshay
+
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 """
 
