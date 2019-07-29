@@ -251,7 +251,7 @@ class DivPipeCoreSetupStage(Elaboratable):
             comb += lhs.eq(self.i.dividend << fw)
         with m.Elif(self.i.operation == int(DP.SqrtRem)):
             comb += lhs.eq(self.i.divisor_radicand << (fw * 2))
-        with m.Else():  # DivPipeCoreOperation.RSqrtRem
+        with m.Elif(self.i.operation == int(DP.RSqrtRem)):
             comb += lhs.eq(1 << (fw * 3))
 
         comb += self.o.compare_lhs.eq(lhs)
@@ -324,7 +324,7 @@ class Trial(Elaboratable):
             comb += self.trial_compare_rhs.eq(sqrt_rhs)
 
         # RSqrtRem
-        with m.Else():
+        with m.Elif(self.operation == int(DP.RSqrtRem)):
             rr_times_trial_bits = Signal((tblen+1)*3, reset_less=True)
             comb += rr_times_trial_bits.eq(rr * trial_bits_sig)
             rsqrt_rhs = self.compare_rhs
