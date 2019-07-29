@@ -159,15 +159,14 @@ class FPDIVMuxInOut(ReservationStations):
     def __init__(self, width, num_rows, op_wid=2):
         self.id_wid = num_bits(num_rows)
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
+
         # get the standard mantissa width, store in the pspec
         fmt = FPFormat.standard(width)
         log2_radix = 3     # tested options so far: 1, 2 and 3.
-
         n_comb_stages = 2  # 2 compute stages per pipeline stage
 
+        # extra bits needed: guard + round (sticky comes from remainer.bool())
         fraction_width = fmt.fraction_width
-
-        # extra bits needed: guard + round
         fraction_width += 2
 
         # rounding width to a multiple of log2_radix is not needed,
