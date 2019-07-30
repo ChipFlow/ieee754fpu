@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
+from nmutil.singlepipe import SimpleHandshake
+
 
 class PipelineSpec:
     """ Pipeline Specification base class.
@@ -19,12 +21,24 @@ class PipelineSpec:
 
     """
 
-    def __init__(self, width, id_width, op_wid=0, opkls=None):
+    def __init__(self, width, id_width, op_wid=0, opkls=None, pipekls=None):
         """ Create a PipelineSpec. """
         self.width = width
         self.id_wid = id_width
         self.op_wid = op_wid
         self.opkls = opkls
+        self.pipekls = pipekls or SimpleHandshake
         self.core_config = None
         self.fpformat = None
         self.n_comb_stages = None
+
+
+def DynamicPipeCreate(pspec, *args, **kwargs):
+    superclass = pspec.pipekls
+    class DynamicPipe(superclass):
+        def __init__(self, *args, **kwargs):
+            print(superclass)
+            superclass.__init__(self, *args, **kwargs)
+        pass
+    return DynamicPipe(*args, **kwargs)
+
