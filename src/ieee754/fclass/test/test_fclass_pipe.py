@@ -3,10 +3,15 @@
 
 from ieee754.fclass.pipeline import (FPClassMuxInOut,)
 from ieee754.fpcommon.test.fpmux import runfp
+from ieee754.fpcommon.test.case_gen import run_pipe_fp
+from ieee754.fpcommon.test import unit_test_half
 from ieee754.fpcommon.fpbase import FPFormat
+
+import unittest
 
 import sfpy
 from sfpy import Float64, Float32, Float16
+
 
 def fclass(wid, x):
     """ analyses the FP number and returns a RISC-V "FCLASS" unary bitfield
@@ -58,26 +63,39 @@ def fclass_64(x):
     return fclass(64, x)
 
 
-def test_class_pipe_f16():
-    dut = FPClassMuxInOut(16, 16, 4, op_wid=1)
-    runfp(dut, 16, "test_fclass_pipe_f16", Float16, fclass_16,
-                True, n_vals=100)
+class TestFClassPipe(unittest.TestCase):
+    def test_class_pipe_f16(self):
+        dut = FPClassMuxInOut(16, 16, 4, op_wid=1)
+        runfp(dut, 16, "test_fclass_pipe_f16", Float16, fclass_16,
+                    True, n_vals=100)
+
+    def test_class_pipe_f32(self):
+        dut = FPClassMuxInOut(32, 32, 4, op_wid=1)
+        runfp(dut, 32, "test_fclass_pipe_f32", Float32, fclass_32,
+                    True, n_vals=100)
+
+    def test_class_pipe_f64(self):
+        dut = FPClassMuxInOut(64, 64, 4, op_wid=1)
+        runfp(dut, 64, "test_fclass_pipe_f64", Float64, fclass_64,
+                    True, n_vals=100)
 
 
-def test_class_pipe_f32():
-    dut = FPClassMuxInOut(32, 32, 4, op_wid=1)
-    runfp(dut, 32, "test_fclass_pipe_f32", Float32, fclass_32,
-                True, n_vals=100)
+class TestFClassPipeCoverage(unittest.TestCase):
+    def test_pipe_class_f16(self):
+        dut = FPClassMuxInOut(16, 16, 4, op_wid=1)
+        run_pipe_fp(dut, 16, "fclass16", unit_test_half, Float16, None,
+                    fclass_16, 100, single_op=True)
 
+    def test_pipe_class_f32(self):
+        dut = FPClassMuxInOut(32, 32, 4, op_wid=1)
+        run_pipe_fp(dut, 32, "fclass32", unit_test_half, Float32, None,
+                    fclass_32, 100, single_op=True)
 
-def test_class_pipe_f64():
-    dut = FPClassMuxInOut(64, 64, 4, op_wid=1)
-    runfp(dut, 64, "test_fclass_pipe_f64", Float64, fclass_64,
-                True, n_vals=100)
+    def test_pipe_class_f64(self):
+        dut = FPClassMuxInOut(64, 64, 4, op_wid=1)
+        run_pipe_fp(dut, 64, "fclass64", unit_test_half, Float64, None,
+                    fclass_64, 100, single_op=True)
 
 
 if __name__ == '__main__':
-    for i in range(200):
-        test_class_pipe_f16()
-        test_class_pipe_f32()
-        test_class_pipe_f64()
+    unittest.main()
