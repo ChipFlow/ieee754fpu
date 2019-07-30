@@ -138,7 +138,7 @@ import inspect
 from nmutil.iocontrol import (PrevControl, NextControl, Object, RecordObject)
 from nmutil.stageapi import (_spec, StageCls, Stage, StageChain, StageHelper)
 from nmutil import nmoperator
-                      
+
 
 class RecordBasedStage(Stage):
     """ convenience class which provides a Records-based layout.
@@ -190,6 +190,7 @@ class ControlBase(StageHelper, Elaboratable):
             * add data_o member to NextControl (n)
             Calling ControlBase._new_data is a good way to do that.
         """
+        print ("ControlBase", self, stage, in_multi, stage_ctl)
         StageHelper.__init__(self, stage)
 
         # set up input and output IO ACK (prev/next ready/valid)

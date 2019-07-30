@@ -5,8 +5,8 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import (StageChain, SimpleHandshake,
-                        PassThroughStage)
+from nmutil.singlepipe import StageChain
+from ieee754.pipeline import DynamicPipe
 
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
@@ -15,13 +15,12 @@ from ieee754.fpadd.align import FPAddAlignSingleMod
 from ieee754.fpadd.add0 import FPAddStage0Mod
 from ieee754.fpadd.add1 import FPAddStage1Mod
 
-
-class FPAddAlignSingleAdd(FPState, SimpleHandshake):
+class FPAddAlignSingleAdd(DynamicPipe):
 
     def __init__(self, pspec):
-        FPState.__init__(self, "align")
+        #FPState.__init__(self, "align")
         self.pspec = pspec
-        SimpleHandshake.__init__(self, self) # pipeline is its own stage
+        super().__init__(pspec)
         self.a1o = self.ospec()
 
     def ispec(self):
