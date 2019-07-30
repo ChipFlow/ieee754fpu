@@ -20,6 +20,7 @@ from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
+from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DP
 
 
 class FPDIVSpecialCasesMod(Elaboratable):
@@ -50,123 +51,122 @@ class FPDIVSpecialCasesMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-
-        #m.submodules.sc_out_z = self.o.z
+        comb = m.d.comb
 
         # decode: XXX really should move to separate stage
         a1 = FPNumBaseRecord(self.pspec.width, False, name="a1")
         b1 = FPNumBaseRecord(self.pspec.width, False, name="b1")
         m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
         m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
-        m.d.comb += [a1.v.eq(self.i.a),
+        comb += [a1.v.eq(self.i.a),
                      b1.v.eq(self.i.b),
                      self.o.a.eq(a1),
                      self.o.b.eq(b1)
                      ]
 
         sabx = Signal(reset_less=True)   # sign a xor b (sabx, get it?)
-        m.d.comb += sabx.eq(a1.s ^ b1.s)
+        comb += sabx.eq(a1.s ^ b1.s)
 
         abnan = Signal(reset_less=True)
-        m.d.comb += abnan.eq(a1.is_nan | b1.is_nan)
+        comb += abnan.eq(a1.is_nan | b1.is_nan)
 
         abinf = Signal(reset_less=True)
-        m.d.comb += abinf.eq(a1.is_inf & b1.is_inf)
+        comb += abinf.eq(a1.is_inf & b1.is_inf)
 
         with m.If(self.i.ctx.op == 0):  # DIV
 
             # if a is NaN or b is NaN return NaN
             with m.If(abnan):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # if a is inf and b is Inf return NaN
             with m.Elif(abinf):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # if a is inf return inf
             with m.Elif(a1.is_inf):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.inf(sabx)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.inf(sabx)
 
             # if b is inf return zero
             with m.Elif(b1.is_inf):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(sabx)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.zero(sabx)
 
             # if a is zero return zero (or NaN if b is zero)
             with m.Elif(a1.is_zero):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(sabx)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.zero(sabx)
                 # b is zero return NaN
                 with m.If(b1.is_zero):
-                    m.d.comb += self.o.z.nan(0)
+                    comb += self.o.z.nan(0)
 
             # if b is zero return Inf
             with m.Elif(b1.is_zero):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.inf(sabx)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.inf(sabx)
 
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
-                m.d.comb += self.o.out_do_z.eq(0)
+                comb += self.o.out_do_z.eq(0)
 
         with m.If(self.i.ctx.op == 1):  # SQRT
 
             # if a is zero return zero
             with m.If(a1.is_zero):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(a1.s)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.zero(a1.s)
 
             # -ve number is NaN
             with m.Elif(a1.s):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # if a is inf return inf
             with m.Elif(a1.is_inf):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.inf(sabx)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.inf(sabx)
 
             # if a is NaN return NaN
             with m.Elif(a1.is_nan):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
-                m.d.comb += self.o.out_do_z.eq(0)
+                comb += self.o.out_do_z.eq(0)
 
         with m.If(self.i.ctx.op == 2):  # RSQRT
 
             # if a is NaN return canonical NaN
             with m.If(a1.is_nan):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # if a is +/- zero return +/- INF
             with m.Elif(a1.is_zero):
-                m.d.comb += self.o.out_do_z.eq(1)
+                comb += self.o.out_do_z.eq(1)
                 # this includes the "weird" case 1/sqrt(-0) == -Inf
-                m.d.comb += self.o.z.inf(a1.s)
+                comb += self.o.z.inf(a1.s)
 
             # -ve number is canonical NaN
             with m.Elif(a1.s):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.nan(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.nan(0)
 
             # if a is inf return zero (-ve already excluded, above)
             with m.Elif(a1.is_inf):
-                m.d.comb += self.o.out_do_z.eq(1)
-                m.d.comb += self.o.z.zero(0)
+                comb += self.o.out_do_z.eq(1)
+                comb += self.o.z.zero(0)
 
             # Denormalised Number checks next, so pass a/b data through
             with m.Else():
-                m.d.comb += self.o.out_do_z.eq(0)
+                comb += self.o.out_do_z.eq(0)
 
-        m.d.comb += self.o.oz.eq(self.o.z.v)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.o.z.v)
+        comb += self.o.ctx.eq(self.i.ctx)
 
         return m
 
