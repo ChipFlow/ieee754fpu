@@ -1,6 +1,12 @@
-"""IEEE Floating Point Divider Pipeline
+"""IEEE754 Floating Point Divider Pipeline
 
-Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jacob Lifshay
+
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=99
+* http://bugs.libre-riscv.org/show_bug.cgi?id=43
+* http://bugs.libre-riscv.org/show_bug.cgi?id=44
 
 Stack looks like this:
 

@@ -3,7 +3,10 @@
 Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 Copyright (C) 2019 Jacob Lifshay
 
-Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=99
+* http://bugs.libre-riscv.org/show_bug.cgi?id=43
+* http://bugs.libre-riscv.org/show_bug.cgi?id=44
 """
 
 from nmigen import Module, Signal, Elaboratable, Cat

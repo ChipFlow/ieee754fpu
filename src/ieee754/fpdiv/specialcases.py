@@ -1,4 +1,13 @@
-# IEEE Floating Point Multiplier
+""" IEEE Floating Point Divider
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jacob Lifshay
+
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=99
+* http://bugs.libre-riscv.org/show_bug.cgi?id=43
+* http://bugs.libre-riscv.org/show_bug.cgi?id=44
+"""
 
 from nmigen import Module, Signal, Cat, Const, Elaboratable
 from nmigen.cli import main, verilog
@@ -65,6 +74,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
         m.d.comb += abinf.eq(a1.is_inf & b1.is_inf)
 
         with m.If(self.i.ctx.op == 0):  # DIV
+
             # if a is NaN or b is NaN return NaN
             with m.If(abnan):
                 m.d.comb += self.o.out_do_z.eq(1)
