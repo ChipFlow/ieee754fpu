@@ -73,6 +73,7 @@ class FPDIVSpecialCasesMod(Elaboratable):
         abinf = Signal(reset_less=True)
         comb += abinf.eq(a1.is_inf & b1.is_inf)
 
+        # select one of 3 different sets of specialcases (DIV, SQRT, RSQRT)
         with m.Switch(self.i.ctx.op):
 
             with m.Case(int(DP.UDivRem)): # DIV
