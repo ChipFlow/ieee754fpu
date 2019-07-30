@@ -59,8 +59,8 @@ class DivPipeCoreOperation(enum.Enum):
     :attribute RSqrtRem: reciprocal-square-root/remainder.
     """
 
-    UDivRem = 0
-    SqrtRem = 1
+    SqrtRem = 0
+    UDivRem = 1
     RSqrtRem = 2
 
     def __int__(self):

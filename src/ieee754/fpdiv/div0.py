@@ -88,9 +88,6 @@ class FPDivStage0Mod(Elaboratable):
                  self.o.divisor_radicand.eq(divr_rad),
         ]
 
-        # set default since it's not always set; non-zero value for debugging
-        comb += self.o.operation.eq(1)
-
         with m.If(~self.i.out_do_z):
             # DIV
             with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
