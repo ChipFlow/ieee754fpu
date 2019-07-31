@@ -41,7 +41,7 @@ RoundMod, FPAddStage0Mod etc.
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import (ControlBase, SimpleHandshake, PassThroughStage)
+from nmutil.singlepipe import ControlBase
 from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
 from nmutil.concurrentunit import ReservationStations, num_bits
