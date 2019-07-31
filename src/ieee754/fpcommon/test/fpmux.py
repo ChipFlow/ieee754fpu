@@ -207,6 +207,17 @@ def create_random(num_rows, width, single_op=False, n_vals=10):
                 #op1 = 0xfea8
                 #op1 = 0xfd57
 
+                # f2int unsigned (fp64 to ui16)
+                #op1 = 0x40e6f5bc4d88b0cc
+
+                # f2int signed (fp64 to i16)
+                #op1 = 0xff292cf09f159ddb
+                #op1 = 0x5880e09f7cb716a1
+
+                # f2int signed (fp64 to i32)
+                #op1 = 0x5beb66ffc69a9a64
+                #op1 = 0xd4cdd178a1f2cdec
+
                 vals.append((op1,))
             else:
                 op1 = randint(0, (1 << width)-1)

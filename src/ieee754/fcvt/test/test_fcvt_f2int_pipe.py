@@ -10,6 +10,9 @@ from sfpy import Float64, Float32, Float16
 def fcvt_f64_ui32(x):
     return sfpy.float.f64_to_ui32(x)
 
+def fcvt_f64_i32(x):
+    return sfpy.float.f64_to_i32(x) & 0xffffffff
+
 def fcvt_i16_f32(x):
     print ("fcvt i16_f32", hex(x))
     return sfpy.float.i32_to_f32(x) # XXX no i16_to_f32, it's ok though
@@ -31,6 +34,12 @@ def fcvt_64_to_32(x):
 def fcvt_f64_ui64(x):
     return sfpy.float.f64_to_ui64(x)
 
+def fcvt_f64_ui16(x):
+    x = sfpy.float.f64_to_ui32(x)
+    if x >= 0xffff:
+        return 0xffff
+    return x
+
 def fcvt_f16_ui32(x):
     return sfpy.float.f16_to_ui32(x)
 
@@ -39,6 +48,14 @@ def fcvt_f16_ui16(x):
 
 def fcvt_f16_i16(x):
     x = sfpy.float.f16_to_i32(x)
+    if x >= 0x7fff:
+        return 0x7fff
+    if x <= -0x8000:
+        return 0x8000
+    return x & 0xffff
+
+def fcvt_f64_i16(x):
+    x = sfpy.float.f64_to_i32(x)
     if x >= 0x7fff:
         return 0x7fff
     if x <= -0x8000:
@@ -77,6 +94,18 @@ def test_int_pipe_f64_i64():
     dut = FPCVTF2IntMuxInOut(64, 64, 4, op_wid=1)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i64", Float64, fcvt_f64_i64,
                 True, n_vals=100, opcode=0x1)
+
+def test_int_pipe_f64_i32():
+    # XXX TODO: reduce range of FP num to actually fit (almost) into I32
+    dut = FPCVTF2IntMuxInOut(64, 32, 4, op_wid=1)
+    runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i32", Float64, fcvt_f64_i32,
+                    True, n_vals=100, opcode=0x1)
+
+def test_int_pipe_f64_i16():
+    # XXX TODO: reduce range of FP num to actually fit (almost) into I16
+    dut = FPCVTF2IntMuxInOut(64, 16, 4, op_wid=1)
+    runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i16", Float64, fcvt_f64_i16,
+                    True, n_vals=100, opcode=0x1)
 
 def test_int_pipe_f32_i32():
     dut = FPCVTF2IntMuxInOut(32, 32, 4, op_wid=1)
@@ -143,8 +172,23 @@ def test_int_pipe_f64_ui64():
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui64", Float64, fcvt_f64_ui64,
                     True, n_vals=100)
 
+def test_int_pipe_f64_ui32():
+    dut = FPCVTF2IntMuxInOut(64, 32, 4, op_wid=1)
+    runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui32", Float64, fcvt_f64_ui32,
+                    True, n_vals=100)
+
+def test_int_pipe_f64_ui16():
+    dut = FPCVTF2IntMuxInOut(64, 16, 4, op_wid=1)
+    runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui16", Float64, fcvt_f64_ui16,
+                    True, n_vals=100)
+
 if __name__ == '__main__':
     for i in range(200):
+        test_int_pipe_f64_i16()
+        test_int_pipe_f64_i32()
+        test_int_pipe_f64_ui16()
+        test_int_pipe_f64_ui32()
+        continue
         test_int_pipe_f16_i16()
         test_int_pipe_f32_i32()
         test_int_pipe_f64_i64()
