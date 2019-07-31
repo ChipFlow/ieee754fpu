@@ -110,26 +110,6 @@ class FPCVTMuxInOutBase(ReservationStations):
         return FPPackData(self.out_pspec)
 
 
-def getkls(*args, **kwargs):
-    print ("getkls", args, kwargs)
-    return FPCVTMuxInOutBase(*args, **kwargs)
-
-
-# factory which creates near-identical class structures that differ by
-# the module and the e_extra argument.  at some point it would be good
-# to merge these into a single dynamic "thing" that takes an operator.
-# however, the difference(s) in the bitwidths makes that a little less
-# straightforward.
-muxfactoryinput = [("FPCVTDownMuxInOut", FPCVTDownConvertMod, True, ),
-                   ("FPCVTUpMuxInOut",   FPCVTUpConvertMod,   False, ),
-                   ("FPCVTIntMuxInOut",   FPCVTIntToFloatMod,   True, ),
-                  ]
-
-for (name, kls, e_extra) in muxfactoryinput:
-    fn = functools.partial(getkls, kls, e_extra)
-    setattr(sys.modules[__name__], name, fn)
-
-
 class FPCVTF2IntMuxInOut(FPCVTMuxInOutBase):
     """ Reservation-Station version of FPCVT pipeline.
 
@@ -145,4 +125,24 @@ class FPCVTF2IntMuxInOut(FPCVTMuxInOutBase):
                                          in_width, out_width,
                                          num_rows, op_wid,
                                          pkls=FPCVTFtoIntBasePipe)
+
+
+# factory which creates near-identical class structures that differ by
+# the module and the e_extra argument.  at some point it would be good
+# to merge these into a single dynamic "thing" that takes an operator.
+# however, the difference(s) in the bitwidths makes that a little less
+# straightforward.
+muxfactoryinput = [("FPCVTDownMuxInOut", FPCVTDownConvertMod, True, ),
+                   ("FPCVTUpMuxInOut",   FPCVTUpConvertMod,   False, ),
+                   ("FPCVTIntMuxInOut",   FPCVTIntToFloatMod,   True, ),
+                  ]
+
+def getkls(*args, **kwargs):
+    print ("getkls", args, kwargs)
+    return FPCVTMuxInOutBase(*args, **kwargs)
+
+for (name, kls, e_extra) in muxfactoryinput:
+    fn = functools.partial(getkls, kls, e_extra)
+    setattr(sys.modules[__name__], name, fn)
+
 
