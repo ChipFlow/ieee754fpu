@@ -13,7 +13,7 @@ from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.exphigh import FPEXPHigh
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 
 
 class FPNorm1Data:
@@ -40,7 +40,7 @@ class FPNorm1ModSingle(PipeModBase):
         super().__init__(pspec, "normalise_1")
 
     def ispec(self):
-        return FPAddStage1Data(self.pspec, e_extra=self.e_extra)
+        return FPPostCalcData(self.pspec, e_extra=self.e_extra)
 
     def ospec(self):
         return FPNorm1Data(self.pspec)

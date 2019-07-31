@@ -13,7 +13,7 @@ from nmutil.singlepipe import StageChain
 from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNorm)
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.postnormalise import (FPNorm1Data,
                             FPNorm1Single, FPNorm1Multi)
 from ieee754.fpcommon.roundz import (FPRoundData, FPRound)

@@ -35,7 +35,7 @@ pipediv1 - FPDivStagesIntermediate ispec DivPipeInterstageData
 ...
 
 pipediv5 - FPDivStageFinal         ispec FPDivStage0Data
---------                           ospec FPAddStage1Data
+--------                           ospec FPPostCalcData
 
                 StageChain: DivPipeCalculateStage,
                             ...
@@ -43,7 +43,7 @@ pipediv5 - FPDivStageFinal         ispec FPDivStage0Data
                             DivPipeFinalStage,
                             FPDivStage2Mod
 
-normpack - FPNormToPack            ispec FPAddStage1Data
+normpack - FPNormToPack            ispec FPPostCalcData
 --------                           ospec FPPackData
 
                 StageChain: Norm1ModSingle,

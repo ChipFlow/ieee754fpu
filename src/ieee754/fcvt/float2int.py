@@ -6,7 +6,7 @@ from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.getop import FPADDBaseData
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.exphigh import FPEXPHigh
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord

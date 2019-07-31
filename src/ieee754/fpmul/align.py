@@ -9,7 +9,7 @@ from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 
 
 class FPAlignModSingle(PipeModBase):

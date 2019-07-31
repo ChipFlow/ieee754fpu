@@ -13,7 +13,7 @@ from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeOutputData
 
 
@@ -33,7 +33,7 @@ class FPDivStage2Mod(PipeModBase):
     def ospec(self):
         # XXX REQUIRED.  MUST NOT BE CHANGED.  this is the format
         # required for ongoing processing (normalisation, correction etc.)
-        return FPAddStage1Data(self.pspec)  # out to post-process
+        return FPPostCalcData(self.pspec)  # out to post-process
 
     def elaborate(self, platform):
         m = Module()

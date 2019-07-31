@@ -16,12 +16,12 @@ scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
                             FPAlignModSingle
 
 mulstages - FPMulStages            ispec FPSCData
----------                          ospec FPAddStage1Data
+---------                          ospec FPPostCalcData
 
                 StageChain: FPMulStage0Mod
                             FPMulStage1Mod
 
-normpack  - FPNormToPack           ispec FPAddStage1Data
+normpack  - FPNormToPack           ispec FPPostCalcData
 --------                           ospec FPPackData
 
                 StageChain: Norm1ModSingle,

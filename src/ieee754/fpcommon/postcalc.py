@@ -7,7 +7,7 @@ from ieee754.fpcommon.fpbase import Overflow, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPPipeContext
 
 
-class FPAddStage1Data:
+class FPPostCalcData:
 
     def __init__(self, pspec, e_extra=False):
         width = pspec.width

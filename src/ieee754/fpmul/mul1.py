@@ -8,7 +8,7 @@ from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpmul.mul0 import FPMulStage0Data
 
 
@@ -23,7 +23,7 @@ class FPMulStage1Mod(PipeModBase):
         return FPMulStage0Data(self.pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.pspec)
+        return FPPostCalcData(self.pspec)
 
     def elaborate(self, platform):
         m = Module()

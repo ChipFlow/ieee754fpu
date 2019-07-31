@@ -10,7 +10,7 @@ from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.getop import FPADDBaseData
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
@@ -26,7 +26,7 @@ class FPCVTUpConvertMod(PipeModBase):
         return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.out_pspec, e_extra=False)
+        return FPPostCalcData(self.out_pspec, e_extra=False)
 
     def elaborate(self, platform):
         m = Module()

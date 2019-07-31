@@ -9,7 +9,7 @@ from nmigen.cli import main, verilog
 from math import log
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpadd.add0 import FPAddStage0Data
 
 
@@ -25,7 +25,7 @@ class FPAddStage1Mod(PipeModBase):
         return FPAddStage0Data(self.pspec)
 
     def ospec(self):
-        return FPAddStage1Data(self.pspec)
+        return FPPostCalcData(self.pspec)
 
     def elaborate(self, platform):
         m = Module()

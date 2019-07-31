@@ -106,7 +106,7 @@ class FPDivStagesFinal(PipeModBaseChain):
         divstages.append(DivPipeFinalStage(self.pspec))
 
         # does conversion from DivPipeOutputData into
-        # FPAddStage1Data format (bad name, TODO, doesn't matter),
+        # FPPostCalcData format (bad name, TODO, doesn't matter),
         # so that post-normalisation and corrections can take over
         divstages.append(FPDivStage2Mod(self.pspec))
 
