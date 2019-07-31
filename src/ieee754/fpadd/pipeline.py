@@ -50,8 +50,8 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
-from .specialcases import FPAddSpecialCasesDeNorm
-from .addstages import FPAddAlignSingleAdd
+from ieee754.fpadd.specialcases import FPAddSpecialCasesDeNorm
+from ieee754.fpadd.addstages import FPAddAlignSingleAdd
 from ieee754.pipeline import PipelineSpec
 
 
