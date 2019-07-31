@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from ieee754.fpcommon.modbase import FPModBase
+from ieee754.fpcommon.modbase import FPModBase, FPModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode
 from nmutil.singlepipe import StageChain
 from ieee754.pipeline import DynamicPipe
@@ -131,36 +131,14 @@ class FPAddSpecialCasesMod(FPModBase):
         return m
 
 
-class FPAddSpecialCasesDeNorm(DynamicPipe):
-    """ special cases: NaNs, infs, zeros, denormalised
-        NOTE: some of these are unique to add.  see "Special Operations"
-        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
+class FPAddSpecialCasesDeNorm(FPModBaseChain):
+    """ special cases chain
     """
 
-    def __init__(self, pspec):
-        self.pspec = pspec
-        super().__init__(pspec)
-
-    def ispec(self):
-        return FPADDBaseData(self.pspec) # SC ispec
-
-    def ospec(self):
-        return FPSCData(self.pspec, True) # DeNorm
-
-    def setup(self, m, i):
+    def get_chain(self):
         """ links module to inputs and outputs
         """
         smod = FPAddSpecialCasesMod(self.pspec)
         dmod = FPAddDeNormMod(self.pspec, True)
 
-        chain = StageChain([smod, dmod])
-        chain.setup(m, i)
-
-        # only needed for break-out (early-out)
-        # self.out_do_z = smod.o.out_do_z
-
-        self.o = dmod.o
-
-    def process(self, i):
-        return self.o
-
+        return [smod, dmod]
