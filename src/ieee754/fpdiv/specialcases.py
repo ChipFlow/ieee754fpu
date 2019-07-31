@@ -60,6 +60,9 @@ class FPDIVSpecialCasesMod(FPModBase):
         comb += abnan.eq(a1.is_nan | b1.is_nan)
         comb += abinf.eq(a1.is_inf & b1.is_inf)
 
+        # default (overridden if needed)
+        comb += self.o.out_do_z.eq(1)
+
         # select one of 3 different sets of specialcases (DIV, SQRT, RSQRT)
         with m.Switch(self.i.ctx.op):
 
@@ -67,27 +70,22 @@ class FPDIVSpecialCasesMod(FPModBase):
 
                 # if a is NaN or b is NaN return NaN
                 with m.If(abnan):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # if a is inf and b is Inf return NaN
                 with m.Elif(abinf):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # if a is inf return inf
                 with m.Elif(a1.is_inf):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.inf(sabx)
 
                 # if b is inf return zero
                 with m.Elif(b1.is_inf):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.zero(sabx)
 
                 # if a is zero return zero (or NaN if b is zero)
                 with m.Elif(a1.is_zero):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.zero(sabx)
                     # b is zero return NaN
                     with m.If(b1.is_zero):
@@ -95,7 +93,6 @@ class FPDIVSpecialCasesMod(FPModBase):
 
                 # if b is zero return Inf
                 with m.Elif(b1.is_zero):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.inf(sabx)
 
                 # Denormalised Number checks next, so pass a/b data through
@@ -106,22 +103,18 @@ class FPDIVSpecialCasesMod(FPModBase):
 
                 # if a is zero return zero
                 with m.If(a1.is_zero):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.zero(a1.s)
 
                 # -ve number is NaN
                 with m.Elif(a1.s):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # if a is inf return inf
                 with m.Elif(a1.is_inf):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.inf(sabx)
 
                 # if a is NaN return NaN
                 with m.Elif(a1.is_nan):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # Denormalised Number checks next, so pass a/b data through
@@ -132,28 +125,23 @@ class FPDIVSpecialCasesMod(FPModBase):
 
                 # if a is NaN return canonical NaN
                 with m.If(a1.is_nan):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # if a is +/- zero return +/- INF
                 with m.Elif(a1.is_zero):
-                    comb += self.o.out_do_z.eq(1)
                     # this includes the "weird" case 1/sqrt(-0) == -Inf
                     comb += self.o.z.inf(a1.s)
 
                 # -ve number is canonical NaN
                 with m.Elif(a1.s):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.nan(0)
 
                 # if a is inf return zero (-ve already excluded, above)
                 with m.Elif(a1.is_inf):
-                    comb += self.o.out_do_z.eq(1)
                     comb += self.o.z.zero(0)
 
                 # Denormalised Number checks next, so pass a/b data through
                 with m.Else():
-                    comb += self.o.out_do_z.eq(0)
 
         comb += self.o.oz.eq(self.o.z.v)
         comb += self.o.ctx.eq(self.i.ctx)
