@@ -8,12 +8,12 @@ from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpadd.add0 import FPAddStage0Data
 
 
-class FPAddStage1Mod(FPModBase):
+class FPAddStage1Mod(PipeModBase):
     """ Second stage of add: preparation for normalisation.
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """

@@ -4,14 +4,14 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmutil.pipemodbase import FPModBaseChain
+from nmutil.pipemodbase import PipeModBaseChain
 from ieee754.fpcommon.postnormalise import FPNorm1ModSingle
 from ieee754.fpcommon.roundz import FPRoundMod
 from ieee754.fpcommon.corrections import FPCorrectionsMod
 from ieee754.fpcommon.pack import FPPackMod
 
 
-class FPNormToPack(FPModBaseChain):
+class FPNormToPack(PipeModBaseChain):
 
     def __init__(self, pspec, e_extra=False):
         self.e_extra = e_extra

@@ -7,7 +7,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
@@ -30,7 +30,7 @@ class FPAddStage0Data:
                 self.tot.eq(i.tot), self.ctx.eq(i.ctx)]
 
 
-class FPAddStage0Mod(FPModBase):
+class FPAddStage0Mod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "add0")

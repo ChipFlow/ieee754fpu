@@ -6,7 +6,7 @@ from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
@@ -42,7 +42,7 @@ class FPSCData:
         return ret
 
 
-class FPAddDeNormMod(FPModBase):
+class FPAddDeNormMod(PipeModBase):
 
     def __init__(self, pspec, m_extra):
         self.m_extra = m_extra

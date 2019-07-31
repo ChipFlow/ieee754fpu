@@ -13,7 +13,7 @@ from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase, FPModBaseChain
+from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
@@ -21,7 +21,7 @@ from ieee754.fpmul.align import FPAlignModSingle
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DP
 
 
-class FPDIVSpecialCasesMod(FPModBase):
+class FPDIVSpecialCasesMod(PipeModBase):
     """ special cases: NaNs, infs, zeros, denormalised
         see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -150,7 +150,7 @@ class FPDIVSpecialCasesMod(FPModBase):
         return m
 
 
-class FPDIVSpecialCasesDeNorm(FPModBaseChain):
+class FPDIVSpecialCasesDeNorm(PipeModBaseChain):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 

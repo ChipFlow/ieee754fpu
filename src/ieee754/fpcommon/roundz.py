@@ -5,7 +5,7 @@
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.postnormalise import FPNorm1Data
@@ -28,7 +28,7 @@ class FPRoundData:
         return ret
 
 
-class FPRoundMod(FPModBase):
+class FPRoundMod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "roundz")

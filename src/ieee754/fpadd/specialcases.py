@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase, FPModBaseChain
+from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode
 
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
@@ -14,7 +14,7 @@ from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
 
-class FPAddSpecialCasesMod(FPModBase):
+class FPAddSpecialCasesMod(PipeModBase):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -129,7 +129,7 @@ class FPAddSpecialCasesMod(FPModBase):
         return m
 
 
-class FPAddSpecialCasesDeNorm(FPModBaseChain):
+class FPAddSpecialCasesDeNorm(PipeModBaseChain):
     """ special cases chain
     """
 

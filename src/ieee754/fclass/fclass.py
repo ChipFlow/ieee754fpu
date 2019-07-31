@@ -3,13 +3,13 @@
 
 from nmigen import Module, Signal, Cat
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPClassMod(FPModBase):
+class FPClassMod(PipeModBase):
     """ obtains floating point information (zero, nan, inf etc.)
     """
     def __init__(self, in_pspec, out_pspec):

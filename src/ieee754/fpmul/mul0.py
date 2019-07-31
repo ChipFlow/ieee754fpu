@@ -7,7 +7,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
@@ -30,7 +30,7 @@ class FPMulStage0Data:
                 self.product.eq(i.product), self.ctx.eq(i.ctx)]
 
 
-class FPMulStage0Mod(FPModBase):
+class FPMulStage0Mod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "mul0")

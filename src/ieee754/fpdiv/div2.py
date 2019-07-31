@@ -12,12 +12,12 @@ Relevant bugreports:
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeOutputData
 
 
-class FPDivStage2Mod(FPModBase):
+class FPDivStage2Mod(PipeModBase):
     """ Last stage of div: preparation for normalisation.
 
         NOTE: this phase does NOT do ACTUAL DIV processing, it ONLY

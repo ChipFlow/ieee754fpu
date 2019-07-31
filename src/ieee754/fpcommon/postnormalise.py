@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Mux
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
                                      FPNumBase, FPNumBaseRecord)
 from ieee754.fpcommon.fpbase import FPState
@@ -33,7 +33,7 @@ class FPNorm1Data:
         return ret
 
 
-class FPNorm1ModSingle(FPModBase):
+class FPNorm1ModSingle(PipeModBase):
 
     def __init__(self, pspec, e_extra=False):
         self.e_extra = e_extra

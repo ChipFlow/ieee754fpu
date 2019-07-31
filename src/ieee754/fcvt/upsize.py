@@ -8,13 +8,13 @@ import functools
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTUpConvertMod(FPModBase):
+class FPCVTUpConvertMod(PipeModBase):
     """ FP up-conversion (lower to higher bitwidth)
     """
     def __init__(self, in_pspec, out_pspec):

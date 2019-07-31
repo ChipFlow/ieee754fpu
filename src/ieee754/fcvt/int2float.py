@@ -4,7 +4,7 @@
 from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh
@@ -12,7 +12,7 @@ from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTIntToFloatMod(FPModBase):
+class FPCVTIntToFloatMod(PipeModBase):
     """ FP integer conversion: copes with 16/32/64 int to 16/32/64 fp.
 
         self.ctx.i.op & 0x1 == 0x1 : SIGNED int

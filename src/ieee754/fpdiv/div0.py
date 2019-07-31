@@ -13,7 +13,7 @@ Relevant bugreports:
 from nmigen import Module, Signal, Cat, Elaboratable, Const, Mux
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
@@ -21,7 +21,7 @@ from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 
 
-class FPDivStage0Mod(FPModBase):
+class FPDivStage0Mod(PipeModBase):
     """ DIV/SQRT/RSQRT "preparation" module.
 
         adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),

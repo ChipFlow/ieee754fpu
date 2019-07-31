@@ -4,7 +4,7 @@ from nmigen import Module, Signal, Cat, Mux
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.msbhigh import FPMSBHigh
@@ -12,7 +12,7 @@ from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 
 
-class FPAlignModSingle(FPModBase):
+class FPAlignModSingle(PipeModBase):
 
     def __init__(self, pspec, e_extra=False):
         self.e_extra = e_extra

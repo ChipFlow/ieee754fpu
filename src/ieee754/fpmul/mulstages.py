@@ -5,14 +5,14 @@ from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import StageChain
 
-from nmutil.pipemodbase import FPModBaseChain
+from nmutil.pipemodbase import PipeModBaseChain
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpmul.mul0 import FPMulStage0Mod
 from ieee754.fpmul.mul1 import FPMulStage1Mod
 
 
-class FPMulStages(FPModBaseChain):
+class FPMulStages(PipeModBaseChain):
 
     def get_chain(self):
         # chain MulStage0 and MulStage1

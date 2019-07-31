@@ -5,12 +5,12 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.roundz import FPRoundData
 
 
-class FPCorrectionsMod(FPModBase):
+class FPCorrectionsMod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "corrections")

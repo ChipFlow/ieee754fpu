@@ -5,7 +5,7 @@
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord, FPNumBase
 from ieee754.fpcommon.roundz import FPRoundData
 from ieee754.fpcommon.getop import FPPipeContext
@@ -38,7 +38,7 @@ class FPPackData:
         return list(self)
 
 
-class FPPackMod(FPModBase):
+class FPPackMod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "pack")

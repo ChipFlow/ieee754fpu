@@ -4,7 +4,7 @@
 from nmigen import Module, Signal, Const
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh
@@ -13,7 +13,7 @@ from ieee754.fpcommon.exphigh import FPEXPHigh
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTDownConvertMod(FPModBase):
+class FPCVTDownConvertMod(PipeModBase):
     """ FP down-conversion (higher to lower bitwidth)
     """
     def __init__(self, in_pspec, out_pspec):

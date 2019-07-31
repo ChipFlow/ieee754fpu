@@ -6,13 +6,13 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
-from nmutil.pipemodbase import FPModBase, FPModBaseChain
+from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
 
 
-class FPMulSpecialCasesMod(FPModBase):
+class FPMulSpecialCasesMod(PipeModBase):
     """ special cases: NaNs, infs, zeros, denormalised
         see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
@@ -87,7 +87,7 @@ class FPMulSpecialCasesMod(FPModBase):
         return m
 
 
-class FPMulSpecialCasesDeNorm(FPModBaseChain):
+class FPMulSpecialCasesDeNorm(PipeModBaseChain):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 

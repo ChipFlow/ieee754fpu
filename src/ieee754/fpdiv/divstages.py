@@ -4,7 +4,7 @@ Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 
 """
 
-from nmutil.pipemodbase import FPModBaseChain
+from nmutil.pipemodbase import PipeModBaseChain
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
                                                  DivPipeSetupStage,
                                                  DivPipeCalculateStage,
@@ -14,7 +14,7 @@ from ieee754.fpdiv.div0 import FPDivStage0Mod
 from ieee754.fpdiv.div2 import FPDivStage2Mod
 
 
-class FPDivStagesSetup(FPModBaseChain):
+class FPDivStagesSetup(PipeModBaseChain):
 
     def __init__(self, pspec, n_stages, stage_offs):
         self.n_stages = n_stages # number of combinatorial stages
@@ -48,7 +48,7 @@ class FPDivStagesSetup(FPModBaseChain):
         return divstages
 
 
-class FPDivStagesIntermediate(FPModBaseChain):
+class FPDivStagesIntermediate(PipeModBaseChain):
 
     def __init__(self, pspec, n_stages, stage_offs):
         self.n_stages = n_stages # number of combinatorial stages
@@ -75,7 +75,7 @@ class FPDivStagesIntermediate(FPModBaseChain):
         return divstages
 
 
-class FPDivStagesFinal(FPModBaseChain):
+class FPDivStagesFinal(PipeModBaseChain):
 
     def __init__(self, pspec, n_stages, stage_offs):
         self.n_stages = n_stages # number of combinatorial stages

@@ -3,8 +3,8 @@ from ieee754.pipeline import DynamicPipe
 from nmutil.singlepipe import StageChain
 
 
-class FPModBase(Elaboratable):
-    """FPModBase: common code between nearly every pipeline module
+class PipeModBase(Elaboratable):
+    """PipeModBase: common code between nearly every pipeline module
     """
     def __init__(self, pspec, modname):
         self.modname = modname # use this to give a name to this module
@@ -22,8 +22,8 @@ class FPModBase(Elaboratable):
         m.d.comb += self.i.eq(i)
 
 
-class FPModBaseChain(DynamicPipe):
-    """FPModBaseChain: common code between stage-chained pipes
+class PipeModBaseChain(DynamicPipe):
+    """PipeModBaseChain: common code between stage-chained pipes
 
     Links a set of combinatorial modules (get_chain) together
     and uses pspec.pipekls to dynamically select the pipeline type

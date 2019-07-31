@@ -5,7 +5,7 @@
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from nmutil.pipemodbase import FPModBase
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.denorm import FPSCData
@@ -71,7 +71,7 @@ class FPAddAlignMultiMod:
         return m
 
 
-class FPAddAlignSingleMod(FPModBase):
+class FPAddAlignSingleMod(PipeModBase):
 
     def __init__(self, pspec):
         super().__init__(pspec, "align")
