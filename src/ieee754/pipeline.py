@@ -56,7 +56,8 @@ class Meta(ABCMeta):
         base = spec.pipekls # pick up the dynamic class from PipelineSpec, HERE
 
         if (cls, base) not in mcls.registry:
-            print ("__call__", args, kw, cls, base, base.__bases__, cls.__bases__)
+            print ("__call__", args, kw, cls, base,
+                   base.__bases__, cls.__bases__)
             mcls.registry[cls, base] = type(
                 cls.__name__,
                 (cls, base) + cls.__bases__[1:],
