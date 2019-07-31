@@ -14,4 +14,4 @@ def regressions():
     yield 0x358637BD,
     yield 0x3340f2a7,
     yield 0x33D6BF95,
-
+    yield 0x40801d50,
