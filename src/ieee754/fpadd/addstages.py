@@ -21,7 +21,6 @@ class FPAddAlignSingleAdd(DynamicPipe):
         #FPState.__init__(self, "align")
         self.pspec = pspec
         super().__init__(pspec)
-        self.a1o = self.ospec()
 
     def ispec(self):
         return FPSCData(self.pspec, True)
@@ -45,9 +44,4 @@ class FPAddAlignSingleAdd(DynamicPipe):
 
     def process(self, i):
         return self.o
-
-    def action(self, m):
-        m.d.sync += self.a1o.eq(self.process(None))
-        m.next = "normalise_1"
-
 
