@@ -24,13 +24,12 @@ from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 class FPDivStage0Mod(PipeModBase):
     """ DIV/SQRT/RSQRT "preparation" module.
 
-        adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),
-        puts exponent (and sign) into data structures for passing through to
-        the end, and puts the (adjusted) mantissa into the processing engine.
+    adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),
+    puts exponent (and sign) into data structures for passing through to
+    the end, and puts the (adjusted) mantissa into the processing engine.
 
-        no *actual* processing occurs here: it is *purely* preparation work.
+    no *actual* processing occurs here: it is *purely* preparation work.
     """
-
     def __init__(self, pspec):
         super().__init__(pspec, "div0")
 
@@ -80,21 +79,22 @@ class FPDivStage0Mod(PipeModBase):
         with m.If(~self.i.out_do_z):
             # DIV
             with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
+                # DIV: subtract exponents, XOR sign
                 comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
                          self.o.operation.eq(int(DPCOp.UDivRem))
                         ]
-
             # SQRT
             with m.Elif(self.i.ctx.op == int(DPCOp.SqrtRem)):
-                comb += [self.o.z.e.eq(adj_a_e >> 1),
+                # SQRT: sign is the same, [adjusted] exponent is halved
+                comb += [self.o.z.e.eq(adj_a_e >> 1), # halve
                          self.o.z.s.eq(self.i.a.s),
                          self.o.operation.eq(int(DPCOp.SqrtRem))
                         ]
-
             # RSQRT
             with m.Elif(self.i.ctx.op == int(DPCOp.RSqrtRem)):
-                comb += [self.o.z.e.eq(-(adj_a_e >> 1)),
+                # RSQRT: sign same, [adjusted] exponent halved and inverted
+                comb += [self.o.z.e.eq(-(adj_a_e >> 1)), # NEGATE and halve
                          self.o.z.s.eq(self.i.a.s),
                          self.o.operation.eq(int(DPCOp.RSqrtRem))
                         ]
