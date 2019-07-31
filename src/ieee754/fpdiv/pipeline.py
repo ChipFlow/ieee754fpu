@@ -63,9 +63,6 @@ RS's.  that's far too many.  6 is just about an acceptable number.
 even 8 is starting to get alarmingly high.
 """
 
-from nmigen import Module
-from nmigen.cli import main, verilog
-
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
