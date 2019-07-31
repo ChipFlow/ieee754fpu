@@ -2,10 +2,10 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Elaboratable
+from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPNumOut, FPNumIn, FPNumBase
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
 from ieee754.fpcommon.denorm import FPSCData
@@ -71,27 +71,16 @@ class FPAddAlignMultiMod:
         return m
 
 
-class FPAddAlignSingleMod(Elaboratable):
+class FPAddAlignSingleMod(FPModBase):
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "align")
 
     def ispec(self):
         return FPSCData(self.pspec, True)
 
     def ospec(self):
         return FPNumIn2Ops(self.pspec)
-
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.align = self
-        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         """ Aligns A against B or B against A, depending on which has the

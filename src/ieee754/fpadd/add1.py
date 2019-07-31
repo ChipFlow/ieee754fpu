@@ -8,34 +8,24 @@ from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpadd.add0 import FPAddStage0Data
 
 
-class FPAddStage1Mod(Elaboratable):
+class FPAddStage1Mod(FPModBase):
     """ Second stage of add: preparation for normalisation.
         detects when tot sum is too big (tot[27] is kinda a carry bit)
     """
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "add1")
 
     def ispec(self):
         return FPAddStage0Data(self.pspec)
 
     def ospec(self):
         return FPAddStage1Data(self.pspec)
-
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.add1 = self
-        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()

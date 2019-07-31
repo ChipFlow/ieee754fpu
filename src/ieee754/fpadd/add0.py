@@ -4,8 +4,10 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmigen import Module, Signal, Cat, Elaboratable
+from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
+
+from ieee754.fpcommon.modbase import FPModBase
 
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
@@ -28,27 +30,16 @@ class FPAddStage0Data:
                 self.tot.eq(i.tot), self.ctx.eq(i.ctx)]
 
 
-class FPAddStage0Mod(Elaboratable):
+class FPAddStage0Mod(FPModBase):
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "add0")
 
     def ispec(self):
         return FPSCData(self.pspec, True)
 
     def ospec(self):
         return FPAddStage0Data(self.pspec)
-
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.add0 = self
-        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
