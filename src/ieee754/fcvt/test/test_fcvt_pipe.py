@@ -6,6 +6,8 @@ from ieee754.fpcommon.test.fpmux import runfp
 
 from sfpy import Float64, Float32, Float16
 
+import unittest
+
 def fcvt_16(x):
     return Float16(x)
 
