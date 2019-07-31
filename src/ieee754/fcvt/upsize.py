@@ -58,7 +58,6 @@ class FPCVTUpConvertMod(PipeModBase):
         comb += self.o.z.m[ms:].eq(a1.m)
         comb += self.o.z.create(a1.s, a1.e, self.o.z.m) # ... here
 
-
         # special cases active (except tiny-number normalisation, below)
         comb += self.o.out_do_z.eq(1)
 
