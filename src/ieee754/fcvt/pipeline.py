@@ -1,5 +1,8 @@
-# IEEE754 Floating Point Conversion
-# Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+"""IEEE754 Floating Point Conversion
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
 
 
 import sys
