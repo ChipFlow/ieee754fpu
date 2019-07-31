@@ -32,6 +32,7 @@ class PipelineSpec:
         self.op_wid = op_wid
         self.opkls = opkls
         self.pipekls = pipekls or SimpleHandshakeRedir
+        self.stage = None
         self.core_config = None
         self.fpformat = None
         self.n_comb_stages = None
@@ -96,7 +97,10 @@ class DynamicPipe(metaclass=Meta):
 # "self" as the 1st argument (it is its own "Stage").  anything else
 # could hypothetically be passed through the pspec.
 class SimpleHandshakeRedir(SimpleHandshake):
-    def __init__(self, pspec, *args):
-        print ("redir", pspec, args)
-        SimpleHandshake.__init__(self, self)
+    def __init__(self, mod, *args):
+        print ("redir", mod, args)
+        stage = self
+        if args and args[0].stage:
+            stage = args[0].stage
+        SimpleHandshake.__init__(self, stage)
 

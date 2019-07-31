@@ -21,10 +21,9 @@ from math import log
 
 from ieee754.fpcommon.getop import FPPipeContext
 
-from nmutil.singlepipe import SimpleHandshake, StageChain
+from nmutil.singlepipe import StageChain
 
-from ieee754.fpcommon.fpbase import FPState
-from ieee754.pipeline import PipelineSpec
+from ieee754.pipeline import PipelineSpec, DynamicPipe
 
 from ieee754.fcvt.float2int import FPCVTFloatToIntMod
 from ieee754.fcvt.int2float import FPCVTIntToFloatMod
@@ -40,21 +39,22 @@ class SignedOp:
         return [self.signed.eq(i)]
 
 
-class FPCVTConvertDeNorm(FPState, SimpleHandshake):
+class FPCVTConvertDeNorm(DynamicPipe):
     """ FPConversion and De-norm
     """
 
-    def __init__(self, modkls, in_pspec, out_pspec):
-        FPState.__init__(self, "cvt")
+    def __init__(self, in_pspec, out_pspec, modkls):
+        print ("cvtdenorm")
         sc = modkls(in_pspec, out_pspec)
-        SimpleHandshake.__init__(self, sc)
+        in_pspec.stage = sc
+        super().__init__(in_pspec)
         self.out = self.ospec(None)
 
 
 class FPCVTFtoIntBasePipe(ControlBase):
     def __init__(self, modkls, e_extra, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTConvertDeNorm(modkls, in_pspec, out_pspec)
+        self.pipe1 = FPCVTConvertDeNorm(in_pspec, out_pspec, modkls)
         #self.pipe2 = FPNormToPack(out_pspec, e_extra=e_extra)
 
         #self._eqs = self.connect([self.pipe1, self.pipe2])
@@ -71,7 +71,7 @@ class FPCVTFtoIntBasePipe(ControlBase):
 class FPCVTBasePipe(ControlBase):
     def __init__(self, modkls, e_extra, in_pspec, out_pspec):
         ControlBase.__init__(self)
-        self.pipe1 = FPCVTConvertDeNorm(modkls, in_pspec, out_pspec)
+        self.pipe1 = FPCVTConvertDeNorm(in_pspec, out_pspec, modkls)
         self.pipe2 = FPNormToPack(out_pspec, e_extra=e_extra)
 
         self._eqs = self.connect([self.pipe1, self.pipe2])
@@ -99,8 +99,8 @@ class FPCVTMuxInOutBase(ReservationStations):
         self.op_wid = op_wid
         self.id_wid = num_bits(num_rows)
 
-        self.in_pspec = PipelineSpec(in_width, id_wid, self.op_wid)
-        self.out_pspec = PipelineSpec(out_width, id_wid, op_wid)
+        self.in_pspec = PipelineSpec(in_width, self.id_wid, self.op_wid)
+        self.out_pspec = PipelineSpec(out_width, self.id_wid, op_wid)
 
         self.alu = pkls(modkls, e_extra, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
