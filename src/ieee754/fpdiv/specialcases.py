@@ -142,6 +142,7 @@ class FPDIVSpecialCasesMod(FPModBase):
 
                 # Denormalised Number checks next, so pass a/b data through
                 with m.Else():
+                    comb += self.o.out_do_z.eq(0)
 
         comb += self.o.oz.eq(self.o.z.v)
         comb += self.o.ctx.eq(self.i.ctx)
