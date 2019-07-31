@@ -7,6 +7,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
@@ -29,12 +30,10 @@ class FPMulStage0Data:
                 self.product.eq(i.product), self.ctx.eq(i.ctx)]
 
 
-class FPMulStage0Mod(Elaboratable):
+class FPMulStage0Mod(FPModBase):
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "mul0")
 
     def ispec(self):
         return FPSCData(self.pspec, False)
@@ -42,33 +41,26 @@ class FPMulStage0Mod(Elaboratable):
     def ospec(self):
         return FPMulStage0Data(self.pspec)
 
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.mul0 = self
-        m.d.comb += self.i.eq(i)
-
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        m.d.comb += [
+        comb += [
                      am0.eq(Cat(self.i.a.m, 0)),
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]
         # same-sign (both negative or both positive) mul mantissas
         with m.If(~self.i.out_do_z):
-            m.d.comb += [self.o.z.e.eq(self.i.a.e + self.i.b.e + 1),
+            comb += [self.o.z.e.eq(self.i.a.e + self.i.b.e + 1),
                          self.o.product.eq(am0 * bm0 * 4),
                          self.o.z.s.eq(self.i.a.s ^ self.i.b.s)
                 ]
 
-        m.d.comb += self.o.oz.eq(self.i.oz)
-        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.oz.eq(self.i.oz)
+        comb += self.o.out_do_z.eq(self.i.out_do_z)
+        comb += self.o.ctx.eq(self.i.ctx)
+
         return m

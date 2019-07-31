@@ -17,7 +17,6 @@ class FPMulStages(DynamicPipe):
     def __init__(self, pspec):
         self.pspec = pspec
         super().__init__(pspec)
-        self.m1o = self.ospec()
 
     def ispec(self):
         return FPSCData(self.pspec, False)

@@ -1,26 +1,22 @@
 # IEEE Floating Point Multiplier
 
-from nmigen import Module, Signal, Cat, Mux, Elaboratable
+from nmigen import Module, Signal, Cat, Mux
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.singlepipe import StageChain
-
-from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
-                                     FPNumBase, FPNumBaseRecord)
+from ieee754.fpcommon.modbase import FPModBase
+from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 
 
-class FPAlignModSingle(Elaboratable):
+class FPAlignModSingle(FPModBase):
 
     def __init__(self, pspec, e_extra=False):
-        self.pspec = pspec
         self.e_extra = e_extra
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "align")
 
     def ispec(self):
         return FPSCData(self.pspec, False)
@@ -28,17 +24,9 @@ class FPAlignModSingle(Elaboratable):
     def ospec(self):
         return FPSCData(self.pspec, False)
 
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.align = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
-
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
         self.o.a.m.name = "o_a_m"
         self.o.b.m.name = "o_b_m"
@@ -55,38 +43,36 @@ class FPAlignModSingle(Elaboratable):
         m.submodules.norm_pe_b = msb_b
 
         # connect to msb_a/b module
-        m.d.comb += msb_a.m_in.eq(insel_a.m)
-        m.d.comb += msb_a.e_in.eq(insel_a.e)
-        m.d.comb += msb_b.m_in.eq(insel_b.m)
-        m.d.comb += msb_b.e_in.eq(insel_b.e)
+        comb += msb_a.m_in.eq(insel_a.m)
+        comb += msb_a.e_in.eq(insel_a.e)
+        comb += msb_b.m_in.eq(insel_b.m)
+        comb += msb_b.e_in.eq(insel_b.e)
 
         # copy input to output (overridden below)
-        m.d.comb += self.o.a.eq(insel_a)
-        m.d.comb += self.o.b.eq(insel_b)
+        comb += self.o.a.eq(insel_a)
+        comb += self.o.b.eq(insel_b)
 
         # normalisation increase/decrease conditions
         decrease_a = Signal(reset_less=True)
         decrease_b = Signal(reset_less=True)
-        m.d.comb += decrease_a.eq(insel_a.m_msbzero)
-        m.d.comb += decrease_b.eq(insel_b.m_msbzero)
+        comb += decrease_a.eq(insel_a.m_msbzero)
+        comb += decrease_b.eq(insel_b.m_msbzero)
 
-        # ok this is near-identical to FPNorm.  TODO: modularise
+        # ok this is near-identical to FPNorm: use same class (FPMSBHigh)
         with m.If(~self.i.out_do_z):
             with m.If(decrease_a):
-                m.d.comb += [
+                comb += [
                     self.o.a.e.eq(msb_a.e_out),
                     self.o.a.m.eq(msb_a.m_out),
                 ]
             with m.If(decrease_b):
-                m.d.comb += [
+                comb += [
                     self.o.b.e.eq(msb_b.e_out),
                     self.o.b.m.eq(msb_b.m_out),
                 ]
 
-        m.d.comb += self.o.ctx.eq(self.i.ctx)
-        m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
-        m.d.comb += self.o.oz.eq(self.i.oz)
+        comb += self.o.ctx.eq(self.i.ctx)
+        comb += self.o.out_do_z.eq(self.i.out_do_z)
+        comb += self.o.oz.eq(self.i.oz)
 
         return m
-
-
