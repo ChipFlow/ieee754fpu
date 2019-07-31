@@ -72,7 +72,7 @@ class FPCVTDownConvertMod(PipeModBase):
             comb += self.o.of.guard.eq(a1.m[ms-1])
             comb += self.o.of.round_bit.eq(a1.m[ms-2])
             comb += self.o.of.sticky.eq(a1.m[:ms-2].bool())
-            comb += self.o.of.m0.eq(a1.m[ms])  # bit of a1
+            comb += self.o.of.m0.eq(a1.m[ms])  # LSB bit of a1
 
             comb += self.o.z.s.eq(a1.s)
             comb += self.o.z.e.eq(a1.e)
