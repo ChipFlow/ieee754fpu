@@ -14,7 +14,7 @@ def fcvt_16(x):
 def test_pipe_fp64_16():
     dut = FPCVTDownMuxInOut(64, 16, 4)
     run_pipe_fp(dut, 64, "fcvt", unit_test_single, Float64,
-                regressions, fcvt_16, 10, True)
+                regressions, fcvt_16, 100, True)
 
 if __name__ == '__main__':
     test_pipe_fp64_16()
