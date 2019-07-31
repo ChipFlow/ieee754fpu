@@ -2,17 +2,18 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Mux, Elaboratable
+from nmigen import Module, Signal, Cat, Mux
 from nmigen.cli import main, verilog
 from math import log
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
                                      FPNumBase, FPNumBaseRecord)
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.exphigh import FPEXPHigh
-from .postcalc import FPAddStage1Data
+from ieee754.fpcommon.postcalc import FPAddStage1Data
 
 
 class FPNorm1Data:
@@ -32,28 +33,17 @@ class FPNorm1Data:
         return ret
 
 
-class FPNorm1ModSingle(Elaboratable):
+class FPNorm1ModSingle(FPModBase):
 
     def __init__(self, pspec, e_extra=False):
-        self.pspec = pspec
         self.e_extra = e_extra
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "normalise_1")
 
     def ispec(self):
         return FPAddStage1Data(self.pspec, e_extra=self.e_extra)
 
     def ospec(self):
         return FPNorm1Data(self.pspec)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.normalise_1 = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()

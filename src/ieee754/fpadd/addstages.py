@@ -10,12 +10,12 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import StageChain
 from ieee754.pipeline import DynamicPipe
 
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpadd.align import FPAddAlignSingleMod
 from ieee754.fpadd.add0 import FPAddStage0Mod
 from ieee754.fpadd.add1 import FPAddStage1Mod
+
 
 class FPAddAlignSingleAdd(DynamicPipe):
 
