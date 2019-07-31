@@ -5,7 +5,7 @@
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fpcommon.roundz import FPRoundData
 

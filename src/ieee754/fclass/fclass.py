@@ -3,7 +3,7 @@
 
 from nmigen import Module, Signal, Cat
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord

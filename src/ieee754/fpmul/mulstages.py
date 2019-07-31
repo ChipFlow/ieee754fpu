@@ -5,7 +5,7 @@ from nmigen.cli import main, verilog
 
 from nmutil.singlepipe import StageChain
 
-from ieee754.fpcommon.modbase import FPModBaseChain
+from nmutil.pipemodbase import FPModBaseChain
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpmul.mul0 import FPMulStage0Mod

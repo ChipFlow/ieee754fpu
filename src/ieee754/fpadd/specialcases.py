@@ -6,7 +6,7 @@ from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog
 from math import log
 
-from ieee754.fpcommon.modbase import FPModBase, FPModBaseChain
+from nmutil.pipemodbase import FPModBase, FPModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode
 
 from ieee754.fpcommon.fpbase import FPNumBaseRecord

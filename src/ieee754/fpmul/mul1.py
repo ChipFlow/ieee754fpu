@@ -7,7 +7,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpmul.mul0 import FPMulStage0Data
 

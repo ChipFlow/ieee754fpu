@@ -4,7 +4,7 @@
 from nmigen import Module, Signal, Const
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh

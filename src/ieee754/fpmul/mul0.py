@@ -7,7 +7,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext

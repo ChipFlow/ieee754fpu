@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from ieee754.fpcommon.modbase import FPModBaseChain
+from nmutil.pipemodbase import FPModBaseChain
 from ieee754.fpcommon.postnormalise import FPNorm1ModSingle
 from ieee754.fpcommon.roundz import FPRoundMod
 from ieee754.fpcommon.corrections import FPCorrectionsMod

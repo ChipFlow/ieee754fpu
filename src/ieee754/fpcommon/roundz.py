@@ -5,7 +5,7 @@
 from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.modbase import FPModBase
+from nmutil.pipemodbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.postnormalise import FPNorm1Data

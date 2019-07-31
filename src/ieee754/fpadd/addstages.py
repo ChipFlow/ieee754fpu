@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from ieee754.fpcommon.modbase import FPModBaseChain
+from nmutil.pipemodbase import FPModBaseChain
 
 from ieee754.fpadd.align import FPAddAlignSingleMod
 from ieee754.fpadd.add0 import FPAddStage0Mod

@@ -4,7 +4,7 @@ Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 
 """
 
-from ieee754.fpcommon.modbase import FPModBaseChain
+from nmutil.pipemodbase import FPModBaseChain
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
                                                  DivPipeSetupStage,
                                                  DivPipeCalculateStage,
