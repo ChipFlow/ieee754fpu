@@ -7,7 +7,7 @@ class FPModBase(Elaboratable):
     """FPModBase: common code between nearly every pipeline module
     """
     def __init__(self, pspec, modname):
-        self.modname = modname
+        self.modname = modname # use this to give a name to this module
         self.pspec = pspec
         self.i = self.ispec()
         self.o = self.ospec()
