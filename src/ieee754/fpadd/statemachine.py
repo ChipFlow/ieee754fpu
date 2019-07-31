@@ -8,7 +8,7 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPOpIn, FPOpOut
 from ieee754.fpcommon.fpbase import Trigger
-from nmutil.singlepipe import (StageChain, SimpleHandshake)
+from nmutil.singlepipe import StageChain
 
 from ieee754.fpcommon.fpbase import FPState, FPID
 from ieee754.fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
