@@ -21,7 +21,7 @@ class FPAddStage0Data:
         self.z = FPNumBaseRecord(width, False)
         self.out_do_z = Signal(reset_less=True)
         self.oz = Signal(width, reset_less=True)
-        self.tot = Signal(self.z.m_width + 4, reset_less=True)
+        self.tot = Signal(self.z.m_width + 4, reset_less=True) # 4 extra bits
         self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
@@ -55,6 +55,7 @@ class FPAddStage0Mod(FPModBase):
                      am0.eq(Cat(self.i.a.m, 0)),
                      bm0.eq(Cat(self.i.b.m, 0))
                     ]
+
         # same-sign (both negative or both positive) add mantissas
         with m.If(~self.i.out_do_z):
             comb += self.o.z.e.eq(self.i.a.e)
@@ -80,4 +81,5 @@ class FPAddStage0Mod(FPModBase):
         comb += self.o.oz.eq(self.i.oz)
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.ctx.eq(self.i.ctx)
+
         return m
