@@ -24,6 +24,10 @@ class FPModBase(Elaboratable):
 
 class FPModBaseChain(DynamicPipe):
     """FPModBaseChain: common code between stage-chained pipes
+
+    Links a set of combinatorial modules (get_chain) together
+    and uses pspec.pipekls to dynamically select the pipeline type
+    Also conforms to the Pipeline Stage API
     """
     def __init__(self, pspec):
         self.pspec = pspec
