@@ -8,7 +8,6 @@ from nmigen.cli import main, verilog
 from ieee754.fpcommon.fpbase import FPNumOut, FPNumIn, FPNumBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import MultiShiftRMerge
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 
@@ -30,8 +29,7 @@ class FPNumIn2Ops:
                 self.a.eq(i.a), self.b.eq(i.b), self.ctx.eq(i.ctx)]
 
 
-
-class FPAddAlignMultiMod(FPState):
+class FPAddAlignMultiMod:
 
     def __init__(self, width):
         self.in_a = FPNumBaseRecord(width)
@@ -73,30 +71,6 @@ class FPAddAlignMultiMod(FPState):
         return m
 
 
-class FPAddAlignMulti(FPState):
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "align")
-        self.mod = FPAddAlignMultiMod(pspec)
-        self.out_a = FPNumBaseRecord(width)
-        self.out_b = FPNumBaseRecord(width)
-        self.exp_eq = Signal(reset_less=True)
-
-    def setup(self, m, in_a, in_b):
-        """ links module to inputs and outputs
-        """
-        m.submodules.align = self.mod
-        m.d.comb += self.mod.in_a.eq(in_a)
-        m.d.comb += self.mod.in_b.eq(in_b)
-        m.d.comb += self.exp_eq.eq(self.mod.exp_eq)
-        m.d.sync += self.out_a.eq(self.mod.out_a)
-        m.d.sync += self.out_b.eq(self.mod.out_b)
-
-    def action(self, m):
-        with m.If(self.exp_eq):
-            m.next = "add_0"
-
-
 class FPAddAlignSingleMod(Elaboratable):
 
     def __init__(self, pspec):
@@ -130,19 +104,12 @@ class FPAddAlignSingleMod(Elaboratable):
         """
         m = Module()
 
-        #m.submodules.align_in_a = self.i.a
-        #m.submodules.align_in_b = self.i.b
-        #m.submodules.align_out_a = self.o.a
-        #m.submodules.align_out_b = self.o.b
-
         # temporary (muxed) input and output to be shifted
         width = self.pspec.width
         t_inp = FPNumBaseRecord(width)
         t_out = FPNumBaseRecord(width)
         espec = (len(self.i.a.e), True)
         msr = MultiShiftRMerge(self.i.a.m_width, espec)
-        #m.submodules.align_t_in = t_inp
-        #m.submodules.align_t_out = t_out
         m.submodules.multishift_r = msr
 
         ediff = Signal(espec, reset_less=True)
@@ -190,27 +157,4 @@ class FPAddAlignSingleMod(Elaboratable):
         m.d.comb += self.o.oz.eq(self.i.oz)
 
         return m
-
-
-class FPAddAlignSingle(FPState):
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "align")
-        width = pspec.width
-        self.mod = FPAddAlignSingleMod(pspec)
-        self.out_a = FPNumIn(None, width)
-        self.out_b = FPNumIn(None, width)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        # NOTE: could be done as comb
-        m.d.sync += self.out_a.eq(self.mod.out_a)
-        m.d.sync += self.out_b.eq(self.mod.out_b)
-
-    def action(self, m):
-        m.next = "add_0"
-
 
