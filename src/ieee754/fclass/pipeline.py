@@ -15,22 +15,18 @@ from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.fpbase import FPState, FPNumBase
 from ieee754.fpcommon.getop import FPPipeContext
 
-from nmutil.singlepipe import SimpleHandshake, StageChain
-
 from ieee754.fpcommon.fpbase import FPState
 from ieee754.fclass.fclass import FPClassMod
-from ieee754.pipeline import PipelineSpec
+from ieee754.pipeline import PipelineSpec, DynamicPipe
 
 
-class FPFClassPipe(FPState, SimpleHandshake):
-    """ FPConversion and De-norm
+class FPFClassPipe(DynamicPipe):
+    """ FPConversion: turns its argument (modkls) from a stage into a pipe
     """
 
-    def __init__(self, modkls, in_pspec, out_pspec):
-        FPState.__init__(self, "cvt")
-        sc = modkls(in_pspec, out_pspec)
-        SimpleHandshake.__init__(self, sc)
-        self.out = self.ospec(None)
+    def __init__(self, in_pspec, out_pspec, modkls):
+        in_pspec.stage = modkls(in_pspec, out_pspec)
+        super().__init__(in_pspec)
 
 
 # XXX not used because there isn't anything to "join" (no pipe chain)
@@ -40,7 +36,7 @@ class FPClassBasePipe(ControlBase):
     def __init__(self, modkls, in_pspec, out_pspec):
         ControlBase.__init__(self)
         # redundant because there's only one "thing" here.
-        self.pipe1 = FPFClassPipe(modkls, in_pspec, out_pspec)
+        self.pipe1 = FPFClassPipe(in_pspec, out_pspec, modkls)
         self._eqs = self.connect([self.pipe1, ])
 
     def elaborate(self, platform):
@@ -68,7 +64,7 @@ class FPClassMuxInOutBase(ReservationStations):
         self.in_pspec = PipelineSpec(in_width, self.id_wid, op_wid)
         self.out_pspec = PipelineSpec(out_width, self.id_wid, op_wid)
 
-        self.alu = pkls(modkls, self.in_pspec, self.out_pspec)
+        self.alu = pkls(self.in_pspec, self.out_pspec, modkls)
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
