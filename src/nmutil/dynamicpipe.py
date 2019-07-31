@@ -1,6 +1,18 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
+""" Meta-class that allows a dynamic runtime parameter-selectable "mixin"
+
+The reasons why this technique is being deployed is because SimpleHandshake
+needs to be dynamically replaced at the end-users' choice, without having
+to duplicate dozens of classes using multiple-inheritanc "Mix-in" techniques.
+
+It is however extremely unusual, and has been explicitly limited to this *one*
+module.  DO NOT try to use this technique elsewhere, it is extremely hard to
+understand (meta-class programming).
+
+"""
+
 from abc import ABCMeta
 
 from nmutil.singlepipe import SimpleHandshake
