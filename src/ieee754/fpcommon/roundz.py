@@ -52,5 +52,3 @@ class FPRoundMod(FPModBase):
                     comb += self.o.z.e.eq(self.i.z.e + 1)
 
         return m
-
-
