@@ -9,45 +9,32 @@ Relevant bugreports:
 * http://bugs.libre-riscv.org/show_bug.cgi?id=44
 """
 
-from nmigen import Module, Signal, Cat, Const, Elaboratable
+from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 from math import log
 
+from ieee754.fpcommon.modbase import FPModBase, FPModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
-from nmutil.singlepipe import StageChain
-
-from ieee754.pipeline import DynamicPipe
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DP
 
 
-class FPDIVSpecialCasesMod(Elaboratable):
+class FPDIVSpecialCasesMod(FPModBase):
     """ special cases: NaNs, infs, zeros, denormalised
         see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "specialcases")
 
     def ispec(self):
         return FPADDBaseData(self.pspec)
 
     def ospec(self):
         return FPSCData(self.pspec, False)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.specialcases = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()
@@ -64,13 +51,13 @@ class FPDIVSpecialCasesMod(Elaboratable):
                      self.o.b.eq(b1)
                      ]
 
+        # temporaries (used below)
         sabx = Signal(reset_less=True)   # sign a xor b (sabx, get it?)
-        comb += sabx.eq(a1.s ^ b1.s)
-
         abnan = Signal(reset_less=True)
-        comb += abnan.eq(a1.is_nan | b1.is_nan)
-
         abinf = Signal(reset_less=True)
+
+        comb += sabx.eq(a1.s ^ b1.s)
+        comb += abnan.eq(a1.is_nan | b1.is_nan)
         comb += abinf.eq(a1.is_inf & b1.is_inf)
 
         # select one of 3 different sets of specialcases (DIV, SQRT, RSQRT)
@@ -174,35 +161,15 @@ class FPDIVSpecialCasesMod(Elaboratable):
         return m
 
 
-class FPDIVSpecialCasesDeNorm(DynamicPipe):
+class FPDIVSpecialCasesDeNorm(FPModBaseChain):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
-    def __init__(self, pspec):
-        self.pspec = pspec
-        super().__init__(pspec)
-        self.out = self.ospec()
-
-    def ispec(self):
-        return FPADDBaseData(self.pspec)  # SpecialCases ispec
-
-    def ospec(self):
-        return FPSCData(self.pspec, False)  # Align ospec
-
-    def setup(self, m, i):
+    def get_chain(self):
         """ links module to inputs and outputs
         """
         smod = FPDIVSpecialCasesMod(self.pspec)
         dmod = FPAddDeNormMod(self.pspec, False)
         amod = FPAlignModSingle(self.pspec, False)
 
-        chain = StageChain([smod, dmod, amod])
-        chain.setup(m, i)
-
-        # only needed for break-out (early-out)
-        # self.out_do_z = smod.o.out_do_z
-
-        self.o = amod.o
-
-    def process(self, i):
-        return self.o
+        return [smod, dmod, amod]
