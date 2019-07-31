@@ -8,7 +8,7 @@ Stack looks like this:
 * mulstages - FPMulstages
 * normpack  - FPNormToPack
 
-scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPBaseData
 ------                             ospec FPSCData
 
                 StageChain: FPMULSpecialCasesMod,
@@ -43,7 +43,7 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
@@ -73,7 +73,7 @@ class FPMULBasePipe(ControlBase):
 class FPMULMuxInOut(ReservationStations):
     """ Reservation-Station version of FPMUL pipeline.
 
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * fan-in on inputs (an array of FPBaseData: a,b,mid)
         * 2-stage multiplier pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
@@ -88,7 +88,7 @@ class FPMULMuxInOut(ReservationStations):
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.pspec)
+        return FPBaseData(self.pspec)
 
     def o_specfn(self):
         return FPPackData(self.pspec)

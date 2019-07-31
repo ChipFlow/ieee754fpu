@@ -5,7 +5,7 @@ from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 
@@ -24,7 +24,7 @@ class FPCVTIntToFloatMod(PipeModBase):
         super().__init__(in_pspec, "intconvert")
 
     def ispec(self):
-        return FPADDBaseData(self.in_pspec)
+        return FPBaseData(self.in_pspec)
 
     def ospec(self):
         return FPPostCalcData(self.out_pspec, e_extra=True)

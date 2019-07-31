@@ -15,7 +15,7 @@ from math import log
 
 from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DP
@@ -31,7 +31,7 @@ class FPDIVSpecialCasesMod(PipeModBase):
         super().__init__(pspec, "specialcases")
 
     def ispec(self):
-        return FPADDBaseData(self.pspec)
+        return FPBaseData(self.pspec)
 
     def ospec(self):
         return FPSCData(self.pspec, False)

@@ -7,7 +7,7 @@ from math import log
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
 
@@ -22,7 +22,7 @@ class FPMulSpecialCasesMod(PipeModBase):
         super().__init__(pspec, "specialcases")
 
     def ispec(self):
-        return FPADDBaseData(self.pspec)
+        return FPBaseData(self.pspec)
 
     def ospec(self):
         return FPSCData(self.pspec, False)

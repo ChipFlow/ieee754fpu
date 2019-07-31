@@ -77,36 +77,6 @@ class FPPipeContext:
         return list(self)
 
 
-class FPADDBaseData:
-
-    def __init__(self, pspec, n_ops=2):
-        width = pspec.width
-        self.ctx = FPPipeContext(pspec)
-        ops = []
-        for i in range(n_ops):
-            name = chr(ord("a")+i)
-            operand = Signal(width, name=name)
-            setattr(self, name, operand)
-            ops.append(operand)
-        self.muxid = self.ctx.muxid # make muxid available here: complicated
-        self.ops = ops
-
-    def eq(self, i):
-        ret = []
-        for op1, op2 in zip(self.ops, i.ops):
-            ret.append(op1.eq(op2))
-        ret.append(self.ctx.eq(i.ctx))
-        return ret
-
-    def __iter__(self):
-        if self.ops:
-            yield from self.ops
-        yield from self.ctx
-
-    def ports(self):
-        return list(self)
-
-
 class FPGet2OpMod(PrevControl):
     def __init__(self, width, id_wid, op_wid=None):
         PrevControl.__init__(self)
@@ -117,10 +87,10 @@ class FPGet2OpMod(PrevControl):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
+        return FPBaseData(self.width, self.id_wid, self.op_wid)
 
     def ospec(self):
-        return FPADDBaseData(self.width, self.id_wid, self.op_wid)
+        return FPBaseData(self.width, self.id_wid, self.op_wid)
 
     def process(self, i):
         return self.o

@@ -8,7 +8,7 @@ Stack looks like this:
 * addalign  - FPAddAlignSingleAdd
 * normpack  - FPNormToPack
 
-scnorm   - FPDIVSpecialCasesDeNorm ispec FPADDBaseData
+scnorm   - FPDIVSpecialCasesDeNorm ispec FPBaseData
 ------                             ospec FPSCData
 
                 StageChain: FPMULSpecialCasesMod,
@@ -46,7 +46,7 @@ from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
@@ -76,7 +76,7 @@ class FPADDBasePipe(ControlBase):
 class FPADDMuxInOut(ReservationStations):
     """ Reservation-Station version of FPADD pipeline.
 
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * fan-in on inputs (an array of FPBaseData: a,b,mid)
         * 3-stage adder pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
@@ -91,7 +91,7 @@ class FPADDMuxInOut(ReservationStations):
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.pspec)
+        return FPBaseData(self.pspec)
 
     def o_specfn(self):
         return FPPackData(self.pspec)

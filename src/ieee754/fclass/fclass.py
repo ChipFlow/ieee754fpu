@@ -4,7 +4,7 @@
 from nmigen import Module, Signal, Cat
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
@@ -18,7 +18,7 @@ class FPClassMod(PipeModBase):
         super().__init__(in_pspec, "fclass")
 
     def ispec(self):
-        return FPADDBaseData(self.in_pspec)
+        return FPBaseData(self.in_pspec)
 
     def ospec(self):
         return FPPackData(self.out_pspec)

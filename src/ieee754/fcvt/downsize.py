@@ -5,7 +5,7 @@ from nmigen import Module, Signal, Const
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.exphigh import FPEXPHigh
@@ -22,7 +22,7 @@ class FPCVTDownConvertMod(PipeModBase):
         super().__init__(in_pspec, "downconvert")
 
     def ispec(self):
-        return FPADDBaseData(self.in_pspec)
+        return FPBaseData(self.in_pspec)
 
     def ospec(self):
         return FPPostCalcData(self.out_pspec, e_extra=True)

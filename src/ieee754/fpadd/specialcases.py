@@ -10,7 +10,7 @@ from nmutil.pipemodbase import PipeModBase, PipeModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode
 
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
 
@@ -24,7 +24,7 @@ class FPAddSpecialCasesMod(PipeModBase):
         super().__init__(pspec, "specialcases")
 
     def ispec(self):
-        return FPADDBaseData(self.pspec)
+        return FPBaseData(self.pspec)
 
     def ospec(self):
         return FPSCData(self.pspec, True)

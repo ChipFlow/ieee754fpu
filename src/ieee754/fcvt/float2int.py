@@ -5,7 +5,7 @@ from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import Overflow
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.exphigh import FPEXPHigh
 
@@ -27,7 +27,7 @@ class FPCVTFloatToIntMod(Elaboratable):
         self.o = self.ospec()
 
     def ispec(self):
-        return FPADDBaseData(self.in_pspec)
+        return FPBaseData(self.in_pspec)
 
     def ospec(self):
         return FPPackData(self.out_pspec)

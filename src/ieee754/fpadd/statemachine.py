@@ -11,7 +11,7 @@ from ieee754.fpcommon.fpbase import Trigger
 from nmutil.singlepipe import StageChain
 
 from ieee754.fpcommon.fpbase import FPState, FPID
-from ieee754.fpcommon.getop import (FPGetOp, FPADDBaseData, FPGet2Op)
+from ieee754.fpcommon.getop import (FPGetOp, FPBaseData, FPGet2Op)
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNorm)
 from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.postnormalise import (FPNorm1Data,
@@ -68,7 +68,7 @@ class FPADDBaseMod(Elaboratable):
         self.states = []
 
     def ispec(self):
-        return FPADDBaseData(self.width, self.id_wid)
+        return FPBaseData(self.width, self.id_wid)
 
     def ospec(self):
         return FPOpData(self.width, self.id_wid)

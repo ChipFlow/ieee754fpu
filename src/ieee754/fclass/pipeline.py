@@ -8,7 +8,7 @@ from nmigen.cli import main, verilog
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.getop import FPADDBaseData
+from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.pack import FPPackData
 
 
@@ -49,7 +49,7 @@ class FPClassBasePipe(ControlBase):
 class FPClassMuxInOutBase(ReservationStations):
     """ Reservation-Station version of FPClass pipeline.
 
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * fan-in on inputs (an array of FPBaseData: a,b,mid)
         * 2-stage multiplier pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
@@ -68,7 +68,7 @@ class FPClassMuxInOutBase(ReservationStations):
         ReservationStations.__init__(self, num_rows)
 
     def i_specfn(self):
-        return FPADDBaseData(self.in_pspec)
+        return FPBaseData(self.in_pspec)
 
     def o_specfn(self):
         return FPPackData(self.out_pspec)
@@ -77,7 +77,7 @@ class FPClassMuxInOutBase(ReservationStations):
 class FPClassMuxInOut(FPClassMuxInOutBase):
     """ Reservation-Station version of FPClass pipeline.
 
-        * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
+        * fan-in on inputs (an array of FPBaseData: a,b,mid)
         * 2-stage multiplier pipeline
         * fan-out on outputs (an array of FPPackData: z,mid)
 
