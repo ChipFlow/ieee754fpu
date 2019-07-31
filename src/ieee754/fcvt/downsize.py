@@ -7,8 +7,6 @@ from nmigen.cli import main, verilog
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.postcalc import FPPostCalcData
-from ieee754.fpcommon.msbhigh import FPMSBHigh
-from ieee754.fpcommon.exphigh import FPEXPHigh
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
