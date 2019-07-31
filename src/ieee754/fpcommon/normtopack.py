@@ -4,24 +4,23 @@
 
 #from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import StageChain, SimpleHandshake
+from nmutil.singlepipe import StageChain
 
-from ieee754.fpcommon.fpbase import FPState, FPID
-from .postcalc import FPAddStage1Data
-from .postnormalise import FPNorm1ModSingle
-from .roundz import FPRoundMod
-from .corrections import FPCorrectionsMod
-from .pack import FPPackData, FPPackMod
+from ieee754.pipeline import DynamicPipe
+from ieee754.fpcommon.postcalc import FPAddStage1Data
+from ieee754.fpcommon.postnormalise import FPNorm1ModSingle
+from ieee754.fpcommon.roundz import FPRoundMod
+from ieee754.fpcommon.corrections import FPCorrectionsMod
+from ieee754.fpcommon.pack import FPPackData, FPPackMod
 
 
-class FPNormToPack(FPState, SimpleHandshake):
+class FPNormToPack(DynamicPipe):
 
     def __init__(self, pspec, e_extra=False):
-        FPState.__init__(self, "normalise_1")
         #print ("normtopack", pspec)
         self.pspec = pspec
         self.e_extra = e_extra
-        SimpleHandshake.__init__(self, self) # pipeline is its own stage
+        super().__init__(pspec)
 
     def ispec(self):
         return FPAddStage1Data(self.pspec, e_extra=self.e_extra)
@@ -47,7 +46,3 @@ class FPNormToPack(FPState, SimpleHandshake):
 
     def process(self, i):
         return self.o
-
-    def action(self, m):
-        m.d.sync += self.out_z.eq(self.process(None))
-        m.next = "pack_put_z"

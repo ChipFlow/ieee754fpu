@@ -5,9 +5,9 @@ from nmigen.cli import main, verilog
 from math import log
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
-from nmutil.singlepipe import SimpleHandshake, StageChain
+from nmutil.singlepipe import StageChain
 
-from ieee754.fpcommon.fpbase import FPState, FPID
+from ieee754.pipeline import DynamicPipe
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 from ieee754.fpmul.align import FPAlignModSingle
@@ -101,41 +101,13 @@ class FPMulSpecialCasesMod(Elaboratable):
         return m
 
 
-class FPMulSpecialCases(FPState):
-    """ special cases: NaNs, infs, zeros, denormalised
-        NOTE: some of these are unique to add.  see "Special Operations"
-        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
-    """
-
-    def __init__(self, width, id_wid):
-        FPState.__init__(self, "special_cases")
-        self.mod = FPMulSpecialCasesMod(width)
-        self.out_z = self.mod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
-        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and context)
-
-    def action(self, m):
-        self.idsync(m)
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
-            m.next = "denormalise"
-
-
-class FPMulSpecialCasesDeNorm(FPState, SimpleHandshake):
+class FPMulSpecialCasesDeNorm(DynamicPipe):
     """ special cases: NaNs, infs, zeros, denormalised
     """
 
     def __init__(self, pspec):
-        FPState.__init__(self, "special_cases")
         self.pspec = pspec
-        SimpleHandshake.__init__(self, self) # pipe is its own stage
+        super().__init__(pspec)
         self.out = self.ospec()
 
     def ispec(self):
@@ -161,13 +133,4 @@ class FPMulSpecialCasesDeNorm(FPState, SimpleHandshake):
 
     def process(self, i):
         return self.o
-
-    def action(self, m):
-        # for break-out (early-out)
-        #with m.If(self.out_do_z):
-        #    m.next = "put_z"
-        #with m.Else():
-            m.d.sync += self.out.eq(self.process(None))
-            m.next = "align"
-
 

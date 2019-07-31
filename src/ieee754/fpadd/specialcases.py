@@ -10,7 +10,7 @@ from ieee754.fpcommon.fpbase import FPNumDecode
 from nmutil.singlepipe import StageChain
 from ieee754.pipeline import DynamicPipe
 
-from ieee754.fpcommon.fpbase import FPState, FPID, FPNumBaseRecord
+from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.denorm import (FPSCData, FPAddDeNormMod)
 
@@ -144,33 +144,6 @@ class FPAddSpecialCasesMod(Elaboratable):
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
-
-
-class FPAddSpecialCases(FPState):
-    """ special cases: NaNs, infs, zeros, denormalised
-        NOTE: some of these are unique to add.  see "Special Operations"
-        https://steve.hollasch.net/cgindex/coding/ieeefloat.html
-    """
-
-    def __init__(self, width, id_wid):
-        FPState.__init__(self, "special_cases")
-        self.mod = FPAddSpecialCasesMod(width)
-        self.out_z = self.mod.ospec()
-        self.out_do_z = Signal(reset_less=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i, self.out_do_z)
-        m.d.sync += self.out_z.v.eq(self.mod.out_z.v) # only take the output
-        m.d.sync += self.out_z.ctx.eq(self.mod.o.ctx)  # (and mid)
-
-    def action(self, m):
-        self.idsync(m)
-        with m.If(self.out_do_z):
-            m.next = "put_z"
-        with m.Else():
-            m.next = "denormalise"
 
 
 class FPAddSpecialCasesDeNorm(DynamicPipe):

@@ -7,9 +7,9 @@ Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 from nmigen import Module
 from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import (StageChain, SimpleHandshake)
+from nmutil.singlepipe import StageChain
 
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.pipeline import DynamicPipe
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
@@ -23,15 +23,13 @@ from .div0 import FPDivStage0Mod
 from .div2 import FPDivStage2Mod
 
 
-class FPDivStagesSetup(FPState, SimpleHandshake):
+class FPDivStagesSetup(DynamicPipe):
 
     def __init__(self, pspec, n_stages, stage_offs):
-        FPState.__init__(self, "divsetup")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
-        SimpleHandshake.__init__(self, self) # pipeline is its own stage
-        self.m1o = self.ospec()
+        super().__init__(pspec)
 
     def ispec(self):
         # REQUIRED.  do NOT change.
@@ -73,20 +71,14 @@ class FPDivStagesSetup(FPState, SimpleHandshake):
     def process(self, i):
         return self.o
 
-    def action(self, m):
-        m.d.sync += self.m1o.eq(self.process(None))
-        m.next = "normalise_1"
 
-
-class FPDivStagesIntermediate(FPState, SimpleHandshake):
+class FPDivStagesIntermediate(DynamicPipe):
 
     def __init__(self, pspec, n_stages, stage_offs):
-        FPState.__init__(self, "divintermediate")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
-        SimpleHandshake.__init__(self, self) # pipeline is its own stage
-        self.m1o = self.ospec()
+        super().__init__(pspec)
 
     def ispec(self):
         # TODO - this is for FPDivStage1Mod
@@ -122,20 +114,14 @@ class FPDivStagesIntermediate(FPState, SimpleHandshake):
     def process(self, i):
         return self.o
 
-    def action(self, m):
-        m.d.sync += self.m1o.eq(self.process(None))
-        m.next = "normalise_1"
 
-
-class FPDivStagesFinal(FPState, SimpleHandshake):
+class FPDivStagesFinal(DynamicPipe):
 
     def __init__(self, pspec, n_stages, stage_offs):
-        FPState.__init__(self, "divfinal")
         self.pspec = pspec
         self.n_stages = n_stages # number of combinatorial stages
         self.stage_offs = stage_offs # each CalcStage needs *absolute* idx
-        SimpleHandshake.__init__(self, self) # pipeline is its own stage
-        self.m1o = self.ospec()
+        super().__init__(pspec)
 
     def ispec(self):
         return DivPipeInterstageData(self.pspec) # DIV ispec (loop)
@@ -180,9 +166,3 @@ class FPDivStagesFinal(FPState, SimpleHandshake):
 
     def process(self, i):
         return self.o
-
-    def action(self, m):
-        m.d.sync += self.m1o.eq(self.process(None))
-        m.next = "normalise_1"
-
-

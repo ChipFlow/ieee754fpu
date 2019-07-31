@@ -4,7 +4,7 @@ from nmigen import Module, Signal, Cat, Mux, Elaboratable
 from nmigen.cli import main, verilog
 from math import log
 
-from nmutil.singlepipe import (StageChain, SimpleHandshake)
+from nmutil.singlepipe import StageChain
 
 from ieee754.fpcommon.fpbase import (Overflow, OverflowMod,
                                      FPNumBase, FPNumBaseRecord)

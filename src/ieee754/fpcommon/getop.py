@@ -9,7 +9,7 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPOpIn, Overflow, FPBase, FPNumBase
 from ieee754.fpcommon.fpbase import MultiShiftRMerge, Trigger
-from nmutil.singlepipe import (ControlBase, StageChain, SimpleHandshake,
+from nmutil.singlepipe import (ControlBase, StageChain,
                         PassThroughStage, PrevControl)
 from nmutil.multipipe import CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
