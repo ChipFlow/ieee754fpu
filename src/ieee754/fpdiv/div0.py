@@ -13,15 +13,15 @@ Relevant bugreports:
 from nmigen import Module, Signal, Cat, Elaboratable, Const, Mux
 from nmigen.cli import main, verilog
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 
 
-class FPDivStage0Mod(Elaboratable):
+class FPDivStage0Mod(FPModBase):
     """ DIV/SQRT/RSQRT "preparation" module.
 
         adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),
@@ -32,24 +32,13 @@ class FPDivStage0Mod(Elaboratable):
     """
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "div0")
 
     def ispec(self):
         return FPSCData(self.pspec, False)
 
     def ospec(self):
         return DivPipeInputData(self.pspec)
-
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.div0 = self
-        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
@@ -118,22 +107,3 @@ class FPDivStage0Mod(Elaboratable):
         return m
 
 
-class FPDivStage0(FPState):
-    """ First stage of div.
-    """
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "divider_0")
-        self.mod = FPDivStage0Mod(pspec)
-        self.o = self.mod.ospec()
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        # NOTE: these could be done as combinatorial (merge div0+div1)
-        m.d.sync += self.o.eq(self.mod.o)
-
-    def action(self, m):
-        m.next = "divider_1"

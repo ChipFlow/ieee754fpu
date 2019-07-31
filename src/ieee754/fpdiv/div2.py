@@ -9,15 +9,15 @@ Relevant bugreports:
 * http://bugs.libre-riscv.org/show_bug.cgi?id=44
 """
 
-from nmigen import Module, Signal, Elaboratable, Cat
+from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeOutputData
 
 
-class FPDivStage2Mod(FPState, Elaboratable):
+class FPDivStage2Mod(FPModBase):
     """ Last stage of div: preparation for normalisation.
 
         NOTE: this phase does NOT do ACTUAL DIV processing, it ONLY
@@ -25,9 +25,7 @@ class FPDivStage2Mod(FPState, Elaboratable):
     """
 
     def __init__(self, pspec):
-        self.pspec = pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "div1")
 
     def ispec(self):
         return DivPipeOutputData(self.pspec)  # Q/Rem in...
@@ -36,15 +34,6 @@ class FPDivStage2Mod(FPState, Elaboratable):
         # XXX REQUIRED.  MUST NOT BE CHANGED.  this is the format
         # required for ongoing processing (normalisation, correction etc.)
         return FPAddStage1Data(self.pspec)  # out to post-process
-
-    def process(self, i):
-        return self.o
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.div1 = self
-        m.d.comb += self.i.eq(i)
 
     def elaborate(self, platform):
         m = Module()
@@ -117,25 +106,3 @@ class FPDivStage2Mod(FPState, Elaboratable):
         return m
 
 
-class FPDivStage2(FPState):
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "divider_1")
-        self.mod = FPDivStage2Mod(pspec)
-        self.out_z = FPNumBaseRecord(pspec, False)
-        self.out_of = Overflow()
-        self.norm_stb = Signal()
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        m.d.sync += self.norm_stb.eq(0)  # sets to zero when not in div1 state
-
-        m.d.sync += self.out_of.eq(self.mod.out_of)
-        m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.norm_stb.eq(1)
-
-    def action(self, m):
-        m.next = "normalise_1"
