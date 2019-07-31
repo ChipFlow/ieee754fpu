@@ -47,7 +47,7 @@ class FPRoundMod(PipeModBase):
         with m.If(~self.i.out_do_z):  # bypass wasn't enabled
             with m.If(self.i.roundz):
                 comb += self.o.z.m.eq(self.i.z.m + 1)  # mantissa up
-                with m.If(self.i.z.m == self.i.z.m1s):  # all 1s
+                with m.If(~(~self.i.z.m).bool()):  # all 1s
                     # exponent up
                     comb += self.o.z.e.eq(self.i.z.e + 1)
 
