@@ -1,17 +1,14 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Pipeline
 
-#from nmigen.cli import main, verilog
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
-from nmutil.singlepipe import StageChain
+"""
 
 from ieee754.fpcommon.modbase import FPModBaseChain
-from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.postnormalise import FPNorm1ModSingle
 from ieee754.fpcommon.roundz import FPRoundMod
 from ieee754.fpcommon.corrections import FPCorrectionsMod
-from ieee754.fpcommon.pack import FPPackData, FPPackMod
+from ieee754.fpcommon.pack import FPPackMod
 
 
 class FPNormToPack(FPModBaseChain):
