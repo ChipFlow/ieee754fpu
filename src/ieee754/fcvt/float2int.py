@@ -8,7 +8,6 @@ from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.packdata import FPPackData
-from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.exphigh import FPEXPHigh
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
@@ -88,6 +87,9 @@ class FPCVTFloatToIntMod(PipeModBase):
 
         # ok exp should be in range: shift and round it
         with m.Else():
+            adjust = 0
+            if a1.m_width > mz:
+                adjust = a1.m_width - mz
             mlen = max(a1.m_width, mz) + 5
             mantissa = Signal(mlen, reset_less=True)
             l = [0] * 2 + [a1.m[:-1]] + [1]
@@ -99,7 +101,7 @@ class FPCVTFloatToIntMod(PipeModBase):
             m.submodules.norm_exp = msr
             comb += [msr.m_in.eq(mantissa),
                          msr.e_in.eq(a1.e),
-                         msr.ediff.eq(Mux(signed, mz, mz)-a1.e)
+                         msr.ediff.eq(mz - a1.e+adjust)
                         ]
 
             of = Overflow()
