@@ -21,8 +21,6 @@ from math import log
 
 from ieee754.fpcommon.getop import FPPipeContext
 
-from nmutil.singlepipe import StageChain
-
 from ieee754.pipeline import PipelineSpec, DynamicPipe
 
 from ieee754.fcvt.float2int import FPCVTFloatToIntMod
