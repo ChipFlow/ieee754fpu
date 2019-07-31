@@ -52,14 +52,15 @@ class FPMulSpecialCasesMod(FPModBase):
         abnan = Signal(reset_less=True)
         comb += abnan.eq(a1.is_nan | b1.is_nan)
 
+        # initialise and override if needed
+        comb += self.o.out_do_z.eq(1)
+
         # if a is NaN or b is NaN return NaN
         with m.If(abnan):
-            comb += self.o.out_do_z.eq(1)
             comb += self.o.z.nan(0)
 
         # if a is inf return inf (or NaN)
         with m.Elif(a1.is_inf):
-            comb += self.o.out_do_z.eq(1)
             comb += self.o.z.inf(sabx)
             # b is zero return NaN
             with m.If(b1.is_zero):
@@ -67,7 +68,6 @@ class FPMulSpecialCasesMod(FPModBase):
 
         # if b is inf return inf (or NaN)
         with m.Elif(b1.is_inf):
-            comb += self.o.out_do_z.eq(1)
             comb += self.o.z.inf(sabx)
             # a is zero return NaN
             with m.If(a1.is_zero):
@@ -75,7 +75,6 @@ class FPMulSpecialCasesMod(FPModBase):
 
         # if a is zero or b zero return signed-a/b
         with m.Elif(obz):
-            comb += self.o.out_do_z.eq(1)
             comb += self.o.z.zero(sabx)
 
         # Denormalised Number checks next, so pass a/b data through
