@@ -28,6 +28,7 @@ class FPDivStagesSetup(PipeModBaseChain):
             therefore each sub-module must also be combinatorial
         """
 
+        # chain to be returned
         divstages = []
 
         # Converts from FPSCData into DivPipeInputData
@@ -38,9 +39,6 @@ class FPDivStagesSetup(PipeModBaseChain):
         divstages.append(DivPipeSetupStage(self.pspec))
 
         # here is where the intermediary stages are added.
-        # n_stages is adjusted (by pipeline.py), reduced to take
-        # into account extra processing that FPDivStage0Mod and DivPipeSetup
-        # might add.
         for count in range(self.n_stages): # number of combinatorial stages
             idx = count + self.stage_offs
             divstages.append(DivPipeCalculateStage(self.pspec, idx))
@@ -62,12 +60,10 @@ class FPDivStagesIntermediate(PipeModBaseChain):
             therefore each sub-module must also be combinatorial
         """
 
+        # chain to be returned
         divstages = []
 
         # here is where the intermediary stages are added.
-        # n_stages is adjusted (in pipeline.py), reduced to take
-        # into account the extra processing that self.begin and self.end
-        # will add.
         for count in range(self.n_stages): # number of combinatorial stages
             idx = count + self.stage_offs
             divstages.append(DivPipeCalculateStage(self.pspec, idx))
@@ -89,15 +85,10 @@ class FPDivStagesFinal(PipeModBaseChain):
             therefore each sub-module must also be combinatorial
         """
 
-        # takes the DIV pipeline/chain data and munges it
-        # into the format that the normalisation can accept.
-
+        # chain to be returned
         divstages = []
 
-        # here is where the intermediary stages are added.
-        # n_stages is adjusted (in pipeline.py), reduced to take
-        # into account the extra processing that self.begin and self.end
-        # will add.
+        # here is where the last intermediary stages are added.
         for count in range(self.n_stages): # number of combinatorial stages
             idx = count + self.stage_offs
             divstages.append(DivPipeCalculateStage(self.pspec, idx))
@@ -105,8 +96,7 @@ class FPDivStagesFinal(PipeModBaseChain):
         # does the final conversion from intermediary to output data
         divstages.append(DivPipeFinalStage(self.pspec))
 
-        # does conversion from DivPipeOutputData into
-        # FPPostCalcData format (bad name, TODO, doesn't matter),
+        # does conversion from DivPipeOutputData into FPPostCalcData format
         # so that post-normalisation and corrections can take over
         divstages.append(FPDivStage2Mod(self.pspec))
 
