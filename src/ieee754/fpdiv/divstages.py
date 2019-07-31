@@ -1,5 +1,15 @@
 """IEEE754 Floating Point pipelined Divider
 
+This module simply constructs register-based pipeline(s) out of
+appropriate combinatorial blocks: setup, intermediary and final
+single-clock pipelines.
+
+"actual" processing is carried out by the DivPipeCalculateStage
+combinatorial block: everything else is chaining and pre- and post-
+data formatting.
+
+there's no "actual" work done here: it's just a "joining-together" job.
+
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 
 """
