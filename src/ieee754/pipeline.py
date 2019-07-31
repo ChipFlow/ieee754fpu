@@ -38,6 +38,8 @@ class PipelineSpec:
 
 # with many thanks to jsbueno on stackexchange for this one
 # https://stackoverflow.com/questions/57273070/
+# list post:
+# http://lists.libre-riscv.org/pipermail/libre-riscv-dev/2019-July/002259.html
 
 class Meta(ABCMeta):
     registry = {}
@@ -50,7 +52,7 @@ class Meta(ABCMeta):
         if mcls.recursing.check:
             return super().__call__(*args, **kw)
         spec = args[0]
-        base = spec.pipekls
+        base = spec.pipekls # pick up the dynamic class from PipelineSpec, HERE
 
         if (cls, base) not in mcls.registry:
             print ("__call__", args, kw, cls, base, base.__bases__, cls.__bases__)
@@ -67,6 +69,21 @@ class Meta(ABCMeta):
             mcls.recursing.check = False
         return instance
 
+
+# Inherit from this class instead of SimpleHandshake (or other ControlBase
+# derivative), and the metaclass will instead *replace* DynamicPipe -
+# *at runtime* - with the class that is specified *as a parameter*
+# in PipelineSpec.
+#
+# as explained in the list posting and in the stackexchange post, this is
+# needed to avoid a MASSIVE suite of duplicated multiple-inheritance classes
+# that "Mix in" SimpleHandshake (or other).
+#
+# unfortunately, composition does not work in this instance
+# (make an *instance* of SimpleHandshake or other class and pass it in)
+# due to the multiple level inheritance, and in several places
+# the inheriting class needs to do some setup that the deriving class
+# needs in order to function correctly.
 
 class DynamicPipe(metaclass=Meta):
     def __init__(self, *args):
