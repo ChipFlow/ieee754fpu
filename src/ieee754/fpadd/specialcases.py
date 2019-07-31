@@ -7,7 +7,8 @@ from nmigen.cli import main, verilog
 from math import log
 
 from ieee754.fpcommon.fpbase import FPNumDecode
-from nmutil.singlepipe import SimpleHandshake, StageChain
+from nmutil.singlepipe import StageChain
+from ieee754.pipeline import DynamicPipe
 
 from ieee754.fpcommon.fpbase import FPState, FPID, FPNumBaseRecord
 from ieee754.fpcommon.getop import FPADDBaseData
@@ -172,16 +173,15 @@ class FPAddSpecialCases(FPState):
             m.next = "denormalise"
 
 
-class FPAddSpecialCasesDeNorm(FPState, SimpleHandshake):
+class FPAddSpecialCasesDeNorm(DynamicPipe):
     """ special cases: NaNs, infs, zeros, denormalised
         NOTE: some of these are unique to add.  see "Special Operations"
         https://steve.hollasch.net/cgindex/coding/ieeefloat.html
     """
 
     def __init__(self, pspec):
-        FPState.__init__(self, "special_cases")
         self.pspec = pspec
-        SimpleHandshake.__init__(self, self) # pipe is its own stage
+        super().__init__(pspec)
         self.out = self.ospec()
 
     def ispec(self):
@@ -206,13 +206,4 @@ class FPAddSpecialCasesDeNorm(FPState, SimpleHandshake):
 
     def process(self, i):
         return self.o
-
-    def action(self, m):
-        # for break-out (early-out)
-        #with m.If(self.out_do_z):
-        #    m.next = "put_z"
-        #with m.Else():
-            m.d.sync += self.out.eq(self.process(None))
-            m.next = "align"
-
 
