@@ -9,25 +9,9 @@ from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
 
-from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
-
-
-class FPAddStage0Data:
-
-    def __init__(self, pspec):
-        width = pspec.width
-        self.z = FPNumBaseRecord(width, False)
-        self.out_do_z = Signal(reset_less=True)
-        self.oz = Signal(width, reset_less=True)
-        self.tot = Signal(self.z.m_width + 4, reset_less=True) # 4 extra bits
-        self.ctx = FPPipeContext(pspec)
-        self.muxid = self.ctx.muxid
-
-    def eq(self, i):
-        return [self.z.eq(i.z), self.out_do_z.eq(i.out_do_z), self.oz.eq(i.oz),
-                self.tot.eq(i.tot), self.ctx.eq(i.ctx)]
+from ieee754.fpadd.datastruct import FPAddStage0Data
 
 
 class FPAddStage0Mod(PipeModBase):
@@ -51,10 +35,10 @@ class FPAddStage0Mod(PipeModBase):
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
         comb += [seq.eq(self.i.a.s == self.i.b.s),
-                     mge.eq(self.i.a.m >= self.i.b.m),
-                     am0.eq(Cat(self.i.a.m, 0)),
-                     bm0.eq(Cat(self.i.b.m, 0))
-                    ]
+                 mge.eq(self.i.a.m >= self.i.b.m),
+                 am0.eq(Cat(self.i.a.m, 0)),
+                 bm0.eq(Cat(self.i.b.m, 0))
+                ]
 
         # same-sign (both negative or both positive) add mantissas
         with m.If(~self.i.out_do_z):
