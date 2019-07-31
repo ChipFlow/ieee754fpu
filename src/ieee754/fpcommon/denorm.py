@@ -1,15 +1,15 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Library
 
-from nmigen import Module, Signal
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
+
+from nmigen import Module
 from nmigen.cli import main, verilog
 from math import log
 
 from nmutil.pipemodbase import PipeModBase
-from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.fpbase import FPNumBase
-from ieee754.fpcommon.getop import FPPipeContext
 from ieee754.fpcommon.pscdata import FPSCData
 
 
