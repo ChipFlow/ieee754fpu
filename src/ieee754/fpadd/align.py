@@ -71,9 +71,10 @@ class FPAddAlignSingleMod(PipeModBase):
 
         # temporary (muxed) input and output to be shifted
         width = self.pspec.width
+        espec = (len(self.i.a.e), True)
+
         t_inp = FPNumBaseRecord(width)
         t_out = FPNumBaseRecord(width)
-        espec = (len(self.i.a.e), True)
         msr = MultiShiftRMerge(self.i.a.m_width, espec)
         m.submodules.multishift_r = msr
 
@@ -94,7 +95,7 @@ class FPAddAlignSingleMod(PipeModBase):
             comb += t_out.s.eq(t_inp.s)
 
             comb += ediff.eq(self.i.a.e - self.i.b.e)   # a - b
-            comb += ediffr.eq(self.i.b.e - self.i.a.e)  # b - a
+            comb += ediffr.eq(-ediff)                   # b - a
             comb += elz.eq(self.i.a.e < self.i.b.e)     # ae < be
             comb += egz.eq(self.i.a.e > self.i.b.e)     # ae > be
 

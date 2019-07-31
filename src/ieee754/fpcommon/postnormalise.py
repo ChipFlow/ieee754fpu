@@ -76,18 +76,21 @@ class FPNorm1ModSingle(PipeModBase):
         # initialise out from in (overridden below)
         m.d.comb += self.o.z.eq(insel_z)
         m.d.comb += Overflow.eq(of, i.of)
-        # normalisation increase/decrease conditions
-        decrease = Signal(reset_less=True)
-        increase = Signal(reset_less=True)
-        m.d.comb += decrease.eq(insel_z.m_msbzero & insel_z.exp_gt_n126)
-        m.d.comb += increase.eq(insel_z.exp_lt_n126)
-        # decrease exponent
         with m.If(~self.i.out_do_z):
-            # concatenate s/r/g with mantissa
+
+            # normalisation increase/decrease conditions
+            decrease = Signal(reset_less=True)
+            increase = Signal(reset_less=True)
+            m.d.comb += decrease.eq(insel_z.m_msbzero & insel_z.exp_gt_n126)
+            m.d.comb += increase.eq(insel_z.exp_lt_n126)
+
+            # concatenate s/r/g with mantissa.  (it was easier to do this
+            # than to have the mantissa contain the three extra bits)
             temp_m = Signal(mwid+2, reset_less=True)
             m.d.comb += temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
                                       insel_z.m)),
 
+            # decrease exponent
             with m.If(decrease):
                 # make sure that the amount to decrease by does NOT
                 # go below the minimum non-INF/NaN exponent
