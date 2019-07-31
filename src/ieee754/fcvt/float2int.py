@@ -1,37 +1,15 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
-
-import sys
-import functools
+# IEEE754 Floating Point Converter
+# Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
 from nmigen.cli import main, verilog
 
-from nmutil.singlepipe import ControlBase
-from nmutil.concurrentunit import ReservationStations, num_bits
-
 from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.getop import FPADDBaseData
-from ieee754.fpcommon.pack import FPPackData
-from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpcommon.postcalc import FPAddStage1Data
-from ieee754.fpcommon.msbhigh import FPMSBHigh
 from ieee754.fpcommon.exphigh import FPEXPHigh
 
-
-from nmigen import Module, Signal, Elaboratable
-from math import log
-
-from ieee754.fpcommon.fpbase import FPNumIn, FPNumOut, FPNumBaseRecord
-from ieee754.fpcommon.fpbase import FPState, FPNumBase
-from ieee754.fpcommon.getop import FPPipeContext
-
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
-from nmutil.singlepipe import SimpleHandshake, StageChain
-
-from ieee754.fpcommon.fpbase import FPState
-from ieee754.pipeline import PipelineSpec
 
 
 class FPCVTFloatToIntMod(Elaboratable):
