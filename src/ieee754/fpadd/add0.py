@@ -1,12 +1,13 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Adder Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
 
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumBase, FPNumBaseRecord
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 
@@ -89,26 +90,3 @@ class FPAddStage0Mod(Elaboratable):
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.ctx.eq(self.i.ctx)
         return m
-
-
-class FPAddStage0(FPState):
-    """ First stage of add.  covers same-sign (add) and subtract
-        special-casing when mantissas are greater or equal, to
-        give greatest accuracy.
-    """
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "add_0")
-        self.mod = FPAddStage0Mod(width)
-        self.o = self.mod.ospec()
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        # NOTE: these could be done as combinatorial (merge add0+add1)
-        m.d.sync += self.o.eq(self.mod.o)
-
-    def action(self, m):
-        m.next = "add_1"
