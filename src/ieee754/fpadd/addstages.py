@@ -1,6 +1,8 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Adder Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
 
 from nmigen import Module
 from nmigen.cli import main, verilog
@@ -18,7 +20,6 @@ from ieee754.fpadd.add1 import FPAddStage1Mod
 class FPAddAlignSingleAdd(DynamicPipe):
 
     def __init__(self, pspec):
-        #FPState.__init__(self, "align")
         self.pspec = pspec
         super().__init__(pspec)
 

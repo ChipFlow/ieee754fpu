@@ -1,14 +1,17 @@
-# IEEE Floating Point Multiplier
+"""IEEE754 Floating Point Multiplier Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
 
 from nmigen import Module, Signal, Elaboratable
 from nmigen.cli import main, verilog
 
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.postcalc import FPAddStage1Data
-from .mul0 import FPMulStage0Data
+from ieee754.fpmul.mul0 import FPMulStage0Data
 
 
-class FPMulStage1Mod(FPState, Elaboratable):
+class FPMulStage1Mod(Elaboratable):
     """ Second stage of mul: preparation for normalisation.
     """
 
@@ -64,27 +67,3 @@ class FPMulStage1Mod(FPState, Elaboratable):
         m.d.comb += self.o.ctx.eq(self.i.ctx)
 
         return m
-
-
-class FPMulStage1(FPState):
-
-    def __init__(self, pspec):
-        FPState.__init__(self, "multiply_1")
-        width = pspec.width
-        self.mod = FPMulStage1Mod(pspec)
-        self.out_z = FPNumBaseRecord(width, False)
-        self.norm_stb = Signal()
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        m.d.sync += self.norm_stb.eq(0) # sets to zero when not in mul1 state
-
-        m.d.sync += self.out_z.eq(self.mod.out_z)
-        m.d.sync += self.norm_stb.eq(1)
-
-    def action(self, m):
-        m.next = "normalise_1"
-

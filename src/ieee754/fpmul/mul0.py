@@ -1,12 +1,13 @@
-# IEEE Floating Point Muler (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Multiplier Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
 
 from nmigen import Module, Signal, Cat, Elaboratable
 from nmigen.cli import main, verilog
 
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
-from ieee754.fpcommon.fpbase import FPState
 from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.getop import FPPipeContext
 
@@ -52,9 +53,6 @@ class FPMulStage0Mod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        #m.submodules.mul0_in_a = self.i.a
-        #m.submodules.mul0_in_b = self.i.b
-        #m.submodules.mul0_out_z = self.o.z
 
         # store intermediate tests (and zero-extended mantissas)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
@@ -74,24 +72,3 @@ class FPMulStage0Mod(Elaboratable):
         m.d.comb += self.o.out_do_z.eq(self.i.out_do_z)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
         return m
-
-
-class FPMulStage0(FPState):
-    """ First stage of mul.  
-    """
-
-    def __init__(self, width, id_wid):
-        FPState.__init__(self, "multiply_0")
-        self.mod = FPMulStage0Mod(width)
-        self.o = self.mod.ospec()
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        self.mod.setup(m, i)
-
-        # NOTE: these could be done as combinatorial (merge mul0+mul1)
-        m.d.sync += self.o.eq(self.mod.o)
-
-    def action(self, m):
-        m.next = "multiply_1"
