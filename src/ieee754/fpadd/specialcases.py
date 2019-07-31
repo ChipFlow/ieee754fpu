@@ -8,8 +8,6 @@ from math import log
 
 from ieee754.fpcommon.modbase import FPModBase, FPModBaseChain
 from ieee754.fpcommon.fpbase import FPNumDecode
-from nmutil.singlepipe import StageChain
-from ieee754.pipeline import DynamicPipe
 
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from ieee754.fpcommon.getop import FPADDBaseData
