@@ -9,6 +9,7 @@ combinatorial block: everything else is chaining and pre- and post-
 data formatting.
 
 there's no "actual" work done here: it's just a "joining-together" job.
+see pipeline.py for an ASCII diagram showing how everything fits together
 
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=99
 
