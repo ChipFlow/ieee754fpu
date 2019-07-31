@@ -5,37 +5,28 @@
 import sys
 import functools
 
-from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
+from nmigen import Module, Signal, Cat
 from nmigen.cli import main, verilog
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTUpConvertMod(Elaboratable):
+class FPCVTUpConvertMod(FPModBase):
     """ FP up-conversion (lower to higher bitwidth)
     """
     def __init__(self, in_pspec, out_pspec):
         self.in_pspec = in_pspec
         self.out_pspec = out_pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(in_pspec, "upconvert")
 
     def ispec(self):
         return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
         return FPAddStage1Data(self.out_pspec, e_extra=False)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.upconvert = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()

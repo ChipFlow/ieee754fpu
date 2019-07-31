@@ -1,9 +1,10 @@
 # IEEE754 Floating Point Conversion
 # Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
-from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
+from nmigen import Module, Signal, Const
 from nmigen.cli import main, verilog
 
+from ieee754.fpcommon.modbase import FPModBase
 from ieee754.fpcommon.getop import FPADDBaseData
 from ieee754.fpcommon.postcalc import FPAddStage1Data
 from ieee754.fpcommon.msbhigh import FPMSBHigh
@@ -12,29 +13,19 @@ from ieee754.fpcommon.exphigh import FPEXPHigh
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTDownConvertMod(Elaboratable):
+class FPCVTDownConvertMod(FPModBase):
     """ FP down-conversion (higher to lower bitwidth)
     """
     def __init__(self, in_pspec, out_pspec):
         self.in_pspec = in_pspec
         self.out_pspec = out_pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(in_pspec, "downconvert")
 
     def ispec(self):
         return FPADDBaseData(self.in_pspec)
 
     def ospec(self):
         return FPAddStage1Data(self.out_pspec, e_extra=True)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.downconvert = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()
@@ -124,5 +115,3 @@ class FPCVTDownConvertMod(Elaboratable):
         comb += self.o.ctx.eq(self.i.ctx)
 
         return m
-
-
