@@ -34,14 +34,13 @@ class FPAddStage0Mod(PipeModBase):
         mge = Signal(reset_less=True)
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        comb += [seq.eq(self.i.a.s == self.i.b.s),
-                 mge.eq(self.i.a.m >= self.i.b.m),
-                 am0.eq(Cat(self.i.a.m, 0)),
-                 bm0.eq(Cat(self.i.b.m, 0))
-                ]
-
         # same-sign (both negative or both positive) add mantissas
         with m.If(~self.i.out_do_z):
+            comb += [seq.eq(self.i.a.s == self.i.b.s),
+                     mge.eq(self.i.a.m >= self.i.b.m),
+                     am0.eq(Cat(self.i.a.m, 0)),
+                     bm0.eq(Cat(self.i.b.m, 0))
+                    ]
             comb += self.o.z.e.eq(self.i.a.e)
             with m.If(seq):
                 comb += [
