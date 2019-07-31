@@ -48,12 +48,7 @@ class FPNorm1ModSingle(PipeModBase):
     def elaborate(self, platform):
         m = Module()
 
-        of = OverflowMod("norm1of_")
-
-        #m.submodules.norm1_out_z = self.o.z
-        m.submodules.norm1_out_overflow = of
-        #m.submodules.norm1_in_z = self.i.z
-        #m.submodules.norm1_in_overflow = self.i.of
+        m.submodules.norm1_out_overflow = of = OverflowMod("norm1of_")
 
         i = self.ispec()
         i.of.guard.name = "norm1_i_of_guard"
@@ -61,7 +56,6 @@ class FPNorm1ModSingle(PipeModBase):
         i.of.sticky.name = "norm1_i_of_sticky"
         i.of.m0.name = "norm1_i_of_m0"
         m.submodules.norm1_insel_z = insel_z = FPNumBase(i.z)
-        #m.submodules.norm1_insel_overflow = iof = OverflowMod("iof")
 
         espec = (len(insel_z.e), True)
         mwid = self.o.z.m_width+2
