@@ -148,7 +148,6 @@ if __name__ == '__main__':
         test_int_pipe_f16_i16()
         test_int_pipe_f32_i32()
         test_int_pipe_f64_i64()
-        continue
         test_int_pipe_f64_ui64()
         test_int_pipe_f32_ui32()
         test_int_pipe_f16_ui16()

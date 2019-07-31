@@ -1,18 +1,20 @@
 # IEEE754 Floating Point Converter
 # Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
-from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
+from nmigen import Module, Signal, Cat, Const, Mux
 from nmigen.cli import main, verilog
 
+from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.fpbase import Overflow
 from ieee754.fpcommon.basedata import FPBaseData
+from ieee754.fpcommon.packdata import FPPackData
 from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.exphigh import FPEXPHigh
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
-class FPCVTFloatToIntMod(Elaboratable):
+class FPCVTFloatToIntMod(PipeModBase):
     """ integer to FP conversion: copes with 16/32/64 fp to 16/32/64 int/uint
 
         self.ctx.i.op & 0x1 == 0x1 : SIGNED int
@@ -23,23 +25,13 @@ class FPCVTFloatToIntMod(Elaboratable):
     def __init__(self, in_pspec, out_pspec):
         self.in_pspec = in_pspec
         self.out_pspec = out_pspec
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(in_pspec, "fp2int")
 
     def ispec(self):
         return FPBaseData(self.in_pspec)
 
     def ospec(self):
         return FPPackData(self.out_pspec)
-
-    def setup(self, m, i):
-        """ links module to inputs and outputs
-        """
-        m.submodules.upconvert = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()
