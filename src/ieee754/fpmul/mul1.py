@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmigen import Module, Signal, Elaboratable
+from nmigen import Module, Signal
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
