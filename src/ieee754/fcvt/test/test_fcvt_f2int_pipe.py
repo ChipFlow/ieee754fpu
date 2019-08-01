@@ -97,12 +97,14 @@ def test_int_pipe_f64_i64():
 
 def test_int_pipe_f64_i32():
     # XXX TODO: reduce range of FP num to actually fit (almost) into I32
+    # http://bugs.libre-riscv.org/show_bug.cgi?id=113
     dut = FPCVTF2IntMuxInOut(64, 32, 4, op_wid=1)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i32", Float64, fcvt_f64_i32,
                     True, n_vals=100, opcode=0x1)
 
 def test_int_pipe_f64_i16():
     # XXX TODO: reduce range of FP num to actually fit (almost) into I16
+    # http://bugs.libre-riscv.org/show_bug.cgi?id=113
     dut = FPCVTF2IntMuxInOut(64, 16, 4, op_wid=1)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i16", Float64, fcvt_f64_i16,
                     True, n_vals=100, opcode=0x1)
@@ -188,22 +190,9 @@ if __name__ == '__main__':
         test_int_pipe_f64_i32()
         test_int_pipe_f64_ui16()
         test_int_pipe_f64_ui32()
-        continue
         test_int_pipe_f16_i16()
         test_int_pipe_f32_i32()
         test_int_pipe_f64_i64()
         test_int_pipe_f64_ui64()
         test_int_pipe_f32_ui32()
         test_int_pipe_f16_ui16()
-        continue
-        test_int_pipe_i32_f32()
-        test_int_pipe_i16_f32()
-        test_int_pipe_i32_f64()
-        continue
-        test_int_pipe_ui16_f32()
-        test_int_pipe_ui64_f32()
-        test_int_pipe_ui32_f16()
-        test_int_pipe_ui64_f16()
-        test_int_pipe_ui16_f64()
-        test_int_pipe_ui32_f64()
-
