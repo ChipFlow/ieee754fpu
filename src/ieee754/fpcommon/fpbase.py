@@ -1,6 +1,10 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Adder Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jake Lifshay
+
+"""
+
 
 from nmigen import Signal, Cat, Const, Mux, Module, Elaboratable
 from math import log
