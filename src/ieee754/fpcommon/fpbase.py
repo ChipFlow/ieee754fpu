@@ -276,6 +276,7 @@ class TestFPFormat(unittest.TestCase):
                f32.get_mantissa_field(x), i)
         self.assertEqual(i, True)
 
+
 class MultiShiftR:
 
     def __init__(self, width):
@@ -316,7 +317,16 @@ class MultiShift:
 
 
 class FPNumBaseRecord:
-    """ Floating-point Base Number Class
+    """ Floating-point Base Number Class.
+
+    This class is designed to be passed around in other data structures
+    (between pipelines and between stages).  Its "friend" is FPNumBase,
+    which is a *module*.  The reason for the discernment is because
+    nmigen modules that are not added to submodules results in the
+    irritating "Elaboration" warning.  Despite not *needing* FPNumBase
+    in many cases to be added as a submodule (because it is just data)
+    this was not possible to solve without splitting out the data from
+    the module.
     """
 
     def __init__(self, width, m_extra=True, e_extra=False, name=None):
@@ -863,7 +873,7 @@ class FPOpOut(NextControl):
                 ]
 
 
-class Overflow:  # (Elaboratable):
+class Overflow:
     def __init__(self, name=None):
         if name is None:
             name = ""
