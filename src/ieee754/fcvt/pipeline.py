@@ -49,9 +49,10 @@ class FPCVTConvertDeNorm(DynamicPipe):
         sc = modkls(in_pspec, out_pspec)
         in_pspec.stage = sc
         super().__init__(in_pspec)
-        self.out = self.ospec(None)
 
 
+# this one is slightly weird-looking because of course the INT output
+# is, duh, an INT, so of course does not get "FP normalised".
 class FPCVTFtoIntBasePipe(ControlBase):
     def __init__(self, modkls, e_extra, in_pspec, out_pspec):
         ControlBase.__init__(self)
