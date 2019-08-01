@@ -1,5 +1,12 @@
-# IEEE754 Floating Point Converter
-# Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+"""IEEE754 Floating Point Converter
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+Relevant bugreports:
+* http://bugs.libre-riscv.org/show_bug.cgi?id=112
+* http://bugs.libre-riscv.org/show_bug.cgi?id=113
+
+"""
 
 from nmigen import Module, Signal, Cat, Const, Mux
 from nmigen.cli import main, verilog
