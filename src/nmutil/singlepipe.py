@@ -579,6 +579,7 @@ class UnbufferedPipeline(ControlBase):
 
         return self.m
 
+
 class UnbufferedPipeline2(ControlBase):
     """ A simple pipeline stage with single-clock synchronisation
         and two-way valid/ready synchronised signalling.
