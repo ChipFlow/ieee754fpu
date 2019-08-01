@@ -40,18 +40,12 @@ in #60: http://bugs.libre-riscv.org/show_bug.cgi?id=60
 
 """
 
-from nmigen import Module
-from nmigen.cli import main, verilog
-
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
-from .specialcases import FPMulSpecialCasesDeNorm
-from .mulstages import FPMulStages
+from ieee754.fpmul.specialcases import FPMulSpecialCasesDeNorm
+from ieee754.fpmul.mulstages import FPMulStages
 from ieee754.pipeline import PipelineSpec
 
 

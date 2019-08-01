@@ -1,21 +1,9 @@
 # IEEE754 FCLASS Module
 # Copyright (C) 2019 Luke Kenneth Casson Leighon <lkcl@lkcl.net>
 
-
-from nmigen import Module, Signal, Elaboratable
-from nmigen.cli import main, verilog
-
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
-
-from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.pack import FPPackData
-
-
-from ieee754.fpcommon.fpbase import FPState, FPNumBase
-from ieee754.fpcommon.getop import FPPipeContext
-
-from ieee754.fpcommon.fpbase import FPState
+from ieee754.fpcommon.fpbase import FPNumBase
 from ieee754.fclass.fclass import FPClassMod
 from ieee754.pipeline import PipelineSpec, DynamicPipe
 

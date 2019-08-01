@@ -8,22 +8,10 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 import sys
 import functools
 
-from nmigen import Module, Signal, Cat, Const, Mux, Elaboratable
-from nmigen.cli import main, verilog
-
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
-
-
-from nmigen import Module, Signal, Elaboratable
-from math import log
-
-from ieee754.fpcommon.getop import FPPipeContext
-
 from ieee754.pipeline import PipelineSpec, DynamicPipe
 
 from ieee754.fcvt.float2int import FPCVTFloatToIntMod
@@ -32,6 +20,8 @@ from ieee754.fcvt.upsize import FPCVTUpConvertMod
 from ieee754.fcvt.downsize import FPCVTDownConvertMod
 
 
+# not used, yet
+# from nmigen import Signal
 class SignedOp:
     def __init__(self):
         self.signed = Signal(reset_less=True)

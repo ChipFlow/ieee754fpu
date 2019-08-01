@@ -66,10 +66,7 @@ even 8 is starting to get alarmingly high.
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.denorm import FPSCData
 from ieee754.fpcommon.fpbase import FPFormat
-from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpdiv.specialcases import FPDIVSpecialCasesDeNorm
 from ieee754.fpdiv.divstages import (FPDivStagesSetup,

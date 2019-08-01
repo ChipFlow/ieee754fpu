@@ -38,17 +38,9 @@ RoundMod, FPAddStage0Mod etc.
 
 """
 
-from nmigen import Module
-from nmigen.cli import main, verilog
-
 from nmutil.singlepipe import ControlBase
-from nmutil.multipipe import CombMuxOutPipe
-from nmutil.multipipe import PriorityCombMuxInPipe
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.denorm import FPSCData
-from ieee754.fpcommon.pack import FPPackData
 from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.fpadd.specialcases import FPAddSpecialCasesDeNorm
 from ieee754.fpadd.addstages import FPAddAlignSingleAdd
