@@ -1,4 +1,9 @@
-# IEEE Floating Point Multiplier 
+"""IEEE754 Floating Point Multiplier
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jake Lifshay
+
+"""
 
 from nmigen import Module, Signal, Cat, Const
 from nmigen.cli import main, verilog

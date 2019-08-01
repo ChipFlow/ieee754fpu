@@ -158,11 +158,11 @@ class StageHelper(Stage):
         if stage is not None:
             self.set_specs(self, self)
 
-    def ospec(self, name):
+    def ospec(self, name=None):
         assert self._ospecfn is not None
         return _spec(self._ospecfn, name)
 
-    def ispec(self, name):
+    def ispec(self, name=None):
         assert self._ispecfn is not None
         return _spec(self._ispecfn, name)
 

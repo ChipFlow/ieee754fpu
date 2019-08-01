@@ -89,9 +89,3 @@ class FPADDMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, op_wid)
         self.alu = FPADDBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
-
-    def i_specfn(self):
-        return FPBaseData(self.pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.pspec)

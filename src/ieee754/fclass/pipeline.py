@@ -67,12 +67,6 @@ class FPClassMuxInOutBase(ReservationStations):
         self.alu = pkls(self.in_pspec, self.out_pspec, modkls)
         ReservationStations.__init__(self, num_rows)
 
-    def i_specfn(self):
-        return FPBaseData(self.in_pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.out_pspec)
-
 
 class FPClassMuxInOut(FPClassMuxInOutBase):
     """ Reservation-Station version of FPClass pipeline.

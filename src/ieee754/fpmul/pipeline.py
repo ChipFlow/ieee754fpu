@@ -1,4 +1,7 @@
-"""IEEE Floating Point Multiplier Pipeline
+"""IEEE754 Floating Point Multiplier Pipeline
+
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2019 Jake Lifshay
 
 Relevant bugreport: http://bugs.libre-riscv.org/show_bug.cgi?id=77
 
@@ -86,9 +89,3 @@ class FPMULMuxInOut(ReservationStations):
         self.pspec = PipelineSpec(width, self.id_wid, self.op_wid)
         self.alu = FPMULBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)
-
-    def i_specfn(self):
-        return FPBaseData(self.pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.pspec)

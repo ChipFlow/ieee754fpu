@@ -89,7 +89,7 @@ class FPCVTMuxInOutBase(ReservationStations):
     """ Reservation-Station version of FPCVT pipeline.
 
         * fan-in on inputs (an array of FPBaseData: a,b,mid)
-        * 2-stage multiplier pipeline
+        * converter pipeline (alu)
         * fan-out on outputs (an array of FPPackData: z,mid)
 
         Fan-in and Fan-out are combinatorial.
@@ -105,12 +105,6 @@ class FPCVTMuxInOutBase(ReservationStations):
 
         self.alu = pkls(modkls, e_extra, self.in_pspec, self.out_pspec)
         ReservationStations.__init__(self, num_rows)
-
-    def i_specfn(self):
-        return FPBaseData(self.in_pspec)
-
-    def o_specfn(self):
-        return FPPackData(self.out_pspec)
 
 
 class FPCVTF2IntMuxInOut(FPCVTMuxInOutBase):

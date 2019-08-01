@@ -4,7 +4,7 @@
     * data goes through a pipeline
     * results fan back out.
 
-    the output data format has to have a member "mid", which is used
+    the output data format has to have a member "muxid", which is used
     as the array index on fan-out
 """
 
@@ -40,7 +40,8 @@ class ReservationStations(Elaboratable):
 
         Input: num_rows - number of input and output Reservation Stations
 
-        Requires: the addition of an "alu" object, an i_specfn and an o_specfn
+        Requires: the addition of an "alu" object, from which ispec and ospec
+        are taken, and inpipe and outpipe are connected to it
 
         * fan-in on inputs (an array of FPADDBaseData: a,b,mid)
         * ALU pipeline
@@ -71,4 +72,8 @@ class ReservationStations(Elaboratable):
     def ports(self):
         return self._ports
 
+    def i_specfn(self):
+        return self.alu.ispec()
 
+    def o_specfn(self):
+        return self.alu.ospec()
