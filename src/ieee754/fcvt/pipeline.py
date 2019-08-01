@@ -4,7 +4,6 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-
 import sys
 import functools
 
