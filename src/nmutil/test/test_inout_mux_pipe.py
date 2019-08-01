@@ -120,7 +120,8 @@ class InputTest:
             print ("recv", out_muxid, out_i, hex(out_v))
 
             # see if this output has occurred already, delete it if it has
-            assert muxid == out_muxid, "out_muxid %d not correct %d" % (out_muxid, muxid)
+            assert muxid == out_muxid, \
+                    "out_muxid %d not correct %d" % (out_muxid, muxid)
             assert out_i in self.do[muxid], "out_i %d not in array %s" % \
                                           (out_i, repr(self.do[muxid]))
             assert self.do[muxid][out_i] == out_v # pass-through data
