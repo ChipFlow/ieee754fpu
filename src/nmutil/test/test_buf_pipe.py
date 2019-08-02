@@ -19,13 +19,15 @@ from nmigen.hdl.rec import Record
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
-from .example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
-from .example_buf_pipe import ExamplePipeline, UnbufferedPipeline
-from .example_buf_pipe import ExampleStageCls
-from .example_buf_pipe import PrevControl, NextControl, BufferedHandshake
-from .example_buf_pipe import StageChain, ControlBase, StageCls
+from nmutil.test.example_buf_pipe import ExampleBufPipe, ExampleBufPipeAdd
+from nmutil.test.example_buf_pipe import ExamplePipeline, UnbufferedPipeline
+from nmutil.test.example_buf_pipe import ExampleStageCls
+from nmutil.iocontrol import PrevControl, NextControl
+from nmutil.stageapi import StageChain, StageCls
+from nmutil.singlepipe import ControlBase
 from nmutil.singlepipe import UnbufferedPipeline2
 from nmutil.singlepipe import SimpleHandshake
+from nmutil.singlepipe import BufferedHandshake
 from nmutil.singlepipe import PassThroughHandshake
 from nmutil.singlepipe import PassThroughStage
 from nmutil.singlepipe import FIFOControl
