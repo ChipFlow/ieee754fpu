@@ -404,6 +404,46 @@ class BufferedHandshake(ControlBase):
         return self.m
 
 
+class MaskCancellable(ControlBase):
+    """ Mask-activated Cancellable pipeline
+
+        Argument: stage.  see Stage API above
+
+        stage-1   p.valid_i >>in   stage   n.valid_o out>>   stage+1
+        stage-1   p.ready_o <<out  stage   n.ready_i <<in    stage+1
+        stage-1   p.data_i  >>in   stage   n.data_o  out>>   stage+1
+                              |             |
+                              +--process->--^
+    """
+
+    def elaborate(self, platform):
+        self.m = m = ControlBase.elaborate(self, platform)
+
+        # store result of processing in combinatorial temporary
+        result = _spec(self.stage.ospec, "r_tmp")
+        m.d.comb += nmoperator.eq(result, self.data_r)
+
+        # establish if the data should be passed on.  cancellation is
+        # a global signal.
+        # XXX EXCEPTIONAL CIRCUMSTANCES: inspection of the data payload
+        # is NOT "normal" for the Stage API.
+        p_valid_i = Signal(reset_less=True)
+        m.d.comb += p_valid_i.eq((self.p.data_i.ctx.idmask & \
+                                 ~self.cancelmask).bool()) # nonzero
+
+        # if idmask nonzero, data gets passed on.
+        m.d.sync += self.n.valid_o.eq(p_valid_i)
+        with m.If(p_valid_i):
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
+            m.d.sync += nmoperator.eq(self.n.data_o, data_o) # update output
+
+        # output valid if
+        # input always "ready"
+        m.d.comb += self.p._ready_o.eq(1)
+
+        return self.m
+
+
 class SimpleHandshake(ControlBase):
     """ simple handshake control.  data and strobe signals travel in sync.
         implements the protocol used by Wishbone and AXI4.
