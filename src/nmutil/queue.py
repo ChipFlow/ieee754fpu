@@ -62,7 +62,7 @@ class Queue(FIFOInterface, Elaboratable):
 
         # set up an SRAM.  XXX bug in Memory: cannot create SRAM of depth 1
         ram = Memory(self.width, self.depth if self.depth > 1 else 2)
-        m.submodules.ram_read = ram_read = ram.read_port(synchronous=False)
+        m.submodules.ram_read = ram_read = ram.read_port(domain="comb")
         m.submodules.ram_write = ram_write = ram.write_port()
 
         # convenience names, for people familiar with ready/valid terminology
