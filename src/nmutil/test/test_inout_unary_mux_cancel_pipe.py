@@ -194,6 +194,8 @@ class TestInOutPipe(Elaboratable):
         self.inpipe = TestPriorityMuxPipe(nr) # fan-in (combinatorial)
         self.pipe1 = PassThroughPipe(nr)      # stage 1 (clock-sync)
         self.pipe2 = PassThroughPipe(nr)      # stage 2 (clock-sync)
+        self.pipe3 = PassThroughPipe(nr)      # stage 3 (clock-sync)
+        self.pipe4 = PassThroughPipe(nr)      # stage 4 (clock-sync)
         self.outpipe = TestMuxOutPipe(nr)     # fan-out (combinatorial)
 
         self.p = self.inpipe.p  # kinda annoying,
@@ -205,11 +207,15 @@ class TestInOutPipe(Elaboratable):
         m.submodules.inpipe = self.inpipe
         m.submodules.pipe1 = self.pipe1
         m.submodules.pipe2 = self.pipe2
+        m.submodules.pipe3 = self.pipe3
+        m.submodules.pipe4 = self.pipe4
         m.submodules.outpipe = self.outpipe
 
         m.d.comb += self.inpipe.n.connect_to_next(self.pipe1.p)
         m.d.comb += self.pipe1.connect_to_next(self.pipe2)
-        m.d.comb += self.pipe2.connect_to_next(self.outpipe)
+        m.d.comb += self.pipe2.connect_to_next(self.pipe3)
+        m.d.comb += self.pipe3.connect_to_next(self.pipe4)
+        m.d.comb += self.pipe4.connect_to_next(self.outpipe)
 
         return m
 
