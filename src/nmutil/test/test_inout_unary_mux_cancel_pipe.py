@@ -46,8 +46,7 @@ class PassThroughStage:
 
 
 class PassThroughPipe(MaskCancellable):
-    def __init__(self, maskwid, cancelmask):
-        self.cancelmask = cancelmask
+    def __init__(self, maskwid):
         MaskCancellable.__init__(self, PassThroughStage(), maskwid)
 
 
@@ -72,7 +71,7 @@ class InputTest:
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
             yield rs.data_i.muxid.eq(muxid)
-            yield rs.mask_i.eq(1<<muxid)
+            yield rs.mask_i.eq(1)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
@@ -137,12 +136,11 @@ class InputTest:
 
 
 class TestPriorityMuxPipe(PriorityCombMuxInPipe):
-    def __init__(self, num_rows, cancelmask):
+    def __init__(self, num_rows):
         self.num_rows = num_rows
-        self.cancelmask = cancelmask
         stage = PassThroughStage()
         PriorityCombMuxInPipe.__init__(self, stage,
-                                       p_len=self.num_rows, maskmode=True)
+                                       p_len=self.num_rows, masklen=1)
 
 
 class OutputTest:
@@ -183,22 +181,20 @@ class OutputTest:
 
 
 class TestMuxOutPipe(CombMuxOutPipe):
-    def __init__(self, num_rows, cancelmask):
+    def __init__(self, num_rows):
         self.num_rows = num_rows
-        self.cancelmask = cancelmask
         stage = PassThroughStage()
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows,
-                                maskmode=True)
+                                masklen=1)
 
 
 class TestInOutPipe(Elaboratable):
     def __init__(self, num_rows=4):
         self.num_rows = nr = num_rows
-        self.cancelmask = cm = Signal(nr)         # cancellation mask
-        self.inpipe = TestPriorityMuxPipe(nr, cm) # fan-in (combinatorial)
-        self.pipe1 = PassThroughPipe(nr, cm)      # stage 1 (clock-sync)
-        self.pipe2 = PassThroughPipe(nr, cm)      # stage 2 (clock-sync)
-        self.outpipe = TestMuxOutPipe(nr, cm)     # fan-out (combinatorial)
+        self.inpipe = TestPriorityMuxPipe(nr) # fan-in (combinatorial)
+        self.pipe1 = PassThroughPipe(nr)      # stage 1 (clock-sync)
+        self.pipe2 = PassThroughPipe(nr)      # stage 2 (clock-sync)
+        self.outpipe = TestMuxOutPipe(nr)     # fan-out (combinatorial)
 
         self.p = self.inpipe.p  # kinda annoying,
         self.n = self.outpipe.n # use pipe in/out as this class in/out

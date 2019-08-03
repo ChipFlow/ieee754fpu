@@ -171,11 +171,12 @@ class PrevControl(Elaboratable):
         * data_i : an input - MUST be added by the USER of this class
     """
 
-    def __init__(self, i_width=1, stage_ctl=False, maskwid=0):
+    def __init__(self, i_width=1, stage_ctl=False, maskwid=0, offs=0):
         self.stage_ctl = stage_ctl
         self.maskwid = maskwid
         if maskwid:
             self.mask_i = Signal(maskwid)                # prev   >>in  self
+            self.stop_i = Signal(maskwid)                # prev   >>in  self
         self.valid_i = Signal(i_width, name="p_valid_i") # prev   >>in  self
         self._ready_o = Signal(name="p_ready_o")         # prev   <<out self
         self.data_i = None # XXX MUST BE ADDED BY USER
@@ -191,7 +192,8 @@ class PrevControl(Elaboratable):
             return self.s_ready_o # set dynamically by stage
         return self._ready_o      # return this when not under dynamic control
 
-    def _connect_in(self, prev, direct=False, fn=None, do_data=True):
+    def _connect_in(self, prev, direct=False, fn=None,
+                    do_data=True, do_stop=True):
         """ internal helper function to connect stage to an input source.
             do not use to connect stage-to-stage!
         """
@@ -200,6 +202,8 @@ class PrevControl(Elaboratable):
                prev.ready_o.eq(self.ready_o)]
         if self.maskwid:
             res.append(self.mask_i.eq(prev.mask_i))
+            if do_stop:
+                res.append(self.stop_i.eq(prev.stop_i))
         if do_data is False:
             return res
         data_i = fn(prev.data_i) if fn is not None else prev.data_i
@@ -241,6 +245,7 @@ class PrevControl(Elaboratable):
         yield self.ready_o
         if self.maskwid:
             yield self.mask_i
+            yield self.stop_i
         if hasattr(self.data_i, "ports"):
             yield from self.data_i.ports()
         elif isinstance(self.data_i, Sequence):
@@ -263,6 +268,7 @@ class NextControl(Elaboratable):
         self.maskwid = maskwid
         if maskwid:
             self.mask_o = Signal(maskwid)       # self out>>  next
+            self.stop_o = Signal(maskwid)       # self out>>  next
         self.valid_o = Signal(name="n_valid_o") # self out>>  next
         self.ready_i = Signal(name="n_ready_i") # self <<in   next
         self.data_o = None # XXX MUST BE ADDED BY USER
@@ -276,7 +282,7 @@ class NextControl(Elaboratable):
             return self.ready_i & self.d_valid
         return self.ready_i
 
-    def connect_to_next(self, nxt, do_data=True):
+    def connect_to_next(self, nxt, do_data=True, do_stop=True):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
             use this when connecting stage-to-stage
@@ -288,11 +294,14 @@ class NextControl(Elaboratable):
                self.ready_i.eq(nxt.ready_o)]
         if self.maskwid:
             res.append(nxt.mask_i.eq(self.mask_o))
+            if do_stop:
+                res.append(nxt.stop_i.eq(self.stop_o))
         if do_data:
             res.append(nmoperator.eq(nxt.data_i, self.data_o))
         return res
 
-    def _connect_out(self, nxt, direct=False, fn=None, do_data=True):
+    def _connect_out(self, nxt, direct=False, fn=None,
+                     do_data=True, do_stop=True):
         """ internal helper function to connect stage to an output source.
             do not use to connect stage-to-stage!
         """
@@ -301,6 +310,8 @@ class NextControl(Elaboratable):
                self.ready_i.eq(ready_i)]
         if self.maskwid:
             res.append(nxt.mask_o.eq(self.mask_o))
+            if do_stop:
+                res.append(nxt.stop_o.eq(self.stop_o))
         if not do_data:
             return res
         data_o = fn(nxt.data_o) if fn is not None else nxt.data_o
@@ -316,6 +327,7 @@ class NextControl(Elaboratable):
         yield self.valid_o
         if self.maskwid:
             yield self.mask_o
+            yield self.stop_o
         if hasattr(self.data_o, "ports"):
             yield from self.data_o.ports()
         elif isinstance(self.data_o, Sequence):

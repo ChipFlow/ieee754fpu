@@ -432,7 +432,7 @@ class MaskCancellable(ControlBase):
         # is NOT "normal" for the Stage API.
         p_valid_i = Signal(reset_less=True)
         #print ("self.p.data_i", self.p.data_i)
-        m.d.comb += p_valid_i.eq(((self.p.mask_i & ~self.cancelmask).bool()))
+        m.d.comb += p_valid_i.eq(((self.p.mask_i & ~self.p.stop_i).bool()))
 
         # if idmask nonzero, mask gets passed on (and register set).
         # register is left as-is if idmask is zero, but out-mask is set to zero
@@ -446,6 +446,9 @@ class MaskCancellable(ControlBase):
         # input always "ready"
         #m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
         m.d.comb += self.p._ready_o.eq(Const(1))
+
+        # always pass on stop (as combinatorial: single signal)
+        m.d.comb += self.n.stop_o.eq(self.p.stop_i)
 
         return self.m
 
