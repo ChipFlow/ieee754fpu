@@ -258,8 +258,11 @@ class NextControl(Elaboratable):
         * ready_i: input from next stage indicating that it can accept data
         * data_o : an output - MUST be added by the USER of this class
     """
-    def __init__(self, stage_ctl=False):
+    def __init__(self, stage_ctl=False, maskwid=0):
         self.stage_ctl = stage_ctl
+        self.maskwid = maskwid
+        if maskwid:
+            self.mask_o = Signal(maskwid)       # self out>>  next
         self.valid_o = Signal(name="n_valid_o") # self out>>  next
         self.ready_i = Signal(name="n_ready_i") # self <<in   next
         self.data_o = None # XXX MUST BE ADDED BY USER
@@ -277,9 +280,14 @@ class NextControl(Elaboratable):
         """ helper function to connect to the next stage data/valid/ready.
             data/valid is passed *TO* nxt, and ready comes *IN* from nxt.
             use this when connecting stage-to-stage
+
+            note: a "connect_from_prev" is completely unnecessary: it's
+            just nxt.connect_to_next(self)
         """
         res = [nxt.valid_i.eq(self.valid_o),
                self.ready_i.eq(nxt.ready_o)]
+        if self.maskwid:
+            res.append(nxt.mask_i.eq(self.mask_o))
         if do_data:
             res.append(nmoperator.eq(nxt.data_i, self.data_o))
         return res
@@ -291,6 +299,8 @@ class NextControl(Elaboratable):
         ready_i = nxt.ready_i if direct else nxt.ready_i_test
         res = [nxt.valid_o.eq(self.valid_o),
                self.ready_i.eq(ready_i)]
+        if self.maskwid:
+            res.append(nxt.mask_o.eq(self.mask_o))
         if not do_data:
             return res
         data_o = fn(nxt.data_o) if fn is not None else nxt.data_o
@@ -304,6 +314,8 @@ class NextControl(Elaboratable):
     def __iter__(self):
         yield self.ready_i
         yield self.valid_o
+        if self.maskwid:
+            yield self.mask_o
         if hasattr(self.data_o, "ports"):
             yield from self.data_o.ports()
         elif isinstance(self.data_o, Sequence):
