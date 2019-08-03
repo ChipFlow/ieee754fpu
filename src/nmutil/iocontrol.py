@@ -171,8 +171,11 @@ class PrevControl(Elaboratable):
         * data_i : an input - MUST be added by the USER of this class
     """
 
-    def __init__(self, i_width=1, stage_ctl=False):
+    def __init__(self, i_width=1, stage_ctl=False, maskwid=0):
         self.stage_ctl = stage_ctl
+        self.maskwid = maskwid
+        if maskwid:
+            self.mask_i = Signal(maskwid)                # prev   >>in  self
         self.valid_i = Signal(i_width, name="p_valid_i") # prev   >>in  self
         self._ready_o = Signal(name="p_ready_o")         # prev   <<out self
         self.data_i = None # XXX MUST BE ADDED BY USER
@@ -195,6 +198,8 @@ class PrevControl(Elaboratable):
         valid_i = prev.valid_i if direct else prev.valid_i_test
         res = [self.valid_i.eq(valid_i),
                prev.ready_o.eq(self.ready_o)]
+        if self.maskwid:
+            res.append(self.mask_i.eq(prev.mask_i))
         if do_data is False:
             return res
         data_i = fn(prev.data_i) if fn is not None else prev.data_i
@@ -224,13 +229,18 @@ class PrevControl(Elaboratable):
         return m
 
     def eq(self, i):
-        return [nmoperator.eq(self.data_i, i.data_i),
+        res = [nmoperator.eq(self.data_i, i.data_i),
                 self.ready_o.eq(i.ready_o),
                 self.valid_i.eq(i.valid_i)]
+        if self.maskwid:
+            res.append(self.mask_i.eq(i.mask_i))
+        return res
 
     def __iter__(self):
         yield self.valid_i
         yield self.ready_o
+        if self.maskwid:
+            yield self.mask_i
         if hasattr(self.data_i, "ports"):
             yield from self.data_i.ports()
         elif isinstance(self.data_i, Sequence):
