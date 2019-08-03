@@ -432,12 +432,15 @@ class MaskCancellable(ControlBase):
         # is NOT "normal" for the Stage API.
         p_valid_i = Signal(reset_less=True)
         #print ("self.p.data_i", self.p.data_i)
-        m.d.comb += p_valid_i.eq(((self.p.mask_i & ~self.p.stop_i).bool()))
+        maskedout = Signal(len(self.p.mask_i), reset_less=True)
+        m.d.comb += maskedout.eq(self.p.mask_i & ~self.p.stop_i)
+        m.d.comb += p_valid_i.eq(maskedout.bool())
 
         # if idmask nonzero, mask gets passed on (and register set).
         # register is left as-is if idmask is zero, but out-mask is set to zero
+        # note however: only the *uncancelled* mask bits get passed on
         m.d.sync += self.n.valid_o.eq(p_valid_i)
-        m.d.sync += self.n.mask_o.eq(Mux(p_valid_i, self.p.mask_i, 0))
+        m.d.sync += self.n.mask_o.eq(Mux(p_valid_i, maskedout, 0))
         with m.If(p_valid_i):
             data_o = self._postprocess(result) # XXX TBD, does nothing right now
             m.d.sync += nmoperator.eq(self.n.data_o, data_o) # update output
