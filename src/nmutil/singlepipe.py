@@ -128,7 +128,7 @@
     https://github.com/ZipCPU/dbgbus/blob/master/hexbus/rtl/hbdeword.v
 """
 
-from nmigen import Signal, Mux, Module, Elaboratable
+from nmigen import Signal, Mux, Module, Elaboratable, Const
 from nmigen.cli import verilog, rtlil
 from nmigen.hdl.rec import Record
 
@@ -179,7 +179,7 @@ class ControlBase(StageHelper, Elaboratable):
         *BYPASSES* a ControlBase instance ready/valid signalling, which
         clearly should not be done without a really, really good reason.
     """
-    def __init__(self, stage=None, in_multi=None, stage_ctl=False):
+    def __init__(self, stage=None, in_multi=None, stage_ctl=False, maskwid=0):
         """ Base class containing ready/valid/data to previous and next stages
 
             * p: contains ready/valid to the previous stage
@@ -194,8 +194,8 @@ class ControlBase(StageHelper, Elaboratable):
         StageHelper.__init__(self, stage)
 
         # set up input and output IO ACK (prev/next ready/valid)
-        self.p = PrevControl(in_multi, stage_ctl)
-        self.n = NextControl(stage_ctl)
+        self.p = PrevControl(in_multi, stage_ctl, maskwid=maskwid)
+        self.n = NextControl(stage_ctl, maskwid=maskwid)
 
         # set up the input and output data
         if stage is not None:
@@ -415,6 +415,9 @@ class MaskCancellable(ControlBase):
                               |             |
                               +--process->--^
     """
+    def __init__(self, stage, maskwid, in_multi=None, stage_ctl=False):
+        ControlBase.__init__(self, stage, in_multi, stage_ctl, maskwid)
+
 
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
@@ -428,18 +431,23 @@ class MaskCancellable(ControlBase):
         # XXX EXCEPTIONAL CIRCUMSTANCES: inspection of the data payload
         # is NOT "normal" for the Stage API.
         p_valid_i = Signal(reset_less=True)
-        m.d.comb += p_valid_i.eq((self.p.data_i.ctx.idmask & \
-                                 ~self.cancelmask).bool()) # nonzero
+        print ("self.p.data_i", self.p.data_i)
+        m.d.comb += p_valid_i.eq((self.p.mask_i.bool()))
+        #m.d.comb += p_valid_i.eq((self.p.data_i.ctx.idmask & \
+        #                         ~self.cancelmask)) # nonzero
 
         # if idmask nonzero, data gets passed on.
         m.d.sync += self.n.valid_o.eq(p_valid_i)
         with m.If(p_valid_i):
+            m.d.sync += self.n.mask_o.eq(self.p.mask_i)
             data_o = self._postprocess(result) # XXX TBD, does nothing right now
             m.d.sync += nmoperator.eq(self.n.data_o, data_o) # update output
+        with m.Else():
+            m.d.sync += self.n.mask_o.eq(0)
 
         # output valid if
         # input always "ready"
-        m.d.comb += self.p._ready_o.eq(1)
+        m.d.comb += self.p._ready_o.eq(Const(1))
 
         return self.m
 
