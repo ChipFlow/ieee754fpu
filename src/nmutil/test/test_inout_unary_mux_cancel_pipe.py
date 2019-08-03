@@ -1,5 +1,6 @@
 """ key strategic example showing how to do multi-input fan-in into a
-    multi-stage pipeline, then multi-output fanout.
+    multi-stage pipeline, then multi-output fanout, with an unary muxid
+    and cancellation
 
     the multiplex ID from the fan-in is passed in to the pipeline, preserved,
     and used as a routing ID on the fanout.
@@ -13,7 +14,7 @@ from nmigen.cli import verilog, rtlil
 
 from nmutil.multipipe import CombMultiOutPipeline, CombMuxOutPipe
 from nmutil.multipipe import PriorityCombMuxInPipe
-from nmutil.singlepipe import SimpleHandshake, RecordObject, Object
+from nmutil.singlepipe import MaskCancellable, RecordObject, Object
 
 
 class PassData2(RecordObject):
@@ -44,9 +45,10 @@ class PassThroughStage:
 
 
 
-class PassThroughPipe(SimpleHandshake):
-    def __init__(self):
-        SimpleHandshake.__init__(self, PassThroughStage())
+class PassThroughPipe(MaskCancellable):
+    def __init__(self, maskwid, cancelmask):
+        self.cancelmask = cancelmask
+        MaskCancellable.__init__(self, PassThroughStage(), maskwid)
 
 
 class InputTest:
@@ -54,7 +56,7 @@ class InputTest:
         self.dut = dut
         self.di = {}
         self.do = {}
-        self.tlen = 100
+        self.tlen = 10
         for muxid in range(dut.num_rows):
             self.di[muxid] = {}
             self.do[muxid] = {}
@@ -70,6 +72,7 @@ class InputTest:
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
             yield rs.data_i.muxid.eq(muxid)
+            yield rs.mask_i.eq(1<<muxid)
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
@@ -134,10 +137,12 @@ class InputTest:
 
 
 class TestPriorityMuxPipe(PriorityCombMuxInPipe):
-    def __init__(self, num_rows):
+    def __init__(self, num_rows, cancelmask):
         self.num_rows = num_rows
+        self.cancelmask = cancelmask
         stage = PassThroughStage()
-        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
+        PriorityCombMuxInPipe.__init__(self, stage,
+                                       p_len=self.num_rows, maskmode=True)
 
 
 class OutputTest:
@@ -145,7 +150,7 @@ class OutputTest:
         self.dut = dut
         self.di = []
         self.do = {}
-        self.tlen = 100
+        self.tlen = 10
         for i in range(self.tlen * dut.num_rows):
             if i < dut.num_rows:
                 muxid = i
@@ -178,19 +183,22 @@ class OutputTest:
 
 
 class TestMuxOutPipe(CombMuxOutPipe):
-    def __init__(self, num_rows):
+    def __init__(self, num_rows, cancelmask):
         self.num_rows = num_rows
+        self.cancelmask = cancelmask
         stage = PassThroughStage()
-        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
+        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows,
+                                maskmode=True)
 
 
 class TestInOutPipe(Elaboratable):
     def __init__(self, num_rows=4):
-        self.num_rows = num_rows
-        self.inpipe = TestPriorityMuxPipe(num_rows) # fan-in (combinatorial)
-        self.pipe1 = PassThroughPipe()              # stage 1 (clock-sync)
-        self.pipe2 = PassThroughPipe()              # stage 2 (clock-sync)
-        self.outpipe = TestMuxOutPipe(num_rows)     # fan-out (combinatorial)
+        self.num_rows = nr = num_rows
+        self.cancelmask = cm = Signal(nr)         # cancellation mask
+        self.inpipe = TestPriorityMuxPipe(nr, cm) # fan-in (combinatorial)
+        self.pipe1 = PassThroughPipe(nr, cm)      # stage 1 (clock-sync)
+        self.pipe2 = PassThroughPipe(nr, cm)      # stage 2 (clock-sync)
+        self.outpipe = TestMuxOutPipe(nr, cm)     # fan-out (combinatorial)
 
         self.p = self.inpipe.p  # kinda annoying,
         self.n = self.outpipe.n # use pipe in/out as this class in/out
