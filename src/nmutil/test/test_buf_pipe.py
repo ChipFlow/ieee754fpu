@@ -1166,10 +1166,10 @@ def test0():
     dut = MaskCancellablePipe()
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
-             [dut.p.data_i] + [dut.n.data_o]
-    #vl = rtlil.convert(dut, ports=ports)
-    #with open("test_bufpipe14.il", "w") as f:
-    #    f.write(vl)
+             dut.p.data_i.ports() + dut.n.data_o.ports()
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_maskchain0.il", "w") as f:
+        f.write(vl)
     data = data_chain0()
     test = TestMask(dut, resultfn_0, 16, data=data)
     run_simulation(dut, [test.send, test.rcv],
