@@ -180,7 +180,7 @@ class CombMultiOutPipeline(MultiOutControlBase):
         m = MultiOutControlBase.elaborate(self, platform)
 
         if hasattr(self.n_mux, "elaborate"): # TODO: identify submodule?
-            m.submodules += self.n_mux
+            m.submodules.n_mux = self.n_mux
 
         # need buffer register conforming to *input* spec
         r_data = _spec(self.stage.ispec, 'r_data') # input type
@@ -260,7 +260,7 @@ class CombMultiInPipeline(MultiInControlBase):
     def elaborate(self, platform):
         m = MultiInControlBase.elaborate(self, platform)
 
-        m.submodules += self.p_mux
+        m.submodules.p_mux = self.p_mux
 
         # need an array of buffer registers conforming to *input* spec
         r_data = []
