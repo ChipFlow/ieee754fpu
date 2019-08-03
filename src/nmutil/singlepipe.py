@@ -431,10 +431,8 @@ class MaskCancellable(ControlBase):
         # XXX EXCEPTIONAL CIRCUMSTANCES: inspection of the data payload
         # is NOT "normal" for the Stage API.
         p_valid_i = Signal(reset_less=True)
-        print ("self.p.data_i", self.p.data_i)
-        m.d.comb += p_valid_i.eq((self.p.mask_i.bool()))
-        #m.d.comb += p_valid_i.eq((self.p.data_i.ctx.idmask & \
-        #                         ~self.cancelmask)) # nonzero
+        #print ("self.p.data_i", self.p.data_i)
+        m.d.comb += p_valid_i.eq(((self.p.mask_i & ~self.cancelmask).bool()))
 
         # if idmask nonzero, mask gets passed on (and register set).
         # register is left as-is if idmask is zero, but out-mask is set to zero
