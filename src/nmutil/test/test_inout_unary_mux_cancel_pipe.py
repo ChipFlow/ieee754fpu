@@ -51,14 +51,16 @@ class PassThroughPipe(MaskCancellable):
 
 
 class InputTest:
-    def __init__(self, dut):
+    def __init__(self, dut, tlen):
         self.dut = dut
         self.di = {}
         self.do = {}
-        self.tlen = 10
+        self.sent = {}
+        self.tlen = tlen
         for muxid in range(dut.num_rows):
             self.di[muxid] = {}
             self.do[muxid] = {}
+            self.sent[muxid] = []
             for i in range(self.tlen):
                 self.di[muxid][i] = randint(0, 255) + (muxid<<8)
                 self.do[muxid][i] = self.di[muxid][i]
@@ -78,9 +80,14 @@ class InputTest:
                 yield
                 o_p_ready = yield rs.ready_o
 
-            print ("send", muxid, i, hex(op2))
+            print ("send", muxid, i, hex(op2), op2)
+            self.sent[muxid].append(i)
 
             yield rs.valid_i.eq(0)
+            # wait until it's received
+            while i in self.do[muxid]:
+                yield
+
             # wait random period of time before queueing another value
             for i in range(randint(0, 3)):
                 yield
@@ -101,7 +108,20 @@ class InputTest:
         #    send = randint(0, send_range) != 0
 
     def rcv(self, muxid):
+        rs = self.dut.p[muxid]
         while True:
+
+            # check cancellation
+            if self.sent[muxid] and randint(0, 2) == 0:
+                todel = self.sent[muxid].pop()
+                print ("to delete", muxid, self.sent[muxid], todel)
+                if todel in self.do[muxid]:
+                    del self.do[muxid][todel]
+                    yield rs.stop_i.eq(1)
+                print ("left", muxid, self.do[muxid])
+                if len(self.do[muxid]) == 0:
+                    break
+
             #stall_range = randint(0, 3)
             #for j in range(randint(1,10)):
             #    stall = randint(0, stall_range) != 0
@@ -110,6 +130,7 @@ class InputTest:
             n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
             yield
+            yield rs.stop_i.eq(0) # resets cancel mask
             o_n_valid = yield n.valid_o
             i_n_ready = yield n.ready_i
             if not o_n_valid or not i_n_ready:
@@ -119,19 +140,25 @@ class InputTest:
             out_i = yield n.data_o.idx
             out_v = yield n.data_o.data
 
-            print ("recv", out_muxid, out_i, hex(out_v))
+            print ("recv", out_muxid, out_i, hex(out_v), out_v)
 
             # see if this output has occurred already, delete it if it has
             assert muxid == out_muxid, \
                     "out_muxid %d not correct %d" % (out_muxid, muxid)
+            if out_i not in self.sent[muxid]:
+                print ("cancelled/recv", muxid, out_i)
+                continue
             assert out_i in self.do[muxid], "out_i %d not in array %s" % \
                                           (out_i, repr(self.do[muxid]))
             assert self.do[muxid][out_i] == out_v # pass-through data
             del self.do[muxid][out_i]
+            todel = self.sent[muxid].index(out_i)
+            del self.sent[muxid][todel]
 
             # check if there's any more outputs
             if len(self.do[muxid]) == 0:
                 break
+
         print ("recv ended", muxid)
 
 
@@ -141,43 +168,6 @@ class TestPriorityMuxPipe(PriorityCombMuxInPipe):
         stage = PassThroughStage()
         PriorityCombMuxInPipe.__init__(self, stage,
                                        p_len=self.num_rows, maskwid=1)
-
-
-class OutputTest:
-    def __init__(self, dut):
-        self.dut = dut
-        self.di = []
-        self.do = {}
-        self.tlen = 10
-        for i in range(self.tlen * dut.num_rows):
-            if i < dut.num_rows:
-                muxid = i
-            else:
-                muxid = randint(0, dut.num_rows-1)
-            data = randint(0, 255) + (muxid<<8)
-
-    def send(self):
-        for i in range(self.tlen * dut.num_rows):
-            op2 = self.di[i][0]
-            muxid = self.di[i][1]
-            rs = dut.p
-            yield rs.valid_i.eq(1)
-            yield rs.data_i.data.eq(op2)
-            yield rs.data_i.muxid.eq(muxid)
-            yield
-            o_p_ready = yield rs.ready_o
-            while not o_p_ready:
-                yield
-                o_p_ready = yield rs.ready_o
-
-            print ("send", muxid, i, hex(op2))
-
-            yield rs.valid_i.eq(0)
-            # wait random period of time before queueing another value
-            for i in range(randint(0, 3)):
-                yield
-
-        yield rs.valid_i.eq(0)
 
 
 class TestMuxOutPipe(CombMuxOutPipe):
@@ -226,17 +216,18 @@ class TestInOutPipe(Elaboratable):
 def test1():
     dut = TestInOutPipe()
     vl = rtlil.convert(dut, ports=dut.ports())
-    with open("test_inoutmux_pipe.il", "w") as f:
+    with open("test_inoutmux_unarycancel_pipe.il", "w") as f:
         f.write(vl)
-    #run_simulation(dut, testbench(dut), vcd_name="test_inputgroup.vcd")
 
-    test = InputTest(dut)
+    tlen = 20
+
+    test = InputTest(dut, tlen)
     run_simulation(dut, [test.rcv(1), test.rcv(0),
                          test.rcv(3), test.rcv(2),
                          test.send(0), test.send(1),
                          test.send(3), test.send(2),
                         ],
-                   vcd_name="test_inoutmux_pipe.vcd")
+                   vcd_name="test_inoutmux_unarycancel_pipe.vcd")
 
 if __name__ == '__main__':
     test1()
