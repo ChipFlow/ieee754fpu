@@ -436,17 +436,17 @@ class MaskCancellable(ControlBase):
         #m.d.comb += p_valid_i.eq((self.p.data_i.ctx.idmask & \
         #                         ~self.cancelmask)) # nonzero
 
-        # if idmask nonzero, data gets passed on.
+        # if idmask nonzero, mask gets passed on (and register set).
+        # register is left as-is if idmask is zero, but out-mask is set to zero
         m.d.sync += self.n.valid_o.eq(p_valid_i)
+        m.d.sync += self.n.mask_o.eq(Mux(p_valid_i, self.p.mask_i, 0))
         with m.If(p_valid_i):
-            m.d.sync += self.n.mask_o.eq(self.p.mask_i)
             data_o = self._postprocess(result) # XXX TBD, does nothing right now
             m.d.sync += nmoperator.eq(self.n.data_o, data_o) # update output
-        with m.Else():
-            m.d.sync += self.n.mask_o.eq(0)
 
         # output valid if
         # input always "ready"
+        #m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
         m.d.comb += self.p._ready_o.eq(Const(1))
 
         return self.m
