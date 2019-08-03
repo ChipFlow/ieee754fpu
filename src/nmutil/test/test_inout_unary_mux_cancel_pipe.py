@@ -140,7 +140,7 @@ class TestPriorityMuxPipe(PriorityCombMuxInPipe):
         self.num_rows = num_rows
         stage = PassThroughStage()
         PriorityCombMuxInPipe.__init__(self, stage,
-                                       p_len=self.num_rows, masklen=1)
+                                       p_len=self.num_rows, maskwid=1)
 
 
 class OutputTest:
@@ -185,7 +185,7 @@ class TestMuxOutPipe(CombMuxOutPipe):
         self.num_rows = num_rows
         stage = PassThroughStage()
         CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows,
-                                masklen=1)
+                                maskwid=1)
 
 
 class TestInOutPipe(Elaboratable):
