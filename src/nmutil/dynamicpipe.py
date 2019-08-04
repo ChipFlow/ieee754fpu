@@ -16,6 +16,8 @@ understand (meta-class programming).
 from abc import ABCMeta
 
 from nmutil.singlepipe import SimpleHandshake
+from nmutil.singlepipe import MaskCancellable
+
 import threading
 
 # with many thanks to jsbueno on stackexchange for this one
@@ -85,4 +87,14 @@ class SimpleHandshakeRedir(SimpleHandshake):
         if args and args[0].stage:
             stage = args[0].stage
         SimpleHandshake.__init__(self, stage)
+
+
+class MaskCancellableRedir(SimpleHandshake):
+    def __init__(self, mod, *args):
+        stage = self
+        maskwid = args[0].maskwid
+        if args[0].stage:
+            stage = args[0].stage
+        print ("redir mask", mod, args, maskwid)
+        MaskCancellable.__init__(self, stage, maskwid)
 

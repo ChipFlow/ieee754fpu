@@ -74,12 +74,13 @@ from ieee754.fpdiv.divstages import (FPDivStagesSetup,
                                      FPDivStagesFinal)
 from ieee754.pipeline import PipelineSpec
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreConfig
+from nmutil.dynamicpipe import MaskCancellableRedir
 
 
 class FPDIVBasePipe(ControlBase):
     def __init__(self, pspec):
         self.pspec = pspec
-        ControlBase.__init__(self)
+        ControlBase.__init__(self, maskwid=pspec.maskwid)
 
         pipechain = []
         # to which the answer: "as few as possible"
@@ -164,6 +165,7 @@ class FPDIVMuxInOut(ReservationStations):
         fmt = FPFormat.standard(width)
         log2_radix = 3     # tested options so far: 1, 2 and 3.
         n_comb_stages = 2  # 2 compute stages per pipeline stage
+        maskwid = 1        # SIMD width effectively
 
         # extra bits needed: guard + round (sticky comes from remainer.bool())
         fraction_width = fmt.fraction_width
@@ -174,6 +176,8 @@ class FPDIVMuxInOut(ReservationStations):
         # the last stage
         cfg = DivPipeCoreConfig(fmt.width, fraction_width, log2_radix)
 
+        self.pspec.pipekls = MaskCancellableRedir
+        self.pspec.maskwid = maskwid
         self.pspec.fpformat = fmt
         self.pspec.n_comb_stages = n_comb_stages
         self.pspec.core_config = cfg
@@ -184,4 +188,4 @@ class FPDIVMuxInOut(ReservationStations):
         # new_pspec.opkls = DivPipeCoreOperation
         # self.alu = FPDIVBasePipe(new_pspec)
         self.alu = FPDIVBasePipe(self.pspec)
-        ReservationStations.__init__(self, num_rows)
+        ReservationStations.__init__(self, num_rows, maskwid=maskwid)

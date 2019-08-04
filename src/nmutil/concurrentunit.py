@@ -22,17 +22,19 @@ def num_bits(n):
 
 
 class FPADDInMuxPipe(PriorityCombMuxInPipe):
-    def __init__(self, num_rows, iospecfn):
+    def __init__(self, num_rows, iospecfn, maskwid=0):
         self.num_rows = num_rows
         stage = PassThroughStage(iospecfn)
-        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows)
+        PriorityCombMuxInPipe.__init__(self, stage, p_len=self.num_rows,
+                                       maskwid=maskwid)
 
 
 class FPADDMuxOutPipe(CombMuxOutPipe):
-    def __init__(self, num_rows, iospecfn):
+    def __init__(self, num_rows, iospecfn, maskwid=0):
         self.num_rows = num_rows
         stage = PassThroughStage(iospecfn)
-        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows)
+        CombMuxOutPipe.__init__(self, stage, n_len=self.num_rows,
+                                maskwid=maskwid)
 
 
 class ReservationStations(Elaboratable):
@@ -49,10 +51,10 @@ class ReservationStations(Elaboratable):
 
         Fan-in and Fan-out are combinatorial.
     """
-    def __init__(self, num_rows):
-        self.num_rows = num_rows
-        self.inpipe = FPADDInMuxPipe(num_rows, self.i_specfn)   # fan-in
-        self.outpipe = FPADDMuxOutPipe(num_rows, self.o_specfn) # fan-out
+    def __init__(self, num_rows, maskwid=0):
+        self.num_rows = nr = num_rows
+        self.inpipe = FPADDInMuxPipe(nr, self.i_specfn, maskwid)   # fan-in
+        self.outpipe = FPADDMuxOutPipe(nr, self.o_specfn, maskwid) # fan-out
 
         self.p = self.inpipe.p  # kinda annoying,
         self.n = self.outpipe.n # use pipe in/out as this class in/out
