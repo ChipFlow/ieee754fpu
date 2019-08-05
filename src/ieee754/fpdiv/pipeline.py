@@ -177,7 +177,7 @@ class FPDIVMuxInOut(ReservationStations):
         cfg = DivPipeCoreConfig(fmt.width, fraction_width, log2_radix)
 
         self.pspec.pipekls = MaskCancellableRedir
-        self.pspec.maskwid = maskwid
+        self.pspec.maskwid = maskwid * num_rows # RS gets just maskwid
         self.pspec.fpformat = fmt
         self.pspec.n_comb_stages = n_comb_stages
         self.pspec.core_config = cfg
