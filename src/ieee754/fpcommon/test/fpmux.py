@@ -57,6 +57,8 @@ class MuxInOut:
             if not self.single_op:
                 yield rs.data_i.b.eq(op2)
             yield rs.data_i.muxid.eq(muxid)
+            if hasattr(rs, "mask_i"):
+                yield rs.mask_i.eq(1) # TEMPORARY HACK
             yield
             o_p_ready = yield rs.ready_o
             while not o_p_ready:
