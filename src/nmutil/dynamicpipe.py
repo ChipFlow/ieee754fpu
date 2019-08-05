@@ -89,7 +89,7 @@ class SimpleHandshakeRedir(SimpleHandshake):
         SimpleHandshake.__init__(self, stage)
 
 
-class MaskCancellableRedir(SimpleHandshake):
+class MaskCancellableRedir(MaskCancellable):
     def __init__(self, mod, *args):
         stage = self
         maskwid = args[0].maskwid
