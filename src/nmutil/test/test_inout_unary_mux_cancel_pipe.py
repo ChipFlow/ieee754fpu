@@ -84,6 +84,7 @@ class InputTest:
             self.sent[muxid].append(i)
 
             yield rs.valid_i.eq(0)
+            yield rs.mask_i.eq(0)
             # wait until it's received
             while i in self.do[muxid]:
                 yield

@@ -19,7 +19,7 @@ def rsqrt(x):
 
 class TestDivPipe(unittest.TestCase):
     def test_pipe_rsqrt_fp16(self):
-        dut = FPDIVMuxInOut(16, 4)
+        dut = FPDIVMuxInOut(16, 8)
         # don't forget to initialize opcode; don't use magic numbers
         opcode = int(DivPipeCoreOperation.RSqrtRem)
         run_pipe_fp(dut, 16, "rsqrt16", unit_test_half, Float16, None,

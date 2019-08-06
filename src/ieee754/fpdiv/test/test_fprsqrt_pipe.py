@@ -17,26 +17,26 @@ def rsqrt(x):
 
 class TestDivPipe(unittest.TestCase):
     def test_pipe_rsqrt_fp16(self):
-        dut = FPDIVMuxInOut(16, 4)
+        dut = FPDIVMuxInOut(16, 8)
         # don't forget to initialize opcode; don't use magic numbers
         opcode = int(DivPipeCoreOperation.RSqrtRem)
         runfp(dut, 16, "test_fprsqrt_pipe_fp16", Float16, rsqrt,
-              single_op=True, opcode=opcode, n_vals=100)
+              single_op=True, opcode=opcode, n_vals=100, cancel=True)
 
     def test_pipe_rsqrt_fp32(self):
-        dut = FPDIVMuxInOut(32, 4)
+        dut = FPDIVMuxInOut(32, 8)
         # don't forget to initialize opcode; don't use magic numbers
         opcode = int(DivPipeCoreOperation.RSqrtRem)
         runfp(dut, 32, "test_fprsqrt_pipe_fp32", Float32, rsqrt,
-              single_op=True, opcode=opcode, n_vals=100)
+              single_op=True, opcode=opcode, n_vals=100, cancel=True)
 
     @unittest.skip("rsqrt not implemented for fp64")
     def test_pipe_rsqrt_fp64(self):
-        dut = FPDIVMuxInOut(64, 4)
+        dut = FPDIVMuxInOut(64, 8)
         # don't forget to initialize opcode; don't use magic numbers
         opcode = int(DivPipeCoreOperation.RSqrtRem)
         runfp(dut, 64, "test_fprsqrt_pipe_fp64", Float64, rsqrt,
-              single_op=True, opcode=opcode, n_vals=100)
+              single_op=True, opcode=opcode, n_vals=100, cancel=True)
 
 
 if __name__ == '__main__':
