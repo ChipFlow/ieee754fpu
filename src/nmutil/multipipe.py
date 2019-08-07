@@ -26,7 +26,7 @@ from .iocontrol import NextControl, PrevControl
 class MultiInControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
-    def __init__(self, in_multi=None, p_len=1, maskwid=0):
+    def __init__(self, in_multi=None, p_len=1, maskwid=0, routemask=False):
         """ Multi-input Control class.  Conforms to same API as ControlBase...
             mostly.  has additional indices to the *multiple* input stages
 
@@ -37,12 +37,17 @@ class MultiInControlBase(Elaboratable):
             * add data_i members to PrevControl and
             * add data_o member  to NextControl
         """
+        self.routemask = routemask
         # set up input and output IO ACK (prev/next ready/valid)
         print ("multi_in", maskwid, p_len)
         p = []
         for i in range(p_len):
             p.append(PrevControl(in_multi, maskwid=maskwid))
         self.p = Array(p)
+        if routemask:
+            nmaskwid = maskwid # straight route mask mode
+        else:
+            nmaskwid = maskwid * p_len # fan-in mode
         self.n = NextControl(maskwid=maskwid*p_len) # masks fan in (Cat)
 
     def connect_to_next(self, nxt, p_idx=0):
@@ -90,7 +95,7 @@ class MultiInControlBase(Elaboratable):
 class MultiOutControlBase(Elaboratable):
     """ Common functions for Pipeline API
     """
-    def __init__(self, n_len=1, in_multi=None, maskwid=0):
+    def __init__(self, n_len=1, in_multi=None, maskwid=0, routemask=False):
         """ Multi-output Control class.  Conforms to same API as ControlBase...
             mostly.  has additional indices to the multiple *output* stages
             [MultiInControlBase has multiple *input* stages]
@@ -103,8 +108,13 @@ class MultiOutControlBase(Elaboratable):
             * add data_o members to NextControl
         """
 
+        if routemask:
+            nmaskwid = maskwid # straight route mask mode
+        else:
+            nmaskwid = maskwid * n_len # fan-out mode
+
         # set up input and output IO ACK (prev/next ready/valid)
-        self.p = PrevControl(in_multi, maskwid=maskwid*n_len) # masks fan out
+        self.p = PrevControl(in_multi, maskwid=nmaskwid) 
         n = []
         for i in range(n_len):
             n.append(NextControl(maskwid=maskwid))
@@ -159,10 +169,12 @@ class CombMultiOutPipeline(MultiOutControlBase):
         n.data_o : stage output data array.       shaped according to ospec
     """
 
-    def __init__(self, stage, n_len, n_mux, maskwid=0):
-        MultiOutControlBase.__init__(self, n_len=n_len, maskwid=maskwid)
+    def __init__(self, stage, n_len, n_mux, maskwid=0, routemask=False):
+        MultiOutControlBase.__init__(self, n_len=n_len, maskwid=maskwid,
+                                            routemask=routemask)
         self.stage = stage
         self.maskwid = maskwid
+        self.routemask = routemask
         self.n_mux = n_mux
 
         # set up the input and output data
@@ -212,16 +224,22 @@ class CombMultiOutPipeline(MultiOutControlBase):
             m.d.comb += eq(r_data, self.p.data_i)
         m.d.comb += eq(self.n[muxid].data_o, self.process(r_data))
 
-        # conditionally fan-out mask bits, always fan-out stop bits
         if self.maskwid:
-            ml = [] # accumulate output masks
-            ms = [] # accumulate output masks
-            for i in range(len(self.n)):
-                ml.append(self.n[i].mask_o)
-                ms.append(self.n[i].stop_o)
-            m.d.comb += Cat(*ms).eq(self.p.stop_i)
-            with m.If(pv):
-                m.d.comb += Cat(*ml).eq(self.p.mask_i)
+            if self.routemask: # straight "routing" mode - treat like data
+                m.d.comb += self.n[muxid].stop_o.eq(self.p.stop_i)
+                with m.If(pv):
+                    m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
+            else:
+                ml = [] # accumulate output masks
+                ms = [] # accumulate output stops
+                # fan-out mode.
+                # conditionally fan-out mask bits, always fan-out stop bits
+                for i in range(len(self.n)):
+                    ml.append(self.n[i].mask_o)
+                    ms.append(self.n[i].stop_o)
+                m.d.comb += Cat(*ms).eq(self.p.stop_i)
+                with m.If(pv):
+                    m.d.comb += Cat(*ml).eq(self.p.mask_i)
         return m
 
 
@@ -240,8 +258,9 @@ class CombMultiInPipeline(MultiInControlBase):
             SYNCHRONOUSLY.
     """
 
-    def __init__(self, stage, p_len, p_mux, maskwid=0):
-        MultiInControlBase.__init__(self, p_len=p_len, maskwid=maskwid)
+    def __init__(self, stage, p_len, p_mux, maskwid=0, routemask=False):
+        MultiInControlBase.__init__(self, p_len=p_len, maskwid=maskwid,
+                                          routemask=routemask)
         self.stage = stage
         self.maskwid = maskwid
         self.p_mux = p_mux
@@ -303,22 +322,31 @@ class CombMultiInPipeline(MultiInControlBase):
         m.d.comb += data_valid[mid].eq(p_valid_i[mid] | \
                                     (n_ready_in[mid] & data_valid[mid]))
 
-        ml = [] # accumulate output masks
-        ms = [] # accumulate output stops
-        for i in range(p_len):
-            vr = Signal(reset_less=True)
-            m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
-            with m.If(vr):
-                m.d.comb += eq(r_data[i], self.p[i].data_i)
+        if self.routemask:
+            m.d.comb += eq(self.n.stop_o, self.p[mid].stop_i)
+            for i in range(p_len):
+                m.d.comb += eq(self.n.stop_o, self.p[i].stop_i)
+                vr = Signal(reset_less=True)
+                m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
+                with m.If(vr):
+                    m.d.comb += eq(self.n.mask_o, self.p[mid].mask_i)
+        else:
+            ml = [] # accumulate output masks
+            ms = [] # accumulate output stops
+            for i in range(p_len):
+                vr = Signal(reset_less=True)
+                m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
+                with m.If(vr):
+                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                if self.maskwid:
+                    mlen = len(self.p[i].mask_i)
+                    s = mlen*i
+                    e = mlen*(i+1)
+                    ml.append(Mux(vr, self.p[i].mask_i, Const(0, mlen)))
+                    ms.append(self.p[i].stop_i)
             if self.maskwid:
-                mlen = len(self.p[i].mask_i)
-                s = mlen*i
-                e = mlen*(i+1)
-                ml.append(Mux(vr, self.p[i].mask_i, Const(0, mlen)))
-                ms.append(self.p[i].stop_i)
-        if self.maskwid:
-            m.d.comb += self.n.mask_o.eq(Cat(*ml))
-            m.d.comb += self.n.stop_o.eq(Cat(*ms))
+                m.d.comb += self.n.mask_o.eq(Cat(*ml))
+                m.d.comb += self.n.stop_o.eq(Cat(*ms))
 
         m.d.comb += eq(self.n.data_o, self.process(r_data[mid]))
 
@@ -326,14 +354,18 @@ class CombMultiInPipeline(MultiInControlBase):
 
 
 class CombMuxOutPipe(CombMultiOutPipeline):
-    def __init__(self, stage, n_len, maskwid=0):
+    def __init__(self, stage, n_len, maskwid=0, muxidname=None,
+                                     routemask=False):
+        muxidname = muxidname or "muxid"
         # HACK: stage is also the n-way multiplexer
         CombMultiOutPipeline.__init__(self, stage, n_len=n_len,
-                                            n_mux=stage, maskwid=maskwid)
+                                            n_mux=stage, maskwid=maskwid,
+                                            routemask=routemask)
 
         # HACK: n-mux is also the stage... so set the muxid equal to input muxid
-        print ("combmuxout", self.p.data_i.muxid)
-        stage.m_id = self.p.data_i.muxid
+        muxid = getattr(self.p.data_i, muxidname)
+        print ("combmuxout", muxidname, muxid)
+        stage.m_id = muxid
 
 
 
@@ -376,10 +408,10 @@ class PriorityCombMuxInPipe(CombMultiInPipeline):
     """ an example of how to use the combinatorial pipeline.
     """
 
-    def __init__(self, stage, p_len=2, maskwid=0):
+    def __init__(self, stage, p_len=2, maskwid=0, routemask=False):
         p_mux = InputPriorityArbiter(self, p_len)
         CombMultiInPipeline.__init__(self, stage, p_len, p_mux,
-                                     maskwid=maskwid)
+                                     maskwid=maskwid, routemask=routemask)
 
 
 if __name__ == '__main__':
