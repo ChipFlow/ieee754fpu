@@ -404,8 +404,11 @@ class BufferedHandshake(ControlBase):
         return self.m
 
 
-class MaskCancellable(ControlBase):
-    """ Mask-activated Cancellable pipeline
+class MaskNoDelayCancellable(ControlBase):
+    """ Mask-activated Cancellable pipeline (that does not respect "ready")
+
+        Based on (identical behaviour to) SimpleHandshake.
+        TODO: decide whether to merge *into* SimpleHandshake.
 
         Argument: stage.  see Stage API above
 
@@ -417,7 +420,6 @@ class MaskCancellable(ControlBase):
     """
     def __init__(self, stage, maskwid, in_multi=None, stage_ctl=False):
         ControlBase.__init__(self, stage, in_multi, stage_ctl, maskwid)
-
 
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
@@ -452,6 +454,72 @@ class MaskCancellable(ControlBase):
 
         # always pass on stop (as combinatorial: single signal)
         m.d.comb += self.n.stop_o.eq(self.p.stop_i)
+
+        return self.m
+
+class MaskCancellable(ControlBase):
+    """ Mask-activated Cancellable pipeline
+
+        Argument: stage.  see Stage API above
+
+        stage-1   p.valid_i >>in   stage   n.valid_o out>>   stage+1
+        stage-1   p.ready_o <<out  stage   n.ready_i <<in    stage+1
+        stage-1   p.data_i  >>in   stage   n.data_o  out>>   stage+1
+                              |             |
+                              +--process->--^
+    """
+    def __init__(self, stage, maskwid, in_multi=None, stage_ctl=False):
+        ControlBase.__init__(self, stage, in_multi, stage_ctl, maskwid)
+
+    def elaborate(self, platform):
+        self.m = m = ControlBase.elaborate(self, platform)
+
+        r_busy = Signal()
+        result = _spec(self.stage.ospec, "r_tmp")
+
+        # establish if the data should be passed on.  cancellation is
+        # a global signal.
+        p_valid_i = Signal(reset_less=True)
+        #print ("self.p.data_i", self.p.data_i)
+        maskedout = Signal(len(self.p.mask_i), reset_less=True)
+        m.d.comb += maskedout.eq(self.p.mask_i & ~self.p.stop_i)
+
+        # establish some combinatorial temporaries
+        n_ready_i = Signal(reset_less=True, name="n_i_rdy_data")
+        p_valid_i_p_ready_o = Signal(reset_less=True)
+        m.d.comb += [p_valid_i.eq(self.p.valid_i_test & maskedout.bool()),
+                     n_ready_i.eq(self.n.ready_i_test),
+                     p_valid_i_p_ready_o.eq(p_valid_i & self.p.ready_o),
+        ]
+
+        # store result of processing in combinatorial temporary
+        m.d.comb += nmoperator.eq(result, self.data_r)
+
+        # if idmask nonzero, mask gets passed on (and register set).
+        # register is left as-is if idmask is zero, but out-mask is set to zero
+        # note however: only the *uncancelled* mask bits get passed on
+        m.d.sync += self.n.mask_o.eq(Mux(p_valid_i, maskedout, 0))
+
+        # always pass on stop (as combinatorial: single signal)
+        m.d.comb += self.n.stop_o.eq(self.p.stop_i)
+
+        # previous valid and ready
+        with m.If(p_valid_i_p_ready_o):
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
+            m.d.sync += [r_busy.eq(1),      # output valid
+                         nmoperator.eq(self.n.data_o, data_o), # update output
+                        ]
+        # previous invalid or not ready, however next is accepting
+        with m.Elif(n_ready_i):
+            data_o = self._postprocess(result) # XXX TBD, does nothing right now
+            m.d.sync += [nmoperator.eq(self.n.data_o, data_o)]
+            # TODO: could still send data here (if there was any)
+            #m.d.sync += self.n.valid_o.eq(0) # ...so set output invalid
+            m.d.sync += r_busy.eq(0) # ...so set output invalid
+
+        m.d.comb += self.n.valid_o.eq(r_busy)
+        # if next is ready, so is previous
+        m.d.comb += self.p._ready_o.eq(n_ready_i)
 
         return self.m
 

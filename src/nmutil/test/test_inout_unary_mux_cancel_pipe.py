@@ -123,11 +123,12 @@ class InputTest:
                 if len(self.do[muxid]) == 0:
                     break
 
-            #stall_range = randint(0, 3)
-            #for j in range(randint(1,10)):
-            #    stall = randint(0, stall_range) != 0
-            #    yield self.dut.n[0].ready_i.eq(stall)
-            #    yield
+            stall_range = randint(0, 3)
+            for j in range(randint(1,10)):
+                stall = randint(0, stall_range) != 0
+                yield self.dut.n[0].ready_i.eq(stall)
+                yield
+
             n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
             yield
