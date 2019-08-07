@@ -208,27 +208,26 @@ class CombMultiOutPipeline(MultiOutControlBase):
         p_valid_i = Signal(reset_less=True)
         pv = Signal(reset_less=True)
         m.d.comb += p_valid_i.eq(self.p.valid_i_test)
-        m.d.comb += pv.eq(self.p.valid_i & self.p.ready_o)
+        m.d.comb += pv.eq(self.p.valid_i) #& self.n[muxid].ready_i)
 
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
             m.d.comb += self.n[i].valid_o.eq(0)
-        data_valid = self.n[muxid].valid_o
-        m.d.comb += self.p.ready_o.eq(~data_valid | self.n[muxid].ready_i)
-        m.d.comb += data_valid.eq(p_valid_i | \
-                                    (~self.n[muxid].ready_i & data_valid))
+        #with m.If(pv):
+        m.d.comb += self.n[muxid].valid_o.eq(pv)
+        m.d.comb += self.p.ready_o.eq(self.n[muxid].ready_i)
 
         # send data on
-        with m.If(pv):
-            m.d.comb += eq(r_data, self.p.data_i)
+        #with m.If(pv):
+        m.d.comb += eq(r_data, self.p.data_i)
         m.d.comb += eq(self.n[muxid].data_o, self.process(r_data))
 
         if self.maskwid:
             if self.routemask: # straight "routing" mode - treat like data
                 m.d.comb += self.n[muxid].stop_o.eq(self.p.stop_i)
-                with m.If(pv):
-                    m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
+                #with m.If(pv):
+                m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
             else:
                 ml = [] # accumulate output masks
                 ms = [] # accumulate output stops
@@ -295,6 +294,7 @@ class CombMultiInPipeline(MultiInControlBase):
             p_valid_i.append(Signal(name="p_valid_i", reset_less=True))
             n_ready_in.append(Signal(name="n_ready_in", reset_less=True))
             if hasattr(self.stage, "setup"):
+                print ("setup", self, self.stage, r)
                 self.stage.setup(m, r)
         if len(r_data) > 1:
             r_data = Array(r_data)
@@ -305,6 +305,7 @@ class CombMultiInPipeline(MultiInControlBase):
         nirn = Signal(reset_less=True)
         m.d.comb += nirn.eq(~self.n.ready_i)
         mid = self.p_mux.m_id
+        print ("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
         for i in range(p_len):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_ready_in[i].eq(1)
@@ -323,19 +324,26 @@ class CombMultiInPipeline(MultiInControlBase):
                                     (n_ready_in[mid] & data_valid[mid]))
 
         if self.routemask:
-            m.d.comb += eq(self.n.stop_o, self.p[mid].stop_i)
             for i in range(p_len):
-                m.d.comb += eq(self.n.stop_o, self.p[i].stop_i)
+                p = self.p[i]
                 vr = Signal(reset_less=True)
-                m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
+                maskedout = Signal(reset_less=True)
+                m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
                 with m.If(vr):
-                    m.d.comb += eq(self.n.mask_o, self.p[mid].mask_i)
+                    m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
+                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                    m.d.comb += eq(self.n.stop_o, self.p[i].stop_i)
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
             for i in range(p_len):
                 vr = Signal(reset_less=True)
-                m.d.comb += vr.eq(self.p[i].valid_i & self.p[i].ready_o)
+                p = self.p[i]
+                vr = Signal(reset_less=True)
+                maskedout = Signal(reset_less=True)
+                m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
                 with m.If(vr):
                     m.d.comb += eq(r_data[i], self.p[i].data_i)
                 if self.maskwid:
@@ -391,7 +399,13 @@ class InputPriorityArbiter(Elaboratable):
         in_ready = []
         for i in range(self.num_rows):
             p_valid_i = Signal(reset_less=True)
-            m.d.comb += p_valid_i.eq(self.pipe.p[i].valid_i_test)
+            if self.pipe.maskwid and not self.pipe.routemask:
+                p = self.pipe.p[i]
+                maskedout = Signal(reset_less=True)
+                m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                m.d.comb += p_valid_i.eq(maskedout.bool() & p.valid_i_test)
+            else:
+                m.d.comb += p_valid_i.eq(self.pipe.p[i].valid_i_test)
             in_ready.append(p_valid_i)
         m.d.comb += pe.i.eq(Cat(*in_ready)) # array of input "valids"
         m.d.comb += self.active.eq(~pe.n)   # encoder active (one input valid)

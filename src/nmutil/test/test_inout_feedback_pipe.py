@@ -8,7 +8,7 @@
 
 from random import randint
 from math import log
-from nmigen import Module, Signal, Cat, Value, Elaboratable
+from nmigen import Module, Signal, Cat, Value, Elaboratable, Const
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
 
@@ -34,7 +34,7 @@ class PassThroughStage:
         return PassData()
     def ospec(self):
         return self.ispec() # same as ospec
-    def setup(self, m, i):
+    def _setup(self, m, i):
         comb = m.d.comb
         #comb += self.o.eq(i)
     def process(self, i):
@@ -48,15 +48,15 @@ class SplitRouteStage:
     def ispec(self):
         return PassData()
     def ospec(self):
-        return self.ispec() # same as ospec
+        return PassData()
 
     def setup(self, m, i):
         comb = m.d.comb
         comb += self.o.eq(i)
-        with m.If(i.operator == 0):
-            #comb += self.o.routeid.eq(1) # selects 2nd output in CombMuxOutPipe
+        with m.If(i.operator == Const(1, 2)):
+            comb += self.o.routeid.eq(1) # selects 2nd output in CombMuxOutPipe
             comb += self.o.data.eq(i.data + 1) # add 1 to say "we did it"
-            comb += self.o.operator.eq(1) # don't get into infinite loop
+            comb += self.o.operator.eq(2) # don't get into infinite loop
         with m.Else():
             comb += self.o.routeid.eq(0) # selects 2nd output in CombMuxOutPipe
 
@@ -64,12 +64,16 @@ class SplitRouteStage:
         return self.o
 
 
+class DecisionPipe(MaskCancellable):
+    def __init__(self, maskwid):
+        stage = SplitRouteStage()
+        MaskCancellable.__init__(self, stage, maskwid)
+
 class RouteBackPipe(CombMuxOutPipe):
     """ routes data back to start of pipeline
     """
     def __init__(self):
-        self.num_rows = 2
-        stage = SplitRouteStage()
+        stage = PassThroughStage()
         CombMuxOutPipe.__init__(self, stage, n_len=2,
                                 maskwid=4, muxidname="routeid",
                                 routemask=True)
@@ -79,7 +83,6 @@ class MergeRoutePipe(PriorityCombMuxInPipe):
     """ merges data coming from end of pipe (with operator now == 1)
     """
     def __init__(self):
-        self.num_rows = 2
         stage = PassThroughStage()
         PriorityCombMuxInPipe.__init__(self, stage, p_len=2, maskwid=4,
                                         routemask=True)
@@ -114,6 +117,7 @@ class InputTest:
             yield rs.data_i.data.eq(op2)
             yield rs.data_i.idx.eq(i)
             yield rs.data_i.muxid.eq(muxid)
+            yield rs.data_i.operator.eq(1)
             yield rs.mask_i.eq(1)
             yield
             o_p_ready = yield rs.ready_o
@@ -164,11 +168,11 @@ class InputTest:
                 if len(self.do[muxid]) == 0:
                     break
 
-            stall_range = randint(0, 3)
-            for j in range(randint(1,10)):
-                stall = randint(0, stall_range) != 0
-                yield self.dut.n[0].ready_i.eq(stall)
-                yield
+            #stall_range = randint(0, 3)
+            #for j in range(randint(1,10)):
+            #    stall = randint(0, stall_range) != 0
+            #    yield self.dut.n[0].ready_i.eq(stall)
+            #    yield
 
             n = self.dut.n[muxid]
             yield n.ready_i.eq(1)
@@ -183,7 +187,7 @@ class InputTest:
             out_i = yield n.data_o.idx
             out_v = yield n.data_o.data
 
-            print ("recv", out_muxid, out_i, hex(out_v), out_v)
+            print ("recv", out_muxid, out_i, hex(out_v), hex(out_v))
 
             # see if this output has occurred already, delete it if it has
             assert muxid == out_muxid, \
@@ -193,7 +197,7 @@ class InputTest:
                 continue
             assert out_i in self.do[muxid], "out_i %d not in array %s" % \
                                           (out_i, repr(self.do[muxid]))
-            assert self.do[muxid][out_i] == out_v + 1 # check data
+            assert self.do[muxid][out_i] + 1 == out_v # check data
             del self.do[muxid][out_i]
             todel = self.sent[muxid].index(out_i)
             del self.sent[muxid][todel]
@@ -227,11 +231,12 @@ class TestInOutPipe(Elaboratable):
         self.inpipe = TestPriorityMuxPipe(nr) # fan-in (combinatorial)
         self.mergein = MergeRoutePipe()       # merge in feedback
         self.pipe1 = PassThroughPipe(nr)      # stage 1 (clock-sync)
-        self.pipe2 = PassThroughPipe(nr)      # stage 2 (clock-sync)
+        self.pipe2 = DecisionPipe(nr)         # stage 2 (clock-sync)
         #self.pipe3 = PassThroughPipe(nr)      # stage 3 (clock-sync)
         #self.pipe4 = PassThroughPipe(nr)      # stage 4 (clock-sync)
         self.splitback = RouteBackPipe()      # split back to mergein
         self.outpipe = TestMuxOutPipe(nr)     # fan-out (combinatorial)
+        self.fifoback = PassThroughPipe(nr)   # temp route-back store
 
         self.p = self.inpipe.p  # kinda annoying,
         self.n = self.outpipe.n # use pipe in/out as this class in/out
@@ -247,14 +252,16 @@ class TestInOutPipe(Elaboratable):
         #m.submodules.pipe4 = self.pipe4
         m.submodules.splitback = self.splitback
         m.submodules.outpipe = self.outpipe
+        m.submodules.fifoback = self.fifoback
 
-        m.d.comb += self.inpipe.n.connect_to_next(self.mergein.p[0])
+        m.d.comb += self.inpipe.n.connect_to_next(self.mergein.p[1])
         m.d.comb += self.mergein.n.connect_to_next(self.pipe1.p)
         m.d.comb += self.pipe1.connect_to_next(self.pipe2)
         #m.d.comb += self.pipe2.connect_to_next(self.pipe3)
         #m.d.comb += self.pipe3.connect_to_next(self.pipe4)
         m.d.comb += self.pipe2.connect_to_next(self.splitback)
-        m.d.comb += self.splitback.n[1].connect_to_next(self.mergein.p[1])
+        m.d.comb += self.splitback.n[1].connect_to_next(self.fifoback.p)
+        m.d.comb += self.fifoback.n.connect_to_next(self.mergein.p[0])
         m.d.comb += self.splitback.n[0].connect_to_next(self.outpipe.p)
 
         return m
@@ -269,13 +276,13 @@ def test1():
     with open("test_inoutmux_feedback_pipe.il", "w") as f:
         f.write(vl)
 
-    tlen = 20
+    tlen = 3
 
     test = InputTest(dut, tlen)
-    run_simulation(dut, [test.rcv(1), test.rcv(0),
-                         test.rcv(3), test.rcv(2),
+    run_simulation(dut, [test.rcv(0), test.rcv(1),
+                         #test.rcv(3), test.rcv(2),
                          test.send(0), test.send(1),
-                         test.send(3), test.send(2),
+                         #test.send(3), test.send(2),
                         ],
                    vcd_name="test_inoutmux_feedback_pipe.vcd")
 
