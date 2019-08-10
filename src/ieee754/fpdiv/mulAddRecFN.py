@@ -172,8 +172,9 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
                                   sigSumWidth - 1)),
             # XXX check! {doSubMags ? ~sigC : sigC,
             #            {(sigSumWidth - sigWidth + 2){doSubMags}}};
-            extComplSigC.eq(Cat((sigSumWidth - sigWidth + 2){doSubMags}},
-                                Mux(doSubMags, ~sigC, sigC))),
+            sc = [doSubMags] * (sigSumWidth - sigWidth + 2) + \
+                                [Mux(doSubMags, ~sigC, sigC)]
+            extComplSigC.eq(Cat(*sc))
             # XXX check!  nmigen doesn't have >>> operator, only >>
             mainAlignedSigC.eq(extComplSigC >>> CAlignDist),
             grainAlignedSigC.eq(sigC<<CGrainAlign),
