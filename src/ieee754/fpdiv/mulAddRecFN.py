@@ -375,46 +375,67 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
 
         #/*-------------------------------------------------------------------
         #*-------------------------------------------------------------------*/
-        wire notCDom_signSigSum = sigSum[prodWidth + 3];
-        wire [(prodWidth + 2):0] notCDom_absSigSum =
-            notCDom_signSigSum ? ~sigSum[(prodWidth + 2):0]
-                : sigSum[(prodWidth + 2):0] + doSubMags;
-        wire [(prodWidth + 2)/2:0] notCDom_reduced2AbsSigSum;
-        compressBy2#(prodWidth + 3)
-            compressBy2_notCDom_absSigSum(
-                notCDom_absSigSum, notCDom_reduced2AbsSigSum);
-        wire [(clog2(prodWidth + 4) - 2):0] notCDom_normDistReduced2;
-        countLeadingZeros#((prodWidth + 2)/2 + 1, clog2(prodWidth + 4) - 1)
-            countLeadingZeros_notCDom(
-                notCDom_reduced2AbsSigSum, notCDom_normDistReduced2);
-        wire [(clog2(prodWidth + 4) - 1):0] notCDom_nearNormDist =
-            notCDom_normDistReduced2<<1;
-        wire signed [(expWidth + 1):0] notCDom_sExp =
-            intermed_sExp - notCDom_nearNormDist;
-        wire [(sigWidth + 4):0] notCDom_mainSig =
-            ({0b0, notCDom_absSigSum}<<notCDom_nearNormDist)>>(sigWidth - 1);
-        wire [(((sigWidth/2 + 1) | 1) - 1):0] CDom_grainAlignedLowReduced2Sig =
-            notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1);
-        wire [(sigWidth + 2)/4:0] notCDom_reduced4AbsSigSum;
-        compressBy2#((sigWidth/2 + 1) | 1)
-            compressBy2_notCDom_reduced2AbsSigSum(
-                CDom_grainAlignedLowReduced2Sig, notCDom_reduced4AbsSigSum);
-        wire [((sigWidth + 2)/4 - 1):0] notCDom_sigExtraMask;
-        lowMaskLoHi#(clog2(prodWidth + 4) - 2, 0, (sigWidth + 2)/4)
-            lowMask_notCDom_sigExtraMask(
-                notCDom_normDistReduced2[(clog2(prodWidth + 4) - 2):1],
-                notCDom_sigExtraMask
-            );
-        wire notCDom_reduced4SigExtra =
-            |(notCDom_reduced4AbsSigSum & notCDom_sigExtraMask);
-        wire [(sigWidth + 2):0] notCDom_sig =
-            {notCDom_mainSig>>3,
-             (|notCDom_mainSig[2:0]) | notCDom_reduced4SigExtra};
-        wire notCDom_completeCancellation =
-            (notCDom_sig[(sigWidth + 2):(sigWidth + 1)] == 0);
-        wire notCDom_sign =
-            notCDom_completeCancellation ? roundingMode_min
-                : signProd ^ notCDom_signSigSum;
+        notCDom_signSigSum = Signal(reset_less=True)
+        notCDom_absSigSum = Signal(prodWidth + 3, reset_less=True)
+        notCDom_reduced2AbsSigSum = Signal(prodWidth+2)//2+1, reset_less=True)
+        m.submodules.cb2 = compressBy2_notCDom_absSigSum = \
+                compressBy2(prodWidth + 3)
+        notCDom_normDistReduced2 = Signal(clog2(prodWidth+4) - 1,
+                                         reset_less=True)
+        m.submodules.clz = countLeadingZeros_notCDom = 
+                countLeadingZeros((prodWidth + 2)/2 + 1,
+                                  clog2(prodWidth + 4) - 1)
+        notCDom_nearNormDist = Signal((clog2(prodWidth + 4), reset_less=True)
+        notCDom_sExp = Signal((expWidth + 2, True), reset_less=True)
+        notCDom_mainSig = Signal(sigWidth + 5, reset_less=True)
+        sw = (((sigWidth/2 + 1) | 1)
+        CDom_grainAlignedLowReduced2Sig = Signal(sw, reset_less=True)
+        notCDom_reduced4AbsSigSum = Signal((sigWidth + 2)//4+1, reset_less=True)
+        m.submodules.cb2r = compressBy2_notCDom_reduced2AbsSigSum =
+                                compressBy2((sigWidth/2 + 1) | 1)
+        sw = ((sigWidth + 2)/4
+        notCDom_sigExtraMask = Signal(sw, reset_less=True)
+        m.submodules.lms = lowMask_notCDom_sigExtraMask = 
+                lowMaskLoHi(clog2(prodWidth + 4) - 2, 0, (sigWidth + 2)/4)
+        notCDom_reduced4SigExtra = Signal(reset_less=True)
+        notCDom_sig Signal(sigWidth+3, reset_less=True)
+        notCDom_completeCancellation = Signal(reset_less=True)
+        notCDom_sign = Signal(reset_less=True)
+
+        comb += [\
+            notCDom_signSigSum.eq(sigSum[prodWidth + 3]),
+            notCDom_absSigSum.eq(Mux(notCDom_signSigSum,
+                                    ~sigSum[:prodWidth + 3],
+                                    sigSum[:prodWidth + 3] + doSubMags))
+            compressBy2_notCDom_absSigSum.in.eq(notCDom_absSigSum),
+            notCDom_reduced2AbsSigSum.eq(compressBy2_notCDom_absSigSum.out),
+            countLeadingZeros_notCDom.in.eq(notCDom_reduced2AbsSigSum),
+            notCDom_normDistReduced2.out.eq(countLeadingZeros_notCDom),
+            notCDom_nearNormDist.eq(notCDom_normDistReduced2<<1),
+            notCDom_sExp.eq(intermed_sExp - notCDom_nearNormDist),
+            notCDom_mainSig.eq((Cat(notCDom_absSigSum, 0)<<
+                                    notCDom_nearNormDist)>>(sigWidth - 1)),
+            CDom_grainAlignedLowReduced2Sig.eq(
+                notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1)),
+            compressBy2_notCDom_reduced2AbsSigSum.in.eq(
+                            CDom_grainAlignedLowReduced2Sig),
+            compressBy2_notCDom_reduced2AbsSigSum.eq(
+                            notCDom_reduced4AbsSigSum.out),
+            lowMask_notCDom_sigExtraMask.in.eq(
+                notCDom_normDistReduced2[1:clog2(prodWidth + 4) - 1]),
+            notCDom_sigExtraMask.eq(lowMask_notCDom_sigExtraMask.out),
+            notCDom_reduced4SigExtra.eq(
+                (notCDom_reduced4AbsSigSum & notCDom_sigExtraMask).bool()),
+            notCDom_sig.eq(Cat(
+                 notCDom_mainSig[:3].bool() | notCDom_reduced4SigExtra,
+                 notCDom_mainSig>>3)),
+            notCDom_completeCancellation.eq(
+                    notCDom_sig[(sigWidth + 1):(sigWidth + 3)] == 0),
+            notCDom_sign = Mux(notCDom_completeCancellation,
+                               roundingMode_min,
+                               signProd ^ notCDom_signSigSum),
+        ]
+
         #/*-------------------------------------------------------------------
         #*-------------------------------------------------------------------*/
         assign out_isZero =
