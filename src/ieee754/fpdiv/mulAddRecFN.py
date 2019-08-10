@@ -169,97 +169,77 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
             CAlignDist.eq(Mux(isMinCAlign, 0,
                               Mux((posNatCAlignDist < sigSumWidth - 1),
                                   posNatCAlignDist[:num_bits(sigSumWidth)],
-                                  sigSumWidth - 1))
+                                  sigSumWidth - 1)),
             # XXX check! {doSubMags ? ~sigC : sigC,
             #            {(sigSumWidth - sigWidth + 2){doSubMags}}};
             extComplSigC.eq(Cat((sigSumWidth - sigWidth + 2){doSubMags}},
-                                Mux(doSubMags, ~sigC, sigC)))
+                                Mux(doSubMags, ~sigC, sigC))),
             # XXX check!  nmigen doesn't have >>> operator, only >>
-            mainAlignedSigC.eq(extComplSigC >>> CAlignDist)
-        localparam CGrainAlign = (sigSumWidth - sigWidth - 1) & 3;
-        wire [(sigWidth + CGrainAlign):0] grainAlignedSigC = sigC<<CGrainAlign;
-        wire [(sigWidth + CGrainAlign)/4:0] reduced4SigC;
-        compressBy4#(sigWidth + 1 + CGrainAlign)
-            compressBy4_sigC(grainAlignedSigC, reduced4SigC);
-        localparam CExtraMaskHiBound = (sigSumWidth - 1)/4;
-        localparam CExtraMaskLoBound = (sigSumWidth - sigWidth - 1)/4;
-        wire [(CExtraMaskHiBound - CExtraMaskLoBound - 1):0] CExtraMask;
-        lowMaskHiLo#(clog2(sigSumWidth) - 2, CExtraMaskHiBound, CExtraMaskLoBound)
-            lowMask_CExtraMask(CAlignDist[(clog2(sigSumWidth) - 1):2], CExtraMask);
-        wire reduced4CExtra = |(reduced4SigC & CExtraMask);
-        wire [(sigSumWidth - 1):0] alignedSigC =
-            {mainAlignedSigC>>3,
-             doSubMags ? (&mainAlignedSigC[2:0]) && !reduced4CExtra
-                 : (|mainAlignedSigC[2:0]) || reduced4CExtra};
-        /*------------------------------------------------------------------------
-        *------------------------------------------------------------------------*/
-        wire isNaNAOrB = isNaNA || isNaNB;
-        wire isNaNAny = isNaNAOrB || isNaNC;
-        wire isInfAOrB = isInfA || isInfB;
-        wire invalidProd = (isInfA && isZeroB) || (isZeroA && isInfB);
-        wire notSigNaN_invalidExc =
-            invalidProd || (!isNaNAOrB && isInfAOrB && isInfC && doSubMags);
-        wire invalidExc =
-            isSigNaNA || isSigNaNB || isSigNaNC || notSigNaN_invalidExc;
-        wire notNaN_addZeros = (isZeroA || isZeroB) && isZeroC;
-        wire specialCase = isNaNAny || isInfAOrB || isInfC || notNaN_addZeros;
-        wire specialNotNaN_signOut =
-            (isInfAOrB && signProd) || (isInfC && opSignC)
-                || (notNaN_addZeros && !roundingMode_min && signProd && opSignC)
-                || (notNaN_addZeros && roundingMode_min && (signProd || opSignC));
-    `ifdef HardFloat_propagateNaNPayloads
-        wire signNaN;
-        wire [(sigWidth - 2):0] fractNaN;
-        propagateFloatNaN_mulAdd#(sigWidth)
-            propagateNaN(
-                control,
-                op,
-                isNaNA,
-                signA,
-                sigA[(sigWidth - 2):0],
-                isNaNB,
-                signB,
-                sigB[(sigWidth - 2):0],
-                invalidProd,
-                isNaNC,
-                signC,
-                sigC[(sigWidth - 2):0],
-                signNaN,
-                fractNaN
-            );
-        wire isNaNOut = isNaNAny || notSigNaN_invalidExc;
-        wire special_signOut =
-            isNaNAny || notSigNaN_invalidExc ? signNaN : specialNotNaN_signOut;
-    `else
-        wire special_signOut = specialNotNaN_signOut;
-    `endif
-        /*------------------------------------------------------------------------
-        *------------------------------------------------------------------------*/
-        assign mulAddA = sigA;
-        assign mulAddB = sigB;
-        assign mulAddC = alignedSigC[prodWidth:1];
-        assign intermed_compactState =
-            {specialCase,
-             invalidExc          || (!specialCase && signProd      ),
-    `ifdef HardFloat_propagateNaNPayloads
-             isNaNOut            || (!specialCase && doSubMags     ),
-    `else
-             isNaNAny            || (!specialCase && doSubMags     ),
-    `endif
-             isInfAOrB || isInfC || (!specialCase && CIsDominant   ),
-             notNaN_addZeros     || (!specialCase && alignedSigC[0]),
-             special_signOut};
-        assign intermed_sExp = sExpSum;
-        assign intermed_CDom_CAlignDist = CAlignDist[(clog2(sigWidth + 1) - 1):0];
-        assign intermed_highAlignedSigC =
-    `ifdef HardFloat_propagateNaNPayloads
-             isNaNOut ? fractNaN :
-    `endif
+            mainAlignedSigC.eq(extComplSigC >>> CAlignDist),
+            grainAlignedSigC.eq(sigC<<CGrainAlign),
+            compressBy4_sigC.in.eq(grainAlignedSigC),
+            reduced4SigC.eq(compressBy4_sigC.out),
+            lowMaskHiLo.in.eq(CAlignDist[2:(clog2(sigSumWidth)]),
+            CExtraMask.eq(lowMaskHiLo.out),
+            reduced4CExtra.eq((reduced4SigC & CExtraMask).bool()),
+            alignedSigC = Cat(
+                 Mux(doSubMags, (mainAlignedSigC[:3]=0b111) & ~reduced4CExtra,
+                                (mainAlignedSigC[:3].bool()) | reduced4CExtra),
+                 mainAlignedSigC>>3)
+        ]
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        isNaNAOrB = Signal(reset_less=True)
+        isNaNAny = Signal(reset_less=True)
+        isInfAOrB = Signal(reset_less=True)
+        invalidProd = Signal(reset_less=True)
+        notSigNaN_invalidExc = Signal(reset_less=True)
+        invalidExc = Signal(reset_less=True)
+        notNaN_addZeros = Signal(reset_less=True)
+        specialCase = Signal(reset_less=True)
+        specialNotNaN_signOut = Signal(reset_less=True)
+        comb += [
+            isNaNAOrB.eq(isNaNA | isNaNB),
+            isNaNAny.eq(isNaNAOrB | isNaNC),
+            isInfAOrB.eq(isInfA | isInfB),
+            invalidProd.eq((isInfA & isZeroB) | (isZeroA & isInfB)),
+            notSigNaN_invalidExc.eq(
+                invalidProd | (!isNaNAOrB & isInfAOrB & isInfC & doSubMags)),
+            invalidExc.eq(
+                isSigNaNA | isSigNaNB | isSigNaNC | notSigNaN_invalidExc),
+            notNaN_addZeros.eq((isZeroA | isZeroB) && isZeroC),
+            specialCase.eq(isNaNAny | isInfAOrB | isInfC | notNaN_addZeros),
+            specialNotNaN_signOut.eq(
+            (isInfAOrB & signProd) | (isInfC & opSignC)
+                | (notNaN_addZeros & !roundingMode_min & signProd & opSignC)
+                | (notNaN_addZeros & roundingMode_min & (signProd | opSignC)))
+        ]
+
+        special_signOut = specialNotNaN_signOut;
+        #/*-------------------------------------------------------------------
+        # *-------------------------------------------------------------------*/
+        mulAddA = sigA;
+        mulAddB = sigB;
+        mulAddC = Signal(prodWidth, reset_less=True)
+        intermed_compactState = Signal(6, reset_less=True)
+
+        comb += mulAddC.eq(alignedSigC[1:prodWidth+1])
+        comb += intermed_compactState.eq(Cat(
+            special_signOut,
+             notNaN_addZeros     | (~specialCase & alignedSigC[0]),
+             isInfAOrB | isInfC | (~specialCase & CIsDominant   ),
+             isNaNAny            | (~specialCase & doSubMags     ),
+             invalidExc          | (~specialCase & signProd      ),
+             specialCase,))
+        intermed_sExp = sExpSum;
+        intermed_CDom_CAlignDist = CAlignDist[(clog2(sigWidth + 1) - 1):0];
+        intermed_highAlignedSigC =
               alignedSigC[(sigSumWidth - 1):(prodWidth + 1)];
 
+        return m
 
-/*----------------------------------------------------------------------------
-*----------------------------------------------------------------------------*/
+#/*------------------------------------------------------------------------
+#*------------------------------------------------------------------------*/
 
 module
     mulAddRecFNToRaw_postMul#(parameter expWidth = 3, parameter sigWidth = 3) (
@@ -327,7 +307,7 @@ module
     wire signed [(expWidth + 1):0] CDom_sExp = intermed_sExp - doSubMags;
     wire [(sigWidth*2 + 1):0] CDom_absSigSum =
         doSubMags ? ~sigSum[(sigSumWidth - 1):(sigWidth + 1)]
-            : {1'b0, intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
+            : {0b0, intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
                    sigSum[(sigSumWidth - 3):(sigWidth + 2)]};
     wire CDom_absSigSumExtra =
         doSubMags ? !(&sigSum[sigWidth:1]) : |sigSum[(sigWidth + 1):1];
@@ -348,7 +328,7 @@ module
     wire CDom_reduced4SigExtra = |(CDom_reduced4LowSig & CDom_sigExtraMask);
     wire [(sigWidth + 2):0] CDom_sig =
         {CDom_mainSig>>3,
-         (|CDom_mainSig[2:0]) || CDom_reduced4SigExtra || CDom_absSigSumExtra};
+         (|CDom_mainSig[2:0]) | CDom_reduced4SigExtra | CDom_absSigSumExtra};
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     wire notCDom_signSigSum = sigSum[prodWidth + 3];
@@ -368,7 +348,7 @@ module
     wire signed [(expWidth + 1):0] notCDom_sExp =
         intermed_sExp - notCDom_nearNormDist;
     wire [(sigWidth + 4):0] notCDom_mainSig =
-        ({1'b0, notCDom_absSigSum}<<notCDom_nearNormDist)>>(sigWidth - 1);
+        ({0b0, notCDom_absSigSum}<<notCDom_nearNormDist)>>(sigWidth - 1);
     wire [(((sigWidth/2 + 1) | 1) - 1):0] CDom_grainAlignedLowReduced2Sig =
         notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1);
     wire [(sigWidth + 2)/4:0] notCDom_reduced4AbsSigSum;
@@ -385,7 +365,7 @@ module
         |(notCDom_reduced4AbsSigSum & notCDom_sigExtraMask);
     wire [(sigWidth + 2):0] notCDom_sig =
         {notCDom_mainSig>>3,
-         (|notCDom_mainSig[2:0]) || notCDom_reduced4SigExtra};
+         (|notCDom_mainSig[2:0]) | notCDom_reduced4SigExtra};
     wire notCDom_completeCancellation =
         (notCDom_sig[(sigWidth + 2):(sigWidth + 1)] == 0);
     wire notCDom_sign =
@@ -394,19 +374,13 @@ module
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     assign out_isZero =
-        notNaN_addZeros || (!CIsDominant && notCDom_completeCancellation);
+        notNaN_addZeros | (!CIsDominant && notCDom_completeCancellation);
     assign out_sign =
            ( specialCase                 && special_signOut)
-        || (!specialCase &&  CIsDominant && CDom_sign      )
-        || (!specialCase && !CIsDominant && notCDom_sign   );
+        | (!specialCase &&  CIsDominant && CDom_sign      )
+        | (!specialCase && !CIsDominant && notCDom_sign   );
     assign out_sExp = CIsDominant ? CDom_sExp : notCDom_sExp;
-`ifdef HardFloat_propagateNaNPayloads
-    assign out_sig =
-        out_isNaN ? {1'b1, fractNaN, 2'b00}
-            : CIsDominant ? CDom_sig : notCDom_sig;
-`else
     assign out_sig = CIsDominant ? CDom_sig : notCDom_sig;
-`endif
 
 endmodule
 
