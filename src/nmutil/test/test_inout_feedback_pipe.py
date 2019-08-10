@@ -276,8 +276,6 @@ def test1():
     with open("test_inoutmux_feedback_pipe.il", "w") as f:
         f.write(vl)
 
-    return
-
     tlen = 100
 
     test = InputTest(dut, tlen)

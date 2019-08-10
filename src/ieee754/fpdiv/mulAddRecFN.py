@@ -242,148 +242,189 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
 #/*------------------------------------------------------------------------
 #*------------------------------------------------------------------------*/
 
-module
-    mulAddRecFNToRaw_postMul#(parameter expWidth = 3, parameter sigWidth = 3) (
-        intermed_compactState,
-        intermed_sExp,
-        intermed_CDom_CAlignDist,
-        intermed_highAlignedSigC,
-        mulAddResult,
-        roundingMode,
-        invalidExc,
-        out_isNaN,
-        out_isInf,
-        out_isZero,
-        out_sign,
-        out_sExp,
-        out_sig
-    );
-`include "HardFloat_localFuncs.vi"
-    input [5:0] intermed_compactState;
-    input signed [(expWidth + 1):0] intermed_sExp;
-    input [(clog2(sigWidth + 1) - 1):0] intermed_CDom_CAlignDist;
-    input [(sigWidth + 1):0] intermed_highAlignedSigC;
-    input [sigWidth*2:0] mulAddResult;
-    input [2:0] roundingMode;
-    output invalidExc;
-    output out_isNaN;
-    output out_isInf;
-    output out_isZero;
-    output out_sign;
-    output signed [(expWidth + 1):0] out_sExp;
-    output [(sigWidth + 2):0] out_sig;
+class mulAddRecFNToRaw_postMul(Elaboratable):
 
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    localparam prodWidth = sigWidth*2;
-    localparam sigSumWidth = sigWidth + prodWidth + 3;
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    wire specialCase     = intermed_compactState[5];
-    assign invalidExc    = specialCase && intermed_compactState[4];
-    assign out_isNaN     = specialCase && intermed_compactState[3];
-    assign out_isInf     = specialCase && intermed_compactState[2];
-    wire notNaN_addZeros = specialCase && intermed_compactState[1];
-    wire signProd        = intermed_compactState[4];
-    wire doSubMags       = intermed_compactState[3];
-    wire CIsDominant     = intermed_compactState[2];
-    wire bit0AlignedSigC = intermed_compactState[1];
-    wire special_signOut = intermed_compactState[0];
-`ifdef HardFloat_propagateNaNPayloads
-    wire [(sigWidth - 2):0] fractNaN = intermed_highAlignedSigC;
-`endif
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    wire opSignC = signProd ^ doSubMags;
-    wire [(sigWidth + 1):0] incHighAlignedSigC = intermed_highAlignedSigC + 1;
-    wire [(sigSumWidth - 1):0] sigSum =
-        {mulAddResult[prodWidth] ? incHighAlignedSigC
-             : intermed_highAlignedSigC,
-         mulAddResult[(prodWidth - 1):0],
-         bit0AlignedSigC};
-    wire roundingMode_min = (roundingMode == `round_min);
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    wire CDom_sign = opSignC;
-    wire signed [(expWidth + 1):0] CDom_sExp = intermed_sExp - doSubMags;
-    wire [(sigWidth*2 + 1):0] CDom_absSigSum =
-        doSubMags ? ~sigSum[(sigSumWidth - 1):(sigWidth + 1)]
-            : {0b0, intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
-                   sigSum[(sigSumWidth - 3):(sigWidth + 2)]};
-    wire CDom_absSigSumExtra =
-        doSubMags ? !(&sigSum[sigWidth:1]) : |sigSum[(sigWidth + 1):1];
-    wire [(sigWidth + 4):0] CDom_mainSig =
-        (CDom_absSigSum<<intermed_CDom_CAlignDist)>>(sigWidth - 3);
-    wire [((sigWidth | 3) - 1):0] CDom_grainAlignedLowSig =
-        CDom_absSigSum[(sigWidth - 1):0]<<(~sigWidth & 3);
-    wire [sigWidth/4:0] CDom_reduced4LowSig;
-    compressBy4#(sigWidth | 3)
-        compressBy4_CDom_absSigSum(
-            CDom_grainAlignedLowSig, CDom_reduced4LowSig);
-    wire [(sigWidth/4 - 1):0] CDom_sigExtraMask;
-    lowMaskLoHi#(clog2(sigWidth + 1) - 2, 0, sigWidth/4)
-        lowMask_CDom_sigExtraMask(
-            intermed_CDom_CAlignDist[(clog2(sigWidth + 1) - 1):2],
-            CDom_sigExtraMask
-        );
-    wire CDom_reduced4SigExtra = |(CDom_reduced4LowSig & CDom_sigExtraMask);
-    wire [(sigWidth + 2):0] CDom_sig =
-        {CDom_mainSig>>3,
-         (|CDom_mainSig[2:0]) | CDom_reduced4SigExtra | CDom_absSigSumExtra};
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    wire notCDom_signSigSum = sigSum[prodWidth + 3];
-    wire [(prodWidth + 2):0] notCDom_absSigSum =
-        notCDom_signSigSum ? ~sigSum[(prodWidth + 2):0]
-            : sigSum[(prodWidth + 2):0] + doSubMags;
-    wire [(prodWidth + 2)/2:0] notCDom_reduced2AbsSigSum;
-    compressBy2#(prodWidth + 3)
-        compressBy2_notCDom_absSigSum(
-            notCDom_absSigSum, notCDom_reduced2AbsSigSum);
-    wire [(clog2(prodWidth + 4) - 2):0] notCDom_normDistReduced2;
-    countLeadingZeros#((prodWidth + 2)/2 + 1, clog2(prodWidth + 4) - 1)
-        countLeadingZeros_notCDom(
-            notCDom_reduced2AbsSigSum, notCDom_normDistReduced2);
-    wire [(clog2(prodWidth + 4) - 1):0] notCDom_nearNormDist =
-        notCDom_normDistReduced2<<1;
-    wire signed [(expWidth + 1):0] notCDom_sExp =
-        intermed_sExp - notCDom_nearNormDist;
-    wire [(sigWidth + 4):0] notCDom_mainSig =
-        ({0b0, notCDom_absSigSum}<<notCDom_nearNormDist)>>(sigWidth - 1);
-    wire [(((sigWidth/2 + 1) | 1) - 1):0] CDom_grainAlignedLowReduced2Sig =
-        notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1);
-    wire [(sigWidth + 2)/4:0] notCDom_reduced4AbsSigSum;
-    compressBy2#((sigWidth/2 + 1) | 1)
-        compressBy2_notCDom_reduced2AbsSigSum(
-            CDom_grainAlignedLowReduced2Sig, notCDom_reduced4AbsSigSum);
-    wire [((sigWidth + 2)/4 - 1):0] notCDom_sigExtraMask;
-    lowMaskLoHi#(clog2(prodWidth + 4) - 2, 0, (sigWidth + 2)/4)
-        lowMask_notCDom_sigExtraMask(
-            notCDom_normDistReduced2[(clog2(prodWidth + 4) - 2):1],
-            notCDom_sigExtraMask
-        );
-    wire notCDom_reduced4SigExtra =
-        |(notCDom_reduced4AbsSigSum & notCDom_sigExtraMask);
-    wire [(sigWidth + 2):0] notCDom_sig =
-        {notCDom_mainSig>>3,
-         (|notCDom_mainSig[2:0]) | notCDom_reduced4SigExtra};
-    wire notCDom_completeCancellation =
-        (notCDom_sig[(sigWidth + 2):(sigWidth + 1)] == 0);
-    wire notCDom_sign =
-        notCDom_completeCancellation ? roundingMode_min
-            : signProd ^ notCDom_signSigSum;
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    assign out_isZero =
-        notNaN_addZeros | (!CIsDominant && notCDom_completeCancellation);
-    assign out_sign =
-           ( specialCase                 && special_signOut)
-        | (!specialCase &&  CIsDominant && CDom_sign      )
-        | (!specialCase && !CIsDominant && notCDom_sign   );
-    assign out_sExp = CIsDominant ? CDom_sExp : notCDom_sExp;
-    assign out_sig = CIsDominant ? CDom_sig : notCDom_sig;
+    def __init__(self, expWidth = 3, parameter sigWidth = 3):
+        # inputs
+        self.control = Signal(floatControlWidth, reset_less=True)
+        self.op = Signal(2, reset_less=True)
+        self.a = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.b = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.c = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.roundingMode = Signal(3, reset_less=True)
 
-endmodule
+        # outputs
+        self.mulAddA = Signal(sigWidth, reset_less=True)
+        self.mulAddB = Signal(sigWidth, reset_less=True)
+        self.mulAddC = Signal(sigWidth*2, reset_less=True)
+
+        # inputs
+        self.intermed_compactState = Signal(6, reset_less=True)
+        self.intermed_sExp = Signal(expWidth + 2, reset_less=True)
+        wid = num_bits(sigWidth + 1)
+        self.intermed_CDom_CAlignDist = Signal(wid, reset_less=True)
+        self.intermed_highAlignedSigC = Signal((sigWidth + 2), reset_less=True)
+        self.mulAddResult = Signal(sigWidth*2, reset_less=True)
+        self.roundingMode = Signal(3, reset_less=True)
+
+        # outputs
+        self.invalidExc = Signal(reset_less=True)
+        self.out_isNaN = Signal(reset_less=True)
+        self.out_isInf = Signal(reset_less=True)
+        self.out_isZero = Signal(reset_less=True)
+        self.out_sign = Signal(reset_less=True)
+        self.out_sExp = Signal((expWidth + 2, True), reset_less=True)
+        self.out_sig = Signal(sigWidth + 3, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        prodWidth = sigWidth*2;
+        sigSumWidth = sigWidth + prodWidth + 3;
+
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        wire specialCase     = Signal(reset_less=True)
+        assign invalidExc    = Signal(reset_less=True)
+        assign out_isNaN     = Signal(reset_less=True)
+        assign out_isInf     = Signal(reset_less=True)
+        wire notNaN_addZeros = Signal(reset_less=True)
+        wire signProd        = Signal(reset_less=True)
+        wire doSubMags       = Signal(reset_less=True)
+        wire CIsDominant     = Signal(reset_less=True)
+        wire bit0AlignedSigC = Signal(reset_less=True)
+        wire special_signOut = Signal(reset_less=True)
+        comb += [
+            specialCase     .eq( intermed_compactState[5] ),
+            invalidExc    .eq( specialCase & intermed_compactState[4] ),
+            out_isNaN     .eq( specialCase & intermed_compactState[3] ),
+            out_isInf     .eq( specialCase & intermed_compactState[2] ),
+            notNaN_addZeros .eq( specialCase & intermed_compactState[1] ),
+            signProd        .eq( intermed_compactState[4] ),
+            doSubMags       .eq( intermed_compactState[3] ),
+            CIsDominant     .eq( intermed_compactState[2] ),
+            bit0AlignedSigC .eq( intermed_compactState[1] ),
+            special_signOut .eq( intermed_compactState[0] ),
+        ]
+
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        opSignC = Signal(reset_less=True)
+        incHighAlignedSigC = Signal(sigWidth + 3, reset_less=True)
+        sigSum = Signal(sigSumWidth, reset_less=True)
+        roundingMode_min = Signal(reset_less=True)
+
+        comb += [\
+            opSignC.eq(signProd ^ doSubMags),
+            incHighAlignedSigC.eq(intermed_highAlignedSigC + 1),
+            sigSum.eq(Cat(bit0AlignedSigC,
+                          mulAddResult[(prodWidth - 1):0],
+                          Mux(mulAddResult[prodWidth],
+                              incHighAlignedSigC,
+                              intermed_highAlignedSigC))),
+            roundingMode_min.eq(roundingMode == `round_min),
+        ]
+
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        CDom_sign = Signal(reset_less=True)
+        CDom_sExp = Signal((expWidth + 2, True), reset_less=True)
+        CDom_absSigSum = Signal(prodWidth+2, reset_less=True)
+        CDom_absSigSumExtra = Signal(reset_less=True)
+        CDom_mainSig = Signal(sigWidth+5, reset_less=True)
+        CDom_grainAlignedLowSig = Signal(sigWidth | 3, reset_less=True)
+        CDom_reduced4LowSig = Signal(sigWidth/4+1, reset_less=True)
+        CDom_sigExtraMask = Signal(sigWidth/4, reset_less=True)
+
+        lowMask_CDom_sigExtraMask = lm
+        m.submodules.lm = lm = lowMaskLoHi(clog2(sigWidth + 1) - 2, 0,
+                                           sigWidth/4)
+        CDom_reduced4SigExtra = Signal(reset_less=True)
+        CDom_sig = Signal(sigWidth+3, reset_less=True)
+
+        comb += [\
+            CDom_sign.eq(opSignC),
+            CDom_sExp.eq(intermed_sExp - doSubMags),
+            CDom_absSigSum.eq(Mux(doSubMags,
+                                  ~sigSum[sigWidth+1:sigSumWidth],
+                Cat(sigSum[sigWidth+2 : sigSumWidth - 2],
+                    intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
+                    0b0)),
+            CDom_absSigSumExtra.eq(Mux(doSubMags,
+                          (~sigSum[1:sigWidth+1]).bool(),
+                          sigSum[1:sigWidth + 2].bool())),
+            CDom_mainSig.eq(
+                (CDom_absSigSum<<intermed_CDom_CAlignDist)>>(sigWidth - 3)),
+            CDom_grainAlignedLowSig.eq(
+                    CDom_absSigSum[(sigWidth - 1):0]<<(~sigWidth & 3)),
+            CDom_reduced4LowSig.eq(compressBy4_CDom_absSigSum.out),
+            compressBy4_CDom_absSigSum.in.eq(CDom_grainAlignedLowSig),
+            lowMask_CDom_sigExtraMask.in.eq(
+                intermed_CDom_CAlignDist[2:clog2(sigWidth + 1)]),
+            CDom_sigExtraMask.eq(lowMask_CDom_sigExtraMask.out),
+            CDom_reduced4SigExtra.eq(
+                    (CDom_reduced4LowSig & CDom_sigExtraMask).bool()),
+            CDom_sig.eq(Cat((CDom_mainSig[:3]).bool() | 
+                             CDom_reduced4SigExtra | 
+                             CDom_absSigSumExtra,
+                            CDom_mainSig>>3)),
+        ]
+
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        wire notCDom_signSigSum = sigSum[prodWidth + 3];
+        wire [(prodWidth + 2):0] notCDom_absSigSum =
+            notCDom_signSigSum ? ~sigSum[(prodWidth + 2):0]
+                : sigSum[(prodWidth + 2):0] + doSubMags;
+        wire [(prodWidth + 2)/2:0] notCDom_reduced2AbsSigSum;
+        compressBy2#(prodWidth + 3)
+            compressBy2_notCDom_absSigSum(
+                notCDom_absSigSum, notCDom_reduced2AbsSigSum);
+        wire [(clog2(prodWidth + 4) - 2):0] notCDom_normDistReduced2;
+        countLeadingZeros#((prodWidth + 2)/2 + 1, clog2(prodWidth + 4) - 1)
+            countLeadingZeros_notCDom(
+                notCDom_reduced2AbsSigSum, notCDom_normDistReduced2);
+        wire [(clog2(prodWidth + 4) - 1):0] notCDom_nearNormDist =
+            notCDom_normDistReduced2<<1;
+        wire signed [(expWidth + 1):0] notCDom_sExp =
+            intermed_sExp - notCDom_nearNormDist;
+        wire [(sigWidth + 4):0] notCDom_mainSig =
+            ({0b0, notCDom_absSigSum}<<notCDom_nearNormDist)>>(sigWidth - 1);
+        wire [(((sigWidth/2 + 1) | 1) - 1):0] CDom_grainAlignedLowReduced2Sig =
+            notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1);
+        wire [(sigWidth + 2)/4:0] notCDom_reduced4AbsSigSum;
+        compressBy2#((sigWidth/2 + 1) | 1)
+            compressBy2_notCDom_reduced2AbsSigSum(
+                CDom_grainAlignedLowReduced2Sig, notCDom_reduced4AbsSigSum);
+        wire [((sigWidth + 2)/4 - 1):0] notCDom_sigExtraMask;
+        lowMaskLoHi#(clog2(prodWidth + 4) - 2, 0, (sigWidth + 2)/4)
+            lowMask_notCDom_sigExtraMask(
+                notCDom_normDistReduced2[(clog2(prodWidth + 4) - 2):1],
+                notCDom_sigExtraMask
+            );
+        wire notCDom_reduced4SigExtra =
+            |(notCDom_reduced4AbsSigSum & notCDom_sigExtraMask);
+        wire [(sigWidth + 2):0] notCDom_sig =
+            {notCDom_mainSig>>3,
+             (|notCDom_mainSig[2:0]) | notCDom_reduced4SigExtra};
+        wire notCDom_completeCancellation =
+            (notCDom_sig[(sigWidth + 2):(sigWidth + 1)] == 0);
+        wire notCDom_sign =
+            notCDom_completeCancellation ? roundingMode_min
+                : signProd ^ notCDom_signSigSum;
+        #/*-------------------------------------------------------------------
+        #*-------------------------------------------------------------------*/
+        assign out_isZero =
+            notNaN_addZeros | (!CIsDominant && notCDom_completeCancellation);
+        assign out_sign =
+               ( specialCase                 && special_signOut)
+            | (!specialCase &&  CIsDominant && CDom_sign      )
+            | (!specialCase && !CIsDominant && notCDom_sign   );
+        assign out_sExp = CIsDominant ? CDom_sExp : notCDom_sExp;
+        assign out_sig = CIsDominant ? CDom_sig : notCDom_sig;
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
