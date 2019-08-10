@@ -276,15 +276,23 @@ def test1():
     with open("test_inoutmux_feedback_pipe.il", "w") as f:
         f.write(vl)
 
-    tlen = 3
+    return
+
+    tlen = 100
 
     test = InputTest(dut, tlen)
-    run_simulation(dut, [test.rcv(0), test.rcv(1),
+    run_simulation(dut, [test.rcv(0), #test.rcv(1),
                          #test.rcv(3), test.rcv(2),
-                         test.send(0), test.send(1),
+                         test.send(0), #test.send(1),
                          #test.send(3), test.send(2),
                         ],
                    vcd_name="test_inoutmux_feedback_pipe.vcd")
 
+
 if __name__ == '__main__':
+    #from cProfile import Profile
+    #p = Profile()
+    #p.enable()
     test1()
+    #p.disable()
+    #p.print_stats()

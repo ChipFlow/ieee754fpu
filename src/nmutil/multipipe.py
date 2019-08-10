@@ -114,7 +114,7 @@ class MultiOutControlBase(Elaboratable):
             nmaskwid = maskwid * n_len # fan-out mode
 
         # set up input and output IO ACK (prev/next ready/valid)
-        self.p = PrevControl(in_multi, maskwid=nmaskwid) 
+        self.p = PrevControl(in_multi, maskwid=nmaskwid)
         n = []
         for i in range(n_len):
             n.append(NextControl(maskwid=maskwid))
@@ -226,8 +226,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
         if self.maskwid:
             if self.routemask: # straight "routing" mode - treat like data
                 m.d.comb += self.n[muxid].stop_o.eq(self.p.stop_i)
-                #with m.If(pv):
-                m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
+                with m.If(pv):
+                    m.d.comb += self.n[muxid].mask_o.eq(self.p.mask_i)
             else:
                 ml = [] # accumulate output masks
                 ms = [] # accumulate output stops
@@ -311,7 +311,10 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += n_ready_in[i].eq(1)
             m.d.comb += p_valid_i[i].eq(0)
             m.d.comb += self.p[i].ready_o.eq(0)
-        m.d.comb += p_valid_i[mid].eq(self.p_mux.active)
+        p = self.p[mid]
+        maskedout = Signal(reset_less=True)
+        m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+        m.d.comb += p_valid_i[mid].eq(maskedout & self.p_mux.active)
         m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.ready_i)
         m.d.comb += n_ready_in[mid].eq(nirn & data_valid[mid])
         anyvalid = Signal(i, reset_less=True)
@@ -321,19 +324,21 @@ class CombMultiInPipeline(MultiInControlBase):
         anyvalid = Cat(*av)
         m.d.comb += self.n.valid_o.eq(anyvalid.bool())
         m.d.comb += data_valid[mid].eq(p_valid_i[mid] | \
-                                    (n_ready_in[mid] & data_valid[mid]))
+                                    (n_ready_in[mid] ))
 
         if self.routemask:
+            # XXX hack - fixes loop
+            m.d.comb += eq(self.n.stop_o, self.p[0].stop_i)
             for i in range(p_len):
                 p = self.p[i]
                 vr = Signal(reset_less=True)
                 maskedout = Signal(reset_less=True)
                 m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
                 m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
+                #m.d.comb += vr.eq(p.valid_i & p.ready_o)
                 with m.If(vr):
                     m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
                     m.d.comb += eq(r_data[i], self.p[i].data_i)
-                    m.d.comb += eq(self.n.stop_o, self.p[i].stop_i)
         else:
             ml = [] # accumulate output masks
             ms = [] # accumulate output stops
