@@ -170,13 +170,11 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
                               Mux((posNatCAlignDist < sigSumWidth - 1),
                                   posNatCAlignDist[:num_bits(sigSumWidth)],
                                   sigSumWidth - 1)),
-            # XXX check! {doSubMags ? ~sigC : sigC,
-            #            {(sigSumWidth - sigWidth + 2){doSubMags}}};
             sc = [Repl(doSubMags, (sigSumWidth - sigWidth + 2)] + \
                                 [Mux(doSubMags, ~sigC, sigC)]
             extComplSigC.eq(Cat(*sc))
             # XXX check!  nmigen doesn't have >>> operator, only >>
-            mainAlignedSigC.eq(extComplSigC >>> CAlignDist),
+            mainAlignedSigC.eq(extComplSigC >> CAlignDist),
             grainAlignedSigC.eq(sigC<<CGrainAlign),
             compressBy4_sigC.in.eq(grainAlignedSigC),
             reduced4SigC.eq(compressBy4_sigC.out),
@@ -243,19 +241,6 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
 class mulAddRecFNToRaw_postMul(Elaboratable):
 
     def __init__(self, expWidth = 3, parameter sigWidth = 3):
-        # inputs
-        self.control = Signal(floatControlWidth, reset_less=True)
-        self.op = Signal(2, reset_less=True)
-        self.a = Signal(expWidth + sigWidth + 1, reset_less=True)
-        self.b = Signal(expWidth + sigWidth + 1, reset_less=True)
-        self.c = Signal(expWidth + sigWidth + 1, reset_less=True)
-        self.roundingMode = Signal(3, reset_less=True)
-
-        # outputs
-        self.mulAddA = Signal(sigWidth, reset_less=True)
-        self.mulAddB = Signal(sigWidth, reset_less=True)
-        self.mulAddC = Signal(sigWidth*2, reset_less=True)
-
         # inputs
         self.intermed_compactState = Signal(6, reset_less=True)
         self.intermed_sExp = Signal(expWidth + 2, reset_less=True)
@@ -446,68 +431,92 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
             out_sig.eq(Mux(CIsDominant, CDom_sig, notCDom_sig)),
         ]
 
-/*----------------------------------------------------------------------------
-*----------------------------------------------------------------------------*/
+        return m
 
-module
-    mulAddRecFNToRaw#(parameter expWidth = 3, parameter sigWidth = 3) (
-        input [(`floatControlWidth - 1):0] control,
-        input [1:0] op,
-        input [(expWidth + sigWidth):0] a,
-        input [(expWidth + sigWidth):0] b,
-        input [(expWidth + sigWidth):0] c,
-        input [2:0] roundingMode,
-        output invalidExc,
-        output out_isNaN,
-        output out_isInf,
-        output out_isZero,
-        output out_sign,
-        output signed [(expWidth + 1):0] out_sExp,
-        output [(sigWidth + 2):0] out_sig
-    );
-`include "HardFloat_localFuncs.vi"
+#/*------------------------------------------------------------------------
+#*------------------------------------------------------------------------*/
 
-    wire [(sigWidth - 1):0] mulAddA, mulAddB;
-    wire [(sigWidth*2 - 1):0] mulAddC;
-    wire [5:0] intermed_compactState;
-    wire signed [(expWidth + 1):0] intermed_sExp;
-    wire [(clog2(sigWidth + 1) - 1):0] intermed_CDom_CAlignDist;
-    wire [(sigWidth + 1):0] intermed_highAlignedSigC;
-    mulAddRecFNToRaw_preMul#(expWidth, sigWidth)
-        mulAddToRaw_preMul(
-            control,
-            op,
-            a,
-            b,
-            c,
-            roundingMode,
-            mulAddA,
-            mulAddB,
-            mulAddC,
-            intermed_compactState,
-            intermed_sExp,
-            intermed_CDom_CAlignDist,
-            intermed_highAlignedSigC
-        );
-    wire [sigWidth*2:0] mulAddResult = mulAddA * mulAddB + mulAddC;
-    mulAddRecFNToRaw_postMul#(expWidth, sigWidth)
-        mulAddToRaw_postMul(
-            intermed_compactState,
-            intermed_sExp,
-            intermed_CDom_CAlignDist,
-            intermed_highAlignedSigC,
-            mulAddResult,
-            roundingMode,
-            invalidExc,
-            out_isNaN,
-            out_isInf,
-            out_isZero,
-            out_sign,
-            out_sExp,
-            out_sig
-        );
+class mulAddRecFNToRaw(Elaboratable):
+    def __init__(expWidth=3, sigWidth=3):
+        self.control = Signal(floatControlWidth, reset_less=True)
+        self.op = Signal(2, reset_less=True)
+        self.a = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.b = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.c = Signal(expWidth + sigWidth + 1, reset_less=True)
+        self.roundingMode = Signal(3, reset_less=True)
 
-endmodule
+        # output
+        self.invalidExc = Signal(reset_less=True)
+        self.out_isNaN = Signal(reset_less=True)
+        self.out_isInf = Signal(reset_less=True)
+        self.out_isZero = Signal(reset_less=True)
+        self.out_sign = Signal(reset_less=True)
+        self.out_sExp = Signal((expWidth + 2, True), reset_less=True)
+        self.out_sig = Signal(sigWidth + 3, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+
+        mulAddA = Signal(sigWidth, reset_less=True)
+        mulAddB = Signal(sigWidth, reset_less=True)
+        mulAddC = Signal(sigWidth*2, reset_less=True)
+        intermed_compactState = Signal(6, reset_less=True)
+        intermed_sExp = Signal(expWidth + 2, reset_less=True)
+        wid = num_bits(sigWidth + 1)
+        intermed_CDom_CAlignDist = Signal(wid, reset_less=True)
+        intermed_highAlignedSigC = Signal((sigWidth + 2), reset_less=True)
+
+        m.submodules.mar = mulAddToRaw_preMul = \
+            mulAddRecFNToRaw_preMul(expWidth, sigWidth)
+
+        comb += [\
+            mulAddToRaw_preMul.control.eq(self.control),
+            mulAddToRaw_preMul.op.eq(self.op),
+            mulAddToRaw_preMul.a.eq(self.a),
+            mulAddToRaw_preMul.b.eq(self.b),
+            mulAddToRaw_preMul.roundingMode.eq(self.roundingMode),
+            mulAddA.eq(mulAddToRaw_preMul.mulAddA),
+            mulAddB.eq(mulAddToRaw_preMul.mulAddB),
+            mulAddC.eq(mulAddToRaw_preMul.mulAddC),
+            intermed_compactState.eq(mulAddToRaw_preMul.intermed_compactState),
+            intermed_sExp.eq(mulAddToRaw_preMul.intermed_sExp),
+            intermed_CDom_CAlignDist.eq(
+                            mulAddToRaw_preMul.intermed_CDom_CAlignDist),
+            intermed_highAlignedSigC.eq(
+                            mulAddToRaw_preMul.intermed_highAlignedSigC),
+        ]
+
+        mulAddResult = Signal(sigWidth*2+1, reset_less=True)
+        comb += mulAddResult.eq(mulAddA * mulAddB + mulAddC)
+
+        m.submodules.marp = mulAddToRaw_postMul = \
+                mulAddRecFNToRaw_postMul(expWidth, sigWidth)
+
+        comb += [\
+            mulAddRecFNToRaw_postMul.intermed_compactState.eq(
+                        intermed_compactState),
+            mulAddRecFNToRaw_postMul.intermed_sExp.eq(intermed_sExp),
+            mulAddRecFNToRaw_postMul.intermed_CDom_CAlignDist.eq(
+                        intermed_CDom_CAlignDist),
+            mulAddRecFNToRaw_postMul.intermed_highAlignedSigC.eq(
+                        intermed_highAlignedSigC),
+            mulAddRecFNToRaw_postMul.mulAddResult.eq(mulAddResult),
+            mulAddRecFNToRaw_postMul.roundingMode.eq(roundingMode),
+
+            invalidExc.eq(mulAddRecFNToRaw_postMul.invalidExc),
+            out_isNaN.eq(mulAddRecFNToRaw_postMul.out_isNaN),
+            out_isInf.eq(mulAddRecFNToRaw_postMul.out_isInf),
+            out_isZero.eq(mulAddRecFNToRaw_postMul.out_isZero),
+            out_sign.eq(mulAddRecFNToRaw_postMul.out_sign),
+            out_sExp.eq(mulAddRecFNToRaw_postMul.out_sExp),
+            out_sig.eq(mulAddRecFNToRaw_postMul.out_sig),
+        ]
+
+        return m
+
+"""
+XXX TODO?
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
@@ -560,4 +569,5 @@ module
         );
 
 endmodule
+"""
 
