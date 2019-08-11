@@ -22,13 +22,15 @@ class PipelineSpec:
 
     """
 
-    def __init__(self, width, id_width, op_wid=0, opkls=None, pipekls=None):
+    def __init__(self, width, id_width, op_wid=0, opkls=None,
+                       pipekls=None, n_ops=2):
         """ Create a PipelineSpec. """
         self.width = width
         self.id_wid = id_width
         self.op_wid = op_wid
         self.opkls = opkls
         self.pipekls = pipekls or SimpleHandshakeRedir
+        self.n_ops = n_ops
         self.stage = None
         self.core_config = None
         self.fpformat = None

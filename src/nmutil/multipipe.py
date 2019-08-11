@@ -208,15 +208,23 @@ class CombMultiOutPipeline(MultiOutControlBase):
         p_valid_i = Signal(reset_less=True)
         pv = Signal(reset_less=True)
         m.d.comb += p_valid_i.eq(self.p.valid_i_test)
-        m.d.comb += pv.eq(self.p.valid_i) #& self.n[muxid].ready_i)
+        #m.d.comb += pv.eq(self.p.valid_i) #& self.n[muxid].ready_i)
+        m.d.comb += pv.eq(self.p.valid_i & self.p.ready_o)
 
         # all outputs to next stages first initialised to zero (invalid)
         # the only output "active" is then selected by the muxid
         for i in range(len(self.n)):
             m.d.comb += self.n[i].valid_o.eq(0)
-        #with m.If(pv):
-        m.d.comb += self.n[muxid].valid_o.eq(pv)
-        m.d.comb += self.p.ready_o.eq(self.n[muxid].ready_i)
+        if self.routemask:
+            #with m.If(pv):
+            m.d.comb += self.n[muxid].valid_o.eq(pv)
+            m.d.comb += self.p.ready_o.eq(self.n[muxid].ready_i)
+        else:
+            data_valid = self.n[muxid].valid_o
+            m.d.comb += self.p.ready_o.eq(~data_valid | self.n[muxid].ready_i)
+            m.d.comb += data_valid.eq(p_valid_i | \
+                                    (~self.n[muxid].ready_i & data_valid))
+
 
         # send data on
         #with m.If(pv):
@@ -313,7 +321,10 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += self.p[i].ready_o.eq(0)
         p = self.p[mid]
         maskedout = Signal(reset_less=True)
-        m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+        if hasattr(p, "mask_i"):
+            m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+        else:
+            m.d.comb += maskedout.eq(1)
         m.d.comb += p_valid_i[mid].eq(maskedout & self.p_mux.active)
         m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.ready_i)
         m.d.comb += n_ready_in[mid].eq(nirn & data_valid[mid])
@@ -333,7 +344,10 @@ class CombMultiInPipeline(MultiInControlBase):
                 p = self.p[i]
                 vr = Signal(reset_less=True)
                 maskedout = Signal(reset_less=True)
-                m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                if hasattr(p, "mask_i"):
+                    m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                else:
+                    m.d.comb += maskedout.eq(1)
                 m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
                 #m.d.comb += vr.eq(p.valid_i & p.ready_o)
                 with m.If(vr):
@@ -347,7 +361,10 @@ class CombMultiInPipeline(MultiInControlBase):
                 p = self.p[i]
                 vr = Signal(reset_less=True)
                 maskedout = Signal(reset_less=True)
-                m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                if hasattr(p, "mask_i"):
+                    m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                else:
+                    m.d.comb += maskedout.eq(1)
                 m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
                 with m.If(vr):
                     m.d.comb += eq(r_data[i], self.p[i].data_i)

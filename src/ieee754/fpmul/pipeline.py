@@ -80,6 +80,6 @@ class FPMULMuxInOut(ReservationStations):
     def __init__(self, width, num_rows, op_wid=0):
         self.id_wid = num_bits(num_rows)
         self.op_wid = op_wid
-        self.pspec = PipelineSpec(width, self.id_wid, self.op_wid)
+        self.pspec = PipelineSpec(width, self.id_wid, self.op_wid, n_ops=2)
         self.alu = FPMULBasePipe(self.pspec)
         ReservationStations.__init__(self, num_rows)

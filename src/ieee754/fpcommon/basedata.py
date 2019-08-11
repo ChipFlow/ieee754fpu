@@ -7,8 +7,9 @@ from ieee754.fpcommon.getop import FPPipeContext
 
 class FPBaseData:
 
-    def __init__(self, pspec, n_ops=2):
+    def __init__(self, pspec):
         width = pspec.width
+        n_ops = pspec.n_ops
         self.ctx = FPPipeContext(pspec)
         ops = []
         for i in range(n_ops):
