@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """
 
-from nmigen import Elaboratable, Cat, Const, Mux, Module, Signal
+from nmigen import Elaboratable, Cat, Const, Mux, Module, Signal, Repl
 from nmutil.concurrentunit import num_bits
 
 #/*----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
                                   sigSumWidth - 1)),
             # XXX check! {doSubMags ? ~sigC : sigC,
             #            {(sigSumWidth - sigWidth + 2){doSubMags}}};
-            sc = [doSubMags] * (sigSumWidth - sigWidth + 2) + \
+            sc = [Repl(doSubMags, (sigSumWidth - sigWidth + 2)] + \
                                 [Mux(doSubMags, ~sigC, sigC)]
             extComplSigC.eq(Cat(*sc))
             # XXX check!  nmigen doesn't have >>> operator, only >>
@@ -219,22 +219,20 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
         special_signOut = specialNotNaN_signOut;
         #/*-------------------------------------------------------------------
         # *-------------------------------------------------------------------*/
-        mulAddA = sigA;
-        mulAddB = sigB;
-        mulAddC = Signal(prodWidth, reset_less=True)
-        intermed_compactState = Signal(6, reset_less=True)
-
-        comb += mulAddC.eq(alignedSigC[1:prodWidth+1])
-        comb += intermed_compactState.eq(Cat(
+        comb += self.mulAddA.eq(sigA)
+        comb += self.mulAddB = sigB;
+        comb += self.mulAddC.eq(alignedSigC[1:prodWidth+1])
+        comb += self.intermed_compactState.eq(Cat(
             special_signOut,
              notNaN_addZeros     | (~specialCase & alignedSigC[0]),
              isInfAOrB | isInfC | (~specialCase & CIsDominant   ),
              isNaNAny            | (~specialCase & doSubMags     ),
              invalidExc          | (~specialCase & signProd      ),
              specialCase,))
-        intermed_sExp = sExpSum;
-        intermed_CDom_CAlignDist = CAlignDist[(clog2(sigWidth + 1) - 1):0];
-        intermed_highAlignedSigC =
+        comb += self.intermed_sExp.eq(sExpSum)
+        comb += self.intermed_CDom_CAlignDist(
+                    CAlignDist[:(clog2(sigWidth + 1)])
+        comb += self.intermed_highAlignedSigC =
               alignedSigC[(sigSumWidth - 1):(prodWidth + 1)];
 
         return m
@@ -438,14 +436,15 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
 
         #/*-------------------------------------------------------------------
         #*-------------------------------------------------------------------*/
-        assign out_isZero =
-            notNaN_addZeros | (!CIsDominant && notCDom_completeCancellation);
-        assign out_sign =
-               ( specialCase                 && special_signOut)
-            | (!specialCase &&  CIsDominant && CDom_sign      )
-            | (!specialCase && !CIsDominant && notCDom_sign   );
-        assign out_sExp = CIsDominant ? CDom_sExp : notCDom_sExp;
-        assign out_sig = CIsDominant ? CDom_sig : notCDom_sig;
+        comb += [\
+            self.out_isZero.eq( notNaN_addZeros | \
+                                (~CIsDominant & notCDom_completeCancellation)),
+            out_sign.eq((specialCase                 & special_signOut) \
+                     | (~specialCase &  CIsDominant & CDom_sign      ) \
+                     | (~specialCase & ~CIsDominant & notCDom_sign   )),
+            out_sExp.eq(Mux(CIsDominant, CDom_sExp, notCDom_sExp)),
+            out_sig.eq(Mux(CIsDominant, CDom_sig, notCDom_sig)),
+        ]
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
