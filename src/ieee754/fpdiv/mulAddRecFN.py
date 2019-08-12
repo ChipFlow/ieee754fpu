@@ -154,38 +154,39 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
                             reset_less=True)
         m.submodules.lowMask_CExtraMask = lowMaskHiLo(clog2(sigSumWidth) - 2,
                                                       CExtraMaskHiBound, 
-                                                      CExtraMaskLoBound))
-        comb += (CAlignDist[(clog2(sigSumWidth) - 1):2], CExtraMask);
+                                                      CExtraMaskLoBound)
+        comb += (CAlignDist[(clog2(sigSumWidth) - 1):2], CExtraMask)
         reduced4CExtra = Signal(reset_less=True)
         alignedSigC = Signal(sigSumWidth, reset_less=True)
 
-        comb += [
+        sc = [Repl(doSubMags, sigSumWidth - sigWidth + 2)] + \
+                            [Mux(doSubMags, ~sigC, sigC)]
+
+        comb += [\
             sNatCAlignDist.eq(sExpAlignedProd - sExpC),
             posNatCAlignDist.eq(sNatCAlignDist[:expWidth + 2]),
-            isMinCAlign.eq(isZeroA | isZeroB | (sNatCAlignDist < 0))
+            isMinCAlign.eq(isZeroA | isZeroB | (sNatCAlignDist < 0)),
             CIsDominant.eq(~isZeroC & \
-                           (isMinCAlign | (posNatCAlignDist <= sigWidth)))
+                           (isMinCAlign | (posNatCAlignDist <= sigWidth))),
             sExpSum.eq(Mux(CIsDominant, sExpC, sExpAlignedProd - sigWidth)),
             CAlignDist.eq(Mux(isMinCAlign, 0,
                               Mux((posNatCAlignDist < sigSumWidth - 1),
                                   posNatCAlignDist[:num_bits(sigSumWidth)],
-                                  sigSumWidth - 1)),
-            sc = [Repl(doSubMags, (sigSumWidth - sigWidth + 2)] + \
-                                [Mux(doSubMags, ~sigC, sigC)]
-            extComplSigC.eq(Cat(*sc))
-            # XXX check!  nmigen doesn't have >>> operator, only >>
+                                  sigSumWidth - 1))),
+            extComplSigC.eq(Cat(*sc)),
             mainAlignedSigC.eq(extComplSigC >> CAlignDist),
             grainAlignedSigC.eq(sigC<<CGrainAlign),
-            compressBy4_sigC.in.eq(grainAlignedSigC),
+            compressBy4_sigC.inp.eq(grainAlignedSigC),
             reduced4SigC.eq(compressBy4_sigC.out),
-            lowMaskHiLo.in.eq(CAlignDist[2:(clog2(sigSumWidth)]),
+            lowMaskHiLo.inp.eq(CAlignDist[2:clog2(sigSumWidth)]),
             CExtraMask.eq(lowMaskHiLo.out),
             reduced4CExtra.eq((reduced4SigC & CExtraMask).bool()),
-            alignedSigC = Cat(
-                 Mux(doSubMags, (mainAlignedSigC[:3]=0b111) & ~reduced4CExtra,
+            alignedSigC.eq(Cat(\
+                 Mux(doSubMags, (mainAlignedSigC[:3]&0b111) & ~reduced4CExtra,
                                 (mainAlignedSigC[:3].bool()) | reduced4CExtra),
-                 mainAlignedSigC>>3)
+                     mainAlignedSigC>>3)),
         ]
+
         #/*-------------------------------------------------------------------
         #*-------------------------------------------------------------------*/
         isNaNAOrB = Signal(reset_less=True)
@@ -203,14 +204,14 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
             isInfAOrB.eq(isInfA | isInfB),
             invalidProd.eq((isInfA & isZeroB) | (isZeroA & isInfB)),
             notSigNaN_invalidExc.eq(
-                invalidProd | (!isNaNAOrB & isInfAOrB & isInfC & doSubMags)),
+                invalidProd | (~isNaNAOrB & isInfAOrB & isInfC & doSubMags)),
             invalidExc.eq(
                 isSigNaNA | isSigNaNB | isSigNaNC | notSigNaN_invalidExc),
-            notNaN_addZeros.eq((isZeroA | isZeroB) && isZeroC),
+            notNaN_addZeros.eq((isZeroA | isZeroB) & isZeroC),
             specialCase.eq(isNaNAny | isInfAOrB | isInfC | notNaN_addZeros),
             specialNotNaN_signOut.eq(
             (isInfAOrB & signProd) | (isInfC & opSignC)
-                | (notNaN_addZeros & !roundingMode_min & signProd & opSignC)
+                | (notNaN_addZeros & ~roundingMode_min & signProd & opSignC)
                 | (notNaN_addZeros & roundingMode_min & (signProd | opSignC)))
         ]
 
@@ -218,7 +219,7 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
         #/*-------------------------------------------------------------------
         # *-------------------------------------------------------------------*/
         comb += self.mulAddA.eq(sigA)
-        comb += self.mulAddB = sigB;
+        comb += self.mulAddB.eq(sigB)
         comb += self.mulAddC.eq(alignedSigC[1:prodWidth+1])
         comb += self.intermed_compactState.eq(Cat(
             special_signOut,
@@ -229,9 +230,9 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
              specialCase,))
         comb += self.intermed_sExp.eq(sExpSum)
         comb += self.intermed_CDom_CAlignDist(
-                    CAlignDist[:(clog2(sigWidth + 1)])
-        comb += self.intermed_highAlignedSigC =
-              alignedSigC[(sigSumWidth - 1):(prodWidth + 1)];
+                    CAlignDist[:clog2(sigWidth + 1)])
+        comb += self.intermed_highAlignedSigC.eq(
+              alignedSigC[(sigSumWidth - 1):(prodWidth + 1)])
 
         return m
 
@@ -240,7 +241,7 @@ class mulAddRecFNToRaw_preMul(Elaboratable):
 
 class mulAddRecFNToRaw_postMul(Elaboratable):
 
-    def __init__(self, expWidth = 3, parameter sigWidth = 3):
+    def __init__(self, expWidth=3, sigWidth=3):
         # inputs
         self.intermed_compactState = Signal(6, reset_less=True)
         self.intermed_sExp = Signal(expWidth + 2, reset_less=True)
@@ -270,16 +271,16 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
 
         #/*-------------------------------------------------------------------
         #*-------------------------------------------------------------------*/
-        wire specialCase     = Signal(reset_less=True)
-        assign invalidExc    = Signal(reset_less=True)
-        assign out_isNaN     = Signal(reset_less=True)
-        assign out_isInf     = Signal(reset_less=True)
-        wire notNaN_addZeros = Signal(reset_less=True)
-        wire signProd        = Signal(reset_less=True)
-        wire doSubMags       = Signal(reset_less=True)
-        wire CIsDominant     = Signal(reset_less=True)
-        wire bit0AlignedSigC = Signal(reset_less=True)
-        wire special_signOut = Signal(reset_less=True)
+        specialCase     = Signal(reset_less=True)
+        invalidExc    = Signal(reset_less=True)
+        out_isNaN     = Signal(reset_less=True)
+        out_isInf     = Signal(reset_less=True)
+        notNaN_addZeros = Signal(reset_less=True)
+        signProd        = Signal(reset_less=True)
+        doSubMags       = Signal(reset_less=True)
+        CIsDominant     = Signal(reset_less=True)
+        bit0AlignedSigC = Signal(reset_less=True)
+        special_signOut = Signal(reset_less=True)
         comb += [
             specialCase     .eq( intermed_compactState[5] ),
             invalidExc    .eq( specialCase & intermed_compactState[4] ),
@@ -308,7 +309,7 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
                           Mux(mulAddResult[prodWidth],
                               incHighAlignedSigC,
                               intermed_highAlignedSigC))),
-            roundingMode_min.eq(roundingMode == `round_min),
+            roundingMode_min.eq(roundingMode == ROUND_MIN),
         ]
 
         #/*-------------------------------------------------------------------
@@ -335,7 +336,7 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
                                   ~sigSum[sigWidth+1:sigSumWidth],
                 Cat(sigSum[sigWidth+2 : sigSumWidth - 2],
                     intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
-                    0b0)),
+                    0b0))),
             CDom_absSigSumExtra.eq(Mux(doSubMags,
                           (~sigSum[1:sigWidth+1]).bool(),
                           sigSum[1:sigWidth + 2].bool())),
@@ -344,8 +345,8 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
             CDom_grainAlignedLowSig.eq(
                     CDom_absSigSum[(sigWidth - 1):0]<<(~sigWidth & 3)),
             CDom_reduced4LowSig.eq(compressBy4_CDom_absSigSum.out),
-            compressBy4_CDom_absSigSum.in.eq(CDom_grainAlignedLowSig),
-            lowMask_CDom_sigExtraMask.in.eq(
+            compressBy4_CDom_absSigSum.inp.eq(CDom_grainAlignedLowSig),
+            lowMask_CDom_sigExtraMask.inp.eq(
                 intermed_CDom_CAlignDist[2:clog2(sigWidth + 1)]),
             CDom_sigExtraMask.eq(lowMask_CDom_sigExtraMask.out),
             CDom_reduced4SigExtra.eq(
@@ -360,28 +361,28 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
         #*-------------------------------------------------------------------*/
         notCDom_signSigSum = Signal(reset_less=True)
         notCDom_absSigSum = Signal(prodWidth + 3, reset_less=True)
-        notCDom_reduced2AbsSigSum = Signal(prodWidth+2)//2+1, reset_less=True)
+        notCDom_reduced2AbsSigSum = Signal((prodWidth+2)//2+1, reset_less=True)
         m.submodules.cb2 = compressBy2_notCDom_absSigSum = \
                 compressBy2(prodWidth + 3)
         notCDom_normDistReduced2 = Signal(clog2(prodWidth+4) - 1,
                                          reset_less=True)
-        m.submodules.clz = countLeadingZeros_notCDom = 
+        m.submodules.clz = countLeadingZeros_notCDom = \
                 countLeadingZeros((prodWidth + 2)/2 + 1,
                                   clog2(prodWidth + 4) - 1)
-        notCDom_nearNormDist = Signal((clog2(prodWidth + 4), reset_less=True)
+        notCDom_nearNormDist = Signal(clog2(prodWidth + 4), reset_less=True)
         notCDom_sExp = Signal((expWidth + 2, True), reset_less=True)
         notCDom_mainSig = Signal(sigWidth + 5, reset_less=True)
-        sw = (((sigWidth/2 + 1) | 1)
+        sw = (sigWidth/2 + 1) | 1
         CDom_grainAlignedLowReduced2Sig = Signal(sw, reset_less=True)
         notCDom_reduced4AbsSigSum = Signal((sigWidth + 2)//4+1, reset_less=True)
-        m.submodules.cb2r = compressBy2_notCDom_reduced2AbsSigSum =
-                                compressBy2((sigWidth/2 + 1) | 1)
-        sw = ((sigWidth + 2)/4
+        m.submodules.cb2r = compressBy2_notCDom_reduced2AbsSigSum = \
+                                compressBy2(sw)
+        sw = (sigWidth + 2)//4
         notCDom_sigExtraMask = Signal(sw, reset_less=True)
-        m.submodules.lms = lowMask_notCDom_sigExtraMask = 
-                lowMaskLoHi(clog2(prodWidth + 4) - 2, 0, (sigWidth + 2)/4)
+        m.submodules.lms = lowMask_notCDom_sigExtraMask = \
+                lowMaskLoHi(clog2(prodWidth + 4) - 2, 0, sw)
         notCDom_reduced4SigExtra = Signal(reset_less=True)
-        notCDom_sig Signal(sigWidth+3, reset_less=True)
+        notCDom_sig = Signal(sigWidth+3, reset_less=True)
         notCDom_completeCancellation = Signal(reset_less=True)
         notCDom_sign = Signal(reset_less=True)
 
@@ -389,10 +390,10 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
             notCDom_signSigSum.eq(sigSum[prodWidth + 3]),
             notCDom_absSigSum.eq(Mux(notCDom_signSigSum,
                                     ~sigSum[:prodWidth + 3],
-                                    sigSum[:prodWidth + 3] + doSubMags))
-            compressBy2_notCDom_absSigSum.in.eq(notCDom_absSigSum),
+                                    sigSum[:prodWidth + 3] + doSubMags)),
+            compressBy2_notCDom_absSigSum.inp.eq(notCDom_absSigSum),
             notCDom_reduced2AbsSigSum.eq(compressBy2_notCDom_absSigSum.out),
-            countLeadingZeros_notCDom.in.eq(notCDom_reduced2AbsSigSum),
+            countLeadingZeros_notCDom.inp.eq(notCDom_reduced2AbsSigSum),
             notCDom_normDistReduced2.out.eq(countLeadingZeros_notCDom),
             notCDom_nearNormDist.eq(notCDom_normDistReduced2<<1),
             notCDom_sExp.eq(intermed_sExp - notCDom_nearNormDist),
@@ -400,11 +401,11 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
                                     notCDom_nearNormDist)>>(sigWidth - 1)),
             CDom_grainAlignedLowReduced2Sig.eq(
                 notCDom_reduced2AbsSigSum[sigWidth/2:0]<<((sigWidth/2) & 1)),
-            compressBy2_notCDom_reduced2AbsSigSum.in.eq(
+            compressBy2_notCDom_reduced2AbsSigSum.inp.eq(
                             CDom_grainAlignedLowReduced2Sig),
             compressBy2_notCDom_reduced2AbsSigSum.eq(
                             notCDom_reduced4AbsSigSum.out),
-            lowMask_notCDom_sigExtraMask.in.eq(
+            lowMask_notCDom_sigExtraMask.inp.eq(
                 notCDom_normDistReduced2[1:clog2(prodWidth + 4) - 1]),
             notCDom_sigExtraMask.eq(lowMask_notCDom_sigExtraMask.out),
             notCDom_reduced4SigExtra.eq(
@@ -414,9 +415,9 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
                  notCDom_mainSig>>3)),
             notCDom_completeCancellation.eq(
                     notCDom_sig[(sigWidth + 1):(sigWidth + 3)] == 0),
-            notCDom_sign = Mux(notCDom_completeCancellation,
+            notCDom_sign.eq(Mux(notCDom_completeCancellation,
                                roundingMode_min,
-                               signProd ^ notCDom_signSigSum),
+                               signProd ^ notCDom_signSigSum)),
         ]
 
         #/*-------------------------------------------------------------------
