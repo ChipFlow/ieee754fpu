@@ -39,7 +39,7 @@ class MultiInControlBase(Elaboratable):
         """
         self.routemask = routemask
         # set up input and output IO ACK (prev/next ready/valid)
-        print ("multi_in", maskwid, p_len)
+        print ("multi_in", self, maskwid, p_len, routemask)
         p = []
         for i in range(p_len):
             p.append(PrevControl(in_multi, maskwid=maskwid))
@@ -48,7 +48,7 @@ class MultiInControlBase(Elaboratable):
             nmaskwid = maskwid # straight route mask mode
         else:
             nmaskwid = maskwid * p_len # fan-in mode
-        self.n = NextControl(maskwid=maskwid*p_len) # masks fan in (Cat)
+        self.n = NextControl(maskwid=nmaskwid) # masks fan in (Cat)
 
     def connect_to_next(self, nxt, p_idx=0):
         """ helper function to connect to the next stage data/valid/ready.
@@ -204,6 +204,8 @@ class CombMultiOutPipeline(MultiOutControlBase):
         print ("self.n_mux", self.n_mux)
         print ("self.n_mux.m_id", self.n_mux.m_id)
 
+        self.n_mux.m_id.name = "m_id"
+
         # temporaries
         p_valid_i = Signal(reset_less=True)
         pv = Signal(reset_less=True)
@@ -318,6 +320,7 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_ready_in[i].eq(1)
             m.d.comb += p_valid_i[i].eq(0)
+            m.d.comb += self.p[i].ready_o.eq(~data_valid[i] | self.n.ready_i)
             m.d.comb += self.p[i].ready_o.eq(0)
         p = self.p[mid]
         maskedout = Signal(reset_less=True)
@@ -339,11 +342,141 @@ class CombMultiInPipeline(MultiInControlBase):
 
         if self.routemask:
             # XXX hack - fixes loop
-            m.d.comb += eq(self.n.stop_o, self.p[0].stop_i)
+            m.d.comb += eq(self.n.stop_o, self.p[-1].stop_i)
             for i in range(p_len):
+                p = self.p[i]
+                vr = Signal(name="vr%d" % i, reset_less=True)
+                maskedout = Signal(name="maskedout%d" % i, reset_less=True)
+                if hasattr(p, "mask_i"):
+                    m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                else:
+                    m.d.comb += maskedout.eq(1)
+                m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
+                #m.d.comb += vr.eq(p.valid_i & p.ready_o)
+                with m.If(vr):
+                    m.d.comb += eq(self.n.mask_o, self.p[i].mask_i)
+                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+        else:
+            ml = [] # accumulate output masks
+            ms = [] # accumulate output stops
+            for i in range(p_len):
+                vr = Signal(reset_less=True)
                 p = self.p[i]
                 vr = Signal(reset_less=True)
                 maskedout = Signal(reset_less=True)
+                if hasattr(p, "mask_i"):
+                    m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+                else:
+                    m.d.comb += maskedout.eq(1)
+                m.d.comb += vr.eq(maskedout.bool() & p.valid_i & p.ready_o)
+                with m.If(vr):
+                    m.d.comb += eq(r_data[i], self.p[i].data_i)
+                if self.maskwid:
+                    mlen = len(self.p[i].mask_i)
+                    s = mlen*i
+                    e = mlen*(i+1)
+                    ml.append(Mux(vr, self.p[i].mask_i, Const(0, mlen)))
+                    ms.append(self.p[i].stop_i)
+            if self.maskwid:
+                m.d.comb += self.n.mask_o.eq(Cat(*ml))
+                m.d.comb += self.n.stop_o.eq(Cat(*ms))
+
+        m.d.comb += eq(self.n.data_o, self.process(r_data[mid]))
+
+        return m
+
+
+class NonCombMultiInPipeline(MultiInControlBase):
+    """ A multi-input pipeline block conforming to the Pipeline API
+
+        Attributes:
+        -----------
+        p.data_i : StageInput, shaped according to ispec
+            The pipeline input
+        p.data_o : StageOutput, shaped according to ospec
+            The pipeline output
+        r_data : input_shape according to ispec
+            A temporary (buffered) copy of a prior (valid) input.
+            This is HELD if the output is not ready.  It is updated
+            SYNCHRONOUSLY.
+    """
+
+    def __init__(self, stage, p_len, p_mux, maskwid=0, routemask=False):
+        MultiInControlBase.__init__(self, p_len=p_len, maskwid=maskwid,
+                                          routemask=routemask)
+        self.stage = stage
+        self.maskwid = maskwid
+        self.p_mux = p_mux
+
+        # set up the input and output data
+        for i in range(p_len):
+            name = 'data_i_%d' % i
+            self.p[i].data_i = _spec(stage.ispec, name) # input type
+        self.n.data_o = _spec(stage.ospec, 'data_o')
+
+    def process(self, i):
+        if hasattr(self.stage, "process"):
+            return self.stage.process(i)
+        return i
+
+    def elaborate(self, platform):
+        m = MultiInControlBase.elaborate(self, platform)
+
+        m.submodules.p_mux = self.p_mux
+
+        # need an array of buffer registers conforming to *input* spec
+        r_data = []
+        r_busy = []
+        p_valid_i = []
+        p_len = len(self.p)
+        for i in range(p_len):
+            name = 'r_%d' % i
+            r = _spec(self.stage.ispec, name) # input type
+            r_data.append(r)
+            r_busy.append(Signal(name="r_busy%d" % i, reset_less=True))
+            p_valid_i.append(Signal(name="p_valid_i%d" % i, reset_less=True))
+            if hasattr(self.stage, "setup"):
+                print ("setup", self, self.stage, r)
+                self.stage.setup(m, r)
+        if len(r_data) > 1:
+            r_data = Array(r_data)
+            p_valid_i = Array(p_valid_i)
+            r_busy = Array(r_busy)
+
+        nirn = Signal(reset_less=True)
+        m.d.comb += nirn.eq(~self.n.ready_i)
+        mid = self.p_mux.m_id
+        print ("CombMuxIn mid", self, self.stage, self.routemask, mid, p_len)
+        for i in range(p_len):
+            m.d.comb += r_busy[i].eq(0)
+            m.d.comb += n_ready_in[i].eq(1)
+            m.d.comb += p_valid_i[i].eq(0)
+            m.d.comb += self.p[i].ready_o.eq(n_ready_in[i])
+        p = self.p[mid]
+        maskedout = Signal(reset_less=True)
+        if hasattr(p, "mask_i"):
+            m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
+        else:
+            m.d.comb += maskedout.eq(1)
+        m.d.comb += p_valid_i[mid].eq(maskedout & self.p_mux.active)
+        m.d.comb += self.p[mid].ready_o.eq(~data_valid[mid] | self.n.ready_i)
+        m.d.comb += n_ready_in[mid].eq(nirn & data_valid[mid])
+        anyvalid = Signal(i, reset_less=True)
+        av = []
+        for i in range(p_len):
+            av.append(data_valid[i])
+        anyvalid = Cat(*av)
+        m.d.comb += self.n.valid_o.eq(anyvalid.bool())
+        m.d.comb += data_valid[mid].eq(p_valid_i[mid] | \
+                                    (n_ready_in[mid] ))
+
+        if self.routemask:
+            # XXX hack - fixes loop
+            m.d.comb += eq(self.n.stop_o, self.p[-1].stop_i)
+            for i in range(p_len):
+                p = self.p[i]
+                vr = Signal(name="vr%d" % i, reset_less=True)
+                maskedout = Signal(name="maskedout%d" % i, reset_less=True)
                 if hasattr(p, "mask_i"):
                     m.d.comb += maskedout.eq(p.mask_i & ~p.stop_i)
                 else:

@@ -254,14 +254,14 @@ class TestInOutPipe(Elaboratable):
         m.submodules.outpipe = self.outpipe
         m.submodules.fifoback = self.fifoback
 
-        m.d.comb += self.inpipe.n.connect_to_next(self.mergein.p[1])
+        m.d.comb += self.inpipe.n.connect_to_next(self.mergein.p[0])
         m.d.comb += self.mergein.n.connect_to_next(self.pipe1.p)
         m.d.comb += self.pipe1.connect_to_next(self.pipe2)
         #m.d.comb += self.pipe2.connect_to_next(self.pipe3)
         #m.d.comb += self.pipe3.connect_to_next(self.pipe4)
         m.d.comb += self.pipe2.connect_to_next(self.splitback)
         m.d.comb += self.splitback.n[1].connect_to_next(self.fifoback.p)
-        m.d.comb += self.fifoback.n.connect_to_next(self.mergein.p[0])
+        m.d.comb += self.fifoback.n.connect_to_next(self.mergein.p[1])
         m.d.comb += self.splitback.n[0].connect_to_next(self.outpipe.p)
 
         return m
@@ -276,7 +276,7 @@ def test1():
     with open("test_inoutmux_feedback_pipe.il", "w") as f:
         f.write(vl)
 
-    tlen = 100
+    tlen = 5
 
     test = InputTest(dut, tlen)
     run_simulation(dut, [test.rcv(0), #test.rcv(1),
