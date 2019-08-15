@@ -457,6 +457,7 @@ class MaskNoDelayCancellable(ControlBase):
 
         return self.m
 
+
 class MaskCancellable(ControlBase):
     """ Mask-activated Cancellable pipeline
 
