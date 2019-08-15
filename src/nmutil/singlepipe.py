@@ -461,7 +461,15 @@ class MaskNoDelayCancellable(ControlBase):
 class MaskCancellable(ControlBase):
     """ Mask-activated Cancellable pipeline
 
-        Argument: stage.  see Stage API above
+        Arguments:
+
+        * stage.  see Stage API above
+        * maskwid - sets up cancellation capability (mask and stop).
+        * in_multi
+        * stage_ctl
+        * dynamic - allows switching from sync to combinatorial (passthrough)
+                    USE WITH CARE.  will need the entire pipe to be quiescent
+                    before switching, otherwise data WILL be destroyed.
 
         stage-1   p.valid_i >>in   stage   n.valid_o out>>   stage+1
         stage-1   p.ready_o <<out  stage   n.ready_i <<in    stage+1
@@ -533,14 +541,14 @@ class MaskCancellable(ControlBase):
 
         with m.Else():
             # pass everything straight through.  p connected to n: data,
-            # valid, mask, everything.
+            # valid, mask, everything.  this is "effectively" just a
+            # StageChain (except now dynamically selectable)
             data_o = self._postprocess(self.data_r)
             m.d.comb += self.n.valid_o.eq(self.p.valid_i_test)
             m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
             m.d.comb += self.n.stop_o.eq(self.p.stop_i)
             m.d.comb += self.n.mask_o.eq(self.p.mask_i)
             m.d.comb += nmoperator.eq(self.n.data_o, data_o)
-
 
         return self.m
 
