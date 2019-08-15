@@ -490,10 +490,12 @@ class MaskCancellable(ControlBase):
         self.m = m = ControlBase.elaborate(self, platform)
 
         r_mask = Signal(len(self.p.mask_i), reset_less=True)
+        data_r = _spec(self.stage.ospec, "data_r")
+        m.d.comb += nmoperator.eq(data_r, self._postprocess(self.data_r))
 
         with m.If(self.latchmode):
             r_busy = Signal()
-            result = _spec(self.stage.ospec, "r_tmp")
+            r_latch = _spec(self.stage.ospec, "r_latch")
 
             # establish if the data should be passed on.  cancellation is
             # a global signal.
@@ -520,20 +522,21 @@ class MaskCancellable(ControlBase):
             # always pass on stop (as combinatorial: single signal)
             m.d.comb += self.n.stop_o.eq(self.p.stop_i)
 
-            data_o = self._postprocess(result) # XXX TBD, does nothing right now
+            stor = Signal(reset_less=True)
+            m.d.comb += stor.eq(p_valid_i_p_ready_o | n_ready_i)
+            with m.If(stor):
+                # store result of processing in combinatorial temporary
+                m.d.sync += nmoperator.eq(r_latch, data_r)
+
             # previous valid and ready
             with m.If(p_valid_i_p_ready_o):
-                # store result of processing in combinatorial temporary
-                m.d.sync += nmoperator.eq(result, self.data_r)
                 m.d.sync += r_busy.eq(1)      # output valid
             # previous invalid or not ready, however next is accepting
             with m.Elif(n_ready_i):
-                # TODO: could still send data here (if there was any)
-                #m.d.sync += self.n.valid_o.eq(0) # ...so set output invalid
                 m.d.sync += r_busy.eq(0) # ...so set output invalid
-                m.d.sync += nmoperator.eq(result, self.data_r)
 
-            m.d.comb += [nmoperator.eq(self.n.data_o, data_o)]
+            # output set combinatorially from latch
+            m.d.comb += nmoperator.eq(self.n.data_o, r_latch)
 
             m.d.comb += self.n.valid_o.eq(r_busy)
             # if next is ready, so is previous
@@ -543,12 +546,11 @@ class MaskCancellable(ControlBase):
             # pass everything straight through.  p connected to n: data,
             # valid, mask, everything.  this is "effectively" just a
             # StageChain (except now dynamically selectable)
-            data_o = self._postprocess(self.data_r)
             m.d.comb += self.n.valid_o.eq(self.p.valid_i_test)
             m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
             m.d.comb += self.n.stop_o.eq(self.p.stop_i)
             m.d.comb += self.n.mask_o.eq(self.p.mask_i)
-            m.d.comb += nmoperator.eq(self.n.data_o, data_o)
+            m.d.comb += nmoperator.eq(self.n.data_o, data_r)
 
         return self.m
 
