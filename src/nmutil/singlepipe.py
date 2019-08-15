@@ -469,58 +469,78 @@ class MaskCancellable(ControlBase):
                               |             |
                               +--process->--^
     """
-    def __init__(self, stage, maskwid, in_multi=None, stage_ctl=False):
+    def __init__(self, stage, maskwid, in_multi=None, stage_ctl=False,
+                       dynamic=False):
         ControlBase.__init__(self, stage, in_multi, stage_ctl, maskwid)
+        self.dynamic = dynamic
+        if dynamic:
+            self.latchmode = Signal()
+        else:
+            self.latchmode = Const(1)
 
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
 
-        r_busy = Signal()
-        result = _spec(self.stage.ospec, "r_tmp")
+        r_mask = Signal(len(self.p.mask_i), reset_less=True)
 
-        # establish if the data should be passed on.  cancellation is
-        # a global signal.
-        p_valid_i = Signal(reset_less=True)
-        #print ("self.p.data_i", self.p.data_i)
-        maskedout = Signal(len(self.p.mask_i), reset_less=True)
-        m.d.comb += maskedout.eq(self.p.mask_i & ~self.p.stop_i)
+        with m.If(self.latchmode):
+            r_busy = Signal()
+            result = _spec(self.stage.ospec, "r_tmp")
 
-        # establish some combinatorial temporaries
-        n_ready_i = Signal(reset_less=True, name="n_i_rdy_data")
-        p_valid_i_p_ready_o = Signal(reset_less=True)
-        m.d.comb += [p_valid_i.eq(self.p.valid_i_test & maskedout.bool()),
-                     n_ready_i.eq(self.n.ready_i_test),
-                     p_valid_i_p_ready_o.eq(p_valid_i & self.p.ready_o),
-        ]
+            # establish if the data should be passed on.  cancellation is
+            # a global signal.
+            p_valid_i = Signal(reset_less=True)
+            #print ("self.p.data_i", self.p.data_i)
+            maskedout = Signal(len(self.p.mask_i), reset_less=True)
+            m.d.comb += maskedout.eq(self.p.mask_i & ~self.p.stop_i)
 
-        # store result of processing in combinatorial temporary
-        m.d.comb += nmoperator.eq(result, self.data_r)
+            # establish some combinatorial temporaries
+            n_ready_i = Signal(reset_less=True, name="n_i_rdy_data")
+            p_valid_i_p_ready_o = Signal(reset_less=True)
+            m.d.comb += [p_valid_i.eq(self.p.valid_i_test & maskedout.bool()),
+                         n_ready_i.eq(self.n.ready_i_test),
+                         p_valid_i_p_ready_o.eq(p_valid_i & self.p.ready_o),
+            ]
 
-        # if idmask nonzero, mask gets passed on (and register set).
-        # register is left as-is if idmask is zero, but out-mask is set to zero
-        # note however: only the *uncancelled* mask bits get passed on
-        m.d.sync += self.n.mask_o.eq(Mux(p_valid_i, maskedout, 0))
+            # if idmask nonzero, mask gets passed on (and register set).
+            # register is left as-is if idmask is zero, but out-mask is set to
+            # zero
+            # note however: only the *uncancelled* mask bits get passed on
+            m.d.sync += r_mask.eq(Mux(p_valid_i, maskedout, 0))
+            m.d.comb += self.n.mask_o.eq(r_mask)
 
-        # always pass on stop (as combinatorial: single signal)
-        m.d.comb += self.n.stop_o.eq(self.p.stop_i)
+            # always pass on stop (as combinatorial: single signal)
+            m.d.comb += self.n.stop_o.eq(self.p.stop_i)
 
-        # previous valid and ready
-        with m.If(p_valid_i_p_ready_o):
             data_o = self._postprocess(result) # XXX TBD, does nothing right now
-            m.d.sync += [r_busy.eq(1),      # output valid
-                         nmoperator.eq(self.n.data_o, data_o), # update output
-                        ]
-        # previous invalid or not ready, however next is accepting
-        with m.Elif(n_ready_i):
-            data_o = self._postprocess(result) # XXX TBD, does nothing right now
-            m.d.sync += [nmoperator.eq(self.n.data_o, data_o)]
-            # TODO: could still send data here (if there was any)
-            #m.d.sync += self.n.valid_o.eq(0) # ...so set output invalid
-            m.d.sync += r_busy.eq(0) # ...so set output invalid
+            # previous valid and ready
+            with m.If(p_valid_i_p_ready_o):
+                # store result of processing in combinatorial temporary
+                m.d.sync += nmoperator.eq(result, self.data_r)
+                m.d.sync += r_busy.eq(1)      # output valid
+            # previous invalid or not ready, however next is accepting
+            with m.Elif(n_ready_i):
+                # TODO: could still send data here (if there was any)
+                #m.d.sync += self.n.valid_o.eq(0) # ...so set output invalid
+                m.d.sync += r_busy.eq(0) # ...so set output invalid
+                m.d.sync += nmoperator.eq(result, self.data_r)
 
-        m.d.comb += self.n.valid_o.eq(r_busy)
-        # if next is ready, so is previous
-        m.d.comb += self.p._ready_o.eq(n_ready_i)
+            m.d.comb += [nmoperator.eq(self.n.data_o, data_o)]
+
+            m.d.comb += self.n.valid_o.eq(r_busy)
+            # if next is ready, so is previous
+            m.d.comb += self.p._ready_o.eq(n_ready_i)
+
+        with m.Else():
+            # pass everything straight through.  p connected to n: data,
+            # valid, mask, everything.
+            data_o = self._postprocess(self.data_r)
+            m.d.comb += self.n.valid_o.eq(self.p.valid_i_test)
+            m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
+            m.d.comb += self.n.stop_o.eq(self.p.stop_i)
+            m.d.comb += self.n.mask_o.eq(self.p.mask_i)
+            m.d.comb += nmoperator.eq(self.n.data_o, data_o)
+
 
         return self.m
 

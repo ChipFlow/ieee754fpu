@@ -1130,12 +1130,39 @@ class MaskCancellablePipe(MaskCancellable):
 
     """ connects two stages together as a *single* combinatorial stage.
     """
-    def __init__(self):
-        self.cancelmask = Signal(16)
+    def __init__(self, dynamic=False):
         stage1 = ExampleMaskCancellable()
         stage2 = ExampleMaskCancellable()
         combined = StageChain([stage1, stage2])
-        MaskCancellable.__init__(self, combined, 16)
+        MaskCancellable.__init__(self, combined, 16, dynamic=dynamic)
+
+
+class MaskCancellablePipe1(MaskCancellable):
+
+    """ connects a stage to a cancellable pipe with "dynamic" mode on.
+    """
+    def __init__(self, dynamic=True):
+        stage = ExampleMaskCancellable()
+        MaskCancellable.__init__(self, stage, 16, dynamic=dynamic)
+
+
+class MaskCancellableDynamic(ControlBase):
+
+    def __init__(self):
+        ControlBase.__init__(self, None, maskwid=16)
+
+    def elaborate(self, platform):
+        m = ControlBase.elaborate(self, platform)
+
+        pipe1 = MaskCancellablePipe1()
+        pipe2 = MaskCancellablePipe1()
+
+        m.submodules.pipe1 = pipe1
+        m.submodules.pipe2 = pipe2
+
+        m.d.comb += self.connect([pipe1, pipe2])
+
+        return m
 
 
 def data_chain0():
@@ -1174,6 +1201,20 @@ def test0():
     test = TestMask(dut, resultfn_0, 16, data=data)
     run_simulation(dut, [test.send, test.rcv],
                         vcd_name="test_maskchain0.vcd")
+
+def test0_1():
+    print ("test 0.1")
+    dut = MaskCancellableDynamic()
+    ports = [dut.p.valid_i, dut.n.ready_i,
+             dut.n.valid_o, dut.p.ready_o] #+ \
+             #dut.p.data_i.ports() + dut.n.data_o.ports()
+    vl = rtlil.convert(dut, ports=ports)
+    with open("test_maskchain0_dynamic.il", "w") as f:
+        f.write(vl)
+    data = data_chain0()
+    test = TestMask(dut, resultfn_0, 16, data=data)
+    run_simulation(dut, [test.send, test.rcv],
+                        vcd_name="test_maskchain0_dynamic.vcd")
 
 def notworking1():
     print ("test 1")
@@ -1494,3 +1535,4 @@ def test999():
 
 if __name__ == '__main__':
     test0()
+    test0_1()

@@ -320,7 +320,7 @@ class CombMultiInPipeline(MultiInControlBase):
             m.d.comb += data_valid[i].eq(0)
             m.d.comb += n_ready_in[i].eq(1)
             m.d.comb += p_valid_i[i].eq(0)
-            m.d.comb += self.p[i].ready_o.eq(~data_valid[i] | self.n.ready_i)
+            #m.d.comb += self.p[i].ready_o.eq(~data_valid[i] | self.n.ready_i)
             m.d.comb += self.p[i].ready_o.eq(0)
         p = self.p[mid]
         maskedout = Signal(reset_less=True)
