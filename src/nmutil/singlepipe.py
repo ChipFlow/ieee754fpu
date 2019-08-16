@@ -489,7 +489,7 @@ class MaskCancellable(ControlBase):
     def elaborate(self, platform):
         self.m = m = ControlBase.elaborate(self, platform)
 
-        r_mask = Signal(len(self.p.mask_i), reset_less=True)
+        mask_r = Signal(len(self.p.mask_i), reset_less=True)
         data_r = _spec(self.stage.ospec, "data_r")
         m.d.comb += nmoperator.eq(data_r, self._postprocess(self.data_r))
 
@@ -516,8 +516,8 @@ class MaskCancellable(ControlBase):
             # register is left as-is if idmask is zero, but out-mask is set to
             # zero
             # note however: only the *uncancelled* mask bits get passed on
-            m.d.sync += r_mask.eq(Mux(p_valid_i, maskedout, 0))
-            m.d.comb += self.n.mask_o.eq(r_mask)
+            m.d.sync += mask_r.eq(Mux(p_valid_i, maskedout, 0))
+            m.d.comb += self.n.mask_o.eq(mask_r)
 
             # always pass on stop (as combinatorial: single signal)
             m.d.comb += self.n.stop_o.eq(self.p.stop_i)

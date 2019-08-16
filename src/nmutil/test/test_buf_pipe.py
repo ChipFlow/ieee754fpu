@@ -256,11 +256,14 @@ class Test5:
                     break
 
 class TestMask:
-    def __init__(self, dut, resultfn, maskwid, data=None, stage_ctl=False):
+    def __init__(self, dut, resultfn, maskwid, data=None, stage_ctl=False,
+                       latching=False):
         self.dut = dut
         self.resultfn = resultfn
         self.stage_ctl = stage_ctl
         self.maskwid = maskwid
+        self.latching = latching
+        self.latchmode = 0
         if data:
             self.data = data
         else:
@@ -283,6 +286,20 @@ class TestMask:
                 if not o_p_ready:
                     yield
                     continue
+
+                if self.latching:
+                    latchtest = randint(0, 3) == 0
+                    if latchtest:
+                        yield self.dut.p.valid_i.eq(0)
+                        yield self.dut.p.mask_i.eq(0)
+                        # wait for pipeline to flush, then invert state
+                        for i in range(10):
+                            yield
+                        self.latchmode = 1 - self.latchmode
+                        yield self.dut.latchmode.eq(self.latchmode)
+                        mode = yield self.dut.latchmode
+                        print ("latching", mode)
+
                 if send and self.i != len(self.data):
                     print ("send", self.i, self.data[self.i])
                     yield self.dut.p.valid_i.eq(1)
@@ -1130,44 +1147,50 @@ class MaskCancellablePipe(MaskCancellable):
 
     """ connects two stages together as a *single* combinatorial stage.
     """
-    def __init__(self, dynamic=False):
+    def __init__(self, dynamic=False, maskwid=16):
         stage1 = ExampleMaskCancellable()
         stage2 = ExampleMaskCancellable()
         combined = StageChain([stage1, stage2])
-        MaskCancellable.__init__(self, combined, 16, dynamic=dynamic)
+        MaskCancellable.__init__(self, combined, maskwid, dynamic=dynamic)
 
 
 class MaskCancellablePipe1(MaskCancellable):
 
     """ connects a stage to a cancellable pipe with "dynamic" mode on.
     """
-    def __init__(self, dynamic=True):
+    def __init__(self, dynamic=True, maskwid=16):
         stage = ExampleMaskCancellable()
-        MaskCancellable.__init__(self, stage, 16, dynamic=dynamic)
+        MaskCancellable.__init__(self, stage, maskwid, dynamic=dynamic)
 
 
 class MaskCancellableDynamic(ControlBase):
 
-    def __init__(self):
-        ControlBase.__init__(self, None, maskwid=16)
+    def __init__(self, maskwid):
+        self.maskwid = maskwid
+        ControlBase.__init__(self, None, maskwid=maskwid)
 
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
 
-        pipe1 = MaskCancellablePipe1()
-        pipe2 = MaskCancellablePipe1()
+        pipe1 = MaskCancellablePipe1(maskwid=self.maskwid)
+        pipe2 = MaskCancellablePipe1(maskwid=self.maskwid)
 
         m.submodules.pipe1 = pipe1
         m.submodules.pipe2 = pipe2
 
         m.d.comb += self.connect([pipe1, pipe2])
 
+        self.latchmode = Signal()
+        m.d.comb += pipe1.latchmode.eq(self.latchmode)
+        m.d.comb += pipe2.latchmode.eq(self.latchmode)
+        #m.d.comb += self.latchmode.eq(1)
+
         return m
 
 
-def data_chain0():
+def data_chain0(n_tests):
         data = []
-        for i in range(num_tests):
+        for i in range(n_tests):
             data.append(TestInputMask(randint(0, 1<<16-1),
                                       randint(0, 1<<16-1)))
         return data
@@ -1189,30 +1212,32 @@ def resultfn_0(data_o, expected, i, o):
 num_tests = 10
 
 def test0():
+    maskwid = num_tests
     print ("test 0")
-    dut = MaskCancellablePipe()
+    dut = MaskCancellablePipe(maskwid)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] + \
              dut.p.data_i.ports() + dut.n.data_o.ports()
     vl = rtlil.convert(dut, ports=ports)
     with open("test_maskchain0.il", "w") as f:
         f.write(vl)
-    data = data_chain0()
-    test = TestMask(dut, resultfn_0, 16, data=data)
+    data = data_chain0(maskwid)
+    test = TestMask(dut, resultfn_0, maskwid, data=data)
     run_simulation(dut, [test.send, test.rcv],
                         vcd_name="test_maskchain0.vcd")
 
 def test0_1():
+    maskwid = 32
     print ("test 0.1")
-    dut = MaskCancellableDynamic()
+    dut = MaskCancellableDynamic(maskwid=maskwid)
     ports = [dut.p.valid_i, dut.n.ready_i,
              dut.n.valid_o, dut.p.ready_o] #+ \
              #dut.p.data_i.ports() + dut.n.data_o.ports()
     vl = rtlil.convert(dut, ports=ports)
     with open("test_maskchain0_dynamic.il", "w") as f:
         f.write(vl)
-    data = data_chain0()
-    test = TestMask(dut, resultfn_0, 16, data=data)
+    data = data_chain0(maskwid)
+    test = TestMask(dut, resultfn_0, maskwid, data=data, latching=True)
     run_simulation(dut, [test.send, test.rcv],
                         vcd_name="test_maskchain0_dynamic.vcd")
 
