@@ -545,7 +545,9 @@ class MaskCancellable(ControlBase):
         with m.Else():
             # pass everything straight through.  p connected to n: data,
             # valid, mask, everything.  this is "effectively" just a
-            # StageChain (except now dynamically selectable)
+            # StageChain: MaskCancellable is doing "nothing" except
+            # combinatorially passing everything through
+            # (except now it's *dynamically selectable* whether to do that)
             m.d.comb += self.n.valid_o.eq(self.p.valid_i_test)
             m.d.comb += self.p._ready_o.eq(self.n.ready_i_test)
             m.d.comb += self.n.stop_o.eq(self.p.stop_i)
