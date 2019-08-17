@@ -21,8 +21,8 @@ from ieee754.div_rem_sqrt_rsqrt.div_pipe import (DivPipeInterstageData,
                                                  DivPipeCalculateStage,
                                                  DivPipeFinalStage,
                                                 )
-from ieee754.fpdiv.div0 import FPDivStage0Mod
-from ieee754.fpdiv.div2 import FPDivStage2Mod
+from ieee754.fpdiv.div0 import FPDivPreFPAdjust
+from ieee754.fpdiv.div2 import FPDivPostToFPFormat
 
 
 class FPDivStagesSetup(PipeModBaseChain):
@@ -43,7 +43,7 @@ class FPDivStagesSetup(PipeModBaseChain):
         divstages = []
 
         # Converts from FPSCData into DivPipeInputData
-        divstages.append(FPDivStage0Mod(self.pspec))
+        divstages.append(FPDivPreFPAdjust(self.pspec))
 
         # does 1 "convert" (actual processing) from DivPipeInputData
         # into "intermediate" output (DivPipeInterstageData)
@@ -109,6 +109,6 @@ class FPDivStagesFinal(PipeModBaseChain):
 
         # does conversion from DivPipeOutputData into FPPostCalcData format
         # so that post-normalisation and corrections can take over
-        divstages.append(FPDivStage2Mod(self.pspec))
+        divstages.append(FPDivPostToFPFormat(self.pspec))
 
         return divstages

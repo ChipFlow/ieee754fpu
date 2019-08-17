@@ -17,7 +17,7 @@ from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeOutputData
 
 
-class FPDivStage2Mod(PipeModBase):
+class FPDivPostToFPFormat(PipeModBase):
     """ Last stage of div: preparation for normalisation.
 
         NOTE: this phase does NOT do ACTUAL DIV processing, it ONLY
@@ -25,7 +25,7 @@ class FPDivStage2Mod(PipeModBase):
     """
 
     def __init__(self, pspec):
-        super().__init__(pspec, "div1")
+        super().__init__(pspec, "post_to_fp_fmt")
 
     def ispec(self):
         return DivPipeOutputData(self.pspec)  # Q/Rem in...

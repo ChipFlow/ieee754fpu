@@ -21,7 +21,7 @@ from ieee754.div_rem_sqrt_rsqrt.div_pipe import DivPipeInputData
 from ieee754.div_rem_sqrt_rsqrt.core import DivPipeCoreOperation as DPCOp
 
 
-class FPDivStage0Mod(PipeModBase):
+class FPDivPreFPAdjust(PipeModBase):
     """ DIV/SQRT/RSQRT "preparation" module.
 
     adjusts mantissa and exponent (sqrt/rsqrt exponent must be even),
@@ -31,7 +31,7 @@ class FPDivStage0Mod(PipeModBase):
     no *actual* processing occurs here: it is *purely* preparation work.
     """
     def __init__(self, pspec):
-        super().__init__(pspec, "div0")
+        super().__init__(pspec, "pre_fp_adjust")
 
     def ispec(self):
         return FPSCData(self.pspec, False)
