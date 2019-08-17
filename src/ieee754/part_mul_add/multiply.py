@@ -415,6 +415,7 @@ class ProductTerm(Elaboratable):
             term_enabled = None
 
         Term.__init__(self, width*2, twidth, shift, term_enabled)
+        self.term.name = "term_%d_%d" % (a_index, b_index) # rename
 
     def elaborate(self, platform):
 
@@ -431,6 +432,7 @@ class ProductTerm(Elaboratable):
         m.d.comb += self.ti.eq(bsa * bsb)
 
         return m
+
 
 class Part(Elaboratable):
     def __init__(self, width, n_parts, n_levels, pbwid):
