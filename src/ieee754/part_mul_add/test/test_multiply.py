@@ -525,8 +525,6 @@ class TestMul8_16_32_64(unittest.TestCase):
                  module.output]
         ports.extend(module.part_ops)
         ports.extend(module.part_pts.values())
-        for signals in module._delayed_part_ops:
-            ports.extend(signals)
         ports += [module._output_64,
                   module._output_32,
                   module._output_16,
