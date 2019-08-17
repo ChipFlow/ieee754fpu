@@ -489,7 +489,7 @@ class Mul8_16_32_64(Elaboratable):
                              for j in range(len(self.register_levels))]
 
         products = [[
-                Signal(16, name=f"products_{i}_{j}")
+                Signal(16, name=f"products_{i}_{j}", reset_less=True)
                 for j in range(8)]
             for i in range(8)]
 
@@ -502,7 +502,7 @@ class Mul8_16_32_64(Elaboratable):
         terms = []
 
         def add_term(value, shift=0, enabled=None):
-            term = Signal(128)
+            term = Signal(128, reset_less=True)
             terms.append(term)
             if enabled is not None:
                 value = Mux(enabled, value, 0)
@@ -608,7 +608,7 @@ class Mul8_16_32_64(Elaboratable):
 
         expanded_part_pts = PartitionPoints()
         for i, v in self.part_pts.items():
-            signal = Signal(name=f"expanded_part_pts_{i*2}")
+            signal = Signal(name=f"expanded_part_pts_{i*2}", reset_less=True)
             expanded_part_pts[i * 2] = signal
             m.d.comb += signal.eq(v)
 
