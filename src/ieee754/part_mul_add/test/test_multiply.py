@@ -527,40 +527,12 @@ class TestMul8_16_32_64(unittest.TestCase):
         ports.extend(module.part_pts.values())
         for signals in module._delayed_part_ops:
             ports.extend(signals)
-        ports.extend(module._part_8)
-        ports.extend(module._part_16)
-        ports.extend(module._part_32)
-        ports.extend(module._part_64)
-        for signals in module._delayed_part_8:
-            ports.extend(signals)
-        for signals in module._delayed_part_16:
-            ports.extend(signals)
-        for signals in module._delayed_part_32:
-            ports.extend(signals)
-        for signals in module._delayed_part_64:
-            ports.extend(signals)
         ports += [module._output_64,
                   module._output_32,
                   module._output_16,
                   module._output_8]
         ports.extend(module._a_signed)
         ports.extend(module._b_signed)
-        ports += [module._not_a_term_8,
-                  module._neg_lsb_a_term_8,
-                  module._not_b_term_8,
-                  module._neg_lsb_b_term_8,
-                  module._not_a_term_16,
-                  module._neg_lsb_a_term_16,
-                  module._not_b_term_16,
-                  module._neg_lsb_b_term_16,
-                  module._not_a_term_32,
-                  module._neg_lsb_a_term_32,
-                  module._not_b_term_32,
-                  module._neg_lsb_b_term_32,
-                  module._not_a_term_64,
-                  module._neg_lsb_a_term_64,
-                  module._not_b_term_64,
-                  module._neg_lsb_b_term_64]
         with create_simulator(module, ports, file_name) as sim:
             def process(gen_or_check: GenOrCheck) -> AsyncProcessGenerator:
                 for a_signed in False, True:
