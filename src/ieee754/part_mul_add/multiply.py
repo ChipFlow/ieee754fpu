@@ -581,30 +581,31 @@ class IntermediateOut(Elaboratable):
 class FinalOut(Elaboratable):
     def __init__(self, out_wid):
         # inputs
-        self.d8 = [Signal(name=f"d8{i}") for i in range(8)]
-        self.d16 = [Signal(name=f"d16{i}") for i in range(4)]
-        self.d32 = [Signal(name=f"d32{i}") for i in range(2)]
-        self.out8 = Signal(out_wid, reset_less=True)
-        self.out16 = Signal(out_wid, reset_less=True)
-        self.out32 = Signal(out_wid, reset_less=True)
-        self.out64 = Signal(out_wid, reset_less=True)
+        self.d8 = [Signal(name=f"d8_{i}", reset_less=True) for i in range(8)]
+        self.d16 = [Signal(name=f"d16_{i}", reset_less=True) for i in range(4)]
+        self.d32 = [Signal(name=f"d32_{i}", reset_less=True) for i in range(2)]
+
+        self.i8 = Signal(out_wid, reset_less=True)
+        self.i16 = Signal(out_wid, reset_less=True)
+        self.i32 = Signal(out_wid, reset_less=True)
+        self.i64 = Signal(out_wid, reset_less=True)
 
         # output
-        self.output = Signal(out_wid, reset_less=True)
+        self.out = Signal(out_wid, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
         ol = []
         for i in range(8):
-            op = Signal(8, reset_less=True, name="op%d" % i)
+            op = Signal(8, reset_less=True, name="op_%d" % i)
             m.d.comb += op.eq(
                 Mux(self.d8[i] | self.d16[i // 2],
-                    Mux(self.d8[i], self.out8.bit_select(i * 8, 8),
-                                     self.out16.bit_select(i * 8, 8)),
-                    Mux(self.d32[i // 4], self.out32.bit_select(i * 8, 8),
-                                          self.out64.bit_select(i * 8, 8))))
+                    Mux(self.d8[i], self.i8.bit_select(i * 8, 8),
+                                     self.i16.bit_select(i * 8, 8)),
+                    Mux(self.d32[i // 4], self.i32.bit_select(i * 8, 8),
+                                          self.i64.bit_select(i * 8, 8))))
             ol.append(op)
-        m.d.comb += self.output.eq(Cat(*ol))
+        m.d.comb += self.out.eq(Cat(*ol))
         return m
 
 
@@ -810,18 +811,18 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += io8.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
 
         # final output
-        m.submodules.finalout = out = FinalOut(64)
+        m.submodules.fo = fo = FinalOut(64)
         for i in range(8):
-            m.d.comb += out.d8[i].eq(part_8.delayed_parts[-1][i])
+            m.d.comb += fo.d8[i].eq(part_8.delayed_parts[-1][i])
         for i in range(4):
-            m.d.comb += out.d16[i].eq(part_16.delayed_parts[-1][i])
+            m.d.comb += fo.d16[i].eq(part_16.delayed_parts[-1][i])
         for i in range(2):
-            m.d.comb += out.d32[i].eq(part_32.delayed_parts[-1][i])
-        m.d.comb += out.out8.eq(io8.output)
-        m.d.comb += out.out16.eq(io16.output)
-        m.d.comb += out.out32.eq(io32.output)
-        m.d.comb += out.out64.eq(io64.output)
-        m.d.comb += self.output.eq(out.output)
+            m.d.comb += fo.d32[i].eq(part_32.delayed_parts[-1][i])
+        m.d.comb += fo.i8.eq(io8.output)
+        m.d.comb += fo.i16.eq(io16.output)
+        m.d.comb += fo.i32.eq(io32.output)
+        m.d.comb += fo.i64.eq(io64.output)
+        m.d.comb += self.output.eq(fo.out)
 
         return m
 
