@@ -575,12 +575,12 @@ class Mul8_16_32_64(Elaboratable):
             byte_width = 8 // len(parts)
             bit_width = 8 * byte_width
             for i in range(len(parts)):
-                ae = parts[i] & self.a[(i + 1) * bit_width - 1] \
+                be = parts[i] & self.a[(i + 1) * bit_width - 1] \
                     & self._a_signed[i * byte_width]
-                be = parts[i] & self.b[(i + 1) * bit_width - 1] \
+                ae = parts[i] & self.b[(i + 1) * bit_width - 1] \
                     & self._b_signed[i * byte_width]
-                a_enabled = Signal(name="a_enabled_%d" % i, reset_less=True)
-                b_enabled = Signal(name="b_enabled_%d" % i, reset_less=True)
+                a_enabled = Signal(name="a_en_%d" % i, reset_less=True)
+                b_enabled = Signal(name="b_en_%d" % i, reset_less=True)
                 m.d.comb += a_enabled.eq(ae)
                 m.d.comb += b_enabled.eq(be)
 
