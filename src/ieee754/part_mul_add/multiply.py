@@ -171,19 +171,35 @@ class PartitionedAdder(Elaboratable):
         """Elaborate this module."""
         m = Module()
         expanded_index = 0
+        # store bits in a list, use Cat later.  graphviz is much cleaner
+        al = []
+        bl = []
+        ol = []
+        ea = []
+        eb = []
+        eo = []
+        # partition points are "breaks" (extra zeros) in what would otherwise
+        # be a massive long add.
         for i in range(self.width):
             if i in self.partition_points:
                 # add extra bit set to 0 + 0 for enabled partition points
                 # and 1 + 0 for disabled partition points
-                m.d.comb += self._expanded_a[expanded_index].eq(
-                    ~self.partition_points[i])
-                m.d.comb += self._expanded_b[expanded_index].eq(0)
+                ea.append(self._expanded_a[expanded_index])
+                al.append(~self.partition_points[i])
+                eb.append(self._expanded_b[expanded_index])
+                bl.append(C(0))
                 expanded_index += 1
-            m.d.comb += self._expanded_a[expanded_index].eq(self.a[i])
-            m.d.comb += self._expanded_b[expanded_index].eq(self.b[i])
-            m.d.comb += self.output[i].eq(
-                self._expanded_output[expanded_index])
+            ea.append(self._expanded_a[expanded_index])
+            al.append(self.a[i])
+            eb.append(self._expanded_b[expanded_index])
+            bl.append(self.b[i])
+            eo.append(self._expanded_output[expanded_index])
+            ol.append(self.output[i])
             expanded_index += 1
+        # combine above using Cat
+        m.d.comb += Cat(*ea).eq(Cat(*al))
+        m.d.comb += Cat(*eb).eq(Cat(*bl))
+        m.d.comb += Cat(*eo).eq(Cat(*ol))
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
         m.d.comb += self._expanded_output.eq(
