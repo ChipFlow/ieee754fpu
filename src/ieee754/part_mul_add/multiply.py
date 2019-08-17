@@ -519,6 +519,33 @@ class Part(Elaboratable):
         return m
 
 
+class IntermediateOut(Elaboratable):
+    def __init__(self, width, out_wid, n_parts):
+        self.width = width
+        self.n_parts = n_parts
+        self.delayed_part_ops = [Signal(2, name="dpop%d" % i, reset_less=True)
+                                     for i in range(8)]
+        self.intermed = Signal(out_wid, reset_less=True)
+        self.output = Signal(out_wid//2, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        ol = []
+        w = self.width
+        sel = w // 8
+        for i in range(self.n_parts):
+            op = Signal(w, reset_less=True, name="op32_%d" % i)
+            m.d.comb += op.eq(
+                Mux(self.delayed_part_ops[sel * i] == OP_MUL_LOW,
+                    self.intermed.bit_select(i * w*2, w),
+                    self.intermed.bit_select(i * w*2 + w, w)))
+            ol.append(op)
+        m.d.comb += self.output.eq(Cat(*ol))
+
+        return m
+
+
 class Mul8_16_32_64(Elaboratable):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier.
 
@@ -588,8 +615,7 @@ class Mul8_16_32_64(Elaboratable):
             for delay in range(1 + len(self.register_levels))]
         for i in range(len(self.part_ops)):
             m.d.comb += delayed_part_ops[0][i].eq(self.part_ops[i])
-            m.d.sync += [delayed_part_ops[j + 1][i]
-                         .eq(delayed_part_ops[j][i])
+            m.d.sync += [delayed_part_ops[j + 1][i].eq(delayed_part_ops[j][i])
                          for j in range(len(self.register_levels))]
 
         n_levels = len(self.register_levels)+1
@@ -662,43 +688,33 @@ class Mul8_16_32_64(Elaboratable):
                                expanded_part_pts)
         m.submodules.add_reduce = add_reduce
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
-        m.d.comb += self._output_64.eq(
-            Mux(delayed_part_ops[-1][0] == OP_MUL_LOW,
-                self._intermediate_output.bit_select(0, 64),
-                self._intermediate_output.bit_select(64, 64)))
+        # create _output_64
+        m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
+        m.d.comb += io64.intermed.eq(self._intermediate_output)
+        for i in range(8):
+            m.d.comb += io64.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+        m.d.comb += self._output_64.eq(io64.output)
 
         # create _output_32
-        ol = []
-        for i in range(2):
-            op = Signal(32, reset_less=True, name="op32_%d" % i)
-            m.d.comb += op.eq(
-                Mux(delayed_part_ops[-1][4 * i] == OP_MUL_LOW,
-                    self._intermediate_output.bit_select(i * 64, 32),
-                    self._intermediate_output.bit_select(i * 64 + 32, 32)))
-            ol.append(op)
-        m.d.comb += self._output_32.eq(Cat(*ol))
+        m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
+        m.d.comb += io32.intermed.eq(self._intermediate_output)
+        for i in range(8):
+            m.d.comb += io32.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+        m.d.comb += self._output_32.eq(io32.output)
 
         # create _output_16
-        ol = []
-        for i in range(4):
-            op = Signal(16, reset_less=True, name="op16_%d" % i)
-            m.d.comb += op.eq(
-                Mux(delayed_part_ops[-1][2 * i] == OP_MUL_LOW,
-                    self._intermediate_output.bit_select(i * 32, 16),
-                    self._intermediate_output.bit_select(i * 32 + 16, 16)))
-            ol.append(op)
-        m.d.comb += self._output_16.eq(Cat(*ol))
+        m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
+        m.d.comb += io16.intermed.eq(self._intermediate_output)
+        for i in range(8):
+            m.d.comb += io16.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+        m.d.comb += self._output_16.eq(io16.output)
 
         # create _output_8
-        ol = []
+        m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
+        m.d.comb += io8.intermed.eq(self._intermediate_output)
         for i in range(8):
-            op = Signal(8, reset_less=True, name="op8_%d" % i)
-            m.d.comb += op.eq(
-                Mux(delayed_part_ops[-1][i] == OP_MUL_LOW,
-                    self._intermediate_output.bit_select(i * 16, 8),
-                    self._intermediate_output.bit_select(i * 16 + 8, 8)))
-            ol.append(op)
-        m.d.comb += self._output_8.eq(Cat(*ol))
+            m.d.comb += io8.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+        m.d.comb += self._output_8.eq(io8.output)
 
         # final output
         ol = []
