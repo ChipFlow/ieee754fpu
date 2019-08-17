@@ -523,25 +523,20 @@ class Mul8_16_32_64(Elaboratable):
                          .eq(self._delayed_part_ops[j][i])
                          for j in range(len(self.register_levels))]
 
-        def add_intermediate_value(value):
-            intermediate_value = Signal(len(value), reset_less=True)
-            m.d.comb += intermediate_value.eq(value)
-            return intermediate_value
-
         for parts, delayed_parts in [(self._part_64, self._delayed_part_64),
                                      (self._part_32, self._delayed_part_32),
                                      (self._part_16, self._delayed_part_16),
                                      (self._part_8, self._delayed_part_8)]:
             byte_count = 8 // len(parts)
             for i in range(len(parts)):
-                pb = pbs[i * byte_count - 1]
-                value = add_intermediate_value(pb)
+                pbl = []
+                pbl.append(~pbs[i * byte_count - 1])
                 for j in range(i * byte_count, (i + 1) * byte_count - 1):
-                    pb = add_intermediate_value(~pbs[j])
-                    value = add_intermediate_value(value & pb)
-                pb = pbs[(i + 1) * byte_count - 1]
-                value = add_intermediate_value(value & pb)
-                m.d.comb += parts[i].eq(value)
+                    pbl.append(pbs[j])
+                pbl.append(~pbs[(i + 1) * byte_count - 1])
+                value = Signal(len(pbl), reset_less=True)
+                m.d.comb += value.eq(Cat(*pbl))
+                m.d.comb += parts[i].eq(~(value).bool())
                 m.d.comb += delayed_parts[0][i].eq(parts[i])
                 m.d.sync += [delayed_parts[j + 1][i].eq(delayed_parts[j][i])
                              for j in range(len(self.register_levels))]
