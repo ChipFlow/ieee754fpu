@@ -617,23 +617,38 @@ class Mul8_16_32_64(Elaboratable):
             Mux(self._delayed_part_ops[-1][0] == OP_MUL_LOW,
                 self._intermediate_output.part(0, 64),
                 self._intermediate_output.part(64, 64)))
+
+        # create _output_32
+        ol = []
         for i in range(2):
-            m.d.comb += self._output_32.part(i * 32, 32).eq(
+            ol.append(
                 Mux(self._delayed_part_ops[-1][4 * i] == OP_MUL_LOW,
                     self._intermediate_output.part(i * 64, 32),
                     self._intermediate_output.part(i * 64 + 32, 32)))
+        m.d.comb += self._output_32.eq(Cat(*ol))
+
+        # create _output_16
+        ol = []
         for i in range(4):
-            m.d.comb += self._output_16.part(i * 16, 16).eq(
+            ol.append(
                 Mux(self._delayed_part_ops[-1][2 * i] == OP_MUL_LOW,
                     self._intermediate_output.part(i * 32, 16),
                     self._intermediate_output.part(i * 32 + 16, 16)))
+        m.d.comb += self._output_16.eq(Cat(*ol))
+
+        # create _output_8
+        ol = []
         for i in range(8):
-            m.d.comb += self._output_8.part(i * 8, 8).eq(
+            ol.append(
                 Mux(self._delayed_part_ops[-1][i] == OP_MUL_LOW,
                     self._intermediate_output.part(i * 16, 8),
                     self._intermediate_output.part(i * 16 + 8, 8)))
+        m.d.comb += self._output_8.eq(Cat(*ol))
+
+        # final output
+        ol = []
         for i in range(8):
-            m.d.comb += self.output.part(i * 8, 8).eq(
+            ol.append(
                 Mux(self._delayed_part_8[-1][i]
                     | self._delayed_part_16[-1][i // 2],
                     Mux(self._delayed_part_8[-1][i],
@@ -642,6 +657,7 @@ class Mul8_16_32_64(Elaboratable):
                     Mux(self._delayed_part_32[-1][i // 4],
                         self._output_32.part(i * 8, 8),
                         self._output_64.part(i * 8, 8))))
+        m.d.comb += self.output.eq(Cat(*ol))
         return m
 
 
