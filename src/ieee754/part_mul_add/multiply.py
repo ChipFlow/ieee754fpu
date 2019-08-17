@@ -199,7 +199,7 @@ class PartitionedAdder(Elaboratable):
         # combine above using Cat
         m.d.comb += Cat(*ea).eq(Cat(*al))
         m.d.comb += Cat(*eb).eq(Cat(*bl))
-        m.d.comb += Cat(*eo).eq(Cat(*ol))
+        m.d.comb += Cat(*ol).eq(Cat(*eo))
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
         m.d.comb += self._expanded_output.eq(
