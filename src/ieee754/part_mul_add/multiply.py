@@ -495,8 +495,8 @@ class Mul8_16_32_64(Elaboratable):
 
         for a_index in range(8):
             for b_index in range(8):
-                a = self.a.part(a_index * 8, 8)
-                b = self.b.part(b_index * 8, 8)
+                a = self.a.bit_select(a_index * 8, 8)
+                b = self.b.bit_select(b_index * 8, 8)
                 m.d.comb += products[a_index][b_index].eq(a * b)
 
         terms = []
@@ -588,22 +588,22 @@ class Mul8_16_32_64(Elaboratable):
                 # negation operation is split into a bitwise not and a +1.
                 # likewise for 16, 32, and 64-bit values.
                 m.d.comb += [
-                    not_a_term.part(bit_width * 2 * i, bit_width * 2)
+                    not_a_term.bit_select(bit_width * 2 * i, bit_width * 2)
                     .eq(Mux(a_enabled,
                             Cat(Repl(0, bit_width),
-                                ~self.a.part(bit_width * i, bit_width)),
+                                ~self.a.bit_select(bit_width * i, bit_width)),
                             0)),
 
-                    neg_lsb_a_term.part(bit_width * 2 * i, bit_width * 2)
+                    neg_lsb_a_term.bit_select(bit_width * 2 * i, bit_width * 2)
                     .eq(Cat(Repl(0, bit_width), a_enabled)),
 
-                    not_b_term.part(bit_width * 2 * i, bit_width * 2)
+                    not_b_term.bit_select(bit_width * 2 * i, bit_width * 2)
                     .eq(Mux(b_enabled,
                             Cat(Repl(0, bit_width),
-                                ~self.b.part(bit_width * i, bit_width)),
+                                ~self.b.bit_select(bit_width * i, bit_width)),
                             0)),
 
-                    neg_lsb_b_term.part(bit_width * 2 * i, bit_width * 2)
+                    neg_lsb_b_term.bit_select(bit_width * 2 * i, bit_width * 2)
                     .eq(Cat(Repl(0, bit_width), b_enabled))]
 
         expanded_part_pts = PartitionPoints()
@@ -620,8 +620,8 @@ class Mul8_16_32_64(Elaboratable):
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
         m.d.comb += self._output_64.eq(
             Mux(self._delayed_part_ops[-1][0] == OP_MUL_LOW,
-                self._intermediate_output.part(0, 64),
-                self._intermediate_output.part(64, 64)))
+                self._intermediate_output.bit_select(0, 64),
+                self._intermediate_output.bit_select(64, 64)))
 
         # create _output_32
         ol = []
@@ -629,8 +629,8 @@ class Mul8_16_32_64(Elaboratable):
             op = Signal(32, reset_less=True, name="op32_%d" % i)
             m.d.comb += op.eq(
                 Mux(self._delayed_part_ops[-1][4 * i] == OP_MUL_LOW,
-                    self._intermediate_output.part(i * 64, 32),
-                    self._intermediate_output.part(i * 64 + 32, 32)))
+                    self._intermediate_output.bit_select(i * 64, 32),
+                    self._intermediate_output.bit_select(i * 64 + 32, 32)))
             ol.append(op)
         m.d.comb += self._output_32.eq(Cat(*ol))
 
@@ -640,8 +640,8 @@ class Mul8_16_32_64(Elaboratable):
             op = Signal(16, reset_less=True, name="op16_%d" % i)
             m.d.comb += op.eq(
                 Mux(self._delayed_part_ops[-1][2 * i] == OP_MUL_LOW,
-                    self._intermediate_output.part(i * 32, 16),
-                    self._intermediate_output.part(i * 32 + 16, 16)))
+                    self._intermediate_output.bit_select(i * 32, 16),
+                    self._intermediate_output.bit_select(i * 32 + 16, 16)))
             ol.append(op)
         m.d.comb += self._output_16.eq(Cat(*ol))
 
@@ -651,8 +651,8 @@ class Mul8_16_32_64(Elaboratable):
             op = Signal(8, reset_less=True, name="op8_%d" % i)
             m.d.comb += op.eq(
                 Mux(self._delayed_part_ops[-1][i] == OP_MUL_LOW,
-                    self._intermediate_output.part(i * 16, 8),
-                    self._intermediate_output.part(i * 16 + 8, 8)))
+                    self._intermediate_output.bit_select(i * 16, 8),
+                    self._intermediate_output.bit_select(i * 16 + 8, 8)))
             ol.append(op)
         m.d.comb += self._output_8.eq(Cat(*ol))
 
@@ -664,11 +664,11 @@ class Mul8_16_32_64(Elaboratable):
                 Mux(self._delayed_part_8[-1][i]
                     | self._delayed_part_16[-1][i // 2],
                     Mux(self._delayed_part_8[-1][i],
-                        self._output_8.part(i * 8, 8),
-                        self._output_16.part(i * 8, 8)),
+                        self._output_8.bit_select(i * 8, 8),
+                        self._output_16.bit_select(i * 8, 8)),
                     Mux(self._delayed_part_32[-1][i // 4],
-                        self._output_32.part(i * 8, 8),
-                        self._output_64.part(i * 8, 8))))
+                        self._output_32.bit_select(i * 8, 8),
+                        self._output_64.bit_select(i * 8, 8))))
             ol.append(op)
         m.d.comb += self.output.eq(Cat(*ol))
         return m
