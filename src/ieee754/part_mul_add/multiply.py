@@ -479,9 +479,12 @@ class Part(Elaboratable):
         # outputs
         self.parts = [Signal(name=f"part_{i}") for i in range(n_parts)]
         self.delayed_parts = [
-            [Signal(name=f"delayed_part_8_{delay}_{i}")
+            [Signal(name=f"delayed_part_{delay}_{i}")
              for i in range(n_parts)]
                 for delay in range(n_levels)]
+        # XXX REALLY WEIRD BUG - have to take a copy of the last delayed_parts
+        self.dplast = [Signal(name=f"dplast_{i}")
+                         for i in range(n_parts)]
 
         self.not_a_term = Signal(width)
         self.neg_lsb_a_term = Signal(width)
@@ -505,6 +508,7 @@ class Part(Elaboratable):
             m.d.comb += delayed_parts[0][i].eq(parts[i])
             m.d.sync += [delayed_parts[j + 1][i].eq(delayed_parts[j][i])
                          for j in range(len(delayed_parts)-1)]
+            m.d.comb += self.dplast[i].eq(delayed_parts[-1][i])
 
         not_a_term, neg_lsb_a_term, not_b_term, neg_lsb_b_term = \
                 self.not_a_term, self.neg_lsb_a_term, \
@@ -812,12 +816,12 @@ class Mul8_16_32_64(Elaboratable):
 
         # final output
         m.submodules.fo = fo = FinalOut(64)
-        for i in range(8):
-            m.d.comb += fo.d8[i].eq(part_8.delayed_parts[-1][i])
-        for i in range(4):
-            m.d.comb += fo.d16[i].eq(part_16.delayed_parts[-1][i])
-        for i in range(2):
-            m.d.comb += fo.d32[i].eq(part_32.delayed_parts[-1][i])
+        for i in range(len(part_8.delayed_parts[-1])):
+            m.d.comb += fo.d8[i].eq(part_8.dplast[i])
+        for i in range(len(part_16.delayed_parts[-1])):
+            m.d.comb += fo.d16[i].eq(part_16.dplast[i])
+        for i in range(len(part_32.delayed_parts[-1])):
+            m.d.comb += fo.d32[i].eq(part_32.dplast[i])
         m.d.comb += fo.i8.eq(io8.output)
         m.d.comb += fo.i16.eq(io16.output)
         m.d.comb += fo.i32.eq(io32.output)
