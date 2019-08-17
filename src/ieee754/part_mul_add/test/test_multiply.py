@@ -525,12 +525,6 @@ class TestMul8_16_32_64(unittest.TestCase):
                  module.output]
         ports.extend(module.part_ops)
         ports.extend(module.part_pts.values())
-        ports += [module._output_64,
-                  module._output_32,
-                  module._output_16,
-                  module._output_8]
-        ports.extend(module._a_signed)
-        ports.extend(module._b_signed)
         with create_simulator(module, ports, file_name) as sim:
             def process(gen_or_check: GenOrCheck) -> AsyncProcessGenerator:
                 for a_signed in False, True:
