@@ -514,11 +514,16 @@ class Mul8_16_32_64(Elaboratable):
 
         for a_index in range(8):
             for b_index in range(8):
-                term_enabled: Value = C(True, 1)
+                terms = []
                 min_index = min(a_index, b_index)
                 max_index = max(a_index, b_index)
                 for i in range(min_index, max_index):
-                    term_enabled &= ~self._part_byte(i)
+                    pbs = Signal(reset_less=True)
+                    m.d.comb += pbs.eq(self._part_byte(i))
+                    terms.append(pbs)
+                name = "te_%d_%d" % (a_index, b_index)
+                term_enabled = Signal(name=name, reset_less=True)
+                m.d.comb += term_enabled.eq(~(Cat(*terms).bool()))
                 add_term(products[a_index][b_index],
                          8 * (a_index + b_index),
                          term_enabled)
