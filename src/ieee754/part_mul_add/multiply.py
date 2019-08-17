@@ -595,6 +595,26 @@ class OrMod(Elaboratable):
         return m
 
 
+class Signs(Elaboratable):
+
+    def __init__(self):
+        self.part_ops = Signal(2, reset_less=True)
+        self.a_signed = Signal(reset_less=True)
+        self.b_signed = Signal(reset_less=True)
+
+    def elaborate(self, platform):
+
+        m = Module()
+
+        asig = self.part_ops != OP_MUL_UNSIGNED_HIGH
+        bsig = (self.part_ops == OP_MUL_LOW) \
+                    | (self.part_ops == OP_MUL_SIGNED_HIGH)
+        m.d.comb += self.a_signed.eq(asig)
+        m.d.comb += self.b_signed.eq(bsig)
+
+        return m
+
+
 class Mul8_16_32_64(Elaboratable):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier.
 
@@ -665,8 +685,12 @@ class Mul8_16_32_64(Elaboratable):
         output_32 = Signal(64)
         output_16 = Signal(64)
         output_8 = Signal(64)
-        a_signed = [Signal(name=f"_a_signed_{i}") for i in range(8)]
-        b_signed = [Signal(name=f"_b_signed_{i}") for i in range(8)]
+        signs = []
+        for i in range(8):
+            s = Signs()
+            signs.append(s)
+            setattr(m.submodules, "signs%d" % i, s)
+            m.d.comb += s.part_ops.eq(self.part_ops[i])
 
         delayed_part_ops = [
             [Signal(2, name=f"_delayed_part_ops_{delay}_{i}")
@@ -686,10 +710,9 @@ class Mul8_16_32_64(Elaboratable):
         for mod in [part_8, part_16, part_32, part_64]:
             m.d.comb += mod.a.eq(self.a)
             m.d.comb += mod.b.eq(self.b)
-            for i in range(len(a_signed)):
-                m.d.comb += mod._a_signed[i].eq(a_signed[i])
-            for i in range(len(b_signed)):
-                m.d.comb += mod._b_signed[i].eq(b_signed[i])
+            for i in range(len(signs)):
+                m.d.comb += mod._a_signed[i].eq(signs[i].a_signed)
+                m.d.comb += mod._b_signed[i].eq(signs[i].b_signed)
             m.d.comb += mod.pbs.eq(pbs)
             nat_l.append(mod.not_a_term)
             nbt_l.append(mod.not_b_term)
@@ -708,13 +731,6 @@ class Mul8_16_32_64(Elaboratable):
 
             for term in t.terms:
                 terms.append(term)
-
-        for i in range(8):
-            asig = self.part_ops[i] != OP_MUL_UNSIGNED_HIGH
-            bsig = (self.part_ops[i] == OP_MUL_LOW) \
-                        | (self.part_ops[i] == OP_MUL_SIGNED_HIGH)
-            m.d.comb += a_signed[i].eq(asig)
-            m.d.comb += b_signed[i].eq(bsig)
 
         # it's fine to bitwise-or data together since they are never enabled
         # at the same time
