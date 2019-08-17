@@ -313,7 +313,6 @@ class AddReduce(Elaboratable):
                 m.d.comb += self.output.eq(adder.output)
             return m
         # go on to handle recursive case
-        intermediate_terms: List[Signal]
         intermediate_terms = []
 
         def add_intermediate_term(value):

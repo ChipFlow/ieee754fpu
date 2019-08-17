@@ -64,8 +64,7 @@ class AddReduce(Elaboratable):
         ...
 
     def elaborate(self, platform: Any) -> Module:
-        ...
-
+        intermediate_terms: List[Signal]
         def add_intermediate_term(value: Value) -> None:
             ...
 
