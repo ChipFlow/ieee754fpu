@@ -472,8 +472,8 @@ class Part(Elaboratable):
         # inputs
         self.a = Signal(64)
         self.b = Signal(64)
-        self._a_signed = [Signal(name=f"_a_signed_{i}") for i in range(8)]
-        self._b_signed = [Signal(name=f"_b_signed_{i}") for i in range(8)]
+        self.a_signed = [Signal(name=f"a_signed_{i}") for i in range(8)]
+        self.b_signed = [Signal(name=f"_b_signed_{i}") for i in range(8)]
         self.pbs = Signal(pbwid, reset_less=True)
 
         # outputs
@@ -515,9 +515,9 @@ class Part(Elaboratable):
         nat, nbt, nla, nlb = [], [], [], []
         for i in range(len(parts)):
             be = parts[i] & self.a[(i + 1) * bit_width - 1] \
-                & self._a_signed[i * byte_width]
+                & self.a_signed[i * byte_width]
             ae = parts[i] & self.b[(i + 1) * bit_width - 1] \
-                & self._b_signed[i * byte_width]
+                & self.b_signed[i * byte_width]
             a_enabled = Signal(name="a_en_%d" % i, reset_less=True)
             b_enabled = Signal(name="b_en_%d" % i, reset_less=True)
             m.d.comb += a_enabled.eq(ae)
@@ -567,7 +567,7 @@ class IntermediateOut(Elaboratable):
         w = self.width
         sel = w // 8
         for i in range(self.n_parts):
-            op = Signal(w, reset_less=True, name="op32_%d" % i)
+            op = Signal(w, reset_less=True, name="op%d_%d" % (w, i))
             m.d.comb += op.eq(
                 Mux(self.delayed_part_ops[sel * i] == OP_MUL_LOW,
                     self.intermed.bit_select(i * w*2, w),
@@ -711,8 +711,8 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += mod.a.eq(self.a)
             m.d.comb += mod.b.eq(self.b)
             for i in range(len(signs)):
-                m.d.comb += mod._a_signed[i].eq(signs[i].a_signed)
-                m.d.comb += mod._b_signed[i].eq(signs[i].b_signed)
+                m.d.comb += mod.a_signed[i].eq(signs[i].a_signed)
+                m.d.comb += mod.b_signed[i].eq(signs[i].b_signed)
             m.d.comb += mod.pbs.eq(pbs)
             nat_l.append(mod.not_a_term)
             nbt_l.append(mod.not_b_term)
