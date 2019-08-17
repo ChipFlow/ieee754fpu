@@ -399,8 +399,8 @@ class ProductTerm(Elaboratable):
         self.b_index = b_index
         shift = 8 * (self.a_index + self.b_index)
         self.pwidth = width
-        self.a = Signal(twidth, reset_less=True)
-        self.b = Signal(twidth, reset_less=True)
+        self.a = Signal(twidth//2, reset_less=True)
+        self.b = Signal(twidth//2, reset_less=True)
         self.pb_en = Signal(pbwid, reset_less=True)
 
         self.tl = tl = []
@@ -430,6 +430,38 @@ class ProductTerm(Elaboratable):
         m.d.comb += bsa.eq(self.a.bit_select(a_index * pwidth, pwidth))
         m.d.comb += bsb.eq(self.b.bit_select(b_index * pwidth, pwidth))
         m.d.comb += self.ti.eq(bsa * bsb)
+
+        return m
+
+
+class ProductTerms(Elaboratable):
+
+    def __init__(self, width, twidth, pbwid, a_index, blen):
+        self.a_index = a_index
+        self.blen = blen
+        self.pwidth = width
+        self.twidth = twidth
+        self.pbwid = pbwid
+        self.a = Signal(twidth//2, reset_less=True)
+        self.b = Signal(twidth//2, reset_less=True)
+        self.pb_en = Signal(pbwid, reset_less=True)
+        self.terms = [Signal(twidth, name="term%d"%i, reset_less=True) \
+                            for i in range(blen)]
+
+    def elaborate(self, platform):
+
+        m = Module()
+
+        for b_index in range(self.blen):
+            t = ProductTerm(self.pwidth, self.twidth, self.pbwid,
+                            self.a_index, b_index)
+            setattr(m.submodules, "term_%d" % b_index, t)
+
+            m.d.comb += t.a.eq(self.a)
+            m.d.comb += t.b.eq(self.b)
+            m.d.comb += t.pb_en.eq(self.pb_en)
+
+            m.d.comb += self.terms[b_index].eq(t.term)
 
         return m
 
@@ -640,15 +672,15 @@ class Mul8_16_32_64(Elaboratable):
         terms = []
 
         for a_index in range(8):
-            for b_index in range(8):
-                t = ProductTerm(8, 128, 8, a_index, b_index)
-                setattr(m.submodules, "term_%d_%d" % (a_index, b_index), t)
+            t = ProductTerms(8, 128, 8, a_index, 8)
+            setattr(m.submodules, "terms_%d" % a_index, t)
 
-                m.d.comb += t.a.eq(self.a)
-                m.d.comb += t.b.eq(self.b)
-                m.d.comb += t.pb_en.eq(pbs)
+            m.d.comb += t.a.eq(self.a)
+            m.d.comb += t.b.eq(self.b)
+            m.d.comb += t.pb_en.eq(pbs)
 
-                terms.append(t.term)
+            for term in t.terms:
+                terms.append(term)
 
         for i in range(8):
             a_signed = self.part_ops[i] != OP_MUL_UNSIGNED_HIGH
