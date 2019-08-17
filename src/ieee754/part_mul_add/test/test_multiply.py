@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
-from src.multiply import PartitionPoints, PartitionedAdder, AddReduce, \
-    Mul8_16_32_64, OP_MUL_LOW, OP_MUL_SIGNED_HIGH, \
-    OP_MUL_SIGNED_UNSIGNED_HIGH, OP_MUL_UNSIGNED_HIGH
+from ieee754.part_mul_add.multiply import \
+                            (PartitionPoints, PartitionedAdder, AddReduce,
+                            Mul8_16_32_64, OP_MUL_LOW, OP_MUL_SIGNED_HIGH,
+                            OP_MUL_SIGNED_UNSIGNED_HIGH, OP_MUL_UNSIGNED_HIGH)
 from nmigen import Signal, Module
 from nmigen.back.pysim import Simulator, Delay, Tick, Passive
 from nmigen.hdl.ast import Assign, Value
