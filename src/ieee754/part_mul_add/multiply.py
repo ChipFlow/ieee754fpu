@@ -398,9 +398,9 @@ class ProductTerm(Elaboratable):
         self.a_index = a_index
         self.b_index = b_index
         shift = 8 * (self.a_index + self.b_index)
-        self.width = width
-        self.a = Signal(width, reset_less=True)
-        self.b = Signal(width, reset_less=True)
+        self.pwidth = width
+        self.a = Signal(twidth, reset_less=True)
+        self.b = Signal(twidth, reset_less=True)
         self.pb_en = Signal(pbwid, reset_less=True)
 
         self.tl = tl = []
@@ -421,7 +421,14 @@ class ProductTerm(Elaboratable):
         m = Term.elaborate(self, platform)
         if self.enabled is not None:
             m.d.comb += self.enabled.eq(~(Cat(*self.tl).bool()))
-        m.d.comb += self.ti.eq(self.a * self.b)
+
+        bsa = Signal(self.width, reset_less=True)
+        bsb = Signal(self.width, reset_less=True)
+        a_index, b_index = self.a_index, self.b_index
+        pwidth = self.pwidth
+        m.d.comb += bsa.eq(self.a.bit_select(a_index * pwidth, pwidth))
+        m.d.comb += bsb.eq(self.b.bit_select(b_index * pwidth, pwidth))
+        m.d.comb += self.ti.eq(bsa * bsb)
 
         return m
 
@@ -609,8 +616,8 @@ class Mul8_16_32_64(Elaboratable):
                 t = ProductTerm(8, 128, 8, a_index, b_index)
                 setattr(m.submodules, "term_%d_%d" % (a_index, b_index), t)
 
-                m.d.comb += t.a.eq(self.a.bit_select(a_index * 8, 8))
-                m.d.comb += t.b.eq(self.b.bit_select(b_index * 8, 8))
+                m.d.comb += t.a.eq(self.a)
+                m.d.comb += t.b.eq(self.b)
                 m.d.comb += t.pb_en.eq(pbs)
 
                 terms.append(t.term)
