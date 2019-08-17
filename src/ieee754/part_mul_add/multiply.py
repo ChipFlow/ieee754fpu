@@ -577,6 +577,23 @@ class IntermediateOut(Elaboratable):
 
         return m
 
+class OrMod(Elaboratable):
+    def __init__(self, wid):
+        self.wid = wid
+        self.orin = [Signal(wid, name="orin%d" % i, reset_less=True)
+                     for i in range(4)]
+        self.orout = Signal(wid, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        or1 = Signal(self.wid, reset_less=True)
+        or2 = Signal(self.wid, reset_less=True)
+        m.d.comb += or1.eq(self.orin[0] | self.orin[1])
+        m.d.comb += or2.eq(self.orin[2] | self.orin[3])
+        m.d.comb += self.orout.eq(or1 | or2)
+
+        return m
+
 
 class Mul8_16_32_64(Elaboratable):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier.
@@ -689,20 +706,23 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += self._a_signed[i].eq(a_signed)
             m.d.comb += self._b_signed[i].eq(b_signed)
 
-        # it's fine to bitwise-or these together since they are never enabled
+        # it's fine to bitwise-or data together since they are never enabled
         # at the same time
-        nat_l = reduce(or_, nat_l)
-        nbt_l = reduce(or_, nbt_l)
-        nla_l = reduce(or_, nla_l)
-        nlb_l = reduce(or_, nlb_l)
+        m.submodules.nat_or = nat_or = OrMod(128)
+        m.submodules.nbt_or = nbt_or = OrMod(128)
+        m.submodules.nla_or = nla_or = OrMod(128)
+        m.submodules.nlb_or = nlb_or = OrMod(128)
         m.submodules.nat = nat = Term(128, 128)
         m.submodules.nla = nla = Term(128, 128)
         m.submodules.nbt = nbt = Term(128, 128)
         m.submodules.nlb = nlb = Term(128, 128)
-        m.d.comb += nat.ti.eq(nat_l)
-        m.d.comb += nbt.ti.eq(nbt_l)
-        m.d.comb += nla.ti.eq(nla_l)
-        m.d.comb += nlb.ti.eq(nlb_l)
+        for l, mod, mod2 in [(nat_l, nat_or, nat),
+                             (nbt_l, nbt_or, nbt),
+                             (nla_l, nla_or, nla),
+                             (nlb_l, nlb_or, nlb)]:
+            for i in range(len(l)):
+                m.d.comb += mod.orin[i].eq(l[i])
+            m.d.comb += mod2.ti.eq(mod.orout)
         terms.append(nat.term)
         terms.append(nla.term)
         terms.append(nbt.term)
