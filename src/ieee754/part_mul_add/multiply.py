@@ -376,24 +376,18 @@ def get_term(value, shift=0, enabled=None):
     return value
 
 
-def g_add_term(m, terms, value, shift=0, enabled=None):
-    term = Signal(128, reset_less=True)
-    terms.append(term)
-    m.d.comb += term.eq(get_term(value, shift, enabled))
-
-
 class Term(Elaboratable):
     def __init__(self, width, twidth, shift=0, enabled=None):
         self.width = width
         self.shift = shift
         self.enabled = enabled
-        self.t_in = Signal(width, reset_less=True)
+        self.ti = Signal(width, reset_less=True)
         self.term = Signal(twidth, reset_less=True)
 
     def elaborate(self, platform):
 
         m = Module()
-        m.d.comb += self.term.eq(get_term(self.t_in, self.shift, self.enabled))
+        m.d.comb += self.term.eq(get_term(self.ti, self.shift, self.enabled))
 
         return m
 
@@ -426,7 +420,7 @@ class ProductTerm(Elaboratable):
         m = Term.elaborate(self, platform)
         if self.enabled is not None:
             m.d.comb += self.enabled.eq(~(Cat(*self.tl).bool()))
-        m.d.comb += self.t_in.eq(self.a * self.b)
+        m.d.comb += self.ti.eq(self.a * self.b)
 
         return m
 
@@ -570,9 +564,6 @@ class Mul8_16_32_64(Elaboratable):
 
                 terms.append(t.term)
 
-        def add_term(value, shift=0, enabled=None):
-            g_add_term(m, terms, value, shift, enabled)
-
         for i in range(8):
             a_signed = self.part_ops[i] != OP_MUL_UNSIGNED_HIGH
             b_signed = (self.part_ops[i] == OP_MUL_LOW) \
@@ -582,14 +573,22 @@ class Mul8_16_32_64(Elaboratable):
 
         # it's fine to bitwise-or these together since they are never enabled
         # at the same time
-        add_term(self._not_a_term_8 | self._not_a_term_16
-                 | self._not_a_term_32 | self._not_a_term_64)
-        add_term(self._neg_lsb_a_term_8 | self._neg_lsb_a_term_16
-                 | self._neg_lsb_a_term_32 | self._neg_lsb_a_term_64)
-        add_term(self._not_b_term_8 | self._not_b_term_16
-                 | self._not_b_term_32 | self._not_b_term_64)
-        add_term(self._neg_lsb_b_term_8 | self._neg_lsb_b_term_16
-                 | self._neg_lsb_b_term_32 | self._neg_lsb_b_term_64)
+        m.submodules.nat = nat = Term(128, 128)
+        m.submodules.nla = nla = Term(128, 128)
+        m.submodules.nbt = nbt = Term(128, 128)
+        m.submodules.nlb = nlb = Term(128, 128)
+        m.d.comb += nat.ti.eq(self._not_a_term_8 | self._not_a_term_16
+                           | self._not_a_term_32 | self._not_a_term_64)
+        m.d.comb += nbt.ti.eq(self._not_b_term_8 | self._not_b_term_16
+                           | self._not_b_term_32 | self._not_b_term_64)
+        m.d.comb += nla.ti.eq(self._neg_lsb_a_term_8 | self._neg_lsb_a_term_16
+                           | self._neg_lsb_a_term_32 | self._neg_lsb_a_term_64)
+        m.d.comb += nlb.ti.eq(self._neg_lsb_b_term_8 | self._neg_lsb_b_term_16
+                           | self._neg_lsb_b_term_32 | self._neg_lsb_b_term_64)
+        terms.append(nat.term)
+        terms.append(nla.term)
+        terms.append(nbt.term)
+        terms.append(nlb.term)
 
         for not_a_term, \
             neg_lsb_a_term, \
