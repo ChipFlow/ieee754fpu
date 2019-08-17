@@ -712,21 +712,13 @@ class Mul8_16_32_64(Elaboratable):
         m.submodules.nbt_or = nbt_or = OrMod(128)
         m.submodules.nla_or = nla_or = OrMod(128)
         m.submodules.nlb_or = nlb_or = OrMod(128)
-        m.submodules.nat = nat = Term(128, 128)
-        m.submodules.nla = nla = Term(128, 128)
-        m.submodules.nbt = nbt = Term(128, 128)
-        m.submodules.nlb = nlb = Term(128, 128)
-        for l, mod, mod2 in [(nat_l, nat_or, nat),
-                             (nbt_l, nbt_or, nbt),
-                             (nla_l, nla_or, nla),
-                             (nlb_l, nlb_or, nlb)]:
+        for l, mod in [(nat_l, nat_or),
+                             (nbt_l, nbt_or),
+                             (nla_l, nla_or),
+                             (nlb_l, nlb_or)]:
             for i in range(len(l)):
                 m.d.comb += mod.orin[i].eq(l[i])
-            m.d.comb += mod2.ti.eq(mod.orout)
-        terms.append(nat.term)
-        terms.append(nla.term)
-        terms.append(nbt.term)
-        terms.append(nlb.term)
+            terms.append(mod.orout)
 
         expanded_part_pts = PartitionPoints()
         for i, v in self.part_pts.items():
