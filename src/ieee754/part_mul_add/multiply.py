@@ -323,7 +323,10 @@ class AddReduce(Elaboratable):
             intermediate_terms.append(intermediate_term)
             m.d.comb += intermediate_term.eq(value)
 
-        part_mask = self._reg_partition_points.as_mask(len(self.output))
+        # store mask in intermediary (simplifies graph)
+        part_mask = Signal(len(self.output), reset_less=True)
+        mask = self._reg_partition_points.as_mask(len(self.output))
+        m.d.comb += part_mask.eq(mask)
 
         # create full adders for this recursive level.
         # this shrinks N terms to 2 * (N // 3) plus the remainder
