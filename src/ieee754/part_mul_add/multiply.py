@@ -379,28 +379,18 @@ def get_term(value, shift=0, enabled=None):
     return value
 
 
-class Term(Elaboratable):
-    def __init__(self, width, twidth, shift=0, enabled=None):
-        self.width = width
-        self.shift = shift
-        self.enabled = enabled
-        self.ti = Signal(width, reset_less=True)
-        self.term = Signal(twidth, reset_less=True)
-
-    def elaborate(self, platform):
-
-        m = Module()
-        m.d.comb += self.term.eq(get_term(self.ti, self.shift, self.enabled))
-
-        return m
-
-
 class ProductTerm(Elaboratable):
+
     def __init__(self, width, twidth, pbwid, a_index, b_index):
         self.a_index = a_index
         self.b_index = b_index
         shift = 8 * (self.a_index + self.b_index)
         self.pwidth = width
+        self.width = width*2
+        self.shift = shift
+
+        self.ti = Signal(self.width, reset_less=True)
+        self.term = Signal(twidth, reset_less=True)
         self.a = Signal(twidth//2, reset_less=True)
         self.b = Signal(twidth//2, reset_less=True)
         self.pb_en = Signal(pbwid, reset_less=True)
@@ -415,13 +405,12 @@ class ProductTerm(Elaboratable):
             term_enabled = Signal(name=name, reset_less=True)
         else:
             term_enabled = None
-
-        Term.__init__(self, width*2, twidth, shift, term_enabled)
+        self.enabled = term_enabled
         self.term.name = "term_%d_%d" % (a_index, b_index) # rename
 
     def elaborate(self, platform):
 
-        m = Term.elaborate(self, platform)
+        m = Module()
         if self.enabled is not None:
             m.d.comb += self.enabled.eq(~(Cat(*self.tl).bool()))
 
@@ -432,6 +421,7 @@ class ProductTerm(Elaboratable):
         m.d.comb += bsa.eq(self.a.bit_select(a_index * pwidth, pwidth))
         m.d.comb += bsb.eq(self.b.bit_select(b_index * pwidth, pwidth))
         m.d.comb += self.ti.eq(bsa * bsb)
+        m.d.comb += self.term.eq(get_term(self.ti, self.shift, self.enabled))
 
         return m
 
