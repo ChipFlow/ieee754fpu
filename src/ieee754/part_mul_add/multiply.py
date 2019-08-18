@@ -164,16 +164,13 @@ class PartitionedAdder(Elaboratable):
                 expanded_width += 1
             expanded_width += 1
         self._expanded_width = expanded_width
+        self._expanded_a = Signal(expanded_width)
+        self._expanded_b = Signal(expanded_width)
+        self._expanded_output = Signal(expanded_width)
 
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
-
-        # intermediates
-        expanded_a = Signal(self._expanded_width)
-        expanded_b = Signal(self._expanded_width)
-        expanded_output = Signal(self._expanded_width)
-
         expanded_index = 0
         # store bits in a list, use Cat later.  graphviz is much cleaner
         al = []
@@ -188,16 +185,16 @@ class PartitionedAdder(Elaboratable):
             if i in self.partition_points:
                 # add extra bit set to 0 + 0 for enabled partition points
                 # and 1 + 0 for disabled partition points
-                ea.append(expanded_a[expanded_index])
+                ea.append(self._expanded_a[expanded_index])
                 al.append(~self.partition_points[i])
-                eb.append(expanded_b[expanded_index])
+                eb.append(self._expanded_b[expanded_index])
                 bl.append(C(0))
                 expanded_index += 1
-            ea.append(expanded_a[expanded_index])
+            ea.append(self._expanded_a[expanded_index])
             al.append(self.a[i])
-            eb.append(expanded_b[expanded_index])
+            eb.append(self._expanded_b[expanded_index])
             bl.append(self.b[i])
-            eo.append(expanded_output[expanded_index])
+            eo.append(self._expanded_output[expanded_index])
             ol.append(self.output[i])
             expanded_index += 1
         # combine above using Cat
@@ -206,7 +203,8 @@ class PartitionedAdder(Elaboratable):
         m.d.comb += Cat(*ol).eq(Cat(*eo))
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
-        m.d.comb += expanded_output.eq( expanded_a + expanded_b)
+        m.d.comb += self._expanded_output.eq(
+            self._expanded_a + self._expanded_b)
         return m
 
 
