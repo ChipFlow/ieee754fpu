@@ -386,6 +386,7 @@ class ProductTerm(Elaboratable):
         self.b_index = b_index
         shift = 8 * (self.a_index + self.b_index)
         self.pwidth = width
+        self.twidth = twidth
         self.width = width*2
         self.shift = shift
 
@@ -422,6 +423,24 @@ class ProductTerm(Elaboratable):
         m.d.comb += bsb.eq(self.b.bit_select(b_index * pwidth, pwidth))
         m.d.comb += self.ti.eq(bsa * bsb)
         m.d.comb += self.term.eq(get_term(self.ti, self.shift, self.enabled))
+        """
+        #TODO: sort out width issues, get inputs a/b switched on/off.
+        #data going into Muxes is 1/2 the required width
+
+        pwidth = self.pwidth
+        width = self.width
+        bsa = Signal(self.twidth//2, reset_less=True)
+        bsb = Signal(self.twidth//2, reset_less=True)
+        asel = Signal(width, reset_less=True)
+        bsel = Signal(width, reset_less=True)
+        a_index, b_index = self.a_index, self.b_index
+        m.d.comb += asel.eq(self.a.bit_select(a_index * pwidth, pwidth))
+        m.d.comb += bsel.eq(self.b.bit_select(b_index * pwidth, pwidth))
+        m.d.comb += bsa.eq(get_term(asel, self.shift, self.enabled))
+        m.d.comb += bsb.eq(get_term(bsel, self.shift, self.enabled))
+        m.d.comb += self.ti.eq(bsa * bsb)
+        m.d.comb += self.term.eq(self.ti)
+        """
 
         return m
 
