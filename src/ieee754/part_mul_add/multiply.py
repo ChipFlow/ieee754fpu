@@ -164,6 +164,10 @@ class PartitionedAdder(Elaboratable):
                 expanded_width += 1
             expanded_width += 1
         self._expanded_width = expanded_width
+        # XXX these have to remain here due to some horrible nmigen
+        # simulation bugs involving sync.  it is *not* necessary to
+        # have them here, they should (under normal circumstances)
+        # be moved into elaborate, as they are entirely local
         self._expanded_a = Signal(expanded_width)
         self._expanded_b = Signal(expanded_width)
         self._expanded_output = Signal(expanded_width)
