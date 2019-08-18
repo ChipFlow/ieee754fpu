@@ -601,6 +601,7 @@ class FinalOut(Elaboratable):
         self.d8 = [Signal(name=f"d8_{i}", reset_less=True) for i in range(8)]
         self.d16 = [Signal(name=f"d16_{i}", reset_less=True) for i in range(4)]
         self.d32 = [Signal(name=f"d32_{i}", reset_less=True) for i in range(2)]
+        self.d64 = [Signal(name=f"d64_{i}", reset_less=True) for i in range(1)]
 
         self.i8 = Signal(out_wid, reset_less=True)
         self.i16 = Signal(out_wid, reset_less=True)
@@ -615,12 +616,19 @@ class FinalOut(Elaboratable):
         ol = []
         for i in range(8):
             op = Signal(8, reset_less=True, name="op_%d" % i)
-            m.d.comb += op.eq(
-                Mux(self.d8[i] | self.d16[i // 2],
-                    Mux(self.d8[i], self.i8.bit_select(i * 8, 8),
-                                     self.i16.bit_select(i * 8, 8)),
-                    Mux(self.d32[i // 4], self.i32.bit_select(i * 8, 8),
-                                          self.i64.bit_select(i * 8, 8))))
+            choice = Signal(4, reset_less=True)
+            m.d.comb += choice.eq(Cat(self.d8[i], self.d16[i//2],
+                                      self.d32[i//4], self.d64[i//8]))
+            # select one of the outputs.
+            with m.Switch(choice):
+                with m.Case(0b0001): # d8
+                    m.d.comb += op.eq(self.i8.bit_select(i * 8, 8))
+                with m.Case(0b0010): # d16
+                    m.d.comb += op.eq(self.i16.bit_select(i * 8, 8))
+                with m.Case(0b0100): # d32
+                    m.d.comb += op.eq(self.i32.bit_select(i * 8, 8))
+                with m.Case(0b1000): # d64
+                    m.d.comb += op.eq(self.i64.bit_select(i * 8, 8))
             ol.append(op)
         m.d.comb += self.out.eq(Cat(*ol))
         return m
@@ -835,6 +843,8 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += fo.d16[i].eq(part_16.dplast[i])
         for i in range(len(part_32.delayed_parts[-1])):
             m.d.comb += fo.d32[i].eq(part_32.dplast[i])
+        for i in range(len(part_64.delayed_parts[-1])):
+            m.d.comb += fo.d64[i].eq(part_64.dplast[i])
         m.d.comb += fo.i8.eq(io8.output)
         m.d.comb += fo.i16.eq(io16.output)
         m.d.comb += fo.i32.eq(io32.output)
