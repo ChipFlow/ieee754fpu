@@ -496,8 +496,8 @@ class LSBNegTerm(Elaboratable):
         self.signed = Signal(reset_less=True)
         self.op = Signal(bit_width, reset_less=True)
         self.msb = Signal(reset_less=True)
-        self.nt = Signal(bit_wid*2, reset_less=True)
-        self.nl = Signal(bit_wid*2, reset_less=True)
+        self.nt = Signal(bit_width*2, reset_less=True)
+        self.nl = Signal(bit_width*2, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
@@ -506,7 +506,7 @@ class LSBNegTerm(Elaboratable):
         ext = Repl(0, bit_wid) # extend output to HI part
 
         # determine sign of each incoming number *in this partition*
-        enabled = Signal(name="en_%d" % i, reset_less=True)
+        enabled = Signal(reset_less=True)
         m.d.comb += enabled.eq(self.part & self.msb & self.signed)
 
         # for 8-bit values: form a * 0xFF00 by using -a * 0x100, the
@@ -514,7 +514,7 @@ class LSBNegTerm(Elaboratable):
         # likewise for 16, 32, and 64-bit values.
 
         # width-extended 1s complement if a is signed, otherwise zero
-        comb += nt.eq(Mux(a_enabled, Cat(ext, ~self.op), 0))
+        comb += self.nt.eq(Mux(enabled, Cat(ext, ~self.op), 0))
 
         # add 1 if signed, otherwise add zero
         comb += self.nl.eq(Cat(ext, enabled, Repl(0, bit_wid-1)))
@@ -586,38 +586,27 @@ class Part(Elaboratable):
 
         byte_width = 8 // len(parts) # byte width
         bit_wid = 8 * byte_width     # bit width
-        ext = Repl(0, bit_wid)       # extend output to HI part
         nat, nbt, nla, nlb = [], [], [], []
         for i in range(len(parts)):
-            # determine sign of each incoming number *in this partition*
-            be = (parts[i] & self.a[(i + 1) * bit_wid - 1]  # MSB
-                & self.a_signed[i * byte_width])            # a op is signed?
-            ae = (parts[i] & self.b[(i + 1) * bit_wid - 1]  # MSB
-                & self.b_signed[i * byte_width])            # b op is signed?
-            a_enabled = Signal(name="a_en_%d" % i, reset_less=True)
-            b_enabled = Signal(name="b_en_%d" % i, reset_less=True)
-            m.d.comb += a_enabled.eq(ae)
-            m.d.comb += b_enabled.eq(be)
+            # work out bit-inverted and +1 term for a.
+            pa = LSBNegTerm(bit_wid)
+            setattr(m.submodules, "lnt_a_%d" % i, pa)
+            m.d.comb += pa.part.eq(parts[i])
+            m.d.comb += pa.op.eq(self.a.bit_select(bit_wid * i, bit_wid))
+            m.d.comb += pa.signed.eq(self.b_signed[i * byte_width]) # yes b
+            m.d.comb += pa.msb.eq(self.b[(i + 1) * bit_wid - 1]) # really, b
+            nat.append(pa.nt)
+            nla.append(pa.nl)
 
-            # for 8-bit values: form a * 0xFF00 by using -a * 0x100, the
-            # negation operation is split into a bitwise not and a +1.
-            # likewise for 16, 32, and 64-bit values.
-
-            # a: width-extended 1s complement if a is signed, otherwise zero
-            nat.append(Mux(a_enabled,
-                           Cat(ext, ~self.a.bit_select(bit_wid * i, bit_wid)),
-                           0))
-
-            # a: add 1 if a signed, otherwise add zero
-            nla.append(Cat(ext, a_enabled, Repl(0, bit_wid-1)))
-
-            # b: width-extended 1s complement if a is signed, otherwise zero
-            nbt.append(Mux(b_enabled,
-                           Cat(ext, ~self.b.bit_select(bit_wid * i, bit_wid)),
-                           0))
-
-            # b: add 1 if b signed, otherwise add zero
-            nlb.append(Cat(ext, b_enabled, Repl(0, bit_wid-1)))
+            # work out bit-inverted and +1 term for b
+            pb = LSBNegTerm(bit_wid)
+            setattr(m.submodules, "lnt_b_%d" % i, pb)
+            m.d.comb += pb.part.eq(parts[i])
+            m.d.comb += pb.op.eq(self.b.bit_select(bit_wid * i, bit_wid))
+            m.d.comb += pb.signed.eq(self.a_signed[i * byte_width]) # yes a
+            m.d.comb += pb.msb.eq(self.a[(i + 1) * bit_wid - 1]) # really, a
+            nbt.append(pb.nt)
+            nlb.append(pb.nl)
 
         # concatenate together and return all 4 results.
         m.d.comb += [not_a_term.eq(Cat(*nat)),
