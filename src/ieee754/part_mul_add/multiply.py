@@ -382,6 +382,11 @@ def get_term(value, shift=0, enabled=None):
 
 
 class ProductTerm(Elaboratable):
+    """ this class creates a single product term (a[..]*b[..]).
+        it has a design flaw in that is the *output* that is selected,
+        where the multiplication(s) are combinatorially generated
+        all the time.
+    """
 
     def __init__(self, width, twidth, pbwid, a_index, b_index):
         self.a_index = a_index
@@ -448,7 +453,10 @@ class ProductTerm(Elaboratable):
 
 
 class ProductTerms(Elaboratable):
-
+    """ creates a bank of product terms.  also performs the actual bit-selection
+        this class is to be wrapped with a for-loop on the "a" operand.
+        it creates a second-level for-loop on the "b" operand.
+    """
     def __init__(self, width, twidth, pbwid, a_index, blen):
         self.a_index = a_index
         self.blen = blen
@@ -569,6 +577,9 @@ class Part(Elaboratable):
 
 
 class IntermediateOut(Elaboratable):
+    """ selects the HI/LO part of the multiplication, for a given bit-width
+        the output is also reconstructed in its SIMD (partition) lanes.
+    """
     def __init__(self, width, out_wid, n_parts):
         self.width = width
         self.n_parts = n_parts
@@ -596,6 +607,12 @@ class IntermediateOut(Elaboratable):
 
 
 class FinalOut(Elaboratable):
+    """ selects the final output based on the partitioning.
+
+        each byte is selectable independently, i.e. it is possible
+        that some partitions requested 8-bit computation whilst others
+        requested 16 or 32 bit.
+    """
     def __init__(self, out_wid):
         # inputs
         self.d8 = [Signal(name=f"d8_{i}", reset_less=True) for i in range(8)]
@@ -632,6 +649,8 @@ class FinalOut(Elaboratable):
 
 
 class OrMod(Elaboratable):
+    """ ORs four values together in a hierarchical tree
+    """
     def __init__(self, wid):
         self.wid = wid
         self.orin = [Signal(wid, name="orin%d" % i, reset_less=True)
@@ -650,6 +669,9 @@ class OrMod(Elaboratable):
 
 
 class Signs(Elaboratable):
+    """ determines whether a or b are signed numbers
+        based on the required operation type (OP_MUL_*)
+    """
 
     def __init__(self):
         self.part_ops = Signal(2, reset_less=True)
