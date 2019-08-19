@@ -575,7 +575,7 @@ class Part(Elaboratable):
             for j in range(i * byte_count, (i + 1) * byte_count - 1):
                 pbl.append(pbs[j])
             pbl.append(npbs[(i + 1) * byte_count - 1])
-            value = Signal(len(pbl), reset_less=True)
+            value = Signal(len(pbl), name="value_$i" % i, reset_less=True)
             m.d.comb += value.eq(Cat(*pbl))
             m.d.comb += parts[i].eq(~(value).bool())
             m.d.comb += delayed_parts[0][i].eq(parts[i])
