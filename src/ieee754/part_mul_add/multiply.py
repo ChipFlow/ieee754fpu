@@ -565,13 +565,16 @@ class Part(Elaboratable):
         m = Module()
 
         pbs, parts, delayed_parts = self.pbs, self.parts, self.delayed_parts
+        # negated-temporary copy of partition bits
+        npbs = Signal.like(pbs, reset_less=True)
+        m.d.comb += npbs.eq(~pbs)
         byte_count = 8 // len(parts)
         for i in range(len(parts)):
             pbl = []
-            pbl.append(~pbs[i * byte_count - 1])
+            pbl.append(npbs[i * byte_count - 1])
             for j in range(i * byte_count, (i + 1) * byte_count - 1):
                 pbl.append(pbs[j])
-            pbl.append(~pbs[(i + 1) * byte_count - 1])
+            pbl.append(npbs[(i + 1) * byte_count - 1])
             value = Signal(len(pbl), reset_less=True)
             m.d.comb += value.eq(Cat(*pbl))
             m.d.comb += parts[i].eq(~(value).bool())
