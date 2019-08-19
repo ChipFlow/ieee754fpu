@@ -9,6 +9,7 @@ from nmigen.cli import main
 from functools import reduce
 from operator import or_
 
+
 class PartitionPoints(dict):
     """Partition points and corresponding ``Value``s.
 
@@ -111,6 +112,11 @@ class FullAdder(Elaboratable):
     :attribute in2: the third input
     :attribute sum: the sum output
     :attribute carry: the carry output
+
+    Rather than do individual full adders (and have an array of them,
+    which would be very slow to simulate), this module can specify the
+    bit width of the inputs and outputs: in effect it performs multiple
+    Full 3-2 Add operations "in parallel".
     """
 
     def __init__(self, width):
@@ -177,12 +183,8 @@ class PartitionedAdder(Elaboratable):
         m = Module()
         expanded_index = 0
         # store bits in a list, use Cat later.  graphviz is much cleaner
-        al = []
-        bl = []
-        ol = []
-        ea = []
-        eb = []
-        eo = []
+        al, bl, ol, ea, eb, eo = [],[],[],[],[],[]
+
         # partition points are "breaks" (extra zeros) in what would otherwise
         # be a massive long add.
         for i in range(self.width):
@@ -555,10 +557,10 @@ class Part(Elaboratable):
         nat, nbt, nla, nlb = [], [], [], []
         for i in range(len(parts)):
             # determine sign of each incoming number *in this partition*
-            be = parts[i] & self.a[(i + 1) * bit_wid - 1] \  # MSB
-                & self.a_signed[i * byte_width]              # a op is signed?
-            ae = parts[i] & self.b[(i + 1) * bit_wid - 1] \  # MSB
-                & self.b_signed[i * byte_width]              # b op is signed?
+            be = (parts[i] & self.a[(i + 1) * bit_wid - 1]  # MSB
+                & self.a_signed[i * byte_width])            # a op is signed?
+            ae = (parts[i] & self.b[(i + 1) * bit_wid - 1]  # MSB
+                & self.b_signed[i * byte_width])            # b op is signed?
             a_enabled = Signal(name="a_en_%d" % i, reset_less=True)
             b_enabled = Signal(name="b_en_%d" % i, reset_less=True)
             m.d.comb += a_enabled.eq(ae)
