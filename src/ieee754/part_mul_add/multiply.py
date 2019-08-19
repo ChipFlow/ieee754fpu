@@ -488,6 +488,39 @@ class ProductTerms(Elaboratable):
 
         return m
 
+class LSBNegTerm(Elaboratable):
+
+    def __init__(self, bit_width):
+        self.bit_width = bit_width
+        self.part = Signal(reset_less=True)
+        self.signed = Signal(reset_less=True)
+        self.op = Signal(bit_width, reset_less=True)
+        self.msb = Signal(reset_less=True)
+        self.nt = Signal(bit_wid*2, reset_less=True)
+        self.nl = Signal(bit_wid*2, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+        bit_wid = self.bit_width
+        ext = Repl(0, bit_wid) # extend output to HI part
+
+        # determine sign of each incoming number *in this partition*
+        enabled = Signal(name="en_%d" % i, reset_less=True)
+        m.d.comb += enabled.eq(self.part & self.msb & self.signed)
+
+        # for 8-bit values: form a * 0xFF00 by using -a * 0x100, the
+        # negation operation is split into a bitwise not and a +1.
+        # likewise for 16, 32, and 64-bit values.
+
+        # width-extended 1s complement if a is signed, otherwise zero
+        comb += nt.eq(Mux(a_enabled, Cat(ext, ~self.op), 0))
+
+        # add 1 if signed, otherwise add zero
+        comb += self.nl.eq(Cat(ext, enabled, Repl(0, bit_wid-1)))
+
+        return m
+
 
 class Part(Elaboratable):
     """ a key class which, depending on the partitioning, will determine
