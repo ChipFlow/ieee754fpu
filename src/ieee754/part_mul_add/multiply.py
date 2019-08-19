@@ -488,6 +488,20 @@ class ProductTerms(Elaboratable):
 
 
 class Part(Elaboratable):
+    """ a key class which, depending on the partitioning, will determine
+        what action to take when parts of the output are signed or unsigned.
+
+        this requires 2 pieces of data *per operand, per partition*:
+        whether the MSB is HI/LO (per partition!), and whether a signed
+        or unsigned operation has been *requested*.
+
+        once that is determined, signed is basically carried out
+        by splitting 2's complement into 1's complement plus one.
+        1's complement is just a bit-inversion.
+
+        the extra terms - as separate terms - are then thrown at the
+        AddReduce alongside the multiplication part-results.
+    """
     def __init__(self, width, n_parts, n_levels, pbwid):
 
         # inputs
@@ -535,14 +549,16 @@ class Part(Elaboratable):
                 self.not_a_term, self.neg_lsb_a_term, \
                 self.not_b_term, self.neg_lsb_b_term
 
-        byte_width = 8 // len(parts)
-        bit_width = 8 * byte_width
+        byte_width = 8 // len(parts) # byte width
+        bit_wid = 8 * byte_width     # bit width
+        ext = Repl(0, bit_wid)       # extend output to HI part
         nat, nbt, nla, nlb = [], [], [], []
         for i in range(len(parts)):
-            be = parts[i] & self.a[(i + 1) * bit_width - 1] \
-                & self.a_signed[i * byte_width]
-            ae = parts[i] & self.b[(i + 1) * bit_width - 1] \
-                & self.b_signed[i * byte_width]
+            # determine sign of each incoming number *in this partition*
+            be = parts[i] & self.a[(i + 1) * bit_wid - 1] \  # MSB
+                & self.a_signed[i * byte_width]              # a op is signed?
+            ae = parts[i] & self.b[(i + 1) * bit_wid - 1] \  # MSB
+                & self.b_signed[i * byte_width]              # b op is signed?
             a_enabled = Signal(name="a_en_%d" % i, reset_less=True)
             b_enabled = Signal(name="b_en_%d" % i, reset_less=True)
             m.d.comb += a_enabled.eq(ae)
@@ -551,22 +567,24 @@ class Part(Elaboratable):
             # for 8-bit values: form a * 0xFF00 by using -a * 0x100, the
             # negation operation is split into a bitwise not and a +1.
             # likewise for 16, 32, and 64-bit values.
+
+            # a: width-extended 1s complement if a is signed, otherwise zero
             nat.append(Mux(a_enabled,
-                    Cat(Repl(0, bit_width),
-                        ~self.a.bit_select(bit_width * i, bit_width)),
-                    0))
+                           Cat(ext, ~self.a.bit_select(bit_wid * i, bit_wid)),
+                           0))
 
-            nla.append(Cat(Repl(0, bit_width), a_enabled,
-                           Repl(0, bit_width-1)))
+            # a: add 1 if a signed, otherwise add zero
+            nla.append(Cat(ext, a_enabled, Repl(0, bit_wid-1)))
 
+            # b: width-extended 1s complement if a is signed, otherwise zero
             nbt.append(Mux(b_enabled,
-                    Cat(Repl(0, bit_width),
-                        ~self.b.bit_select(bit_width * i, bit_width)),
-                    0))
+                           Cat(ext, ~self.b.bit_select(bit_wid * i, bit_wid)),
+                           0))
 
-            nlb.append(Cat(Repl(0, bit_width), b_enabled,
-                           Repl(0, bit_width-1)))
+            # b: add 1 if b signed, otherwise add zero
+            nlb.append(Cat(ext, b_enabled, Repl(0, bit_wid-1)))
 
+        # concatenate together and return all 4 results.
         m.d.comb += [not_a_term.eq(Cat(*nat)),
                      not_b_term.eq(Cat(*nbt)),
                      neg_lsb_a_term.eq(Cat(*nla)),
