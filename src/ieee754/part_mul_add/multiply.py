@@ -697,7 +697,10 @@ class Mul8_16_32_64(Elaboratable):
             instruction.
     """
 
-    def __init__(self, register_levels= ()):
+    def __init__(self, register_levels=()):
+        """ register_levels: specifies the points in the cascade at which
+            flip-flops are to be inserted.
+        """
 
         # parameter(s)
         self.register_levels = list(register_levels)
@@ -833,18 +836,18 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += io8.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
 
         # final output
-        m.submodules.fo = fo = FinalOut(64)
+        m.submodules.finalout = finalout = FinalOut(64)
         for i in range(len(part_8.delayed_parts[-1])):
-            m.d.comb += fo.d8[i].eq(part_8.dplast[i])
+            m.d.comb += finalout.d8[i].eq(part_8.dplast[i])
         for i in range(len(part_16.delayed_parts[-1])):
-            m.d.comb += fo.d16[i].eq(part_16.dplast[i])
+            m.d.comb += finalout.d16[i].eq(part_16.dplast[i])
         for i in range(len(part_32.delayed_parts[-1])):
-            m.d.comb += fo.d32[i].eq(part_32.dplast[i])
-        m.d.comb += fo.i8.eq(io8.output)
-        m.d.comb += fo.i16.eq(io16.output)
-        m.d.comb += fo.i32.eq(io32.output)
-        m.d.comb += fo.i64.eq(io64.output)
-        m.d.comb += self.output.eq(fo.out)
+            m.d.comb += finalout.d32[i].eq(part_32.dplast[i])
+        m.d.comb += finalout.i8.eq(io8.output)
+        m.d.comb += finalout.i16.eq(io16.output)
+        m.d.comb += finalout.i32.eq(io32.output)
+        m.d.comb += finalout.i64.eq(io64.output)
+        m.d.comb += self.output.eq(finalout.out)
 
         return m
 
