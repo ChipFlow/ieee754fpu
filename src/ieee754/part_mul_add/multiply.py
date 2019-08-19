@@ -590,7 +590,7 @@ class Part(Elaboratable):
         for i in range(len(parts)):
             # work out bit-inverted and +1 term for a.
             pa = LSBNegTerm(bit_wid)
-            setattr(m.submodules, "lnt_a_%d" % i, pa)
+            setattr(m.submodules, "lnt_%d_a_%d" % (bit_wid, i), pa)
             m.d.comb += pa.part.eq(parts[i])
             m.d.comb += pa.op.eq(self.a.bit_select(bit_wid * i, bit_wid))
             m.d.comb += pa.signed.eq(self.b_signed[i * byte_width]) # yes b
@@ -600,7 +600,7 @@ class Part(Elaboratable):
 
             # work out bit-inverted and +1 term for b
             pb = LSBNegTerm(bit_wid)
-            setattr(m.submodules, "lnt_b_%d" % i, pb)
+            setattr(m.submodules, "lnt_%d_b_%d" % (bit_wid, i), pb)
             m.d.comb += pb.part.eq(parts[i])
             m.d.comb += pb.op.eq(self.b.bit_select(bit_wid * i, bit_wid))
             m.d.comb += pb.signed.eq(self.a_signed[i * byte_width]) # yes a
