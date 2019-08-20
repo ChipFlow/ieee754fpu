@@ -642,6 +642,7 @@ class ProductTerms(Elaboratable):
 
         return m
 
+
 class LSBNegTerm(Elaboratable):
 
     def __init__(self, bit_width):
