@@ -103,6 +103,12 @@ class PartitionPoints(dict):
                 return False
         return True
 
+    def part_byte(self, index, mfactor=1): # mfactor used for "expanding"
+        if index == -1 or index == 7:
+            return C(True, 1)
+        assert index >= 0 and index < 8
+        return self[(index * 8 + 8)*mfactor]
+
 
 class FullAdder(Elaboratable):
     """Full Adder.
@@ -966,12 +972,6 @@ class Mul8_16_32_64(Elaboratable):
         # output
         self.output = Signal(64)
 
-    def _part_byte(self, index):
-        if index == -1 or index == 7:
-            return C(True, 1)
-        assert index >= 0 and index < 8
-        return self.part_pts[index * 8 + 8]
-
     def elaborate(self, platform):
         m = Module()
 
@@ -980,7 +980,7 @@ class Mul8_16_32_64(Elaboratable):
         tl = []
         for i in range(8):
             pb = Signal(name="pb%d" % i, reset_less=True)
-            m.d.comb += pb.eq(self._part_byte(i))
+            m.d.comb += pb.eq(self.part_pts.part_byte(i))
             tl.append(pb)
         m.d.comb += pbs.eq(Cat(*tl))
 
