@@ -395,8 +395,9 @@ class AddReduce(Elaboratable):
             m.d.comb += adder_i.in1.eq(self._resized_inputs[i + 1])
             m.d.comb += adder_i.in2.eq(self._resized_inputs[i + 2])
             m.d.comb += adder_i.mask.eq(part_mask)
+            # add both the sum and the masked-carry to the next level.
+            # 3 inputs have now been reduced to 2...
             add_intermediate_term(adder_i.sum)
-            # mask out carry bits to prevent carries between partitions
             add_intermediate_term(adder_i.mcarry)
         # handle the remaining inputs.
         if len(self.inputs) % FULL_ADDER_INPUT_COUNT == 1:
