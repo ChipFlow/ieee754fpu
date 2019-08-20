@@ -984,6 +984,13 @@ class Mul8_16_32_64(Elaboratable):
             tl.append(pb)
         m.d.comb += pbs.eq(Cat(*tl))
 
+        # create (doubled) PartitionPoints (output is double input width)
+        expanded_part_pts = PartitionPoints()
+        for i, v in self.part_pts.items():
+            ep = Signal(name=f"expanded_part_pts_{i*2}", reset_less=True)
+            expanded_part_pts[i * 2] = ep
+            m.d.comb += ep.eq(v)
+
         # local variables
         signs = []
         for i in range(8):
@@ -1036,12 +1043,6 @@ class Mul8_16_32_64(Elaboratable):
             for i in range(len(l)):
                 m.d.comb += mod.orin[i].eq(l[i])
             terms.append(mod.orout)
-
-        expanded_part_pts = PartitionPoints()
-        for i, v in self.part_pts.items():
-            signal = Signal(name=f"expanded_part_pts_{i*2}", reset_less=True)
-            expanded_part_pts[i * 2] = signal
-            m.d.comb += signal.eq(v)
 
         add_reduce = AddReduce(terms,
                                128,
