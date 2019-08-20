@@ -808,7 +808,7 @@ class IntermediateOut(Elaboratable):
     def __init__(self, width, out_wid, n_parts):
         self.width = width
         self.n_parts = n_parts
-        self.delayed_part_ops = [Signal(2, name="dpop%d" % i, reset_less=True)
+        self.part_ops = [Signal(2, name="dpop%d" % i, reset_less=True)
                                      for i in range(8)]
         self.intermed = Signal(out_wid, reset_less=True)
         self.output = Signal(out_wid//2, reset_less=True)
@@ -822,7 +822,7 @@ class IntermediateOut(Elaboratable):
         for i in range(self.n_parts):
             op = Signal(w, reset_less=True, name="op%d_%d" % (w, i))
             m.d.comb += op.eq(
-                Mux(self.delayed_part_ops[sel * i] == OP_MUL_LOW,
+                Mux(self.part_ops[sel * i] == OP_MUL_LOW,
                     self.intermed.part(i * w*2, w),
                     self.intermed.part(i * w*2 + w, w)))
             ol.append(op)
@@ -1057,25 +1057,25 @@ class Mul8_16_32_64(Elaboratable):
         m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
         m.d.comb += io64.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io64.delayed_part_ops[i].eq(out_part_ops[i])
+            m.d.comb += io64.part_ops[i].eq(out_part_ops[i])
 
         # create _output_32
         m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
         m.d.comb += io32.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io32.delayed_part_ops[i].eq(out_part_ops[i])
+            m.d.comb += io32.part_ops[i].eq(out_part_ops[i])
 
         # create _output_16
         m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
         m.d.comb += io16.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io16.delayed_part_ops[i].eq(out_part_ops[i])
+            m.d.comb += io16.part_ops[i].eq(out_part_ops[i])
 
         # create _output_8
         m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
         m.d.comb += io8.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io8.delayed_part_ops[i].eq(out_part_ops[i])
+            m.d.comb += io8.part_ops[i].eq(out_part_ops[i])
 
         # final output
         m.submodules.finalout = finalout = FinalOut(64)
