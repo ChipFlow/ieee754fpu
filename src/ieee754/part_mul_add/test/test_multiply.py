@@ -250,7 +250,8 @@ class TestAddReduce(unittest.TestCase):
         module = AddReduce(inputs,
                            width,
                            register_levels,
-                           partition_points)
+                           partition_points,
+                           [])
         file_name = "add_reduce"
         if len(register_levels) != 0:
             file_name += f"-{'_'.join(map(repr, register_levels))}"
