@@ -140,6 +140,37 @@ class FullAdder(Elaboratable):
         return m
 
 
+class MaskedFullAdder(FullAdder):
+    """Masked Full Adder.
+
+    :attribute mask: the carry partition mask
+    :attribute in0: the first input
+    :attribute in1: the second input
+    :attribute in2: the third input
+    :attribute sum: the sum output
+    :attribute mcarry: the masked carry output
+
+    FullAdders are always used with a "mask" on the output.  To keep
+    the graphviz "clean", this class performs the masking here rather
+    than inside a large for-loop.
+    """
+
+    def __init__(self, width):
+        """Create a ``MaskedFullAdder``.
+
+        :param width: the bit width of the input and output
+        """
+        FullAdder.__init__(self, width)
+        self.mask = Signal(width)
+        self.mcarry = Signal(width)
+
+    def elaborate(self, platform):
+        """Elaborate this module."""
+        m = FullAdder.elaborate(self, platform)
+        m.d.comb += self.mcarry.eq((self.carry << 1) & self.mask)
+        return m
+
+
 class PartitionedAdder(Elaboratable):
     """Partitioned Adder.
 
@@ -350,15 +381,15 @@ class AddReduce(Elaboratable):
         # create full adders for this recursive level.
         # this shrinks N terms to 2 * (N // 3) plus the remainder
         for i in groups:
-            adder_i = FullAdder(len(self.output))
+            adder_i = MaskedFullAdder(len(self.output))
             setattr(m.submodules, f"adder_{i}", adder_i)
             m.d.comb += adder_i.in0.eq(self._resized_inputs[i])
             m.d.comb += adder_i.in1.eq(self._resized_inputs[i + 1])
             m.d.comb += adder_i.in2.eq(self._resized_inputs[i + 2])
+            m.d.comb += adder_i.mask.eq(part_mask)
             add_intermediate_term(adder_i.sum)
-            shifted_carry = adder_i.carry << 1
             # mask out carry bits to prevent carries between partitions
-            add_intermediate_term((adder_i.carry << 1) & part_mask)
+            add_intermediate_term(adder_i.mcarry)
         # handle the remaining inputs.
         if len(self.inputs) % FULL_ADDER_INPUT_COUNT == 1:
             add_intermediate_term(self._resized_inputs[-1])
