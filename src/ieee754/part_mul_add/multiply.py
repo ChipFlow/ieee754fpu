@@ -316,7 +316,7 @@ class AddReduceSingle(Elaboratable):
         :param partition_points: the input partition points.
         """
         self.part_ops = part_ops
-        self.out_part_ops = [Signal(2, name=f"part_ops_{i}")
+        self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
                           for i in range(len(part_ops))]
         self.inputs = list(inputs)
         self._resized_inputs = [
@@ -489,7 +489,7 @@ class AddReduce(Elaboratable):
         """
         self.inputs = inputs
         self.part_ops = part_ops
-        self.out_part_ops = [Signal(2, name=f"part_ops_{i}")
+        self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
                           for i in range(len(part_ops))]
         self.output = Signal(output_width)
         self.output_width = output_width
@@ -526,7 +526,7 @@ class AddReduce(Elaboratable):
             next_levels = list(AddReduce.next_register_levels(next_levels))
             partition_points = next_level._reg_partition_points
             inputs = next_level.intermediate_terms
-            part_ops = next_level.part_ops
+            part_ops = next_level.out_part_ops
 
         self.levels = mods
 
@@ -992,15 +992,6 @@ class Mul8_16_32_64(Elaboratable):
             setattr(m.submodules, "signs%d" % i, s)
             m.d.comb += s.part_ops.eq(self.part_ops[i])
 
-        delayed_part_ops = [
-            [Signal(2, name=f"_delayed_part_ops_{delay}_{i}")
-             for i in range(8)]
-            for delay in range(1 + len(self.register_levels))]
-        for i in range(len(self.part_ops)):
-            m.d.comb += delayed_part_ops[0][i].eq(self.part_ops[i])
-            m.d.sync += [delayed_part_ops[j + 1][i].eq(delayed_part_ops[j][i])
-                         for j in range(len(self.register_levels))]
-
         n_levels = len(self.register_levels)+1
         m.submodules.part_8 = part_8 = Part(128, 8, n_levels, 8)
         m.submodules.part_16 = part_16 = Part(128, 4, n_levels, 8)
@@ -1058,8 +1049,7 @@ class Mul8_16_32_64(Elaboratable):
                                expanded_part_pts,
                                self.part_ops)
 
-        #out_part_ops = add_reduce.levels[-1].out_part_ops
-        out_part_ops = delayed_part_ops[-1]
+        out_part_ops = add_reduce.levels[-1].out_part_ops
 
         m.submodules.add_reduce = add_reduce
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
