@@ -244,7 +244,7 @@ class PartitionedAdder(Elaboratable):
                 ea.append(self._expanded_a[expanded_index])
                 al.append(~self.partition_points[i]) # add extra bit in a
                 eb.append(self._expanded_b[expanded_index])
-                bl.append(C(0)) # do *not* add extra bit into b.
+                bl.append(C(0)) # yes, add a zero
                 expanded_index += 1 # skip the extra point.  NOT in the output
             ea.append(self._expanded_a[expanded_index])
             eb.append(self._expanded_b[expanded_index])
