@@ -316,7 +316,7 @@ class AddReduceSingle(Elaboratable):
         :param partition_points: the input partition points.
         """
         self.part_ops = part_ops
-        self._part_ops = [Signal(2, name=f"part_ops_{i}")
+        self.out_part_ops = [Signal(2, name=f"part_ops_{i}")
                           for i in range(len(part_ops))]
         self.inputs = list(inputs)
         self._resized_inputs = [
@@ -335,6 +335,10 @@ class AddReduceSingle(Elaboratable):
                 raise ValueError(
                     "not enough adder levels for specified register levels")
 
+        # this is annoying.  we have to create the modules (and terms)
+        # because we need to know what they are (in order to set up the
+        # interconnects back in AddReduce), but cannot do the m.d.comb +=
+        # etc because this is not in elaboratable.
         self.groups = AddReduceSingle.full_adder_groups(len(self.inputs))
         self._intermediate_terms = []
         if len(self.groups) != 0:
@@ -371,7 +375,7 @@ class AddReduceSingle(Elaboratable):
         # pipeline registers
         resized_input_assignments = [self._resized_inputs[i].eq(self.inputs[i])
                                      for i in range(len(self.inputs))]
-        copy_part_ops = [self._part_ops[i].eq(self.part_ops[i])
+        copy_part_ops = [self.out_part_ops[i].eq(self.part_ops[i])
                                      for i in range(len(self.part_ops))]
         if 0 in self.register_levels:
             m.d.sync += copy_part_ops
@@ -485,12 +489,18 @@ class AddReduce(Elaboratable):
         """
         self.inputs = inputs
         self.part_ops = part_ops
+        self.out_part_ops = [Signal(2, name=f"part_ops_{i}")
+                          for i in range(len(part_ops))]
         self.output = Signal(output_width)
         self.output_width = output_width
         self.register_levels = register_levels
         self.partition_points = partition_points
 
         self.create_levels()
+
+    @staticmethod
+    def get_max_level(input_count):
+        return AddReduceSingle.get_max_level(input_count)
 
     @staticmethod
     def next_register_levels(register_levels):
@@ -506,15 +516,17 @@ class AddReduce(Elaboratable):
         next_levels = self.register_levels
         partition_points = self.partition_points
         inputs = self.inputs
+        part_ops = self.part_ops
         while True:
             next_level = AddReduceSingle(inputs, self.output_width, next_levels,
-                                         partition_points, self.part_ops)
+                                         partition_points, part_ops)
             mods.append(next_level)
             if len(next_level.groups) == 0:
                 break
             next_levels = list(AddReduce.next_register_levels(next_levels))
             partition_points = next_level._reg_partition_points
             inputs = next_level.intermediate_terms
+            part_ops = next_level.part_ops
 
         self.levels = mods
 
@@ -527,6 +539,9 @@ class AddReduce(Elaboratable):
 
         # output comes from last module
         m.d.comb += self.output.eq(next_level.output)
+        copy_part_ops = [self.out_part_ops[i].eq(next_level.out_part_ops[i])
+                                     for i in range(len(self.part_ops))]
+        m.d.comb += copy_part_ops
 
         return m
 
@@ -592,8 +607,8 @@ class ProductTerm(Elaboratable):
         bsb = Signal(self.width, reset_less=True)
         a_index, b_index = self.a_index, self.b_index
         pwidth = self.pwidth
-        m.d.comb += bsa.eq(self.a.bit_select(a_index * pwidth, pwidth))
-        m.d.comb += bsb.eq(self.b.bit_select(b_index * pwidth, pwidth))
+        m.d.comb += bsa.eq(self.a.part(a_index * pwidth, pwidth))
+        m.d.comb += bsb.eq(self.b.part(b_index * pwidth, pwidth))
         m.d.comb += self.ti.eq(bsa * bsb)
         m.d.comb += self.term.eq(get_term(self.ti, self.shift, self.enabled))
         """
@@ -607,8 +622,8 @@ class ProductTerm(Elaboratable):
         asel = Signal(width, reset_less=True)
         bsel = Signal(width, reset_less=True)
         a_index, b_index = self.a_index, self.b_index
-        m.d.comb += asel.eq(self.a.bit_select(a_index * pwidth, pwidth))
-        m.d.comb += bsel.eq(self.b.bit_select(b_index * pwidth, pwidth))
+        m.d.comb += asel.eq(self.a.part(a_index * pwidth, pwidth))
+        m.d.comb += bsel.eq(self.b.part(b_index * pwidth, pwidth))
         m.d.comb += bsa.eq(get_term(asel, self.shift, self.enabled))
         m.d.comb += bsb.eq(get_term(bsel, self.shift, self.enabled))
         m.d.comb += self.ti.eq(bsa * bsb)
@@ -760,7 +775,7 @@ class Part(Elaboratable):
             pa = LSBNegTerm(bit_wid)
             setattr(m.submodules, "lnt_%d_a_%d" % (bit_wid, i), pa)
             m.d.comb += pa.part.eq(parts[i])
-            m.d.comb += pa.op.eq(self.a.bit_select(bit_wid * i, bit_wid))
+            m.d.comb += pa.op.eq(self.a.part(bit_wid * i, bit_wid))
             m.d.comb += pa.signed.eq(self.b_signed[i * byte_width]) # yes b
             m.d.comb += pa.msb.eq(self.b[(i + 1) * bit_wid - 1]) # really, b
             nat.append(pa.nt)
@@ -770,7 +785,7 @@ class Part(Elaboratable):
             pb = LSBNegTerm(bit_wid)
             setattr(m.submodules, "lnt_%d_b_%d" % (bit_wid, i), pb)
             m.d.comb += pb.part.eq(parts[i])
-            m.d.comb += pb.op.eq(self.b.bit_select(bit_wid * i, bit_wid))
+            m.d.comb += pb.op.eq(self.b.part(bit_wid * i, bit_wid))
             m.d.comb += pb.signed.eq(self.a_signed[i * byte_width]) # yes a
             m.d.comb += pb.msb.eq(self.a[(i + 1) * bit_wid - 1]) # really, a
             nbt.append(pb.nt)
@@ -808,8 +823,8 @@ class IntermediateOut(Elaboratable):
             op = Signal(w, reset_less=True, name="op%d_%d" % (w, i))
             m.d.comb += op.eq(
                 Mux(self.delayed_part_ops[sel * i] == OP_MUL_LOW,
-                    self.intermed.bit_select(i * w*2, w),
-                    self.intermed.bit_select(i * w*2 + w, w)))
+                    self.intermed.part(i * w*2, w),
+                    self.intermed.part(i * w*2 + w, w)))
             ol.append(op)
         m.d.comb += self.output.eq(Cat(*ol))
 
@@ -849,10 +864,10 @@ class FinalOut(Elaboratable):
             op = Signal(8, reset_less=True, name="op_%d" % i)
             m.d.comb += op.eq(
                 Mux(self.d8[i] | self.d16[i // 2],
-                    Mux(self.d8[i], self.i8.bit_select(i * 8, 8),
-                                     self.i16.bit_select(i * 8, 8)),
-                    Mux(self.d32[i // 4], self.i32.bit_select(i * 8, 8),
-                                          self.i64.bit_select(i * 8, 8))))
+                    Mux(self.d8[i], self.i8.part(i * 8, 8),
+                                     self.i16.part(i * 8, 8)),
+                    Mux(self.d32[i // 4], self.i32.part(i * 8, 8),
+                                          self.i64.part(i * 8, 8))))
             ol.append(op)
         m.d.comb += self.out.eq(Cat(*ol))
         return m
@@ -1043,31 +1058,34 @@ class Mul8_16_32_64(Elaboratable):
                                expanded_part_pts,
                                self.part_ops)
 
+        #out_part_ops = add_reduce.levels[-1].out_part_ops
+        out_part_ops = delayed_part_ops[-1]
+
         m.submodules.add_reduce = add_reduce
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
         # create _output_64
         m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
         m.d.comb += io64.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io64.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+            m.d.comb += io64.delayed_part_ops[i].eq(out_part_ops[i])
 
         # create _output_32
         m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
         m.d.comb += io32.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io32.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+            m.d.comb += io32.delayed_part_ops[i].eq(out_part_ops[i])
 
         # create _output_16
         m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
         m.d.comb += io16.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io16.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+            m.d.comb += io16.delayed_part_ops[i].eq(out_part_ops[i])
 
         # create _output_8
         m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
         m.d.comb += io8.intermed.eq(self._intermediate_output)
         for i in range(8):
-            m.d.comb += io8.delayed_part_ops[i].eq(delayed_part_ops[-1][i])
+            m.d.comb += io8.delayed_part_ops[i].eq(out_part_ops[i])
 
         # final output
         m.submodules.finalout = finalout = FinalOut(64)
