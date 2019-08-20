@@ -143,6 +143,11 @@ class FullAdder(Elaboratable):
 class PartitionedAdder(Elaboratable):
     """Partitioned Adder.
 
+    Performs the final add.  The partition points are included in the
+    actual add (in one of the operands only), which causes a carry over
+    to the next bit.  Then the final output *removes* the extra bits from
+    the result.
+
     :attribute width: the bit width of the input and output. Read-only.
     :attribute a: the first input to the adder
     :attribute b: the second input to the adder
@@ -185,16 +190,22 @@ class PartitionedAdder(Elaboratable):
         # store bits in a list, use Cat later.  graphviz is much cleaner
         al, bl, ol, ea, eb, eo = [],[],[],[],[],[]
 
-        # partition points are "breaks" (extra zeros) in what would otherwise
-        # be a massive long add.
+        # partition points are "breaks" (extra zeros or 1s) in what would
+        # otherwise be a massive long add.  when the "break" points are 0,
+        # whatever is in it (in the output) is discarded.  however when
+        # there is a "1", it causes a roll-over carry to the *next* bit.
+        # we still ignore the "break" bit in the [intermediate] output,
+        # however by that time we've got the effect that we wanted: the
+        # carry has been carried *over* the break point.
+
         for i in range(self.width):
             if i in self.partition_points:
                 # add extra bit set to 0 + 0 for enabled partition points
                 # and 1 + 0 for disabled partition points
                 ea.append(self._expanded_a[expanded_index])
-                al.append(~self.partition_points[i])
+                al.append(~self.partition_points[i]) # add extra bit in a
                 eb.append(self._expanded_b[expanded_index])
-                bl.append(C(0))
+                bl.append(C(0)) # do *not* add extra bit into b.
                 expanded_index += 1
             ea.append(self._expanded_a[expanded_index])
             al.append(self.a[i])
@@ -203,10 +214,12 @@ class PartitionedAdder(Elaboratable):
             eo.append(self._expanded_output[expanded_index])
             ol.append(self.output[i])
             expanded_index += 1
+
         # combine above using Cat
         m.d.comb += Cat(*ea).eq(Cat(*al))
         m.d.comb += Cat(*eb).eq(Cat(*bl))
         m.d.comb += Cat(*ol).eq(Cat(*eo))
+
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
         m.d.comb += self._expanded_output.eq(
