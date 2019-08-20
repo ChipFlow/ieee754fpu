@@ -140,7 +140,7 @@ class FullAdder(Elaboratable):
         return m
 
 
-class MaskedFullAdder(FullAdder):
+class MaskedFullAdder(Elaboratable):
     """Masked Full Adder.
 
     :attribute mask: the carry partition mask
@@ -153,6 +153,13 @@ class MaskedFullAdder(FullAdder):
     FullAdders are always used with a "mask" on the output.  To keep
     the graphviz "clean", this class performs the masking here rather
     than inside a large for-loop.
+
+    See the following discussion as to why this is no longer derived
+    from FullAdder.  Each carry is shifted here *before* being ANDed
+    with the mask, so that an AOI cell may be used (which is more
+    gate-efficient)
+    https://en.wikipedia.org/wiki/AND-OR-Invert
+    https://groups.google.com/d/msg/comp.arch/fcq-GLQqvas/vTxmcA0QAgAJ
     """
 
     def __init__(self, width):
@@ -160,14 +167,31 @@ class MaskedFullAdder(FullAdder):
 
         :param width: the bit width of the input and output
         """
-        FullAdder.__init__(self, width)
-        self.mask = Signal(width)
-        self.mcarry = Signal(width)
+        self.width = width
+        self.mask = Signal(width, reset_less=True)
+        self.mcarry = Signal(width, reset_less=True)
+        self.in0 = Signal(width, reset_less=True)
+        self.in1 = Signal(width, reset_less=True)
+        self.in2 = Signal(width, reset_less=True)
+        self.sum = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         """Elaborate this module."""
-        m = FullAdder.elaborate(self, platform)
-        m.d.comb += self.mcarry.eq((self.carry << 1) & self.mask)
+        m = Module()
+        s1 = Signal(self.width, reset_less=True)
+        s2 = Signal(self.width, reset_less=True)
+        s3 = Signal(self.width, reset_less=True)
+        c1 = Signal(self.width, reset_less=True)
+        c2 = Signal(self.width, reset_less=True)
+        c3 = Signal(self.width, reset_less=True)
+        m.d.comb += self.sum.eq(self.in0 ^ self.in1 ^ self.in2)
+        m.d.comb += s1.eq(Cat(0, self.in0))
+        m.d.comb += s2.eq(Cat(0, self.in1))
+        m.d.comb += s3.eq(Cat(0, self.in2))
+        m.d.comb += c1.eq(s1 & s2 & self.mask)
+        m.d.comb += c2.eq(s2 & s3 & self.mask)
+        m.d.comb += c3.eq(s3 & s1 & self.mask)
+        m.d.comb += self.mcarry.eq(c1 | c2 | c3)
         return m
 
 
