@@ -50,15 +50,17 @@ class PartitionPoints(dict):
                     raise ValueError("point must be a non-negative integer")
                 self[point] = Value.wrap(enabled)
 
-    def like(self, name=None, src_loc_at=0):
+    def like(self, name=None, src_loc_at=0, mul=1):
         """Create a new ``PartitionPoints`` with ``Signal``s for all values.
 
         :param name: the base name for the new ``Signal``s.
+        :param mul: a multiplication factor on the indices
         """
         if name is None:
             name = Signal(src_loc_at=1+src_loc_at).name  # get variable name
         retval = PartitionPoints()
         for point, enabled in self.items():
+            point *= mul
             retval[point] = Signal(enabled.shape(), name=f"{name}_{point}")
         return retval
 
