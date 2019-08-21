@@ -309,12 +309,33 @@ class AddReduceData:
             for i in range(n_inputs)]
         self.reg_partition_points = ppoints.like()
 
-    def eq(self, rhs):
-        return [self.reg_partition_points.eq(rhs.reg_partition_points)] + \
-               [self.inputs[i].eq(rhs.inputs[i])
+    def eq_from(self, reg_partition_points, inputs, part_ops):
+        return [self.reg_partition_points.eq(reg_partition_points)] + \
+               [self.inputs[i].eq(inputs[i])
                                      for i in range(len(self.inputs))] + \
-               [self.part_ops[i].eq(rhs.part_ops[i])
+               [self.part_ops[i].eq(part_ops[i])
                                      for i in range(len(self.part_ops))]
+
+    def eq(self, rhs):
+        return self.eq_from(rhs.reg_partition_points, rhs.inputs, rhs.part_ops)
+
+
+class FinalReduceData:
+
+    def __init__(self, ppoints, output_width, n_parts):
+        self.part_ops = [Signal(2, name=f"part_ops_{i}")
+                          for i in range(n_parts)]
+        self.output = Signal(output_width)
+        self.reg_partition_points = ppoints.like()
+
+    def eq_from(self, reg_partition_points, output, part_ops):
+        return [self.reg_partition_points.eq(reg_partition_points)] + \
+               [self.output.eq(output)] + \
+               [self.part_ops[i].eq(part_ops[i])
+                                     for i in range(len(self.part_ops))]
+
+    def eq(self, rhs):
+        return self.eq_from(rhs.reg_partition_points, rhs.output, rhs.part_ops)
 
 
 class FinalAdd(Elaboratable):
@@ -325,34 +346,40 @@ class FinalAdd(Elaboratable):
                        partition_points):
         self.i = AddReduceData(partition_points, n_inputs,
                                output_width, n_parts)
+        self.o = FinalReduceData(partition_points, output_width, n_parts)
+        self.output_width = output_width
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.register_levels = list(register_levels)
-        self.output = Signal(output_width)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
-        self.intermediate_terms = []
 
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
 
+        output_width = self.output_width
+        output = Signal(output_width)
         if self.n_inputs == 0:
             # use 0 as the default output value
-            m.d.comb += self.output.eq(0)
+            m.d.comb += output.eq(0)
         elif self.n_inputs == 1:
             # handle single input
-            m.d.comb += self.output.eq(self.i.inputs[0])
+            m.d.comb += output.eq(self.i.inputs[0])
         else:
             # base case for adding 2 inputs
             assert self.n_inputs == 2
-            adder = PartitionedAdder(len(self.output),
-                                     self.i.reg_partition_points)
+            adder = PartitionedAdder(output_width, self.i.reg_partition_points)
             m.submodules.final_adder = adder
             m.d.comb += adder.a.eq(self.i.inputs[0])
             m.d.comb += adder.b.eq(self.i.inputs[1])
-            m.d.comb += self.output.eq(adder.output)
+            m.d.comb += output.eq(adder.output)
+
+        # create output
+        m.d.comb += self.o.eq_from(self.i.reg_partition_points, output,
+                                   self.i.part_ops)
+
         return m
 
 
@@ -403,6 +430,9 @@ class AddReduceSingle(Elaboratable):
         if len(self.groups) != 0:
             self.create_next_terms()
 
+        self.o = AddReduceData(partition_points, len(self._intermediate_terms),
+                               output_width, n_parts)
+
     @staticmethod
     def get_max_level(input_count):
         """Get the maximum level.
@@ -430,9 +460,16 @@ class AddReduceSingle(Elaboratable):
         """Elaborate this module."""
         m = Module()
 
-        for (value, term) in self._intermediate_terms:
-            m.d.comb += term.eq(value)
+        # copy the intermediate terms to the output
+        for i, value in enumerate(self._intermediate_terms):
+            m.d.comb += self.o.inputs[i].eq(value)
 
+        # copy reg part points and part ops to output
+        m.d.comb += self.o.reg_partition_points.eq(self.i.reg_partition_points)
+        m.d.comb += [self.o.part_ops[i].eq(self.i.part_ops[i])
+                                     for i in range(len(self.i.part_ops))]
+
+        # set up the partition mask (for the adders)
         mask = self.i.reg_partition_points.as_mask(self.output_width)
         m.d.comb += self.part_mask.eq(mask)
 
@@ -449,16 +486,10 @@ class AddReduceSingle(Elaboratable):
 
     def create_next_terms(self):
 
-        # go on to prepare recursive case
-        intermediate_terms = []
         _intermediate_terms = []
 
         def add_intermediate_term(value):
-            intermediate_term = Signal(
-                self.output_width,
-                name=f"intermediate_terms[{len(intermediate_terms)}]")
-            _intermediate_terms.append((value, intermediate_term))
-            intermediate_terms.append(intermediate_term)
+            _intermediate_terms.append(value)
 
         # store mask in intermediary (simplifies graph)
         self.part_mask = Signal(self.output_width, reset_less=True)
@@ -485,7 +516,6 @@ class AddReduceSingle(Elaboratable):
         else:
             assert self.n_inputs % FULL_ADDER_INPUT_COUNT == 0
 
-        self.intermediate_terms = intermediate_terms
         self._intermediate_terms = _intermediate_terms
 
 
@@ -539,17 +569,17 @@ class AddReduce(Elaboratable):
         mods = []
         next_levels = self.register_levels
         partition_points = self.partition_points
-        inputs = self.inputs
         part_ops = self.part_ops
         n_parts = len(part_ops)
+        inputs = self.inputs
+        ilen = len(inputs)
         while True:
-            ilen = len(inputs)
             next_level = AddReduceSingle(ilen, self.output_width, n_parts,
                                          next_levels, partition_points)
             mods.append(next_level)
             next_levels = list(AddReduce.next_register_levels(next_levels))
             partition_points = next_level.i.reg_partition_points
-            inputs = next_level.intermediate_terms
+            inputs = next_level.o.inputs
             ilen = len(inputs)
             part_ops = next_level.i.part_ops
             groups = AddReduceSingle.full_adder_groups(len(inputs))
@@ -573,28 +603,23 @@ class AddReduce(Elaboratable):
         partition_points = self.partition_points
         inputs = self.inputs
         part_ops = self.part_ops
-        for i in range(len(self.levels)):
-            mcur = self.levels[i]
-            inassign = [mcur.i.inputs[i].eq(inputs[i])
-                                         for i in range(len(inputs))]
-            copy_part_ops = [mcur.i.part_ops[i].eq(part_ops[i])
-                                         for i in range(len(part_ops))]
+        n_parts = len(part_ops)
+        n_inputs = len(inputs)
+        output_width = self.output_width
+        i = AddReduceData(partition_points, n_inputs, output_width, n_parts)
+        m.d.comb += i.eq_from(partition_points, inputs, part_ops)
+        for idx in range(len(self.levels)):
+            mcur = self.levels[idx]
             if 0 in mcur.register_levels:
-                m.d.sync += copy_part_ops
-                m.d.sync += inassign
-                m.d.sync += mcur.i.reg_partition_points.eq(partition_points)
+                m.d.sync += mcur.i.eq(i)
             else:
-                m.d.comb += copy_part_ops
-                m.d.comb += inassign
-                m.d.comb += mcur.i.reg_partition_points.eq(partition_points)
-            partition_points = mcur.i.reg_partition_points
-            inputs = mcur.intermediate_terms
-            part_ops = mcur.i.part_ops
+                m.d.comb += mcur.i.eq(i)
+            i = mcur.o # for next loop
 
         # output comes from last module
-        m.d.comb += self.output.eq(next_level.output)
-        copy_part_ops = [self.out_part_ops[i].eq(next_level.i.part_ops[i])
-                                     for i in range(len(self.part_ops))]
+        m.d.comb += self.output.eq(i.output)
+        copy_part_ops = [self.out_part_ops[idx].eq(i.part_ops[idx])
+                                     for idx in range(len(self.part_ops))]
         m.d.comb += copy_part_ops
 
         return m
@@ -1122,8 +1147,8 @@ class Mul8_16_32_64(Elaboratable):
                                expanded_part_pts,
                                self.part_ops)
 
-        out_part_ops = add_reduce.levels[-1].i.part_ops
-        out_part_pts = add_reduce.levels[-1].i.reg_partition_points
+        out_part_ops = add_reduce.out_part_ops
+        out_part_pts = add_reduce.levels[-1].o.reg_partition_points
 
         m.submodules.add_reduce = add_reduce
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
