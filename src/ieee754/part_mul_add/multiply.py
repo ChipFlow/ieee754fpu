@@ -300,6 +300,22 @@ class PartitionedAdder(Elaboratable):
 
 FULL_ADDER_INPUT_COUNT = 3
 
+class AddReduceData:
+
+    def __init__(self, ppoints, output_width, n_parts)
+        self.part_ops = [Signal(2, name=f"part_ops_{i}")
+                          for i in range(n_parts)]
+        self.inputs = [Signal(output_width, name=f"inputs[{i}]")
+            for i in range(len(self.inputs))]
+        self.reg_partition_points = partition_points.like()
+
+    def eq(self, rhs):
+        return [self.reg_partition_points.eq(rhs.reg_partition_points)] + \
+               [self.inputs[i].eq(rhs.inputs[i])
+                                     for i in range(len(self.inputs))] + \
+               [self.part_ops[i].eq(rhs.part_ops[i])
+                                     for i in range(len(self.part_ops))]
+
 
 class AddReduceSingle(Elaboratable):
     """Add list of numbers together.
