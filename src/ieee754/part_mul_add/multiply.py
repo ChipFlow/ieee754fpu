@@ -585,10 +585,9 @@ class AddReduce(Elaboratable):
             if len(groups) == 0:
                 break
 
-        if ilen != 0:
-            next_level = FinalAdd(ilen, self.output_width, n_parts,
-                                  next_levels, partition_points)
-            mods.append(next_level)
+        next_level = FinalAdd(ilen, self.output_width, n_parts,
+                              next_levels, partition_points)
+        mods.append(next_level)
 
         self.levels = mods
 
