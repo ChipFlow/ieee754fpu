@@ -317,6 +317,63 @@ class AddReduceData:
                                      for i in range(len(self.part_ops))]
 
 
+class FinalAdd(Elaboratable):
+    """ Final stage of add reduce
+    """
+
+    def __init__(self, inputs, output_width, register_levels, partition_points,
+                       part_ops):
+        self.part_ops = part_ops
+        self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
+                          for i in range(len(part_ops))]
+        self.inputs = list(inputs)
+        self._resized_inputs = [
+            Signal(output_width, name=f"resized_inputs[{i}]")
+            for i in range(len(self.inputs))]
+        self.register_levels = list(register_levels)
+        self.output = Signal(output_width)
+        self.partition_points = PartitionPoints(partition_points)
+        if not self.partition_points.fits_in_width(output_width):
+            raise ValueError("partition_points doesn't fit in output_width")
+        self._reg_partition_points = self.partition_points.like()
+
+    def elaborate(self, platform):
+        """Elaborate this module."""
+        m = Module()
+
+        # resize inputs to correct bit-width and optionally add in
+        # pipeline registers
+        resized_input_assignments = [self._resized_inputs[i].eq(self.inputs[i])
+                                     for i in range(len(self.inputs))]
+        copy_part_ops = [self.out_part_ops[i].eq(self.part_ops[i])
+                                     for i in range(len(self.part_ops))]
+        if 0 in self.register_levels:
+            m.d.sync += copy_part_ops
+            m.d.sync += resized_input_assignments
+            m.d.sync += self._reg_partition_points.eq(self.partition_points)
+        else:
+            m.d.comb += copy_part_ops
+            m.d.comb += resized_input_assignments
+            m.d.comb += self._reg_partition_points.eq(self.partition_points)
+
+        if len(self.inputs) == 0:
+            # use 0 as the default output value
+            m.d.comb += self.output.eq(0)
+        elif len(self.inputs) == 1:
+            # handle single input
+            m.d.comb += self.output.eq(self._resized_inputs[0])
+        else:
+            # base case for adding 2 inputs
+            assert len(self.inputs) == 2
+            adder = PartitionedAdder(len(self.output),
+                                     self._reg_partition_points)
+            m.submodules.final_adder = adder
+            m.d.comb += adder.a.eq(self._resized_inputs[0])
+            m.d.comb += adder.b.eq(self._resized_inputs[1])
+            m.d.comb += self.output.eq(adder.output)
+        return m
+
+
 class AddReduceSingle(Elaboratable):
     """Add list of numbers together.
 
@@ -339,6 +396,7 @@ class AddReduceSingle(Elaboratable):
             pipeline registers.
         :param partition_points: the input partition points.
         """
+        self.output_width = output_width
         self.part_ops = part_ops
         self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
                           for i in range(len(part_ops))]
@@ -347,7 +405,6 @@ class AddReduceSingle(Elaboratable):
             Signal(output_width, name=f"resized_inputs[{i}]")
             for i in range(len(self.inputs))]
         self.register_levels = list(register_levels)
-        self.output = Signal(output_width)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
@@ -413,27 +470,7 @@ class AddReduceSingle(Elaboratable):
         for (value, term) in self._intermediate_terms:
             m.d.comb += term.eq(value)
 
-        # if there are no full adders to create, then we handle the base cases
-        # and return, otherwise we go on to the recursive case
-        if len(self.groups) == 0:
-            if len(self.inputs) == 0:
-                # use 0 as the default output value
-                m.d.comb += self.output.eq(0)
-            elif len(self.inputs) == 1:
-                # handle single input
-                m.d.comb += self.output.eq(self._resized_inputs[0])
-            else:
-                # base case for adding 2 inputs
-                assert len(self.inputs) == 2
-                adder = PartitionedAdder(len(self.output),
-                                         self._reg_partition_points)
-                m.submodules.final_adder = adder
-                m.d.comb += adder.a.eq(self._resized_inputs[0])
-                m.d.comb += adder.b.eq(self._resized_inputs[1])
-                m.d.comb += self.output.eq(adder.output)
-            return m
-
-        mask = self._reg_partition_points.as_mask(len(self.output))
+        mask = self._reg_partition_points.as_mask(self.output_width)
         m.d.comb += self.part_mask.eq(mask)
 
         # add and link the intermediate term modules
@@ -455,19 +492,19 @@ class AddReduceSingle(Elaboratable):
 
         def add_intermediate_term(value):
             intermediate_term = Signal(
-                len(self.output),
+                self.output_width,
                 name=f"intermediate_terms[{len(intermediate_terms)}]")
             _intermediate_terms.append((value, intermediate_term))
             intermediate_terms.append(intermediate_term)
 
         # store mask in intermediary (simplifies graph)
-        self.part_mask = Signal(len(self.output), reset_less=True)
+        self.part_mask = Signal(self.output_width, reset_less=True)
 
         # create full adders for this recursive level.
         # this shrinks N terms to 2 * (N // 3) plus the remainder
         self.adders = []
         for i in self.groups:
-            adder_i = MaskedFullAdder(len(self.output))
+            adder_i = MaskedFullAdder(self.output_width)
             self.adders.append((i, adder_i))
             # add both the sum and the masked-carry to the next level.
             # 3 inputs have now been reduced to 2...
@@ -545,12 +582,17 @@ class AddReduce(Elaboratable):
             next_level = AddReduceSingle(inputs, self.output_width, next_levels,
                                          partition_points, part_ops)
             mods.append(next_level)
-            if len(next_level.groups) == 0:
-                break
             next_levels = list(AddReduce.next_register_levels(next_levels))
             partition_points = next_level._reg_partition_points
             inputs = next_level.intermediate_terms
             part_ops = next_level.out_part_ops
+            groups = AddReduceSingle.full_adder_groups(len(inputs))
+            if len(groups) == 0:
+                break
+
+        next_level = FinalAdd(inputs, self.output_width, next_levels,
+                                     partition_points, part_ops)
+        mods.append(next_level)
 
         self.levels = mods
 
