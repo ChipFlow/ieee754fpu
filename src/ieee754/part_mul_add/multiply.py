@@ -778,13 +778,6 @@ class Part(Elaboratable):
 
         # outputs
         self.parts = [Signal(name=f"part_{i}") for i in range(n_parts)]
-        self.delayed_parts = [
-            [Signal(name=f"delayed_part_{delay}_{i}")
-             for i in range(n_parts)]
-                for delay in range(n_levels)]
-        # XXX REALLY WEIRD BUG - have to take a copy of the last delayed_parts
-        self.dplast = [Signal(name=f"dplast_{i}")
-                         for i in range(n_parts)]
 
         self.not_a_term = Signal(width)
         self.neg_lsb_a_term = Signal(width)
@@ -794,7 +787,7 @@ class Part(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        pbs, parts, delayed_parts = self.pbs, self.parts, self.delayed_parts
+        pbs, parts = self.pbs, self.parts
         epps = self.epps
         m.submodules.p = p = Parts(self.pbwid, epps, len(parts))
         m.d.comb += p.epps.eq(epps)
@@ -802,11 +795,6 @@ class Part(Elaboratable):
 
         npbs = Signal.like(pbs, reset_less=True)
         byte_count = 8 // len(parts)
-        for i in range(len(parts)):
-            m.d.comb += delayed_parts[0][i].eq(parts[i])
-            m.d.sync += [delayed_parts[j + 1][i].eq(delayed_parts[j][i])
-                         for j in range(len(delayed_parts)-1)]
-            m.d.comb += self.dplast[i].eq(delayed_parts[-1][i])
 
         not_a_term, neg_lsb_a_term, not_b_term, neg_lsb_b_term = \
                 self.not_a_term, self.neg_lsb_a_term, \
