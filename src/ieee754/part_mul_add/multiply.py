@@ -1090,6 +1090,7 @@ class Mul8_16_32_64(Elaboratable):
                                self.part_ops)
 
         out_part_ops = add_reduce.levels[-1].out_part_ops
+        out_part_pts = add_reduce.levels[-1]._reg_partition_points
 
         m.submodules.add_reduce = add_reduce
         m.d.comb += self._intermediate_output.eq(add_reduce.output)
@@ -1117,14 +1118,24 @@ class Mul8_16_32_64(Elaboratable):
         for i in range(8):
             m.d.comb += io8.part_ops[i].eq(out_part_ops[i])
 
+        m.submodules.p_8 = p_8 = Parts(8, eps, len(part_8.parts))
+        m.submodules.p_16 = p_16 = Parts(8, eps, len(part_16.parts))
+        m.submodules.p_32 = p_32 = Parts(8, eps, len(part_32.parts))
+        m.submodules.p_64 = p_64 = Parts(8, eps, len(part_64.parts))
+
+        m.d.comb += p_8.epps.eq(out_part_pts)
+        m.d.comb += p_16.epps.eq(out_part_pts)
+        m.d.comb += p_32.epps.eq(out_part_pts)
+        m.d.comb += p_64.epps.eq(out_part_pts)
+
         # final output
         m.submodules.finalout = finalout = FinalOut(64)
-        for i in range(len(part_8.delayed_parts[-1])):
-            m.d.comb += finalout.d8[i].eq(part_8.dplast[i])
-        for i in range(len(part_16.delayed_parts[-1])):
-            m.d.comb += finalout.d16[i].eq(part_16.dplast[i])
-        for i in range(len(part_32.delayed_parts[-1])):
-            m.d.comb += finalout.d32[i].eq(part_32.dplast[i])
+        for i in range(len(part_8.parts)):
+            m.d.comb += finalout.d8[i].eq(p_8.parts[i])
+        for i in range(len(part_16.parts)):
+            m.d.comb += finalout.d16[i].eq(p_16.parts[i])
+        for i in range(len(part_32.parts)):
+            m.d.comb += finalout.d32[i].eq(p_32.parts[i])
         m.d.comb += finalout.i8.eq(io8.output)
         m.d.comb += finalout.i16.eq(io16.output)
         m.d.comb += finalout.i32.eq(io32.output)
