@@ -793,12 +793,11 @@ class Part(Elaboratable):
         m.d.comb += p.epps.eq(epps)
         parts = p.parts
 
-        npbs = Signal.like(pbs, reset_less=True)
         byte_count = 8 // len(parts)
 
-        not_a_term, neg_lsb_a_term, not_b_term, neg_lsb_b_term = \
-                self.not_a_term, self.neg_lsb_a_term, \
-                self.not_b_term, self.neg_lsb_b_term
+        not_a_term, neg_lsb_a_term, not_b_term, neg_lsb_b_term = (
+                self.not_a_term, self.neg_lsb_a_term,
+                self.not_b_term, self.neg_lsb_b_term)
 
         byte_width = 8 // len(parts) # byte width
         bit_wid = 8 * byte_width     # bit width
