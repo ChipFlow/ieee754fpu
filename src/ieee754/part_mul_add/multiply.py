@@ -234,9 +234,9 @@ class PartitionedAdder(Elaboratable):
         :param partition_points: the input partition points
         """
         self.width = width
-        self.a = Signal(width)
-        self.b = Signal(width)
-        self.output = Signal(width)
+        self.a = Signal(width, reset_less=True)
+        self.b = Signal(width, reset_less=True)
+        self.output = Signal(width, reset_less=True)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(width):
             raise ValueError("partition_points doesn't fit in width")
@@ -301,8 +301,9 @@ class AddReduceData:
     def __init__(self, ppoints, n_inputs, output_width, n_parts):
         self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
                           for i in range(n_parts)]
-        self.inputs = [Signal(output_width, name=f"inputs[{i}]", reset_less=True)
-            for i in range(n_inputs)]
+        self.inputs = [Signal(output_width, name=f"inputs[{i}]",
+                              reset_less=True)
+                        for i in range(n_inputs)]
         self.reg_partition_points = ppoints.like()
 
     def eq_from(self, reg_partition_points, inputs, part_ops):
@@ -832,19 +833,22 @@ class Part(Elaboratable):
         self.epps = epps
 
         # inputs
-        self.a = Signal(64)
-        self.b = Signal(64)
-        self.a_signed = [Signal(name=f"a_signed_{i}") for i in range(8)]
-        self.b_signed = [Signal(name=f"_b_signed_{i}") for i in range(8)]
+        self.a = Signal(64, reset_less=True)
+        self.b = Signal(64, reset_less=True)
+        self.a_signed = [Signal(name=f"a_signed_{i}", reset_less=True)
+                            for i in range(8)]
+        self.b_signed = [Signal(name=f"_b_signed_{i}", reset_less=True)
+                            for i in range(8)]
         self.pbs = Signal(pbwid, reset_less=True)
 
         # outputs
-        self.parts = [Signal(name=f"part_{i}") for i in range(n_parts)]
+        self.parts = [Signal(name=f"part_{i}", reset_less=True)
+                            for i in range(n_parts)]
 
-        self.not_a_term = Signal(width)
-        self.neg_lsb_a_term = Signal(width)
-        self.not_b_term = Signal(width)
-        self.neg_lsb_b_term = Signal(width)
+        self.not_a_term = Signal(width, reset_less=True)
+        self.neg_lsb_a_term = Signal(width, reset_less=True)
+        self.not_b_term = Signal(width, reset_less=True)
+        self.neg_lsb_b_term = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
