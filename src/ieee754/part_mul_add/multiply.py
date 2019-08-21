@@ -764,7 +764,10 @@ class Part(Elaboratable):
         the extra terms - as separate terms - are then thrown at the
         AddReduce alongside the multiplication part-results.
     """
-    def __init__(self, width, n_parts, n_levels, pbwid):
+    def __init__(self, epps, width, n_parts, n_levels, pbwid):
+
+        self.pbwid = pbwid
+        self.epps = epps
 
         # inputs
         self.a = Signal(64)
@@ -792,19 +795,14 @@ class Part(Elaboratable):
         m = Module()
 
         pbs, parts, delayed_parts = self.pbs, self.parts, self.delayed_parts
-        # negated-temporary copy of partition bits
+        epps = self.epps
+        m.submodules.p = p = Parts(self.pbwid, epps, len(parts))
+        m.d.comb += p.epps.eq(epps)
+        parts = p.parts
+
         npbs = Signal.like(pbs, reset_less=True)
-        m.d.comb += npbs.eq(~pbs)
         byte_count = 8 // len(parts)
         for i in range(len(parts)):
-            pbl = []
-            pbl.append(npbs[i * byte_count - 1])
-            for j in range(i * byte_count, (i + 1) * byte_count - 1):
-                pbl.append(pbs[j])
-            pbl.append(npbs[(i + 1) * byte_count - 1])
-            value = Signal(len(pbl), name="value_%di" % i, reset_less=True)
-            m.d.comb += value.eq(Cat(*pbl))
-            m.d.comb += parts[i].eq(~(value).bool())
             m.d.comb += delayed_parts[0][i].eq(parts[i])
             m.d.sync += [delayed_parts[j + 1][i].eq(delayed_parts[j][i])
                          for j in range(len(delayed_parts)-1)]
@@ -1026,7 +1024,7 @@ class Mul8_16_32_64(Elaboratable):
         m.d.comb += pbs.eq(Cat(*tl))
 
         # create (doubled) PartitionPoints (output is double input width)
-        expanded_part_pts = PartitionPoints()
+        expanded_part_pts = eps = PartitionPoints()
         for i, v in self.part_pts.items():
             ep = Signal(name=f"expanded_part_pts_{i*2}", reset_less=True)
             expanded_part_pts[i * 2] = ep
@@ -1041,10 +1039,10 @@ class Mul8_16_32_64(Elaboratable):
             m.d.comb += s.part_ops.eq(self.part_ops[i])
 
         n_levels = len(self.register_levels)+1
-        m.submodules.part_8 = part_8 = Part(128, 8, n_levels, 8)
-        m.submodules.part_16 = part_16 = Part(128, 4, n_levels, 8)
-        m.submodules.part_32 = part_32 = Part(128, 2, n_levels, 8)
-        m.submodules.part_64 = part_64 = Part(128, 1, n_levels, 8)
+        m.submodules.part_8 = part_8 = Part(eps, 128, 8, n_levels, 8)
+        m.submodules.part_16 = part_16 = Part(eps, 128, 4, n_levels, 8)
+        m.submodules.part_32 = part_32 = Part(eps, 128, 2, n_levels, 8)
+        m.submodules.part_64 = part_64 = Part(eps, 128, 1, n_levels, 8)
         nat_l, nbt_l, nla_l, nlb_l = [], [], [], []
         for mod in [part_8, part_16, part_32, part_64]:
             m.d.comb += mod.a.eq(self.a)
