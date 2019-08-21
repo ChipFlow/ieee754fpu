@@ -246,17 +246,14 @@ class PartitionedAdder(Elaboratable):
                 expanded_width += 1
             expanded_width += 1
         self._expanded_width = expanded_width
-        # XXX these have to remain here due to some horrible nmigen
-        # simulation bugs involving sync.  it is *not* necessary to
-        # have them here, they should (under normal circumstances)
-        # be moved into elaborate, as they are entirely local
-        self._expanded_a = Signal(expanded_width, reset_less=True) # includes extra part-points
-        self._expanded_b = Signal(expanded_width, reset_less=True) # likewise.
-        self._expanded_o = Signal(expanded_width, reset_less=True) # likewise.
 
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
+        expanded_a = Signal(self._expanded_width, reset_less=True)
+        expanded_b = Signal(self._expanded_width, reset_less=True)
+        expanded_o = Signal(self._expanded_width, reset_less=True)
+
         expanded_index = 0
         # store bits in a list, use Cat later.  graphviz is much cleaner
         al, bl, ol, ea, eb, eo = [],[],[],[],[],[]
@@ -273,14 +270,14 @@ class PartitionedAdder(Elaboratable):
             if i in self.partition_points:
                 # add extra bit set to 0 + 0 for enabled partition points
                 # and 1 + 0 for disabled partition points
-                ea.append(self._expanded_a[expanded_index])
+                ea.append(expanded_a[expanded_index])
                 al.append(~self.partition_points[i]) # add extra bit in a
-                eb.append(self._expanded_b[expanded_index])
+                eb.append(expanded_b[expanded_index])
                 bl.append(C(0)) # yes, add a zero
                 expanded_index += 1 # skip the extra point.  NOT in the output
-            ea.append(self._expanded_a[expanded_index])
-            eb.append(self._expanded_b[expanded_index])
-            eo.append(self._expanded_o[expanded_index])
+            ea.append(expanded_a[expanded_index])
+            eb.append(expanded_b[expanded_index])
+            eo.append(expanded_o[expanded_index])
             al.append(self.a[i])
             bl.append(self.b[i])
             ol.append(self.output[i])
@@ -293,8 +290,7 @@ class PartitionedAdder(Elaboratable):
 
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
-        m.d.comb += self._expanded_o.eq(
-            self._expanded_a + self._expanded_b)
+        m.d.comb += expanded_o.eq(expanded_a + expanded_b)
         return m
 
 
