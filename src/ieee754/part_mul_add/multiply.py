@@ -302,12 +302,12 @@ FULL_ADDER_INPUT_COUNT = 3
 
 class AddReduceData:
 
-    def __init__(self, ppoints, output_width, n_parts):
+    def __init__(self, ppoints, n_inputs, output_width, n_parts):
         self.part_ops = [Signal(2, name=f"part_ops_{i}")
                           for i in range(n_parts)]
         self.inputs = [Signal(output_width, name=f"inputs[{i}]")
-            for i in range(len(self.inputs))]
-        self.reg_partition_points = partition_points.like()
+            for i in range(n_inputs)]
+        self.reg_partition_points = ppoints.like()
 
     def eq(self, rhs):
         return [self.reg_partition_points.eq(rhs.reg_partition_points)] + \
@@ -323,19 +323,18 @@ class FinalAdd(Elaboratable):
 
     def __init__(self, n_inputs, output_width, n_parts, register_levels,
                        partition_points):
+        self.i = AddReduceData(partition_points, n_inputs,
+                               output_width, n_parts)
         self.n_inputs = n_inputs
         self.n_parts = n_parts
-        self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
-                          for i in range(n_parts)]
-        self._resized_inputs = [
-            Signal(output_width, name=f"resized_inputs[{i}]")
-            for i in range(n_inputs)]
+        self.out_part_ops = self.i.part_ops
+        self._resized_inputs = self.i.inputs
         self.register_levels = list(register_levels)
         self.output = Signal(output_width)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
-        self._reg_partition_points = self.partition_points.like()
+        self._reg_partition_points = self.i.reg_partition_points
         self.intermediate_terms = []
 
     def elaborate(self, platform):
