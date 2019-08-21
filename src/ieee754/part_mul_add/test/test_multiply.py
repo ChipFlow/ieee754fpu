@@ -153,7 +153,7 @@ class TestAddReduce(unittest.TestCase):
             for value in values:
                 v += value & mask
             y |= mask & v
-        output = (yield module.output)
+        output = (yield module.o.output)
         if gen_or_check == GenOrCheck.Check:
             self.assertEqual(y, output, f"0x{y:X} != 0x{output:X}")
         yield Tick()
@@ -260,7 +260,7 @@ class TestAddReduce(unittest.TestCase):
                               [partition_4,
                                partition_8,
                                *inputs,
-                               module.output],
+                               module.o.output],
                               file_name) as sim:
             self.subtest_run_sim(input_count,
                                  sim,

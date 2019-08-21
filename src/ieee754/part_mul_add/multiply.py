@@ -543,9 +543,8 @@ class AddReduce(Elaboratable):
         """
         self.inputs = inputs
         self.part_ops = part_ops
-        self.out_part_ops = [Signal(2, name=f"out_part_ops_{i}")
-                          for i in range(len(part_ops))]
-        self.output = Signal(output_width)
+        n_parts = len(part_ops)
+        self.o = FinalReduceData(partition_points, output_width, n_parts)
         self.output_width = output_width
         self.register_levels = register_levels
         self.partition_points = partition_points
@@ -616,11 +615,9 @@ class AddReduce(Elaboratable):
                 m.d.comb += mcur.i.eq(i)
             i = mcur.o # for next loop
 
+        print ("levels", len(self.levels), i)
         # output comes from last module
-        m.d.comb += self.output.eq(i.output)
-        copy_part_ops = [self.out_part_ops[idx].eq(i.part_ops[idx])
-                                     for idx in range(len(self.part_ops))]
-        m.d.comb += copy_part_ops
+        m.d.comb += self.o.eq(i)
 
         return m
 
@@ -1147,11 +1144,11 @@ class Mul8_16_32_64(Elaboratable):
                                expanded_part_pts,
                                self.part_ops)
 
-        out_part_ops = add_reduce.out_part_ops
-        out_part_pts = add_reduce.levels[-1].o.reg_partition_points
+        out_part_ops = add_reduce.o.part_ops
+        out_part_pts = add_reduce.o.reg_partition_points
 
         m.submodules.add_reduce = add_reduce
-        m.d.comb += self._intermediate_output.eq(add_reduce.output)
+        m.d.comb += self._intermediate_output.eq(add_reduce.o.output)
         # create _output_64
         m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
         m.d.comb += io64.intermed.eq(self._intermediate_output)
