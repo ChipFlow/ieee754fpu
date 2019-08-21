@@ -327,7 +327,6 @@ class FinalAdd(Elaboratable):
                                output_width, n_parts)
         self.n_inputs = n_inputs
         self.n_parts = n_parts
-        self._resized_inputs = self.i.inputs
         self.register_levels = list(register_levels)
         self.output = Signal(output_width)
         self.partition_points = PartitionPoints(partition_points)
@@ -344,15 +343,15 @@ class FinalAdd(Elaboratable):
             m.d.comb += self.output.eq(0)
         elif self.n_inputs == 1:
             # handle single input
-            m.d.comb += self.output.eq(self._resized_inputs[0])
+            m.d.comb += self.output.eq(self.i.inputs[0])
         else:
             # base case for adding 2 inputs
             assert self.n_inputs == 2
             adder = PartitionedAdder(len(self.output),
                                      self.i.reg_partition_points)
             m.submodules.final_adder = adder
-            m.d.comb += adder.a.eq(self._resized_inputs[0])
-            m.d.comb += adder.b.eq(self._resized_inputs[1])
+            m.d.comb += adder.a.eq(self.i.inputs[0])
+            m.d.comb += adder.b.eq(self.i.inputs[1])
             m.d.comb += self.output.eq(adder.output)
         return m
 
@@ -384,7 +383,6 @@ class AddReduceSingle(Elaboratable):
         self.output_width = output_width
         self.i = AddReduceData(partition_points, n_inputs,
                                output_width, n_parts)
-        self._resized_inputs = self.i.inputs
         self.register_levels = list(register_levels)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
@@ -442,9 +440,9 @@ class AddReduceSingle(Elaboratable):
         for i, (iidx, adder_i) in enumerate(self.adders):
             setattr(m.submodules, f"adder_{i}", adder_i)
 
-            m.d.comb += adder_i.in0.eq(self._resized_inputs[iidx])
-            m.d.comb += adder_i.in1.eq(self._resized_inputs[iidx + 1])
-            m.d.comb += adder_i.in2.eq(self._resized_inputs[iidx + 2])
+            m.d.comb += adder_i.in0.eq(self.i.inputs[iidx])
+            m.d.comb += adder_i.in1.eq(self.i.inputs[iidx + 1])
+            m.d.comb += adder_i.in2.eq(self.i.inputs[iidx + 2])
             m.d.comb += adder_i.mask.eq(self.part_mask)
 
         return m
@@ -477,13 +475,13 @@ class AddReduceSingle(Elaboratable):
             add_intermediate_term(adder_i.mcarry)
         # handle the remaining inputs.
         if self.n_inputs % FULL_ADDER_INPUT_COUNT == 1:
-            add_intermediate_term(self._resized_inputs[-1])
+            add_intermediate_term(self.i.inputs[-1])
         elif self.n_inputs % FULL_ADDER_INPUT_COUNT == 2:
             # Just pass the terms to the next layer, since we wouldn't gain
             # anything by using a half adder since there would still be 2 terms
             # and just passing the terms to the next layer saves gates.
-            add_intermediate_term(self._resized_inputs[-2])
-            add_intermediate_term(self._resized_inputs[-1])
+            add_intermediate_term(self.i.inputs[-2])
+            add_intermediate_term(self.i.inputs[-1])
         else:
             assert self.n_inputs % FULL_ADDER_INPUT_COUNT == 0
 
@@ -577,7 +575,7 @@ class AddReduce(Elaboratable):
         part_ops = self.part_ops
         for i in range(len(self.levels)):
             mcur = self.levels[i]
-            inassign = [mcur._resized_inputs[i].eq(inputs[i])
+            inassign = [mcur.i.inputs[i].eq(inputs[i])
                                          for i in range(len(inputs))]
             copy_part_ops = [mcur.i.part_ops[i].eq(part_ops[i])
                                          for i in range(len(part_ops))]
