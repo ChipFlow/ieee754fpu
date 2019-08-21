@@ -708,6 +708,45 @@ class LSBNegTerm(Elaboratable):
         return m
 
 
+class Parts(Elaboratable):
+
+    def __init__(self, pbwid, epps, n_parts):
+        self.pbwid = pbwid
+        # inputs
+        self.epps = PartitionPoints.like(epps, name="epps") # expanded points
+        # outputs
+        self.parts = [Signal(name=f"part_{i}") for i in range(n_parts)]
+
+    def elaborate(self, platform):
+        m = Module()
+
+        epps, parts = self.epps, self.parts
+        # collect part-bytes (double factor because the input is extended)
+        pbs = Signal(self.pbwid, reset_less=True)
+        tl = []
+        for i in range(self.pbwid):
+            pb = Signal(name="pb%d" % i, reset_less=True)
+            m.d.comb += pb.eq(epps.part_byte(i, mfactor=2)) # double
+            tl.append(pb)
+        m.d.comb += pbs.eq(Cat(*tl))
+
+        # negated-temporary copy of partition bits
+        npbs = Signal.like(pbs, reset_less=True)
+        m.d.comb += npbs.eq(~pbs)
+        byte_count = 8 // len(parts)
+        for i in range(len(parts)):
+            pbl = []
+            pbl.append(npbs[i * byte_count - 1])
+            for j in range(i * byte_count, (i + 1) * byte_count - 1):
+                pbl.append(pbs[j])
+            pbl.append(npbs[(i + 1) * byte_count - 1])
+            value = Signal(len(pbl), name="value_%d" % i, reset_less=True)
+            m.d.comb += value.eq(Cat(*pbl))
+            m.d.comb += parts[i].eq(~(value).bool())
+
+        return m
+
+
 class Part(Elaboratable):
     """ a key class which, depending on the partitioning, will determine
         what action to take when parts of the output are signed or unsigned.
