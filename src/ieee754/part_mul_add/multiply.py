@@ -341,21 +341,6 @@ class FinalAdd(Elaboratable):
         """Elaborate this module."""
         m = Module()
 
-        # resize inputs to correct bit-width and optionally add in
-        # pipeline registers
-        resized_input_assignments = [self._resized_inputs[i].eq(self.inputs[i])
-                                     for i in range(len(self.inputs))]
-        copy_part_ops = [self.out_part_ops[i].eq(self.part_ops[i])
-                                     for i in range(len(self.part_ops))]
-        if 0 in self.register_levels:
-            m.d.sync += copy_part_ops
-            m.d.sync += resized_input_assignments
-            m.d.sync += self._reg_partition_points.eq(self.partition_points)
-        else:
-            m.d.comb += copy_part_ops
-            m.d.comb += resized_input_assignments
-            m.d.comb += self._reg_partition_points.eq(self.partition_points)
-
         if len(self.inputs) == 0:
             # use 0 as the default output value
             m.d.comb += self.output.eq(0)
@@ -451,21 +436,6 @@ class AddReduceSingle(Elaboratable):
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
-
-        # resize inputs to correct bit-width and optionally add in
-        # pipeline registers
-        resized_input_assignments = [self._resized_inputs[i].eq(self.inputs[i])
-                                     for i in range(len(self.inputs))]
-        copy_part_ops = [self.out_part_ops[i].eq(self.part_ops[i])
-                                     for i in range(len(self.part_ops))]
-        if 0 in self.register_levels:
-            m.d.sync += copy_part_ops
-            m.d.sync += resized_input_assignments
-            m.d.sync += self._reg_partition_points.eq(self.partition_points)
-        else:
-            m.d.comb += copy_part_ops
-            m.d.comb += resized_input_assignments
-            m.d.comb += self._reg_partition_points.eq(self.partition_points)
 
         for (value, term) in self._intermediate_terms:
             m.d.comb += term.eq(value)
@@ -602,6 +572,22 @@ class AddReduce(Elaboratable):
 
         for i, next_level in enumerate(self.levels):
             setattr(m.submodules, "next_level%d" % i, next_level)
+
+        for i in range(len(self.levels)):
+            mcur = self.levels[i]
+            #mnext = self.levels[i+1]
+            inassign = [mcur._resized_inputs[i].eq(mcur.inputs[i])
+                                         for i in range(len(mcur.inputs))]
+            copy_part_ops = [mcur.out_part_ops[i].eq(mcur.part_ops[i])
+                                         for i in range(len(mcur.part_ops))]
+            if 0 in mcur.register_levels:
+                m.d.sync += copy_part_ops
+                m.d.sync += inassign
+                m.d.sync += mcur._reg_partition_points.eq(mcur.partition_points)
+            else:
+                m.d.comb += copy_part_ops
+                m.d.comb += inassign
+                m.d.comb += mcur._reg_partition_points.eq(mcur.partition_points)
 
         # output comes from last module
         m.d.comb += self.output.eq(next_level.output)
