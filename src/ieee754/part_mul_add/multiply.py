@@ -132,11 +132,11 @@ class FullAdder(Elaboratable):
 
         :param width: the bit width of the input and output
         """
-        self.in0 = Signal(width)
-        self.in1 = Signal(width)
-        self.in2 = Signal(width)
-        self.sum = Signal(width)
-        self.carry = Signal(width)
+        self.in0 = Signal(width, reset_less=True)
+        self.in1 = Signal(width, reset_less=True)
+        self.in2 = Signal(width, reset_less=True)
+        self.sum = Signal(width, reset_less=True)
+        self.carry = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         """Elaborate this module."""
@@ -250,9 +250,9 @@ class PartitionedAdder(Elaboratable):
         # simulation bugs involving sync.  it is *not* necessary to
         # have them here, they should (under normal circumstances)
         # be moved into elaborate, as they are entirely local
-        self._expanded_a = Signal(expanded_width) # includes extra part-points
-        self._expanded_b = Signal(expanded_width) # likewise.
-        self._expanded_o = Signal(expanded_width) # likewise.
+        self._expanded_a = Signal(expanded_width, reset_less=True) # includes extra part-points
+        self._expanded_b = Signal(expanded_width, reset_less=True) # likewise.
+        self._expanded_o = Signal(expanded_width, reset_less=True) # likewise.
 
     def elaborate(self, platform):
         """Elaborate this module."""
@@ -303,9 +303,9 @@ FULL_ADDER_INPUT_COUNT = 3
 class AddReduceData:
 
     def __init__(self, ppoints, n_inputs, output_width, n_parts):
-        self.part_ops = [Signal(2, name=f"part_ops_{i}")
+        self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
                           for i in range(n_parts)]
-        self.inputs = [Signal(output_width, name=f"inputs[{i}]")
+        self.inputs = [Signal(output_width, name=f"inputs[{i}]", reset_less=True)
             for i in range(n_inputs)]
         self.reg_partition_points = ppoints.like()
 
@@ -323,9 +323,9 @@ class AddReduceData:
 class FinalReduceData:
 
     def __init__(self, ppoints, output_width, n_parts):
-        self.part_ops = [Signal(2, name=f"part_ops_{i}")
+        self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
                           for i in range(n_parts)]
-        self.output = Signal(output_width)
+        self.output = Signal(output_width, reset_less=True)
         self.reg_partition_points = ppoints.like()
 
     def eq_from(self, reg_partition_points, output, part_ops):
@@ -360,7 +360,7 @@ class FinalAdd(Elaboratable):
         m = Module()
 
         output_width = self.output_width
-        output = Signal(output_width)
+        output = Signal(output_width, reset_less=True)
         if self.n_inputs == 0:
             # use 0 as the default output value
             m.d.comb += output.eq(0)
@@ -782,7 +782,8 @@ class Parts(Elaboratable):
         # inputs
         self.epps = PartitionPoints.like(epps, name="epps") # expanded points
         # outputs
-        self.parts = [Signal(name=f"part_{i}") for i in range(n_parts)]
+        self.parts = [Signal(name=f"part_{i}", reset_less=True)
+                      for i in range(n_parts)]
 
     def elaborate(self, platform):
         m = Module()
