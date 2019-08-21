@@ -427,6 +427,7 @@ class AddReduceSingle(Elaboratable):
         # etc because this is not in elaboratable.
         self.groups = AddReduceSingle.full_adder_groups(n_inputs)
         self._intermediate_terms = []
+        self.adders = []
         if len(self.groups) != 0:
             self.create_next_terms()
 
@@ -470,8 +471,10 @@ class AddReduceSingle(Elaboratable):
                                      for i in range(len(self.i.part_ops))]
 
         # set up the partition mask (for the adders)
+        part_mask = Signal(self.output_width, reset_less=True)
+
         mask = self.i.reg_partition_points.as_mask(self.output_width)
-        m.d.comb += self.part_mask.eq(mask)
+        m.d.comb += part_mask.eq(mask)
 
         # add and link the intermediate term modules
         for i, (iidx, adder_i) in enumerate(self.adders):
@@ -480,7 +483,7 @@ class AddReduceSingle(Elaboratable):
             m.d.comb += adder_i.in0.eq(self.i.inputs[iidx])
             m.d.comb += adder_i.in1.eq(self.i.inputs[iidx + 1])
             m.d.comb += adder_i.in2.eq(self.i.inputs[iidx + 2])
-            m.d.comb += adder_i.mask.eq(self.part_mask)
+            m.d.comb += adder_i.mask.eq(part_mask)
 
         return m
 
@@ -491,12 +494,8 @@ class AddReduceSingle(Elaboratable):
         def add_intermediate_term(value):
             _intermediate_terms.append(value)
 
-        # store mask in intermediary (simplifies graph)
-        self.part_mask = Signal(self.output_width, reset_less=True)
-
         # create full adders for this recursive level.
         # this shrinks N terms to 2 * (N // 3) plus the remainder
-        self.adders = []
         for i in self.groups:
             adder_i = MaskedFullAdder(self.output_width)
             self.adders.append((i, adder_i))
@@ -614,7 +613,6 @@ class AddReduce(Elaboratable):
                 m.d.comb += mcur.i.eq(i)
             i = mcur.o # for next loop
 
-        print ("levels", len(self.levels), i)
         # output comes from last module
         m.d.comb += self.o.eq(i)
 
