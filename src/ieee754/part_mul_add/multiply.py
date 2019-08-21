@@ -1055,7 +1055,7 @@ class Mul8_16_32_64(Elaboratable):
         self.b = Signal(64)
 
         # intermediates (needed for unit tests)
-        self._intermediate_output = Signal(128)
+        self.intermediate_output = Signal(128)
 
         # output
         self.output = Signal(64)
@@ -1142,28 +1142,28 @@ class Mul8_16_32_64(Elaboratable):
         out_part_pts = add_reduce.o.reg_partition_points
 
         m.submodules.add_reduce = add_reduce
-        m.d.comb += self._intermediate_output.eq(add_reduce.o.output)
+        m.d.comb += self.intermediate_output.eq(add_reduce.o.output)
         # create _output_64
         m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
-        m.d.comb += io64.intermed.eq(self._intermediate_output)
+        m.d.comb += io64.intermed.eq(self.intermediate_output)
         for i in range(8):
             m.d.comb += io64.part_ops[i].eq(out_part_ops[i])
 
         # create _output_32
         m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
-        m.d.comb += io32.intermed.eq(self._intermediate_output)
+        m.d.comb += io32.intermed.eq(self.intermediate_output)
         for i in range(8):
             m.d.comb += io32.part_ops[i].eq(out_part_ops[i])
 
         # create _output_16
         m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
-        m.d.comb += io16.intermed.eq(self._intermediate_output)
+        m.d.comb += io16.intermed.eq(self.intermediate_output)
         for i in range(8):
             m.d.comb += io16.part_ops[i].eq(out_part_ops[i])
 
         # create _output_8
         m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
-        m.d.comb += io8.intermed.eq(self._intermediate_output)
+        m.d.comb += io8.intermed.eq(self.intermediate_output)
         for i in range(8):
             m.d.comb += io8.part_ops[i].eq(out_part_ops[i])
 
@@ -1198,7 +1198,7 @@ if __name__ == "__main__":
     m = Mul8_16_32_64()
     main(m, ports=[m.a,
                    m.b,
-                   m._intermediate_output,
+                   m.intermediate_output,
                    m.output,
                    *m.part_ops,
                    *m.part_pts.values()])

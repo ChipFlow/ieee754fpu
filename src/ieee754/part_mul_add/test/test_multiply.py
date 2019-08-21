@@ -456,7 +456,7 @@ class TestMul8_16_32_64(unittest.TestCase):
         output2, intermediate_output2 = self.simd_mul(a, b, lanes)
         yield Delay(1e-6)
         if gen_or_check == GenOrCheck.Check:
-            intermediate_output = (yield module._intermediate_output)
+            intermediate_output = (yield module.intermediate_output)
             self.assertEqual(intermediate_output,
                              intermediate_output2,
                              f"0x{intermediate_output:X} "
@@ -522,7 +522,7 @@ class TestMul8_16_32_64(unittest.TestCase):
             file_name += f"-{'_'.join(map(repr, register_levels))}"
         ports = [module.a,
                  module.b,
-                 module._intermediate_output,
+                 module.intermediate_output,
                  module.output]
         ports.extend(module.part_ops)
         ports.extend(module.part_pts.values())
