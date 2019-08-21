@@ -302,7 +302,7 @@ FULL_ADDER_INPUT_COUNT = 3
 
 class AddReduceData:
 
-    def __init__(self, ppoints, output_width, n_parts)
+    def __init__(self, ppoints, output_width, n_parts):
         self.part_ops = [Signal(2, name=f"part_ops_{i}")
                           for i in range(n_parts)]
         self.inputs = [Signal(output_width, name=f"inputs[{i}]")
