@@ -1189,6 +1189,79 @@ class Mul8_16_32_64(Elaboratable):
             expanded_part_pts[i * 2] = ep
             m.d.comb += ep.eq(v)
 
+        n_inputs = 64 + 4
+        n_parts = 8 #len(self.part_pts)
+        t = AllTerms(8, n_inputs, 128, n_parts, self.register_levels,
+                       eps)
+        m.submodules.allterms = t
+        m.d.comb += t.a.eq(self.a)
+        m.d.comb += t.b.eq(self.b)
+        m.d.comb += t.pbs.eq(pbs)
+        m.d.comb += t.epps.eq(eps)
+        for i in range(8):
+            m.d.comb += t.part_ops[i].eq(self.part_ops[i])
+
+        terms = t.o.inputs
+
+        add_reduce = AddReduce(terms,
+                               128,
+                               self.register_levels,
+                               t.o.reg_partition_points,
+                               t.o.part_ops)
+
+        out_part_ops = add_reduce.o.part_ops
+        out_part_pts = add_reduce.o.reg_partition_points
+
+        m.submodules.add_reduce = add_reduce
+        m.d.comb += self.intermediate_output.eq(add_reduce.o.output)
+
+        interm = Intermediates(128, 8, expanded_part_pts)
+        m.submodules.intermediates = interm
+        m.d.comb += interm.i.eq(add_reduce.o)
+
+        # final output
+        m.submodules.finalout = finalout = FinalOut(128, 8, expanded_part_pts)
+        m.d.comb += finalout.i.eq(interm.o)
+        m.d.comb += self.output.eq(finalout.out)
+
+        return m
+
+
+class AllTerms(Elaboratable):
+    """Set of terms to be added together
+    """
+
+    def __init__(self, pbwid, n_inputs, output_width, n_parts, register_levels,
+                       partition_points):
+        """Create an ``AddReduce``.
+
+        :param inputs: input ``Signal``s to be summed.
+        :param output_width: bit-width of ``output``.
+        :param register_levels: List of nesting levels that should have
+            pipeline registers.
+        :param partition_points: the input partition points.
+        """
+        self.epps = partition_points.like()
+        self.register_levels = register_levels
+        self.pbwid = pbwid
+        self.n_inputs = n_inputs
+        self.n_parts = n_parts
+        self.output_width = output_width
+        self.o = AddReduceData(self.epps, n_inputs,
+                               output_width, n_parts)
+
+        self.a = Signal(64)
+        self.b = Signal(64)
+
+        self.pbs = Signal(pbwid, reset_less=True)
+        self.part_ops = [Signal(2, name=f"part_ops_{i}") for i in range(8)]
+
+    def elaborate(self, platform):
+        m = Module()
+
+        pbs = self.pbs
+        eps = self.epps
+
         # local variables
         signs = []
         for i in range(8):
@@ -1242,26 +1315,14 @@ class Mul8_16_32_64(Elaboratable):
                 m.d.comb += mod.orin[i].eq(l[i])
             terms.append(mod.orout)
 
-        add_reduce = AddReduce(terms,
-                               128,
-                               self.register_levels,
-                               expanded_part_pts,
-                               self.part_ops)
+        # copy the intermediate terms to the output
+        for i, value in enumerate(terms):
+            m.d.comb += self.o.inputs[i].eq(value)
 
-        out_part_ops = add_reduce.o.part_ops
-        out_part_pts = add_reduce.o.reg_partition_points
-
-        m.submodules.add_reduce = add_reduce
-        m.d.comb += self.intermediate_output.eq(add_reduce.o.output)
-
-        interm = Intermediates(128, 8, expanded_part_pts)
-        m.submodules.intermediates = interm
-        m.d.comb += interm.i.eq(add_reduce.o)
-
-        # final output
-        m.submodules.finalout = finalout = FinalOut(128, 8, expanded_part_pts)
-        m.d.comb += finalout.i.eq(interm.o)
-        m.d.comb += self.output.eq(finalout.out)
+        # copy reg part points and part ops to output
+        m.d.comb += self.o.reg_partition_points.eq(eps)
+        m.d.comb += [self.o.part_ops[i].eq(self.part_ops[i])
+                                     for i in range(len(self.part_ops))]
 
         return m
 
