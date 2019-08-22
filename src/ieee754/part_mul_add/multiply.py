@@ -1016,6 +1016,81 @@ class Signs(Elaboratable):
 
         return m
 
+class IntermediateData:
+
+    def __init__(self, ppoints, output_width, n_parts):
+        self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
+                          for i in range(n_parts)]
+        self.reg_partition_points = ppoints.like()
+        self.outputs = [Signal(output_width, name="io%d" % i, reset_less=True)
+                          for i in range(4)]
+        # intermediates (needed for unit tests)
+        self.intermediate_output = Signal(output_width)
+
+    def eq_from(self, reg_partition_points, outputs, intermediate_output,
+                      part_ops):
+        return [self.reg_partition_points.eq(reg_partition_points)] + \
+               [self.intermediate_output.eq(intermediate_output)] + \
+               [self.outputs.eq(outputs)
+                                     for i in range(4)] + \
+               [self.part_ops[i].eq(part_ops[i])
+                                     for i in range(len(self.part_ops))]
+
+    def eq(self, rhs):
+        return self.eq_from(rhs.reg_partition_points, rhs.outputs,
+                            rhs.intermediate_output, rhs.part_ops)
+
+
+class Intermediates(Elaboratable):
+    """ Intermediate output modules
+    """
+
+    def __init__(self, output_width, n_parts, register_levels,
+                       partition_points):
+        self.i = FinalReduceData(partition_points, output_width, n_parts)
+        self.o = IntermediateData(partition_points, output_width, n_parts)
+
+    def elaborate(self, platform):
+        m = Module()
+
+        out_part_ops = self.i.part_ops
+        out_part_pts = self.i.reg_partition_points
+
+        # create _output_64
+        m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
+        m.d.comb += io64.intermed.eq(self.i.output)
+        for i in range(8):
+            m.d.comb += io64.part_ops[i].eq(out_part_ops[i])
+        m.d.comb += self.o.outputs[3].eq(io64.output)
+
+        # create _output_32
+        m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
+        m.d.comb += io32.intermed.eq(self.i.output)
+        for i in range(8):
+            m.d.comb += io32.part_ops[i].eq(out_part_ops[i])
+        m.d.comb += self.o.outputs[2].eq(io32.output)
+
+        # create _output_16
+        m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
+        m.d.comb += io16.intermed.eq(self.i.output)
+        for i in range(8):
+            m.d.comb += io16.part_ops[i].eq(out_part_ops[i])
+        m.d.comb += self.o.outputs[1].eq(io16.output)
+
+        # create _output_8
+        m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
+        m.d.comb += io8.intermed.eq(self.i.output)
+        for i in range(8):
+            m.d.comb += io8.part_ops[i].eq(out_part_ops[i])
+        m.d.comb += self.o.outputs[0].eq(io8.output)
+
+        for i in range(8):
+            m.d.comb += self.o.part_ops[i].eq(out_part_ops[i])
+        m.d.comb += self.o.reg_partition_points.eq(out_part_pts)
+        m.d.comb += self.o.intermediate_output.eq(self.i.output)
+
+        return m
+
 
 class Mul8_16_32_64(Elaboratable):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier.
@@ -1150,34 +1225,18 @@ class Mul8_16_32_64(Elaboratable):
 
         m.submodules.add_reduce = add_reduce
         m.d.comb += self.intermediate_output.eq(add_reduce.o.output)
-        # create _output_64
-        m.submodules.io64 = io64 = IntermediateOut(64, 128, 1)
-        m.d.comb += io64.intermed.eq(self.intermediate_output)
-        for i in range(8):
-            m.d.comb += io64.part_ops[i].eq(out_part_ops[i])
 
-        # create _output_32
-        m.submodules.io32 = io32 = IntermediateOut(32, 128, 2)
-        m.d.comb += io32.intermed.eq(self.intermediate_output)
-        for i in range(8):
-            m.d.comb += io32.part_ops[i].eq(out_part_ops[i])
+        interm = Intermediates(128, 8, self.register_levels,
+                               expanded_part_pts)
+        m.submodules.intermediates = interm
+        m.d.comb += interm.i.eq(add_reduce.o)
 
-        # create _output_16
-        m.submodules.io16 = io16 = IntermediateOut(16, 128, 4)
-        m.d.comb += io16.intermed.eq(self.intermediate_output)
-        for i in range(8):
-            m.d.comb += io16.part_ops[i].eq(out_part_ops[i])
+        m.submodules.p_8 = p_8 = Parts(8, eps, 8)
+        m.submodules.p_16 = p_16 = Parts(8, eps, 4)
+        m.submodules.p_32 = p_32 = Parts(8, eps, 2)
+        m.submodules.p_64 = p_64 = Parts(8, eps, 1)
 
-        # create _output_8
-        m.submodules.io8 = io8 = IntermediateOut(8, 128, 8)
-        m.d.comb += io8.intermed.eq(self.intermediate_output)
-        for i in range(8):
-            m.d.comb += io8.part_ops[i].eq(out_part_ops[i])
-
-        m.submodules.p_8 = p_8 = Parts(8, eps, len(part_8.parts))
-        m.submodules.p_16 = p_16 = Parts(8, eps, len(part_16.parts))
-        m.submodules.p_32 = p_32 = Parts(8, eps, len(part_32.parts))
-        m.submodules.p_64 = p_64 = Parts(8, eps, len(part_64.parts))
+        out_part_pts = interm.o.reg_partition_points
 
         m.d.comb += p_8.epps.eq(out_part_pts)
         m.d.comb += p_16.epps.eq(out_part_pts)
@@ -1186,16 +1245,16 @@ class Mul8_16_32_64(Elaboratable):
 
         # final output
         m.submodules.finalout = finalout = FinalOut(64)
-        for i in range(len(part_8.parts)):
+        for i in range(len(p_8.parts)):
             m.d.comb += finalout.d8[i].eq(p_8.parts[i])
-        for i in range(len(part_16.parts)):
+        for i in range(len(p_16.parts)):
             m.d.comb += finalout.d16[i].eq(p_16.parts[i])
-        for i in range(len(part_32.parts)):
+        for i in range(len(p_32.parts)):
             m.d.comb += finalout.d32[i].eq(p_32.parts[i])
-        m.d.comb += finalout.i8.eq(io8.output)
-        m.d.comb += finalout.i16.eq(io16.output)
-        m.d.comb += finalout.i32.eq(io32.output)
-        m.d.comb += finalout.i64.eq(io64.output)
+        m.d.comb += finalout.i8.eq(interm.o.outputs[0])
+        m.d.comb += finalout.i16.eq(interm.o.outputs[1])
+        m.d.comb += finalout.i32.eq(interm.o.outputs[2])
+        m.d.comb += finalout.i64.eq(interm.o.outputs[3])
         m.d.comb += self.output.eq(finalout.out)
 
         return m
