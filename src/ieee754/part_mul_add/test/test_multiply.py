@@ -378,7 +378,7 @@ class TestMul8_16_32_64(unittest.TestCase):
         return output, intermediate_output
 
     @staticmethod
-    def get_test_cases(lanes: List[SIMDMulLane],
+    def get_tst_cases(lanes: List[SIMDMulLane],
                        keys: Iterable[int]) -> Iterable[Tuple[int, int]]:
         mask = (1 << 64) - 1
         for i in range(8):
@@ -503,7 +503,7 @@ class TestMul8_16_32_64(unittest.TestCase):
                 yield module.part_pts[bit_index].eq(1)
             bit_index += 8
         self.assertEqual(part_index, 8)
-        for a, b in self.get_test_cases(lanes, ()):
+        for a, b in self.get_tst_cases(lanes, ()):
             if gen_or_check == GenOrCheck.Check:
                 with self.subTest(a=f"{a:X}", b=f"{b:X}"):
                     yield from self.subtest_value(a, b, module, lanes, gen_or_check)
