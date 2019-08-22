@@ -301,7 +301,7 @@ class AddReduceData:
     def __init__(self, ppoints, n_inputs, output_width, n_parts):
         self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
                           for i in range(n_parts)]
-        self.inputs = [Signal(output_width, name=f"inputs[{i}]",
+        self.inputs = [Signal(output_width, name=f"inputs_{i}",
                               reset_less=True)
                         for i in range(n_inputs)]
         self.reg_partition_points = ppoints.like()
