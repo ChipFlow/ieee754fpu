@@ -56,10 +56,10 @@ class TestPartitionPoints(unittest.TestCase):
                 self.assertEqual((yield partition_points[1]), True)
                 self.assertEqual((yield partition_points[5]), False)
                 yield partition_point_10.eq(0)
-                yield Delay(1e-6)
+                yield Delay(0.1e-6)
                 self.assertEqual((yield mask), 0xFFFD)
                 yield partition_point_10.eq(1)
-                yield Delay(1e-6)
+                yield Delay(0.1e-6)
                 self.assertEqual((yield mask), 0xFBFD)
 
             sim.add_process(async_process)
@@ -94,7 +94,7 @@ class TestPartitionedAdder(unittest.TestCase):
                                  (0x0000, 0xFFFF)]:
                         yield module.a.eq(a)
                         yield module.b.eq(b)
-                        yield Delay(1e-6)
+                        yield Delay(0.1e-6)
                         y = 0
                         for mask in mask_list:
                             y |= mask & ((a & mask) + (b & mask))
@@ -154,7 +154,7 @@ class TestAddReduce(unittest.TestCase):
         if gen_or_check == GenOrCheck.Generate:
             for i, v in zip(inputs, values):
                 yield i.eq(v)
-        yield Delay(1e-6)
+        yield Delay(0.1e-6)
         y = 0
         for mask in mask_list:
             v = 0
@@ -459,7 +459,7 @@ class TestMul8_16_32_64(unittest.TestCase):
             yield module.a.eq(a)
             yield module.b.eq(b)
         output2, intermediate_output2 = self.simd_mul(a, b, lanes)
-        yield Delay(1e-6)
+        yield Delay(0.1e-6)
         if gen_or_check == GenOrCheck.Check:
             intermediate_output = (yield module.intermediate_output)
             self.assertEqual(intermediate_output,
