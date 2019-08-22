@@ -14,11 +14,19 @@ import unittest
 from hashlib import sha256
 import enum
 import pdb
+from nmigen.cli import verilog, rtlil
+
+
+def create_ilang(dut, traces, test_name):
+    vl = rtlil.convert(dut, ports=traces)
+    with open("%s.il" % test_name, "w") as f:
+        f.write(vl)
 
 
 def create_simulator(module: Any,
                      traces: List[Signal],
                      test_name: str) -> Simulator:
+    create_ilang(module, traces, test_name)
     return Simulator(module,
                      vcd_file=open(test_name + ".vcd", "w"),
                      gtkw_file=open(test_name + ".gtkw", "w"),
@@ -256,12 +264,9 @@ class TestAddReduce(unittest.TestCase):
         if len(register_levels) != 0:
             file_name += f"-{'_'.join(map(repr, register_levels))}"
         file_name += f"-{input_count:02d}"
-        with create_simulator(module,
-                              [partition_4,
-                               partition_8,
-                               *inputs,
-                               module.o.output],
-                              file_name) as sim:
+        ports = [partition_4, partition_8, *inputs, module.o.output]
+        #create_ilang(module, ports, file_name)
+        with create_simulator(module, ports, file_name) as sim:
             self.subtest_run_sim(input_count,
                                  sim,
                                  partition_4,
