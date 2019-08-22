@@ -235,7 +235,8 @@ class TestAddReduce(unittest.TestCase):
                     yield Tick()
             yield from generic_process(GenOrCheck.Check)
 
-        sim.add_clock(2e-6)
+        if "sync" in sim._domains:
+            sim.add_clock(2e-6)
         sim.add_process(generate_process)
         sim.add_process(check_process)
         sim.run()
@@ -632,7 +633,8 @@ class TestMul8_16_32_64(unittest.TestCase):
                         yield Tick()
                 yield from process(GenOrCheck.Check)
 
-            sim.add_clock(2e-6)
+            if "sync" in sim._domains:
+                sim.add_clock(2e-6)
             sim.add_process(generate_process)
             sim.add_process(check_process)
             sim.run()
