@@ -569,6 +569,9 @@ class AddReduce(Elaboratable):
         inputs = self.inputs
         ilen = len(inputs)
         while True:
+            groups = AddReduceSingle.full_adder_groups(len(inputs))
+            if len(groups) == 0:
+                break
             next_level = AddReduceSingle(ilen, self.output_width, n_parts,
                                          next_levels, partition_points)
             mods.append(next_level)
@@ -577,9 +580,6 @@ class AddReduce(Elaboratable):
             inputs = next_level.o.inputs
             ilen = len(inputs)
             part_ops = next_level.i.part_ops
-            next_groups = AddReduceSingle.full_adder_groups(len(inputs))
-            if len(next_groups) == 0:
-                break
 
         next_level = FinalAdd(ilen, self.output_width, n_parts,
                               next_levels, partition_points)
