@@ -625,33 +625,6 @@ class AddReduce(AddReduceInternal, Elaboratable):
             if level > 0:
                 yield level - 1
 
-    def create_levels(self):
-        """creates reduction levels"""
-
-        mods = []
-        partition_points = self.partition_points
-        part_ops = self.part_ops
-        n_parts = len(part_ops)
-        inputs = self.inputs
-        ilen = len(inputs)
-        while True:
-            groups = AddReduceSingle.full_adder_groups(len(inputs))
-            if len(groups) == 0:
-                break
-            next_level = AddReduceSingle(ilen, self.output_width, n_parts,
-                                         partition_points)
-            mods.append(next_level)
-            partition_points = next_level.i.part_pts
-            inputs = next_level.o.terms
-            ilen = len(inputs)
-            part_ops = next_level.i.part_ops
-
-        next_level = FinalAdd(ilen, self.output_width, n_parts,
-                              partition_points)
-        mods.append(next_level)
-
-        self.levels = mods
-
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
@@ -1415,9 +1388,6 @@ class Mul8_16_32_64(Elaboratable):
                                self.register_levels,
                                t.o.part_pts,
                                t.o.part_ops)
-
-        out_part_ops = add_reduce.o.part_ops
-        out_part_pts = add_reduce.o.part_pts
 
         m.submodules.add_reduce = add_reduce
 
