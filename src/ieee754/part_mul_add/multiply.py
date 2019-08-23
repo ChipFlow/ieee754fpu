@@ -1126,7 +1126,7 @@ class InputData:
             self.part_pts[i] = Signal(name=f"part_pts_{i}")
         self.part_ops = [Signal(2, name=f"part_ops_{i}") for i in range(8)]
 
-    def eq_from(self, part_pts, inputs, part_ops):
+    def eq_from(self, part_pts, a, b, part_ops):
         return [self.part_pts.eq(part_pts)] + \
                [self.a.eq(a), self.b.eq(b)] + \
                [self.part_ops[i].eq(part_ops[i])
