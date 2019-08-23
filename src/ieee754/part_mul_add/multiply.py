@@ -374,7 +374,8 @@ class FinalAdd(Elaboratable):
         else:
             # base case for adding 2 inputs
             assert self.n_inputs == 2
-            adder = PartitionedAdder(output_width, self.i.reg_partition_points)
+            adder = PartitionedAdder(output_width,
+                                     self.i.reg_partition_points, 2)
             m.submodules.final_adder = adder
             m.d.comb += adder.a.eq(self.i.inputs[0])
             m.d.comb += adder.b.eq(self.i.inputs[1])
@@ -1300,12 +1301,7 @@ class Mul8_16_32_64(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # create (doubled) PartitionPoints (output is double input width)
-        expanded_part_pts = eps = PartitionPoints()
-        for i, v in self.part_pts.items():
-            ep = Signal(name=f"expanded_part_pts_{i*2}", reset_less=True)
-            expanded_part_pts[i] = ep
-            m.d.comb += ep.eq(v)
+        expanded_part_pts = eps = self.part_pts
 
         n_inputs = 64 + 4
         n_parts = 8 #len(self.part_pts)
