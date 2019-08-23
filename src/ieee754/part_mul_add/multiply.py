@@ -346,15 +346,13 @@ class FinalAdd(Elaboratable):
     """ Final stage of add reduce
     """
 
-    def __init__(self, n_inputs, output_width, n_parts, register_levels,
-                       partition_points):
+    def __init__(self, n_inputs, output_width, n_parts, partition_points):
         self.i = AddReduceData(partition_points, n_inputs,
                                output_width, n_parts)
         self.o = FinalReduceData(partition_points, output_width, n_parts)
         self.output_width = output_width
         self.n_inputs = n_inputs
         self.n_parts = n_parts
-        self.register_levels = list(register_levels)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
@@ -400,14 +398,11 @@ class AddReduceSingle(Elaboratable):
         supported, except for by ``Signal.eq``.
     """
 
-    def __init__(self, n_inputs, output_width, n_parts, register_levels,
-                       partition_points):
+    def __init__(self, n_inputs, output_width, n_parts, partition_points):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
         :param output_width: bit-width of ``output``.
-        :param register_levels: List of nesting levels that should have
-            pipeline registers.
         :param partition_points: the input partition points.
         """
         self.n_inputs = n_inputs
@@ -415,16 +410,9 @@ class AddReduceSingle(Elaboratable):
         self.output_width = output_width
         self.i = AddReduceData(partition_points, n_inputs,
                                output_width, n_parts)
-        self.register_levels = list(register_levels)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
-
-        max_level = AddReduceSingle.get_max_level(n_inputs)
-        for level in self.register_levels:
-            if level > max_level:
-                raise ValueError(
-                    "not enough adder levels for specified register levels")
 
         self.groups = AddReduceSingle.full_adder_groups(n_inputs)
         n_terms = AddReduceSingle.calc_n_inputs(n_inputs, self.groups)
@@ -574,7 +562,6 @@ class AddReduce(Elaboratable):
         """creates reduction levels"""
 
         mods = []
-        next_levels = self.register_levels
         partition_points = self.partition_points
         part_ops = self.part_ops
         n_parts = len(part_ops)
@@ -585,16 +572,15 @@ class AddReduce(Elaboratable):
             if len(groups) == 0:
                 break
             next_level = AddReduceSingle(ilen, self.output_width, n_parts,
-                                         next_levels, partition_points)
+                                         partition_points)
             mods.append(next_level)
-            next_levels = list(AddReduce.next_register_levels(next_levels))
             partition_points = next_level.i.part_pts
             inputs = next_level.o.terms
             ilen = len(inputs)
             part_ops = next_level.i.part_ops
 
         next_level = FinalAdd(ilen, self.output_width, n_parts,
-                              next_levels, partition_points)
+                              partition_points)
         mods.append(next_level)
 
         self.levels = mods
