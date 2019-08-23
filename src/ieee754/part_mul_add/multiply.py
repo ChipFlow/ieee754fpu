@@ -616,7 +616,7 @@ class AddReduce(Elaboratable):
         m.d.comb += i.eq_from(partition_points, inputs, part_ops)
         for idx in range(len(self.levels)):
             mcur = self.levels[idx]
-            if 0 in mcur.register_levels:
+            if idx in self.register_levels:
                 m.d.sync += mcur.i.eq(i)
             else:
                 m.d.comb += mcur.i.eq(i)
