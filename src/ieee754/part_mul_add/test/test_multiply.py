@@ -9,6 +9,7 @@ from ieee754.part_mul_add.multiply import \
 from nmigen import Signal, Module
 from nmigen.back.pysim import Simulator, Delay, Tick, Passive
 from nmigen.hdl.ast import Assign, Value
+from nmigen.hdl.ir import Fragment
 from typing import Any, Generator, List, Union, Optional, Tuple, Iterable
 import unittest
 from hashlib import sha256
@@ -235,7 +236,8 @@ class TestAddReduce(unittest.TestCase):
                     yield Tick()
             yield from generic_process(GenOrCheck.Check)
 
-        if "sync" in sim._domains:
+        f = Fragment.get(module, platform=None)
+        if "sync" in f.drivers:
             sim.add_clock(2e-6)
         sim.add_process(generate_process)
         sim.add_process(check_process)
@@ -633,7 +635,8 @@ class TestMul8_16_32_64(unittest.TestCase):
                         yield Tick()
                 yield from process(GenOrCheck.Check)
 
-            if "sync" in sim._domains:
+            f = Fragment.get(module, platform=None)
+            if "sync" in f.drivers:
                 sim.add_clock(2e-6)
             sim.add_process(generate_process)
             sim.add_process(check_process)
