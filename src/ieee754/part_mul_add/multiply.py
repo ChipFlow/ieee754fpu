@@ -959,11 +959,11 @@ class FinalOut(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        pps = self.part_pts
-        m.submodules.p_8 = p_8 = Parts(8, pps, 8)
-        m.submodules.p_16 = p_16 = Parts(8, pps, 4)
-        m.submodules.p_32 = p_32 = Parts(8, pps, 2)
-        m.submodules.p_64 = p_64 = Parts(8, pps, 1)
+        part_pts = self.part_pts
+        m.submodules.p_8 = p_8 = Parts(8, part_pts, 8)
+        m.submodules.p_16 = p_16 = Parts(8, part_pts, 4)
+        m.submodules.p_32 = p_32 = Parts(8, part_pts, 2)
+        m.submodules.p_64 = p_64 = Parts(8, part_pts, 1)
 
         out_part_pts = self.i.part_pts
 
@@ -1301,15 +1301,15 @@ class Mul8_16_32_64(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        pps = self.part_pts
+        part_pts = self.part_pts
 
         n_inputs = 64 + 4
         n_parts = 8 #len(self.part_pts)
-        t = AllTerms(n_inputs, 128, n_parts, self.register_levels, pps)
+        t = AllTerms(n_inputs, 128, n_parts, self.register_levels, part_pts)
         m.submodules.allterms = t
         m.d.comb += t.i.a.eq(self.a)
         m.d.comb += t.i.b.eq(self.b)
-        m.d.comb += t.i.part_pts.eq(pps)
+        m.d.comb += t.i.part_pts.eq(part_pts)
         for i in range(8):
             m.d.comb += t.i.part_ops[i].eq(self.part_ops[i])
 
@@ -1326,12 +1326,12 @@ class Mul8_16_32_64(Elaboratable):
 
         m.submodules.add_reduce = add_reduce
 
-        interm = Intermediates(128, 8, pps)
+        interm = Intermediates(128, 8, part_pts)
         m.submodules.intermediates = interm
         m.d.comb += interm.i.eq(add_reduce.o)
 
         # final output
-        m.submodules.finalout = finalout = FinalOut(128, 8, pps)
+        m.submodules.finalout = finalout = FinalOut(128, 8, part_pts)
         m.d.comb += finalout.i.eq(interm.o)
         m.d.comb += self.output.eq(finalout.out)
         m.d.comb += self.intermediate_output.eq(finalout.intermediate_output)
