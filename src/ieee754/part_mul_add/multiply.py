@@ -786,10 +786,10 @@ class LSBNegTerm(Elaboratable):
 
 class Parts(Elaboratable):
 
-    def __init__(self, pbwid, epps, n_parts):
+    def __init__(self, pbwid, part_pts, n_parts):
         self.pbwid = pbwid
         # inputs
-        self.epps = PartitionPoints.like(epps, name="epps") # expanded points
+        self.part_pts = PartitionPoints.like(part_pts)
         # outputs
         self.parts = [Signal(name=f"part_{i}", reset_less=True)
                       for i in range(n_parts)]
@@ -797,13 +797,13 @@ class Parts(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        epps, parts = self.epps, self.parts
+        part_pts, parts = self.part_pts, self.parts
         # collect part-bytes (double factor because the input is extended)
         pbs = Signal(self.pbwid, reset_less=True)
         tl = []
         for i in range(self.pbwid):
             pb = Signal(name="pb%d" % i, reset_less=True)
-            m.d.comb += pb.eq(epps.part_byte(i))
+            m.d.comb += pb.eq(part_pts.part_byte(i))
             tl.append(pb)
         m.d.comb += pbs.eq(Cat(*tl))
 
@@ -839,10 +839,10 @@ class Part(Elaboratable):
         the extra terms - as separate terms - are then thrown at the
         AddReduce alongside the multiplication part-results.
     """
-    def __init__(self, epps, width, n_parts, n_levels, pbwid):
+    def __init__(self, part_pts, width, n_parts, n_levels, pbwid):
 
         self.pbwid = pbwid
-        self.epps = epps
+        self.part_pts = part_pts
 
         # inputs
         self.a = Signal(64, reset_less=True)
@@ -866,9 +866,9 @@ class Part(Elaboratable):
         m = Module()
 
         pbs, parts = self.pbs, self.parts
-        epps = self.epps
-        m.submodules.p = p = Parts(self.pbwid, epps, len(parts))
-        m.d.comb += p.epps.eq(epps)
+        part_pts = self.part_pts
+        m.submodules.p = p = Parts(self.pbwid, part_pts, len(parts))
+        m.d.comb += p.part_pts.eq(part_pts)
         parts = p.parts
 
         byte_count = 8 // len(parts)
@@ -977,10 +977,10 @@ class FinalOut(Elaboratable):
         i32 = Signal(self.out_wid, reset_less=True)
         i64 = Signal(self.out_wid, reset_less=True)
 
-        m.d.comb += p_8.epps.eq(out_part_pts)
-        m.d.comb += p_16.epps.eq(out_part_pts)
-        m.d.comb += p_32.epps.eq(out_part_pts)
-        m.d.comb += p_64.epps.eq(out_part_pts)
+        m.d.comb += p_8.part_pts.eq(out_part_pts)
+        m.d.comb += p_16.part_pts.eq(out_part_pts)
+        m.d.comb += p_32.part_pts.eq(out_part_pts)
+        m.d.comb += p_64.part_pts.eq(out_part_pts)
 
         for i in range(len(p_8.parts)):
             m.d.comb += d8[i].eq(p_8.parts[i])
@@ -1084,17 +1084,17 @@ class AllTermsData:
     def __init__(self, partition_points):
         self.a = Signal(64)
         self.b = Signal(64)
-        self.epps = partition_points.like()
+        self.part_pts = partition_points.like()
         self.part_ops = [Signal(2, name=f"part_ops_{i}") for i in range(8)]
 
-    def eq_from(self, epps, inputs, part_ops):
-        return [self.epps.eq(epps)] + \
+    def eq_from(self, part_pts, inputs, part_ops):
+        return [self.part_pts.eq(part_pts)] + \
                [self.a.eq(a), self.b.eq(b)] + \
                [self.part_ops[i].eq(part_ops[i])
                                      for i in range(len(self.part_ops))]
 
     def eq(self, rhs):
-        return self.eq_from(rhs.epps, rhs.a, rhs.b, rhs.part_ops)
+        return self.eq_from(rhs.part_pts, rhs.a, rhs.b, rhs.part_ops)
 
 
 class AllTerms(Elaboratable):
@@ -1116,13 +1116,13 @@ class AllTerms(Elaboratable):
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.output_width = output_width
-        self.o = AddReduceData(self.i.epps, n_inputs,
+        self.o = AddReduceData(self.i.part_pts, n_inputs,
                                output_width, n_parts)
 
     def elaborate(self, platform):
         m = Module()
 
-        eps = self.i.epps
+        eps = self.i.part_pts
 
         # collect part-bytes
         pbs = Signal(8, reset_less=True)
@@ -1309,7 +1309,7 @@ class Mul8_16_32_64(Elaboratable):
         m.submodules.allterms = t
         m.d.comb += t.i.a.eq(self.a)
         m.d.comb += t.i.b.eq(self.b)
-        m.d.comb += t.i.epps.eq(pps)
+        m.d.comb += t.i.part_pts.eq(pps)
         for i in range(8):
             m.d.comb += t.i.part_ops[i].eq(self.part_ops[i])
 
