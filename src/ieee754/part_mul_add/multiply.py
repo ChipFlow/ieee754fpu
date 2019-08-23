@@ -515,7 +515,62 @@ class AddReduceSingle(Elaboratable):
         return m
 
 
-class AddReduce(Elaboratable):
+class AddReduceInternal:
+    """Recursively Add list of numbers together.
+
+    :attribute inputs: input ``Signal``s to be summed. Modification not
+        supported, except for by ``Signal.eq``.
+    :attribute register_levels: List of nesting levels that should have
+        pipeline registers.
+    :attribute output: output sum.
+    :attribute partition_points: the input partition points. Modification not
+        supported, except for by ``Signal.eq``.
+    """
+
+    def __init__(self, inputs, output_width, partition_points,
+                       part_ops):
+        """Create an ``AddReduce``.
+
+        :param inputs: input ``Signal``s to be summed.
+        :param output_width: bit-width of ``output``.
+        :param partition_points: the input partition points.
+        """
+        self.inputs = inputs
+        self.part_ops = part_ops
+        self.output_width = output_width
+        self.partition_points = partition_points
+
+        self.create_levels()
+
+    def create_levels(self):
+        """creates reduction levels"""
+
+        mods = []
+        partition_points = self.partition_points
+        part_ops = self.part_ops
+        n_parts = len(part_ops)
+        inputs = self.inputs
+        ilen = len(inputs)
+        while True:
+            groups = AddReduceSingle.full_adder_groups(len(inputs))
+            if len(groups) == 0:
+                break
+            next_level = AddReduceSingle(ilen, self.output_width, n_parts,
+                                         partition_points)
+            mods.append(next_level)
+            partition_points = next_level.i.part_pts
+            inputs = next_level.o.terms
+            ilen = len(inputs)
+            part_ops = next_level.i.part_ops
+
+        next_level = FinalAdd(ilen, self.output_width, n_parts,
+                              partition_points)
+        mods.append(next_level)
+
+        self.levels = mods
+
+
+class AddReduce(AddReduceInternal, Elaboratable):
     """Recursively Add list of numbers together.
 
     :attribute inputs: input ``Signal``s to be summed. Modification not
@@ -537,15 +592,11 @@ class AddReduce(Elaboratable):
             pipeline registers.
         :param partition_points: the input partition points.
         """
-        self.inputs = inputs
-        self.part_ops = part_ops
+        AddReduceInternal.__init__(self, inputs, output_width,
+                                   partition_points, part_ops)
         n_parts = len(part_ops)
         self.o = FinalReduceData(partition_points, output_width, n_parts)
-        self.output_width = output_width
         self.register_levels = register_levels
-        self.partition_points = partition_points
-
-        self.create_levels()
 
     @staticmethod
     def get_max_level(input_count):
