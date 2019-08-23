@@ -347,15 +347,23 @@ class FinalAdd(Elaboratable):
     """
 
     def __init__(self, n_inputs, output_width, n_parts, partition_points):
-        self.i = AddReduceData(partition_points, n_inputs,
-                               output_width, n_parts)
-        self.o = FinalReduceData(partition_points, output_width, n_parts)
         self.output_width = output_width
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
+
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return AddReduceData(self.partition_points, self.n_inputs,
+                             self.output_width, self.n_parts)
+
+    def ospec(self):
+        return FinalReduceData(self.partition_points,
+                                 self.output_width, self.n_parts)
 
     def elaborate(self, platform):
         """Elaborate this module."""
@@ -408,15 +416,23 @@ class AddReduceSingle(Elaboratable):
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.output_width = output_width
-        self.i = AddReduceData(partition_points, n_inputs,
-                               output_width, n_parts)
         self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(output_width):
             raise ValueError("partition_points doesn't fit in output_width")
 
         self.groups = AddReduceSingle.full_adder_groups(n_inputs)
-        n_terms = AddReduceSingle.calc_n_inputs(n_inputs, self.groups)
-        self.o = AddReduceData(partition_points, n_terms, output_width, n_parts)
+        self.n_terms = AddReduceSingle.calc_n_inputs(n_inputs, self.groups)
+
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return AddReduceData(self.partition_points, self.n_inputs,
+                             self.output_width, self.n_parts)
+
+    def ospec(self):
+        return AddReduceData(self.partition_points, self.n_terms,
+                             self.output_width, self.n_parts)
 
     @staticmethod
     def calc_n_inputs(n_inputs, groups):
@@ -1270,9 +1286,19 @@ class Intermediates(Elaboratable):
     """ Intermediate output modules
     """
 
-    def __init__(self, output_width, n_parts, partition_points):
-        self.i = FinalReduceData(partition_points, output_width, n_parts)
-        self.o = IntermediateData(partition_points, output_width, n_parts)
+    def __init__(self, output_width, n_parts, part_pts):
+        self.part_pts = part_pts
+        self.output_width = output_width
+        self.n_parts = n_parts
+
+        self.i = self.ispec()
+        self.o = self.ospec()
+
+    def ispec(self):
+        return FinalReduceData(self.part_pts, self.output_width, self.n_parts)
+
+    def ospec(self):
+        return IntermediateData(self.part_pts, self.output_width, self.n_parts)
 
     def elaborate(self, platform):
         m = Module()
