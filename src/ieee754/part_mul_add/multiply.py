@@ -995,6 +995,13 @@ class FinalOut(Elaboratable):
     def ospec(self):
         return OutputData()
 
+    def setup(self, m, i):
+        m.submodules.finalout = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
+
     def elaborate(self, platform):
         m = Module()
 
@@ -1175,6 +1182,13 @@ class AllTerms(Elaboratable):
         self.i = self.ispec()
         self.o = self.ospec()
 
+    def setup(self, m, i):
+        m.submodules.allterms = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
+
     def ispec(self):
         return InputData()
 
@@ -1278,6 +1292,13 @@ class Intermediates(Elaboratable):
 
     def ospec(self):
         return IntermediateData(self.part_pts, self.output_width, self.n_parts)
+
+    def setup(self, m, i):
+        m.submodules.intermediates = self
+        m.d.comb += self.i.eq(i)
+
+    def process(self, i):
+        return self.o
 
     def elaborate(self, platform):
         m = Module()
@@ -1384,12 +1405,11 @@ class Mul8_16_32_64(Elaboratable):
         n_inputs = 64 + 4
         n_parts = 8
         t = AllTerms(n_inputs, 128, n_parts, self.register_levels)
-        m.submodules.allterms = t
-        m.d.comb += t.i.eq(self.i)
+        t.setup(m, self.i)
 
         terms = t.o.terms
 
-        at = AddReduceInternal(t.o, 128, partition_step=2)
+        at = AddReduceInternal(t.process(self.i), 128, partition_step=2)
 
         i = at.i
         for idx in range(len(at.levels)):
@@ -1402,13 +1422,13 @@ class Mul8_16_32_64(Elaboratable):
             i = mcur.o # for next loop
 
         interm = Intermediates(128, 8, part_pts)
-        m.submodules.intermediates = interm
-        m.d.comb += interm.i.eq(i)
+        interm.setup(m, i)
+        o = interm.process(interm.i)
 
         # final output
-        m.submodules.finalout = finalout = FinalOut(128, 8, part_pts)
-        m.d.comb += finalout.i.eq(interm.o)
-        m.d.comb += self.o.eq(finalout.o)
+        finalout = FinalOut(128, 8, part_pts)
+        finalout.setup(m, o)
+        m.d.comb += self.o.eq(finalout.process(o))
 
         return m
 
