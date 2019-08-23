@@ -408,13 +408,15 @@ class AddReduceSingle(Elaboratable):
         supported, except for by ``Signal.eq``.
     """
 
-    def __init__(self, n_inputs, output_width, n_parts, partition_points):
+    def __init__(self, n_inputs, output_width, n_parts, partition_points,
+                       partition_step=1):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
         :param output_width: bit-width of ``output``.
         :param partition_points: the input partition points.
         """
+        self.partition_step = partition_step
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.output_width = output_width
@@ -518,7 +520,8 @@ class AddReduceSingle(Elaboratable):
         part_mask = Signal(self.output_width, reset_less=True)
 
         # get partition points as a mask
-        mask = self.i.part_pts.as_mask(self.output_width, mul=2)
+        mask = self.i.part_pts.as_mask(self.output_width,
+                                       mul=self.partition_step)
         m.d.comb += part_mask.eq(mask)
 
         # add and link the intermediate term modules
@@ -575,7 +578,8 @@ class AddReduceInternal:
             if len(groups) == 0:
                 break
             next_level = AddReduceSingle(ilen, self.output_width, n_parts,
-                                         partition_points)
+                                         partition_points,
+                                         self.partition_step)
             mods.append(next_level)
             partition_points = next_level.i.part_pts
             inputs = next_level.o.terms
