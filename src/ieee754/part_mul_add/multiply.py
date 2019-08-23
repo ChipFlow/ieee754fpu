@@ -1341,14 +1341,10 @@ class Mul8_16_32_64(Elaboratable):
         part_pts = self.part_pts
 
         n_inputs = 64 + 4
-        n_parts = 8 #len(self.part_pts)
+        n_parts = 8
         t = AllTerms(n_inputs, 128, n_parts, self.register_levels)
         m.submodules.allterms = t
-        m.d.comb += t.i.a.eq(self.a)
-        m.d.comb += t.i.b.eq(self.b)
-        m.d.comb += t.i.part_pts.eq(part_pts)
-        for i in range(8):
-            m.d.comb += t.i.part_ops[i].eq(self.part_ops[i])
+        m.d.comb += t.i.eq(self.i)
 
         terms = t.o.terms
 
