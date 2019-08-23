@@ -346,7 +346,9 @@ class FinalAdd(Elaboratable):
     """ Final stage of add reduce
     """
 
-    def __init__(self, n_inputs, output_width, n_parts, partition_points):
+    def __init__(self, n_inputs, output_width, n_parts, partition_points,
+                       partition_step=1):
+        self.partition_step = partition_step
         self.output_width = output_width
         self.n_inputs = n_inputs
         self.n_parts = n_parts
@@ -381,7 +383,7 @@ class FinalAdd(Elaboratable):
             # base case for adding 2 inputs
             assert self.n_inputs == 2
             adder = PartitionedAdder(output_width,
-                                     self.i.part_pts, 2)
+                                     self.i.part_pts, self.partition_step)
             m.submodules.final_adder = adder
             m.d.comb += adder.a.eq(self.i.terms[0])
             m.d.comb += adder.b.eq(self.i.terms[1])
@@ -543,7 +545,7 @@ class AddReduceInternal:
         supported, except for by ``Signal.eq``.
     """
 
-    def __init__(self, i, output_width):
+    def __init__(self, i, output_width, partition_step=1):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
@@ -555,6 +557,7 @@ class AddReduceInternal:
         self.part_ops = i.part_ops
         self.output_width = output_width
         self.partition_points = i.part_pts
+        self.partition_step = partition_step
 
         self.create_levels()
 
@@ -580,7 +583,7 @@ class AddReduceInternal:
             part_ops = next_level.i.part_ops
 
         next_level = FinalAdd(ilen, self.output_width, n_parts,
-                              partition_points)
+                              partition_points, self.partition_step)
         mods.append(next_level)
 
         self.levels = mods
@@ -599,7 +602,7 @@ class AddReduce(AddReduceInternal, Elaboratable):
     """
 
     def __init__(self, inputs, output_width, register_levels, part_pts,
-                       part_ops):
+                       part_ops, partition_step=1):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
@@ -614,7 +617,7 @@ class AddReduce(AddReduceInternal, Elaboratable):
         n_parts = len(part_ops)
         self.i = AddReduceData(part_pts, len(inputs),
                              output_width, n_parts)
-        AddReduceInternal.__init__(self, self.i, output_width)
+        AddReduceInternal.__init__(self, self.i, output_width, partition_step)
         self.o = FinalReduceData(part_pts, output_width, n_parts)
         self.register_levels = register_levels
 
@@ -1386,7 +1389,8 @@ class Mul8_16_32_64(Elaboratable):
                                128,
                                self.register_levels,
                                t.o.part_pts,
-                               t.o.part_ops)
+                               t.o.part_ops,
+                               partition_step=2)
 
         m.submodules.add_reduce = add_reduce
 
