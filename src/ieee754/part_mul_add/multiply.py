@@ -1389,18 +1389,21 @@ class Mul8_16_32_64(Elaboratable):
 
         terms = t.o.terms
 
-        add_reduce = AddReduce(terms,
-                               128,
-                               self.register_levels,
-                               t.o.part_pts,
-                               t.o.part_ops,
-                               partition_step=2)
+        at = AddReduceInternal(t.o, 128, partition_step=2)
 
-        m.submodules.add_reduce = add_reduce
+        i = at.i
+        for idx in range(len(at.levels)):
+            mcur = at.levels[idx]
+            setattr(m.submodules, "addreduce_%d" % idx, mcur)
+            if idx in self.register_levels:
+                m.d.sync += mcur.i.eq(i)
+            else:
+                m.d.comb += mcur.i.eq(i)
+            i = mcur.o # for next loop
 
         interm = Intermediates(128, 8, part_pts)
         m.submodules.intermediates = interm
-        m.d.comb += interm.i.eq(add_reduce.o)
+        m.d.comb += interm.i.eq(i)
 
         # final output
         m.submodules.finalout = finalout = FinalOut(128, 8, part_pts)
