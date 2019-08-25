@@ -63,8 +63,7 @@ class FPDIVSpecialCasesMod(PipeModBase):
         t_b1zero = Signal(reset_less=True)
         t_abz = Signal(reset_less=True)
         t_special_div = Signal(reset_less=True)
-        t_special_sqrt = Signal(reset_less=True)
-        t_special_rsqrt = Signal(reset_less=True)
+        t_special_sqrt = Signal(reset_less=True) # sqrt/rsqrt
 
         comb += sabx.eq(a1.s ^ b1.s)
         comb += t_abnan.eq(a1.is_nan | b1.is_nan)
@@ -136,6 +135,7 @@ class FPDIVSpecialCasesMod(PipeModBase):
                 # if a is inf return inf
                 # if a is NaN return NaN
 
+                # inverse-order (mux-tree)
                 oz = 0
                 oz = Mux(t_a1nan, z_nan.v, oz)
                 oz = Mux(t_a1inf, z_infab.v, oz)
@@ -147,28 +147,23 @@ class FPDIVSpecialCasesMod(PipeModBase):
             ########## RSQRT ############
             with m.Case(int(DP.RSqrtRem)):
 
+                # any special cases?
+                comb += self.o.out_do_z.eq(t_special_sqrt)
+
                 # if a is NaN return canonical NaN
-                with m.If(a1.is_nan):
-                    comb += self.o.z.nan(0)
-
                 # if a is +/- zero return +/- INF
-                with m.Elif(a1.is_zero):
                     # this includes the "weird" case 1/sqrt(-0) == -Inf
-                    comb += self.o.z.inf(a1.s)
-
                 # -ve number is canonical NaN
-                with m.Elif(a1.s):
-                    comb += self.o.z.nan(0)
-
                 # if a is inf return zero (-ve already excluded, above)
-                with m.Elif(a1.is_inf):
-                    comb += self.o.z.zero(0)
 
-                # Denormalised Number checks next, so pass a/b data through
-                with m.Else():
-                    comb += self.o.out_do_z.eq(0)
+                # inverse-order (mux-tree)
+                oz = 0
+                oz = Mux(t_a1inf, z_zero.v, oz)
+                oz = Mux(a1.s, z_nan.v, oz)
+                oz = Mux(t_a1zero, z_infa.v, oz)
+                oz = Mux(t_a1nan, z_nan.v, oz)
 
-                comb += self.o.oz.eq(self.o.z.v)
+                comb += self.o.oz.eq(oz)
 
         # pass through context
         comb += self.o.ctx.eq(self.i.ctx)
