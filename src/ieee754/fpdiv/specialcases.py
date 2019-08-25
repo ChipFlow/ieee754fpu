@@ -58,6 +58,7 @@ class FPDIVSpecialCasesMod(PipeModBase):
         t_abinf = Signal(reset_less=True)
         t_a1inf = Signal(reset_less=True)
         t_b1inf = Signal(reset_less=True)
+        t_a1nan = Signal(reset_less=True)
         t_a1zero = Signal(reset_less=True)
         t_b1zero = Signal(reset_less=True)
         t_abz = Signal(reset_less=True)
@@ -70,18 +71,21 @@ class FPDIVSpecialCasesMod(PipeModBase):
         comb += t_abinf.eq(a1.is_inf & b1.is_inf)
         comb += t_a1inf.eq(a1.is_inf)
         comb += t_b1inf.eq(b1.is_inf)
+        comb += t_a1nan.eq(a1.is_nan)
         comb += t_abz.eq(a1.is_zero & b1.is_zero)
         comb += t_a1zero.eq(a1.is_zero)
         comb += t_b1zero.eq(b1.is_zero)
 
         # prepare inf/zero/nans
         z_zero = FPNumBaseRecord(width, False, name="z_zero")
+        z_zeroa = FPNumBaseRecord(width, False, name="z_zeroa")
         z_zeroab = FPNumBaseRecord(width, False, name="z_zeroab")
         z_nan = FPNumBaseRecord(width, False, name="z_nan")
         z_infa = FPNumBaseRecord(width, False, name="z_infa")
         z_infb = FPNumBaseRecord(width, False, name="z_infb")
         z_infab = FPNumBaseRecord(width, False, name="z_infab")
         comb += z_zero.zero(0)
+        comb += z_zeroa.zero(a1.s)
         comb += z_zeroab.zero(sabx)
         comb += z_nan.nan(0)
         comb += z_infa.inf(a1.s)
@@ -90,6 +94,8 @@ class FPDIVSpecialCasesMod(PipeModBase):
 
         comb += t_special_div.eq(Cat(t_b1zero, t_a1zero, t_b1inf, t_a1inf,
                                      t_abinf, t_abnan).bool())
+        comb += t_special_sqrt.eq(Cat(t_a1zero, a1.s, t_a1inf,
+                                     t_a1nan).bool())
 
         # select one of 3 different sets of specialcases (DIV, SQRT, RSQRT)
         with m.Switch(self.i.ctx.op):
@@ -122,27 +128,21 @@ class FPDIVSpecialCasesMod(PipeModBase):
             ########## SQRT ############
             with m.Case(int(DP.SqrtRem)):
 
+                # any special cases?
+                comb += self.o.out_do_z.eq(t_special_sqrt)
+
                 # if a is zero return zero
-                with m.If(a1.is_zero):
-                    comb += self.o.z.zero(a1.s)
-
                 # -ve number is NaN
-                with m.Elif(a1.s):
-                    comb += self.o.z.nan(0)
-
                 # if a is inf return inf
-                with m.Elif(a1.is_inf):
-                    comb += self.o.z.inf(sabx)
-
                 # if a is NaN return NaN
-                with m.Elif(a1.is_nan):
-                    comb += self.o.z.nan(0)
 
-                # Denormalised Number checks next, so pass a/b data through
-                with m.Else():
-                    comb += self.o.out_do_z.eq(0)
+                oz = 0
+                oz = Mux(t_a1nan, z_nan.v, oz)
+                oz = Mux(t_a1inf, z_infab.v, oz)
+                oz = Mux(a1.s, z_nan.v, oz)
+                oz = Mux(t_a1zero, z_zeroa.v, oz)
 
-                comb += self.o.oz.eq(self.o.z.v)
+                comb += self.o.oz.eq(oz)
 
             ########## RSQRT ############
             with m.Case(int(DP.RSqrtRem)):
