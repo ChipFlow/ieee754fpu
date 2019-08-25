@@ -29,8 +29,9 @@ class FPMulStage1Mod(PipeModBase):
         m = Module()
         comb = m.d.comb
 
-        # copy sign
+        # copy sign as-is
         comb += self.o.z.s.eq(self.i.z.s)
+
         # results are in the range 0.25 to 0.999999999999
         # sometimes the MSB will be zero, (0.5 * 0.5 = 0.25 which
         # in binary is 0b010000) so to compensate for that we have
@@ -53,6 +54,7 @@ class FPMulStage1Mod(PipeModBase):
             self.o.of.sticky.eq(p[0:mw].bool()) # sticky
         ]
 
+        # pass through context
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.oz.eq(self.i.oz)
         comb += self.o.ctx.eq(self.i.ctx)

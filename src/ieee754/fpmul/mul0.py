@@ -41,6 +41,7 @@ class FPMulStage0Mod(PipeModBase):
                      self.o.z.s.eq(self.i.a.s ^ self.i.b.s)
         ]
 
+        # pass through context
         comb += self.o.oz.eq(self.i.oz)
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.ctx.eq(self.i.ctx)
