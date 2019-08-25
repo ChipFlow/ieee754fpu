@@ -1,8 +1,10 @@
-# IEEE Floating Point Adder (Single Precision)
-# Copyright (C) Jonathan P Dawson 2013
-# 2013-12-12
+"""IEEE754 Floating Point Library
 
-from nmigen import Module, Signal
+Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+
+"""
+
+from nmigen import Module, Signal, Mux
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
@@ -64,18 +66,24 @@ class FPAddAlignSingleMod(PipeModBase):
 
             the shifter used here is quite expensive in terms of gates.
             Mux A or B in (and out) into temporaries, as only one of them
-            needs to be aligned against the other
+            needs to be aligned against the other.
+
+            code is therefore slightly complex because after testing which
+            exponent is greater, a and b get mux-routed into the multi-shifter
+            and so does the output.
         """
         m = Module()
         comb = m.d.comb
 
-        # temporary (muxed) input and output to be shifted
+        ai = self.i.a
+        bi = self.i.b
         width = self.pspec.width
-        espec = (len(self.i.a.e), True)
+        espec = (len(ai.e), True)
 
+        # temporary (muxed) input and output to be shifted
         t_inp = FPNumBaseRecord(width)
         t_out = FPNumBaseRecord(width)
-        msr = MultiShiftRMerge(self.i.a.m_width, espec)
+        msr = MultiShiftRMerge(ai.m_width, espec)
         m.submodules.multishift_r = msr
 
         # temporaries
@@ -90,33 +98,36 @@ class FPAddAlignSingleMod(PipeModBase):
         comb += msr.inp.eq(t_inp.m)
         comb += msr.diff.eq(tdiff)
         comb += t_out.m.eq(msr.m)
-        comb += t_out.e.eq(t_inp.e + tdiff)
+        comb += t_out.e.eq(Mux(egz, ai.e, bi.e))
         comb += t_out.s.eq(t_inp.s)
 
-        comb += ediff.eq(self.i.a.e - self.i.b.e)   # a - b
+        # work out exponent difference, set up mux-tests if a > b or b > a
+        comb += ediff.eq(ai.e - bi.e)   # a - b
         comb += ediffr.eq(-ediff)                   # b - a
-        comb += elz.eq(self.i.a.e < self.i.b.e)     # ae < be
-        comb += egz.eq(self.i.a.e > self.i.b.e)     # ae > be
+        comb += elz.eq(ediffr > 0)     # ae < be
+        comb += egz.eq(ediff > 0)    # ae > be
 
-        # default: A-exp == B-exp, A and B untouched (fall through)
-        comb += self.o.a.eq(self.i.a)
-        comb += self.o.b.eq(self.i.b)
+        # decide what to input into the multi-shifter
+        comb += [t_inp.s.eq(Mux(egz, bi.s, ai.s)), # a/b sign
+                 t_inp.m.eq(Mux(egz, bi.m, ai.m)), # a/b mantissa
+                 t_inp.e.eq(Mux(egz, bi.e, ai.e)), # a/b exponent
+                 tdiff.eq(Mux(egz, ediff, ediffr)),
+                ]
 
-        # exponent of a greater than b: shift b down
-        with m.If(egz):
-            comb += [t_inp.eq(self.i.b),
-                         tdiff.eq(ediff),
-                         self.o.b.eq(t_out),
-                         self.o.b.s.eq(self.i.b.s), # whoops forgot sign
-                        ]
-        # exponent of b greater than a: shift a down
-        with m.Elif(elz):
-            comb += [t_inp.eq(self.i.a),
-                         tdiff.eq(ediffr),
-                         self.o.a.eq(t_out),
-                         self.o.a.s.eq(self.i.a.s), # whoops forgot sign
-                        ]
+        # now decide where (if) to route the *output* of the multi-shifter
 
+        # if a exponent greater, route mshifted-out to b? otherwise just b
+        comb += [self.o.b.e.eq(Mux(egz, t_out.e, bi.e)), # exponent
+                 self.o.b.m.eq(Mux(egz, t_out.m, bi.m)), # mantissa
+                 self.o.b.s.eq(bi.s),                    # sign as-is
+        ]
+        # if b exponent greater, route mshifted-out to a? otherwise just a
+        comb += [self.o.a.e.eq(Mux(elz, t_out.e, ai.e)), # exponent
+                 self.o.a.m.eq(Mux(elz, t_out.m, ai.m)), # mantissa
+                 self.o.a.s.eq(ai.s),                    # sign as-is
+        ]
+
+        # pass context through
         comb += self.o.ctx.eq(self.i.ctx)
         comb += self.o.z.eq(self.i.z)
         comb += self.o.out_do_z.eq(self.i.out_do_z)
