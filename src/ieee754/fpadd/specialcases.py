@@ -69,29 +69,6 @@ class FPAddSpecialCasesMod(PipeModBase):
         with m.If(abnan):
             comb += self.o.z.nan(0)
 
-        # XXX WEIRDNESS for FP16 non-canonical NaN handling
-        # under review
-
-        ## if a is zero and b is NaN return -b
-        #with m.If(a.is_zero & (a.s==0) & b.is_nan):
-        #    comb += self.o.out_do_z.eq(1)
-        #    comb += z.create(b.s, b.e, Cat(b.m[3:-2], ~b.m[0]))
-
-        ## if b is zero and a is NaN return -a
-        #with m.Elif(b.is_zero & (b.s==0) & a.is_nan):
-        #    comb += self.o.out_do_z.eq(1)
-        #    comb += z.create(a.s, a.e, Cat(a.m[3:-2], ~a.m[0]))
-
-        ## if a is -zero and b is NaN return -b
-        #with m.Elif(a.is_zero & (a.s==1) & b.is_nan):
-        #    comb += self.o.out_do_z.eq(1)
-        #    comb += z.create(a.s & b.s, b.e, Cat(b.m[3:-2], 1))
-
-        ## if b is -zero and a is NaN return -a
-        #with m.Elif(b.is_zero & (b.s==1) & a.is_nan):
-        #    comb += self.o.out_do_z.eq(1)
-        #    comb += z.create(a.s & b.s, a.e, Cat(a.m[3:-2], 1))
-
         # if a is inf return inf (or NaN)
         with m.Elif(a1.is_inf):
             comb += self.o.z.inf(a1.s)
