@@ -28,34 +28,33 @@ class FPAddStage0Mod(PipeModBase):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
+        a = self.i.a
+        b = self.i.b
+        assert len(a.m) == len(b.m) # op lengths must be equal
 
         # store intermediate tests (and zero-extended mantissas)
         seq = Signal(reset_less=True)
         mge = Signal(reset_less=True)
-        am0 = Signal(len(self.i.a.m)+1, reset_less=True)
-        bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
-        # same-sign (both negative or both positive) add mantissas
-        comb += [seq.eq(self.i.a.s == self.i.b.s),
-                 mge.eq(self.i.a.m >= self.i.b.m),
-                 am0.eq(Cat(self.i.a.m, 0)),
-                 bm0.eq(Cat(self.i.b.m, 0))
+        sm = Signal(reset_less=True)
+        op1 = Signal(len(a.m)+1, reset_less=True)
+        op2 = Signal(len(b.m)+1, reset_less=True)
+
+        # logic is as follows:
+        # * same-sign (both negative or both positive) add mantissas
+        # * opposite sign, subtract b mantissa from a
+        # * a mantissa greater than b, use a
+        # * b mantissa greater than a, use b
+        comb += [seq.eq(a.s == b.s),
+                 mge.eq(a.m >= b.m),
+                 sm.eq(seq | mge),
+                 op1.eq(Cat(Mux(sm, a.m, b.m), 0)), # swap a and b
+                 op2.eq(Cat(Mux(sm, b.m, a.m), 0)), # swap b and a
                 ]
-        comb += self.o.z.e.eq(self.i.a.e)
-        comb += self.o.z.s.eq(Mux(seq | mge, self.i.a.s, self.i.b.s))
-        with m.If(seq):
-            comb += [
-                self.o.tot.eq(am0 + bm0),
-            ]
-        # a mantissa greater than b, use a
-        with m.Elif(mge):
-            comb += [
-                self.o.tot.eq(am0 - bm0),
-            ]
-        # b mantissa greater than a, use b
-        with m.Else():
-            comb += [
-                self.o.tot.eq(bm0 - am0),
-        ]
+
+        # perform add into output z (s/m/e)
+        comb += self.o.z.e.eq(a.e)                            # exponent same
+        comb += self.o.z.s.eq(Mux(sm, a.s, b.s))              # sign swap
+        comb += self.o.tot.eq(Mux(seq, op1 + op2, op1 - op2)) # mantissa +/-
 
         # pass-through context
         comb += self.o.oz.eq(self.i.oz)
