@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Mux
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
@@ -41,22 +41,20 @@ class FPAddStage0Mod(PipeModBase):
                  bm0.eq(Cat(self.i.b.m, 0))
                 ]
         comb += self.o.z.e.eq(self.i.a.e)
+        comb += self.o.z.s.eq(Mux(seq | mge, self.i.a.s, self.i.b.s))
         with m.If(seq):
             comb += [
                 self.o.tot.eq(am0 + bm0),
-                self.o.z.s.eq(self.i.a.s)
             ]
         # a mantissa greater than b, use a
         with m.Elif(mge):
             comb += [
                 self.o.tot.eq(am0 - bm0),
-                self.o.z.s.eq(self.i.a.s)
             ]
         # b mantissa greater than a, use b
         with m.Else():
             comb += [
                 self.o.tot.eq(bm0 - am0),
-                self.o.z.s.eq(self.i.b.s)
         ]
 
         # pass-through context
