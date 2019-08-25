@@ -85,38 +85,37 @@ class FPAddAlignSingleMod(PipeModBase):
         elz = Signal(reset_less=True)
         egz = Signal(reset_less=True)
 
-        with m.If(~self.i.out_do_z):
-            # connect multi-shifter to t_inp/out mantissa (and tdiff)
-            # (only one: input/output is muxed)
-            comb += msr.inp.eq(t_inp.m)
-            comb += msr.diff.eq(tdiff)
-            comb += t_out.m.eq(msr.m)
-            comb += t_out.e.eq(t_inp.e + tdiff)
-            comb += t_out.s.eq(t_inp.s)
+        # connect multi-shifter to t_inp/out mantissa (and tdiff)
+        # (only one: input/output is muxed)
+        comb += msr.inp.eq(t_inp.m)
+        comb += msr.diff.eq(tdiff)
+        comb += t_out.m.eq(msr.m)
+        comb += t_out.e.eq(t_inp.e + tdiff)
+        comb += t_out.s.eq(t_inp.s)
 
-            comb += ediff.eq(self.i.a.e - self.i.b.e)   # a - b
-            comb += ediffr.eq(-ediff)                   # b - a
-            comb += elz.eq(self.i.a.e < self.i.b.e)     # ae < be
-            comb += egz.eq(self.i.a.e > self.i.b.e)     # ae > be
+        comb += ediff.eq(self.i.a.e - self.i.b.e)   # a - b
+        comb += ediffr.eq(-ediff)                   # b - a
+        comb += elz.eq(self.i.a.e < self.i.b.e)     # ae < be
+        comb += egz.eq(self.i.a.e > self.i.b.e)     # ae > be
 
-            # default: A-exp == B-exp, A and B untouched (fall through)
-            comb += self.o.a.eq(self.i.a)
-            comb += self.o.b.eq(self.i.b)
+        # default: A-exp == B-exp, A and B untouched (fall through)
+        comb += self.o.a.eq(self.i.a)
+        comb += self.o.b.eq(self.i.b)
 
-            # exponent of a greater than b: shift b down
-            with m.If(egz):
-                comb += [t_inp.eq(self.i.b),
-                             tdiff.eq(ediff),
-                             self.o.b.eq(t_out),
-                             self.o.b.s.eq(self.i.b.s), # whoops forgot sign
-                            ]
-            # exponent of b greater than a: shift a down
-            with m.Elif(elz):
-                comb += [t_inp.eq(self.i.a),
-                             tdiff.eq(ediffr),
-                             self.o.a.eq(t_out),
-                             self.o.a.s.eq(self.i.a.s), # whoops forgot sign
-                            ]
+        # exponent of a greater than b: shift b down
+        with m.If(egz):
+            comb += [t_inp.eq(self.i.b),
+                         tdiff.eq(ediff),
+                         self.o.b.eq(t_out),
+                         self.o.b.s.eq(self.i.b.s), # whoops forgot sign
+                        ]
+        # exponent of b greater than a: shift a down
+        with m.Elif(elz):
+            comb += [t_inp.eq(self.i.a),
+                         tdiff.eq(ediffr),
+                         self.o.a.eq(t_out),
+                         self.o.a.s.eq(self.i.a.s), # whoops forgot sign
+                        ]
 
         comb += self.o.ctx.eq(self.i.ctx)
         comb += self.o.z.eq(self.i.z)
