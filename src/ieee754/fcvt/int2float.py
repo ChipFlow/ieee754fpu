@@ -87,6 +87,10 @@ class FPCVTIntToFloatMod(PipeModBase):
             # smaller int to larger FP
             comb += z1.e.eq(msb.e_out)
             comb += z1.m[ms:].eq(msb.m_out[3:])
+
+        # XXX there is some weirdness involving the sign looping back
+        # see graphviz output
+        # http://bugs.libre-riscv.org/show_bug.cgi?id=135
         comb += z1.s.eq(sign)
         comb += z1.create(sign, z1.e, z1.m) # ... here
 
