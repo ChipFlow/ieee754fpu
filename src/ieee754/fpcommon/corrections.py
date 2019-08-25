@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module
+from nmigen import Module, Mux
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
@@ -23,11 +23,11 @@ class FPCorrectionsMod(PipeModBase):
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
         m.submodules.corr_in_z = in_z = FPNumBase(self.i.z)
-        m.d.comb += self.o.eq(self.i) # copies mid, z, out_do_z
-        with m.If(~self.i.out_do_z):
-            with m.If(in_z.is_denormalised):
-                m.d.comb += self.o.z.e.eq(self.i.z.N127)
+        comb += self.o.eq(self.i) # copies mid, z, out_do_z
+        comb += self.o.z.e.eq(Mux(in_z.is_denormalised,
+                                  self.i.z.N127, self.i.z.e))
         return m
 
 
