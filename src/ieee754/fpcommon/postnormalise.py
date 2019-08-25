@@ -70,60 +70,59 @@ class FPNorm1ModSingle(PipeModBase):
         # initialise out from in (overridden below)
         m.d.comb += self.o.z.eq(insel_z)
         m.d.comb += Overflow.eq(of, i.of)
-        with m.If(~self.i.out_do_z):
 
-            # normalisation increase/decrease conditions
-            decrease = Signal(reset_less=True)
-            increase = Signal(reset_less=True)
-            m.d.comb += decrease.eq(insel_z.m_msbzero & insel_z.exp_gt_n126)
-            m.d.comb += increase.eq(insel_z.exp_lt_n126)
+        # normalisation increase/decrease conditions
+        decrease = Signal(reset_less=True)
+        increase = Signal(reset_less=True)
+        m.d.comb += decrease.eq(insel_z.m_msbzero & insel_z.exp_gt_n126)
+        m.d.comb += increase.eq(insel_z.exp_lt_n126)
 
-            # concatenate s/r/g with mantissa.  (it was easier to do this
-            # than to have the mantissa contain the three extra bits)
-            temp_m = Signal(mwid+2, reset_less=True)
-            m.d.comb += temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
-                                      insel_z.m)),
+        # concatenate s/r/g with mantissa.  (it was easier to do this
+        # than to have the mantissa contain the three extra bits)
+        temp_m = Signal(mwid+2, reset_less=True)
+        m.d.comb += temp_m.eq(Cat(i.of.sticky, i.of.round_bit, i.of.guard,
+                                  insel_z.m)),
 
-            # decrease exponent
-            with m.If(decrease):
-                # make sure that the amount to decrease by does NOT
-                # go below the minimum non-INF/NaN exponent
-                m.d.comb += msb.limclz.eq(insel_z.exp_sub_n126)
-                m.d.comb += [
-                    # inputs: mantissa and exponent
-                    msb.m_in.eq(temp_m),
-                    msb.e_in.eq(insel_z.e),
+        # decrease exponent
+        with m.If(decrease):
+            # make sure that the amount to decrease by does NOT
+            # go below the minimum non-INF/NaN exponent
+            m.d.comb += msb.limclz.eq(insel_z.exp_sub_n126)
+            m.d.comb += [
+                # inputs: mantissa and exponent
+                msb.m_in.eq(temp_m),
+                msb.e_in.eq(insel_z.e),
 
-                    # outputs: mantissa first (s/r/g/m[3:])
-                    self.o.z.m.eq(msb.m_out[3:]),    # exclude bits 0&1
-                    of.m0.eq(msb.m_out[3]),          # copy of mantissa[0]
-                    # overflow in bits 0..1: got shifted too (leave sticky)
-                    of.guard.eq(msb.m_out[2]),       # guard
-                    of.round_bit.eq(msb.m_out[1]),   # round
-                    # now exponent out
-                    self.o.z.e.eq(msb.e_out),
-                ]
-            # increase exponent
-            with m.Elif(increase):
-                ediff_n126 = Signal(espec, reset_less=True)
-                m.d.comb += [
-                    # concatenate
-                    ediff_n126.eq(insel_z.fp.N126 - insel_z.e),
-                    # connect multi-shifter to inp/out m/e (and ediff)
-                    msr.m_in.eq(temp_m),
-                    msr.e_in.eq(insel_z.e),
-                    msr.ediff.eq(ediff_n126),
+                # outputs: mantissa first (s/r/g/m[3:])
+                self.o.z.m.eq(msb.m_out[3:]),    # exclude bits 0&1
+                of.m0.eq(msb.m_out[3]),          # copy of mantissa[0]
+                # overflow in bits 0..1: got shifted too (leave sticky)
+                of.guard.eq(msb.m_out[2]),       # guard
+                of.round_bit.eq(msb.m_out[1]),   # round
+                # now exponent out
+                self.o.z.e.eq(msb.e_out),
+            ]
+        # increase exponent
+        with m.Elif(increase):
+            ediff_n126 = Signal(espec, reset_less=True)
+            m.d.comb += [
+                # concatenate
+                ediff_n126.eq(insel_z.fp.N126 - insel_z.e),
+                # connect multi-shifter to inp/out m/e (and ediff)
+                msr.m_in.eq(temp_m),
+                msr.e_in.eq(insel_z.e),
+                msr.ediff.eq(ediff_n126),
 
-                    # outputs: mantissa first (s/r/g/m[3:])
-                    self.o.z.m.eq(msr.m_out[3:]),
-                    of.m0.eq(msr.m_out[3]),   # copy of mantissa[0]
-                    # overflow in bits 0..2: got shifted too (leave sticky)
-                    of.guard.eq(msr.m_out[2]),     # guard
-                    of.round_bit.eq(msr.m_out[1]),  # round
-                    of.sticky.eq(msr.m_out[0]),    # sticky
-                    # now exponent
-                    self.o.z.e.eq(msr.e_out),
-                ]
+                # outputs: mantissa first (s/r/g/m[3:])
+                self.o.z.m.eq(msr.m_out[3:]),
+                of.m0.eq(msr.m_out[3]),   # copy of mantissa[0]
+                # overflow in bits 0..2: got shifted too (leave sticky)
+                of.guard.eq(msr.m_out[2]),     # guard
+                of.round_bit.eq(msr.m_out[1]),  # round
+                of.sticky.eq(msr.m_out[0]),    # sticky
+                # now exponent
+                self.o.z.e.eq(msr.e_out),
+            ]
 
         m.d.comb += self.o.roundz.eq(of.roundz_out)
         m.d.comb += self.o.ctx.eq(self.i.ctx)
