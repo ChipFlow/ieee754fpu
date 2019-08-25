@@ -35,30 +35,29 @@ class FPAddStage0Mod(PipeModBase):
         am0 = Signal(len(self.i.a.m)+1, reset_less=True)
         bm0 = Signal(len(self.i.b.m)+1, reset_less=True)
         # same-sign (both negative or both positive) add mantissas
-        with m.If(~self.i.out_do_z):
-            comb += [seq.eq(self.i.a.s == self.i.b.s),
-                     mge.eq(self.i.a.m >= self.i.b.m),
-                     am0.eq(Cat(self.i.a.m, 0)),
-                     bm0.eq(Cat(self.i.b.m, 0))
-                    ]
-            comb += self.o.z.e.eq(self.i.a.e)
-            with m.If(seq):
-                comb += [
-                    self.o.tot.eq(am0 + bm0),
-                    self.o.z.s.eq(self.i.a.s)
+        comb += [seq.eq(self.i.a.s == self.i.b.s),
+                 mge.eq(self.i.a.m >= self.i.b.m),
+                 am0.eq(Cat(self.i.a.m, 0)),
+                 bm0.eq(Cat(self.i.b.m, 0))
                 ]
-            # a mantissa greater than b, use a
-            with m.Elif(mge):
-                comb += [
-                    self.o.tot.eq(am0 - bm0),
-                    self.o.z.s.eq(self.i.a.s)
-                ]
-            # b mantissa greater than a, use b
-            with m.Else():
-                comb += [
-                    self.o.tot.eq(bm0 - am0),
-                    self.o.z.s.eq(self.i.b.s)
+        comb += self.o.z.e.eq(self.i.a.e)
+        with m.If(seq):
+            comb += [
+                self.o.tot.eq(am0 + bm0),
+                self.o.z.s.eq(self.i.a.s)
             ]
+        # a mantissa greater than b, use a
+        with m.Elif(mge):
+            comb += [
+                self.o.tot.eq(am0 - bm0),
+                self.o.z.s.eq(self.i.a.s)
+            ]
+        # b mantissa greater than a, use b
+        with m.Else():
+            comb += [
+                self.o.tot.eq(bm0 - am0),
+                self.o.z.s.eq(self.i.b.s)
+        ]
 
         # pass-through context
         comb += self.o.oz.eq(self.i.oz)
