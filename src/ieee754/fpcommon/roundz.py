@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Mux
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
@@ -44,11 +44,11 @@ class FPRoundMod(PipeModBase):
         comb = m.d.comb
 
         comb += self.o.eq(self.i)  # copies muxid, z, out_do_z
-        with m.If(~self.i.out_do_z):  # bypass wasn't enabled
-            with m.If(self.i.roundz):
-                comb += self.o.z.m.eq(self.i.z.m + 1)  # mantissa up
-                with m.If(~(~self.i.z.m).bool()):  # all 1s
-                    # exponent up
-                    comb += self.o.z.e.eq(self.i.z.e + 1)
+        im = self.i.z.m
+        ie = self.i.z.e
+        msb1s = Signal(reset_less=True)
+        comb += msb1s.eq(~(~self.i.z.m).bool())  # all 1s
+        comb += self.o.z.m.eq(Mux(self.i.roundz, im+1, im))  # mantissa up
+        comb += self.o.z.e.eq(Mux(msb1s & self.i.roundz, ie + 1, ie)) # exp up
 
         return m
