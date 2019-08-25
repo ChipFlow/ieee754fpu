@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmigen import Module, Signal
+from nmigen import Module, Signal, Mux
 from nmigen.cli import main, verilog
 
 from nmutil.pipemodbase import PipeModBase
@@ -29,18 +29,18 @@ class FPMulStage1Mod(PipeModBase):
         m = Module()
         comb = m.d.comb
 
-        comb += self.o.z.eq(self.i.z)
+        # copy sign
+        comb += self.o.z.s.eq(self.i.z.s)
         # results are in the range 0.25 to 0.999999999999
         # sometimes the MSB will be zero, (0.5 * 0.5 = 0.25 which
         # in binary is 0b010000) so to compensate for that we have
         # to shift the mantissa up (and reduce the exponent by 1)
         p = Signal(len(self.i.product), reset_less=True)
-        with m.If(self.i.product[-1]):
-            comb += p.eq(self.i.product)
-        with m.Else():
-            # get 1 bit of extra accuracy if the mantissa top bit is zero
-            comb += p.eq(self.i.product<<1)
-            comb += self.o.z.e.eq(self.i.z.e-1)
+        msb = Signal(reset_less=True)
+        e = self.o.z.e
+        comb += msb.eq(self.i.product[-1])
+        comb += p.eq(Mux(msb, self.i.product, self.i.product<<1))
+        comb += e.eq(Mux(msb, self.i.z.e, self.i.z.e-1))
 
         # top bits are mantissa, then guard and round, and the rest of
         # the product is sticky
