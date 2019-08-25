@@ -2,7 +2,7 @@
 # Copyright (C) Jonathan P Dawson 2013
 # 2013-12-12
 
-from nmigen import Module, Signal, Cat, Const
+from nmigen import Module, Signal, Cat, Const, Mux
 from nmigen.cli import main, verilog
 from math import log
 
@@ -49,19 +49,33 @@ class FPAddSpecialCasesMod(PipeModBase):
         s_nomatch = Signal(reset_less=True)
         m_match = Signal(reset_less=True)
         e_match = Signal(reset_less=True)
-        aeqmb = Signal(reset_less=True)
-        abz = Signal(reset_less=True)
-        absa = Signal(reset_less=True)
-        abnan = Signal(reset_less=True)
+        absa = Signal(reset_less=True) # a1.s & b1.s
+        t_aeqmb = Signal(reset_less=True)
+        t_a1inf = Signal(reset_less=True)
+        t_b1inf = Signal(reset_less=True)
+        t_a1zero = Signal(reset_less=True)
+        t_b1zero = Signal(reset_less=True)
+        t_abz = Signal(reset_less=True)
+        t_abnan = Signal(reset_less=True)
         bexp128s = Signal(reset_less=True)
+        t_special = Signal(reset_less=True)
 
         comb += s_nomatch.eq(a1.s != b1.s)
         comb += m_match.eq(a1.m == b1.m)
         comb += e_match.eq(a1.e == b1.e)
-        comb += aeqmb.eq(s_nomatch & m_match & e_match)
-        comb += abz.eq(a1.is_zero & b1.is_zero)
+
+        # logic-chain (matches comments, below) gives an if-elif-elif-elif...
+        comb += t_abnan.eq(a1.is_nan | b1.is_nan)
+        comb += t_a1inf.eq(a1.is_inf)
+        comb += t_b1inf.eq(b1.is_inf)
+        comb += t_abz.eq(a1.is_zero & b1.is_zero)
+        comb += t_a1zero.eq(a1.is_zero)
+        comb += t_b1zero.eq(b1.is_zero)
+        comb += t_aeqmb.eq(s_nomatch & m_match & e_match)
+        comb += t_special.eq(Cat(t_aeqmb, t_b1zero, t_a1zero, t_abz,
+                                     t_b1inf, t_a1inf, t_abnan).bool())
+
         comb += absa.eq(a1.s & b1.s)
-        comb += abnan.eq(a1.is_nan | b1.is_nan)
         comb += bexp128s.eq(b1.exp_128 & s_nomatch)
 
         # prepare inf/zero/nans
@@ -74,44 +88,34 @@ class FPAddSpecialCasesMod(PipeModBase):
         comb += z_infa.inf(a1.s)
         comb += z_infb.inf(b1.s)
 
-        # default bypass
-        comb += self.o.out_do_z.eq(1)
+        # any special-cases it's a "special".
+        comb += self.o.out_do_z.eq(t_special)
 
+        # this is the logic-decision-making for special-cases:
         # if a is NaN or b is NaN return NaN
-        with m.If(abnan):
-            comb += self.o.oz.eq(z_nan.v)
+        # elif a is inf return inf (or NaN)
+        #   if a is inf and signs don't match return NaN
+        #   else return inf(a)
+        # elif b is inf return inf(b)
+        # elif a is zero and b zero return signed-a/b
+        # elif a is zero return b
+        # elif b is zero return a
+        # elif a equal to -b return zero (+ve zero)
 
-        # if a is inf return inf (or NaN)
-        with m.Elif(a1.is_inf):
-            comb += self.o.oz.eq(z_infa.v)
-            # if a is inf and signs don't match return NaN
-            with m.If(bexp128s):
-                comb += self.o.oz.eq(z_nan.v)
+        # XXX *sigh* there are better ways to do this...
+        # one of them: use a priority-picker!
+        # in reverse-order, accumulate Muxing
 
-        # if b is inf return inf
-        with m.Elif(b1.is_inf):
-            comb += self.o.oz.eq(z_infb.v)
+        oz = 0
+        oz = Mux(t_aeqmb, z_zero.v, oz)
+        oz = Mux(t_b1zero, a1.v, oz)
+        oz = Mux(t_a1zero, b1.v, oz)
+        oz = Mux(t_abz, Cat(self.i.b[:-1], absa), oz)
+        oz = Mux(t_b1inf, z_infb.v, oz)
+        oz = Mux(t_a1inf, Mux(bexp128s, z_nan.v, z_infa.v), oz)
+        oz = Mux(t_abnan, z_nan.v, oz)
 
-        # if a is zero and b zero return signed-a/b
-        with m.Elif(abz):
-            comb += self.o.oz.eq(self.i.b)
-            comb += self.o.oz[-1].eq(absa)
-
-        # if a is zero return b
-        with m.Elif(a1.is_zero):
-            comb += self.o.oz.eq(b1.v)
-
-        # if b is zero return a
-        with m.Elif(b1.is_zero):
-            comb += self.o.oz.eq(a1.v)
-
-        # if a equal to -b return zero (+ve zero)
-        with m.Elif(aeqmb):
-            comb += self.o.oz.eq(z_zero.v)
-
-        # Denormalised Number checks next, so pass a/b data through
-        with m.Else():
-            comb += self.o.out_do_z.eq(0)
+        comb += self.o.oz.eq(oz)
 
         comb += self.o.ctx.eq(self.i.ctx)
 
