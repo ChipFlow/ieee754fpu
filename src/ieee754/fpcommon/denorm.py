@@ -4,7 +4,7 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-from nmigen import Module
+from nmigen import Module, Mux
 from nmigen.cli import main, verilog
 from math import log
 
@@ -32,19 +32,21 @@ class FPAddDeNormMod(PipeModBase):
         m.submodules.denorm_in_a = in_a = FPNumBase(self.i.a)
         m.submodules.denorm_in_b = in_b = FPNumBase(self.i.b)
 
-        with m.If(~self.i.out_do_z):
-            # XXX hmmm, don't like repeating identical code
-            comb += self.o.a.eq(self.i.a)
-            with m.If(in_a.exp_n127):
-                comb += self.o.a.e.eq(self.i.a.N126)  # limit a exponent
-            with m.Else():
-                comb += self.o.a.m[-1].eq(1)  # set top mantissa bit
+        # XXX hmmm, don't like repeating identical code
+        comb += self.o.a.eq(self.i.a)
+        ae = self.i.a.e
+        am = self.i.a.m
+        # either limit exponent, or set top mantissa bit
+        comb += self.o.a.e.eq(Mux(in_a.exp_n127, self.i.a.N126, ae))
+        comb += self.o.a.m[-1].eq(Mux(in_a.exp_n127, am[-1], 1))
 
-            comb += self.o.b.eq(self.i.b)
-            with m.If(in_b.exp_n127):
-                comb += self.o.b.e.eq(self.i.b.N126)  # limit a exponent
-            with m.Else():
-                comb += self.o.b.m[-1].eq(1)  # set top mantissa bit
+        # XXX code now repeated for b
+        comb += self.o.b.eq(self.i.b)
+        be = self.i.b.e
+        bm = self.i.b.m
+        # either limit exponent, or set top mantissa bit
+        comb += self.o.b.e.eq(Mux(in_b.exp_n127, self.i.b.N126, be))
+        comb += self.o.b.m[-1].eq(Mux(in_b.exp_n127, bm[-1], 1))
 
         comb += self.o.ctx.eq(self.i.ctx)
         comb += self.o.z.eq(self.i.z)
