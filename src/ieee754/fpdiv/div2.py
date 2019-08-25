@@ -57,48 +57,48 @@ class FPDivPostToFPFormat(PipeModBase):
         #   radicand [1.0, 4.0)
         #   result (0.5, 1.0]
 
-        with m.If(~self.i.out_do_z):
-            # following section partially normalizes result to range [1.0, 2.0)
-            fw = self.pspec.core_config.fract_width
-            qr_int_part = Signal(2, reset_less=True)
-            comb += qr_int_part.eq(self.i.quotient_root[fw:][:2])
+        # following section partially normalizes result to range [1.0, 2.0)
+        fw = self.pspec.core_config.fract_width
+        qr_int_part = Signal(2, reset_less=True)
+        comb += qr_int_part.eq(self.i.quotient_root[fw:][:2])
 
-            need_shift = Signal(reset_less=True)
+        need_shift = Signal(reset_less=True)
 
-            # shift left when result is less than 2.0 since result_m has 1 more
-            # fraction bit, making assigning to it the equivalent of
-            # dividing by 2.
-            # this all comes out to:
-            # if quotient_root < 2.0:
-            #     # div by 2 from assign; mul by 2 from shift left
-            #     result = (quotient_root * 2) / 2
-            # else:
-            #     # div by 2 from assign
-            #     result = quotient_root / 2
-            comb += need_shift.eq(qr_int_part < 2)
+        # shift left when result is less than 2.0 since result_m has 1 more
+        # fraction bit, making assigning to it the equivalent of
+        # dividing by 2.
+        # this all comes out to:
+        # if quotient_root < 2.0:
+        #     # div by 2 from assign; mul by 2 from shift left
+        #     result = (quotient_root * 2) / 2
+        # else:
+        #     # div by 2 from assign
+        #     result = quotient_root / 2
+        comb += need_shift.eq(qr_int_part < 2)
 
-            # one extra fraction bit to accommodate the result when not
-            # shifting and for effective div by 2
-            result_m_fract_width = fw + 1
-            # 1 integer bit since the numbers are less than 2.0
-            result_m = Signal(1 + result_m_fract_width, reset_less=True)
-            result_e = Signal(len(self.i.z.e), reset_less=True)
+        # one extra fraction bit to accommodate the result when not
+        # shifting and for effective div by 2
+        result_m_fract_width = fw + 1
+        # 1 integer bit since the numbers are less than 2.0
+        result_m = Signal(1 + result_m_fract_width, reset_less=True)
+        result_e = Signal(len(self.i.z.e), reset_less=True)
 
-            comb += [
-                result_m.eq(self.i.quotient_root << need_shift),
-                result_e.eq(self.i.z.e + (1 - need_shift))
-            ]
+        comb += [
+            result_m.eq(self.i.quotient_root << need_shift),
+            result_e.eq(self.i.z.e + (1 - need_shift))
+        ]
 
-            # result_m is now in the range [1.0, 2.0)
-            comb += [
-                self.o.z.m.eq(result_m[3:]),             # mantissa
-                self.o.of.m0.eq(result_m[3]),            # copy of mantissa LSB
-                self.o.of.guard.eq(result_m[2]),         # guard
-                self.o.of.round_bit.eq(result_m[1]),     # round
-                self.o.of.sticky.eq(result_m[0] | self.i.remainder.bool()),
-                self.o.z.e.eq(result_e),
-            ]
+        # result_m is now in the range [1.0, 2.0)
+        comb += [
+            self.o.z.m.eq(result_m[3:]),             # mantissa
+            self.o.of.m0.eq(result_m[3]),            # copy of mantissa LSB
+            self.o.of.guard.eq(result_m[2]),         # guard
+            self.o.of.round_bit.eq(result_m[1]),     # round
+            self.o.of.sticky.eq(result_m[0] | self.i.remainder.bool()),
+            self.o.z.e.eq(result_e),
+        ]
 
+        # pass through context
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.oz.eq(self.i.oz)
         comb += self.o.ctx.eq(self.i.ctx)

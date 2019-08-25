@@ -66,7 +66,8 @@ class FPDIVSpecialCasesMod(PipeModBase):
         # select one of 3 different sets of specialcases (DIV, SQRT, RSQRT)
         with m.Switch(self.i.ctx.op):
 
-            with m.Case(int(DP.UDivRem)): # DIV
+            ########## DIV ############
+            with m.Case(int(DP.UDivRem)):
 
                 # if a is NaN or b is NaN return NaN
                 with m.If(abnan):
@@ -99,7 +100,8 @@ class FPDIVSpecialCasesMod(PipeModBase):
                 with m.Else():
                     comb += self.o.out_do_z.eq(0)
 
-            with m.Case(int(DP.SqrtRem)): # SQRT
+            ########## SQRT ############
+            with m.Case(int(DP.SqrtRem)):
 
                 # if a is zero return zero
                 with m.If(a1.is_zero):
@@ -121,7 +123,8 @@ class FPDIVSpecialCasesMod(PipeModBase):
                 with m.Else():
                     comb += self.o.out_do_z.eq(0)
 
-            with m.Case(int(DP.RSqrtRem)): # RSQRT
+            ########## RSQRT ############
+            with m.Case(int(DP.RSqrtRem)):
 
                 # if a is NaN return canonical NaN
                 with m.If(a1.is_nan):
@@ -144,6 +147,7 @@ class FPDIVSpecialCasesMod(PipeModBase):
                 with m.Else():
                     comb += self.o.out_do_z.eq(0)
 
+        # pass through context
         comb += self.o.oz.eq(self.o.z.v)
         comb += self.o.ctx.eq(self.i.ctx)
 

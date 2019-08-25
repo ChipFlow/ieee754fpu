@@ -1,4 +1,4 @@
-"""IEEE754 Floating Point Divider
+"""IEEE754 Floating Point Divider / Square-Root / Reciprocal-Square-Root
 
 Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 Copyright (C) 2019 Jacob Lifshay
@@ -76,30 +76,31 @@ class FPDivPreFPAdjust(PipeModBase):
                  self.o.divisor_radicand.eq(divr_rad),
         ]
 
-        with m.If(~self.i.out_do_z):
-            # DIV
-            with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
-                # DIV: subtract exponents, XOR sign
-                comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
-                         self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
-                         self.o.operation.eq(int(DPCOp.UDivRem))
-                        ]
-            # SQRT
-            with m.Elif(self.i.ctx.op == int(DPCOp.SqrtRem)):
-                # SQRT: sign is the same, [adjusted] exponent is halved
-                comb += [self.o.z.e.eq(adj_a_e >> 1), # halve
-                         self.o.z.s.eq(self.i.a.s),
-                         self.o.operation.eq(int(DPCOp.SqrtRem))
-                        ]
-            # RSQRT
-            with m.Elif(self.i.ctx.op == int(DPCOp.RSqrtRem)):
-                # RSQRT: sign same, [adjusted] exponent halved and inverted
-                comb += [self.o.z.e.eq(-(adj_a_e >> 1)), # NEGATE and halve
-                         self.o.z.s.eq(self.i.a.s),
-                         self.o.operation.eq(int(DPCOp.RSqrtRem))
-                        ]
+        ############# DIV #############
+        with m.If(self.i.ctx.op == int(DPCOp.UDivRem)):
+            # DIV: subtract exponents, XOR sign
+            comb += [self.o.z.e.eq(self.i.a.e - self.i.b.e),
+                     self.o.z.s.eq(self.i.a.s ^ self.i.b.s),
+                     self.o.operation.eq(int(DPCOp.UDivRem))
+                    ]
 
-        # these are required and must not be touched
+        ############# SQRT #############
+        with m.Elif(self.i.ctx.op == int(DPCOp.SqrtRem)):
+            # SQRT: sign is the same, [adjusted] exponent is halved
+            comb += [self.o.z.e.eq(adj_a_e >> 1), # halve
+                     self.o.z.s.eq(self.i.a.s),
+                     self.o.operation.eq(int(DPCOp.SqrtRem))
+                    ]
+
+        ############# RSQRT #############
+        with m.Elif(self.i.ctx.op == int(DPCOp.RSqrtRem)):
+            # RSQRT: sign same, [adjusted] exponent halved and inverted
+            comb += [self.o.z.e.eq(-(adj_a_e >> 1)), # NEGATE and halve
+                     self.o.z.s.eq(self.i.a.s),
+                     self.o.operation.eq(int(DPCOp.RSqrtRem))
+                    ]
+
+        # pass through context
         comb += self.o.oz.eq(self.i.oz)
         comb += self.o.out_do_z.eq(self.i.out_do_z)
         comb += self.o.ctx.eq(self.i.ctx)
