@@ -1312,6 +1312,8 @@ class Intermediates(PipeModBase):
 class Mul8_16_32_64(Elaboratable):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier.
 
+    XXX NOTE: this class is intended for unit test purposes ONLY.
+
     Supports partitioning into any combination of 8, 16, 32, and 64-bit
     partitions on naturally-aligned boundaries. Supports the operation being
     set for each partition independently.
