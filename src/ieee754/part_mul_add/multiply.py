@@ -310,7 +310,7 @@ class AddReduceData:
     def __init__(self, part_pts, n_inputs, output_width, n_parts):
         self.part_ops = [Signal(2, name=f"part_ops_{i}", reset_less=True)
                           for i in range(n_parts)]
-        self.terms = [Signal(output_width, name=f"inputs_{i}",
+        self.terms = [Signal(output_width, name=f"terms_{i}",
                               reset_less=True)
                         for i in range(n_inputs)]
         self.part_pts = part_pts.like()
