@@ -539,7 +539,7 @@ class AddReduceSingle(PipeModBase):
 
 
 class AddReduceInternal:
-    """Recursively Add list of numbers together.
+    """Iteratively Add list of numbers together.
 
     :attribute inputs: input ``Signal``s to be summed. Modification not
         supported, except for by ``Signal.eq``.
