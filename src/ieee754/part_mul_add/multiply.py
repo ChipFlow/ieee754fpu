@@ -1380,9 +1380,7 @@ class Mul8_16_32_64(Elaboratable):
 
         part_pts = self.part_pts
 
-        n_parts = self.pspec.n_parts
         n_inputs = 64 + 4
-        output_width = self.pspec.width * 2
         t = AllTerms(self.pspec, n_inputs)
         t.setup(m, self.i)
 
