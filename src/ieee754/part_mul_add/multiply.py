@@ -550,19 +550,17 @@ class AddReduceInternal:
         supported, except for by ``Signal.eq``.
     """
 
-    def __init__(self, i, pspec, partition_step=1):
+    def __init__(self, pspec, n_inputs, part_pts, partition_step=1):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
         :param output_width: bit-width of ``output``.
         :param partition_points: the input partition points.
         """
-        self.i = i
         self.pspec = pspec
-        self.inputs = i.terms
-        self.part_ops = i.part_ops
+        self.n_inputs = n_inputs
         self.output_width = pspec.width * 2
-        self.partition_points = i.part_pts
+        self.partition_points = part_pts
         self.partition_step = partition_step
 
         self.create_levels()
@@ -572,12 +570,9 @@ class AddReduceInternal:
 
         mods = []
         partition_points = self.partition_points
-        part_ops = self.part_ops
-        n_parts = len(part_ops)
-        inputs = self.inputs
-        ilen = len(inputs)
+        ilen = self.n_inputs
         while True:
-            groups = AddReduceSingle.full_adder_groups(len(inputs))
+            groups = AddReduceSingle.full_adder_groups(ilen)
             if len(groups) == 0:
                 break
             lidx = len(mods)
@@ -586,9 +581,7 @@ class AddReduceInternal:
                                          self.partition_step)
             mods.append(next_level)
             partition_points = next_level.i.part_pts
-            inputs = next_level.o.terms
-            ilen = len(inputs)
-            part_ops = next_level.i.part_ops
+            ilen = len(next_level.o.terms)
 
         lidx = len(mods)
         next_level = FinalAdd(self.pspec, lidx, ilen,
@@ -626,7 +619,8 @@ class AddReduce(AddReduceInternal, Elaboratable):
         n_parts = len(part_ops)
         self.i = AddReduceData(part_pts, len(inputs),
                              output_width, n_parts)
-        AddReduceInternal.__init__(self, self.i, output_width, partition_step)
+        AddReduceInternal.__init__(self, pspec, n_inputs, part_pts,
+                                   partition_step)
         self.o = FinalReduceData(part_pts, output_width, n_parts)
         self.register_levels = register_levels
 
@@ -1386,9 +1380,9 @@ class Mul8_16_32_64(Elaboratable):
 
         terms = t.o.terms
 
-        at = AddReduceInternal(t.process(self.i), self.pspec, partition_step=2)
+        at = AddReduceInternal(self.pspec, n_inputs, part_pts, partition_step=2)
 
-        i = at.i
+        i = t.o
         for idx in range(len(at.levels)):
             mcur = at.levels[idx]
             mcur.setup(m, i)
