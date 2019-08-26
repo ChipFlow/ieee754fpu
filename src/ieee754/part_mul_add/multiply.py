@@ -8,6 +8,8 @@ from abc import ABCMeta, abstractmethod
 from nmigen.cli import main
 from functools import reduce
 from operator import or_
+from ieee754.pipeline import PipelineSpec
+from nmutil.pipemodbase import PipeModBase
 
 
 class PartitionPoints(dict):
@@ -1179,32 +1181,17 @@ class OutputData:
                 self.output.eq(rhs.output)]
 
 
-class AllTerms(Elaboratable):
+class AllTerms(PipeModBase):
     """Set of terms to be added together
     """
 
-    def __init__(self, n_inputs, output_width, n_parts):
-        """Create an ``AddReduce``.
-
-        :param inputs: input ``Signal``s to be summed.
-        :param output_width: bit-width of ``output``.
-        :param register_levels: List of nesting levels that should have
-            pipeline registers.
-        :param partition_points: the input partition points.
+    def __init__(self, pspec):
+        """Create an ``AllTerms``.
         """
-        self.n_inputs = n_inputs
-        self.n_parts = n_parts
-        self.output_width = output_width
-
-        self.i = self.ispec()
-        self.o = self.ospec()
-
-    def setup(self, m, i):
-        m.submodules.allterms = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
+        self.n_inputs = pspec.n_inputs
+        self.n_parts = pspec.n_parts
+        self.output_width = pspec.width
+        super().__init__(pspec, "allterms")
 
     def ispec(self):
         return InputData()
@@ -1391,6 +1378,12 @@ class Mul8_16_32_64(Elaboratable):
             flip-flops are to be inserted.
         """
 
+        self.id_wid = 0 # num_bits(num_rows)
+        self.op_wid = 0
+        self.pspec = PipelineSpec(128, self.id_wid, self.op_wid, n_ops=3)
+        self.pspec.n_inputs = 64 + 4
+        self.pspec.n_parts = 8
+
         # parameter(s)
         self.register_levels = list(register_levels)
 
@@ -1418,9 +1411,10 @@ class Mul8_16_32_64(Elaboratable):
 
         part_pts = self.part_pts
 
-        n_inputs = 64 + 4
-        n_parts = 8
-        t = AllTerms(n_inputs, 128, n_parts)
+        n_parts = self.pspec.n_parts
+        n_inputs = self.pspec.n_inputs
+        output_width = self.pspec.width
+        t = AllTerms(self.pspec)
         t.setup(m, self.i)
 
         terms = t.o.terms
