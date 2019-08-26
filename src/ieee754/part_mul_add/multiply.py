@@ -344,23 +344,22 @@ class FinalReduceData:
         return self.eq_from(rhs.part_pts, rhs.output, rhs.part_ops)
 
 
-class FinalAdd(Elaboratable):
+class FinalAdd(PipeModBase):
     """ Final stage of add reduce
     """
 
-    def __init__(self, lidx, n_inputs, output_width, n_parts, partition_points,
+    def __init__(self, pspec, lidx, n_inputs, partition_points,
                        partition_step=1):
         self.lidx = lidx
         self.partition_step = partition_step
-        self.output_width = output_width
+        self.output_width = pspec.width * 2
         self.n_inputs = n_inputs
-        self.n_parts = n_parts
+        self.n_parts = pspec.n_parts
         self.partition_points = PartitionPoints(partition_points)
-        if not self.partition_points.fits_in_width(output_width):
+        if not self.partition_points.fits_in_width(self.output_width):
             raise ValueError("partition_points doesn't fit in output_width")
 
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "finaladd")
 
     def ispec(self):
         return AddReduceData(self.partition_points, self.n_inputs,
@@ -369,13 +368,6 @@ class FinalAdd(Elaboratable):
     def ospec(self):
         return FinalReduceData(self.partition_points,
                                  self.output_width, self.n_parts)
-
-    def setup(self, m, i):
-        m.submodules.finaladd = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         """Elaborate this module."""
@@ -599,7 +591,7 @@ class AddReduceInternal:
             part_ops = next_level.i.part_ops
 
         lidx = len(mods)
-        next_level = FinalAdd(lidx, ilen, self.output_width, n_parts,
+        next_level = FinalAdd(self.pspec, lidx, ilen,
                               partition_points, self.partition_step)
         mods.append(next_level)
 
@@ -986,34 +978,27 @@ class IntermediateOut(Elaboratable):
         return m
 
 
-class FinalOut(Elaboratable):
+class FinalOut(PipeModBase):
     """ selects the final output based on the partitioning.
 
         each byte is selectable independently, i.e. it is possible
         that some partitions requested 8-bit computation whilst others
         requested 16 or 32 bit.
     """
-    def __init__(self, output_width, n_parts, part_pts):
-        self.part_pts = part_pts
-        self.output_width = output_width
-        self.n_parts = n_parts
-        self.out_wid = output_width//2
+    def __init__(self, pspec, part_pts):
 
-        self.i = self.ispec()
-        self.o = self.ospec()
+        self.part_pts = part_pts
+        self.output_width = pspec.width * 2
+        self.n_parts = pspec.n_parts
+        self.out_wid = pspec.width
+
+        super().__init__(pspec, "finalout")
 
     def ispec(self):
         return IntermediateData(self.part_pts, self.output_width, self.n_parts)
 
     def ospec(self):
         return OutputData()
-
-    def setup(self, m, i):
-        m.submodules.finalout = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()
@@ -1271,30 +1256,22 @@ class AllTerms(PipeModBase):
         return m
 
 
-class Intermediates(Elaboratable):
+class Intermediates(PipeModBase):
     """ Intermediate output modules
     """
 
-    def __init__(self, output_width, n_parts, part_pts):
+    def __init__(self, pspec, part_pts):
         self.part_pts = part_pts
-        self.output_width = output_width
-        self.n_parts = n_parts
+        self.output_width = pspec.width * 2
+        self.n_parts = pspec.n_parts
 
-        self.i = self.ispec()
-        self.o = self.ospec()
+        super().__init__(pspec, "intermediates")
 
     def ispec(self):
         return FinalReduceData(self.part_pts, self.output_width, self.n_parts)
 
     def ospec(self):
         return IntermediateData(self.part_pts, self.output_width, self.n_parts)
-
-    def setup(self, m, i):
-        m.submodules.intermediates = self
-        m.d.comb += self.i.eq(i)
-
-    def process(self, i):
-        return self.o
 
     def elaborate(self, platform):
         m = Module()
@@ -1424,12 +1401,12 @@ class Mul8_16_32_64(Elaboratable):
                 m.d.comb += o.eq(mcur.process(i))
             i = o # for next loop
 
-        interm = Intermediates(128, 8, part_pts)
+        interm = Intermediates(self.pspec, part_pts)
         interm.setup(m, i)
         o = interm.process(interm.i)
 
         # final output
-        finalout = FinalOut(128, 8, part_pts)
+        finalout = FinalOut(self.pspec, part_pts)
         finalout.setup(m, o)
         m.d.comb += self.o.eq(finalout.process(o))
 
