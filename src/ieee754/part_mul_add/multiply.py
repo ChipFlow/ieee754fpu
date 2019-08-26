@@ -889,7 +889,7 @@ class Part(Elaboratable):
         the extra terms - as separate terms - are then thrown at the
         AddReduce alongside the multiplication part-results.
     """
-    def __init__(self, part_pts, width, n_parts, n_levels, pbwid):
+    def __init__(self, part_pts, width, n_parts, pbwid):
 
         self.pbwid = pbwid
         self.part_pts = part_pts
@@ -1183,7 +1183,7 @@ class AllTerms(Elaboratable):
     """Set of terms to be added together
     """
 
-    def __init__(self, n_inputs, output_width, n_parts, register_levels):
+    def __init__(self, n_inputs, output_width, n_parts):
         """Create an ``AddReduce``.
 
         :param inputs: input ``Signal``s to be summed.
@@ -1192,7 +1192,6 @@ class AllTerms(Elaboratable):
             pipeline registers.
         :param partition_points: the input partition points.
         """
-        self.register_levels = register_levels
         self.n_inputs = n_inputs
         self.n_parts = n_parts
         self.output_width = output_width
@@ -1236,11 +1235,10 @@ class AllTerms(Elaboratable):
             setattr(m.submodules, "signs%d" % i, s)
             m.d.comb += s.part_ops.eq(self.i.part_ops[i])
 
-        n_levels = len(self.register_levels)+1
-        m.submodules.part_8 = part_8 = Part(eps, 128, 8, n_levels, 8)
-        m.submodules.part_16 = part_16 = Part(eps, 128, 4, n_levels, 8)
-        m.submodules.part_32 = part_32 = Part(eps, 128, 2, n_levels, 8)
-        m.submodules.part_64 = part_64 = Part(eps, 128, 1, n_levels, 8)
+        m.submodules.part_8 = part_8 = Part(eps, 128, 8, 8)
+        m.submodules.part_16 = part_16 = Part(eps, 128, 4, 8)
+        m.submodules.part_32 = part_32 = Part(eps, 128, 2, 8)
+        m.submodules.part_64 = part_64 = Part(eps, 128, 1, 8)
         nat_l, nbt_l, nla_l, nlb_l = [], [], [], []
         for mod in [part_8, part_16, part_32, part_64]:
             m.d.comb += mod.a.eq(self.i.a)
@@ -1422,7 +1420,7 @@ class Mul8_16_32_64(Elaboratable):
 
         n_inputs = 64 + 4
         n_parts = 8
-        t = AllTerms(n_inputs, 128, n_parts, self.register_levels)
+        t = AllTerms(n_inputs, 128, n_parts)
         t.setup(m, self.i)
 
         terms = t.o.terms
