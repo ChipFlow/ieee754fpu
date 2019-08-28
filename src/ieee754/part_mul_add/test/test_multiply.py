@@ -334,11 +334,7 @@ class TestAddReduce(unittest.TestCase):
 
 
 class SIMDMulLane:
-    def __init__(self,
-                 a_signed: bool,
-                 b_signed: bool,
-                 bit_width: int,
-                 high_half: bool):
+    def __init__(self, a_signed, b_signed, bit_width, high_half):
         self.a_signed = a_signed
         self.b_signed = b_signed
         self.bit_width = bit_width
@@ -349,32 +345,32 @@ class SIMDMulLane:
             f"{self.bit_width}, {self.high_half})"
 
 
+def simd_mul(a, b, lanes):
+    output = 0
+    intermediate_output = 0
+    shift = 0
+    for lane in lanes:
+        a_signed = lane.a_signed or not lane.high_half
+        b_signed = lane.b_signed or not lane.high_half
+        mask = (1 << lane.bit_width) - 1
+        sign_bit = 1 << (lane.bit_width - 1)
+        a_part = (a >> shift) & mask
+        if a_signed and (a_part & sign_bit) != 0:
+            a_part -= 1 << lane.bit_width
+        b_part = (b >> shift) & mask
+        if b_signed and (b_part & sign_bit) != 0:
+            b_part -= 1 << lane.bit_width
+        value = a_part * b_part
+        value &= (1 << (lane.bit_width * 2)) - 1
+        intermediate_output |= value << (shift * 2)
+        if lane.high_half:
+            value >>= lane.bit_width
+        value &= mask
+        output |= value << shift
+        shift += lane.bit_width
+    return output, intermediate_output
+
 class TestMul8_16_32_64(unittest.TestCase):
-    @staticmethod
-    def simd_mul(a: int, b: int, lanes: List[SIMDMulLane]) -> Tuple[int, int]:
-        output = 0
-        intermediate_output = 0
-        shift = 0
-        for lane in lanes:
-            a_signed = lane.a_signed or not lane.high_half
-            b_signed = lane.b_signed or not lane.high_half
-            mask = (1 << lane.bit_width) - 1
-            sign_bit = 1 << (lane.bit_width - 1)
-            a_part = (a >> shift) & mask
-            if a_signed and (a_part & sign_bit) != 0:
-                a_part -= 1 << lane.bit_width
-            b_part = (b >> shift) & mask
-            if b_signed and (b_part & sign_bit) != 0:
-                b_part -= 1 << lane.bit_width
-            value = a_part * b_part
-            value &= (1 << (lane.bit_width * 2)) - 1
-            intermediate_output |= value << (shift * 2)
-            if lane.high_half:
-                value >>= lane.bit_width
-            value &= mask
-            output |= value << shift
-            shift += lane.bit_width
-        return output, intermediate_output
 
     @staticmethod
     def get_tst_cases(lanes: List[SIMDMulLane],
@@ -419,13 +415,13 @@ class TestMul8_16_32_64(unittest.TestCase):
         b = 0xFEDCBA9876543210
         output = 0x0121FA00FE1C28FE
         intermediate_output = 0x0121FA0023E20B28C94DFE1C280AFEF0
-        self.assertEqual(self.simd_mul(a, b, lanes),
+        self.assertEqual(simd_mul(a, b, lanes),
                          (output, intermediate_output))
         a = 0x8123456789ABCDEF
         b = 0xFEDCBA9876543210
         output = 0x81B39CB4FE1C28FE
         intermediate_output = 0x81B39CB423E20B28C94DFE1C280AFEF0
-        self.assertEqual(self.simd_mul(a, b, lanes),
+        self.assertEqual(simd_mul(a, b, lanes),
                          (output, intermediate_output))
 
     def test_signed_mul_from_unsigned(self):
@@ -458,7 +454,7 @@ class TestMul8_16_32_64(unittest.TestCase):
         if gen_or_check == GenOrCheck.Generate:
             yield module.a.eq(a)
             yield module.b.eq(b)
-        output2, intermediate_output2 = self.simd_mul(a, b, lanes)
+        output2, intermediate_output2 = simd_mul(a, b, lanes)
         yield Delay(0.1e-6)
         if gen_or_check == GenOrCheck.Check:
             intermediate_output = (yield module.intermediate_output)
