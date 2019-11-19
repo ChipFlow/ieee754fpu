@@ -1,6 +1,7 @@
 """ Stage API
 
     Associated development bugs:
+    * http://bugs.libre-riscv.org/show_bug.cgi?id=148
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64
     * http://bugs.libre-riscv.org/show_bug.cgi?id=57
 
