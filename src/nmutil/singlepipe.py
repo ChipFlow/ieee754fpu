@@ -4,7 +4,16 @@
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64
     * http://bugs.libre-riscv.org/show_bug.cgi?id=57
 
-    Important: see Stage API (stageapi.py) in combination with below
+    Important: see Stage API (stageapi.py) and IO Control API
+    (iocontrol.py) in combination with below.  This module
+    "combines" the Stage API with the IO Control API to create
+    the Pipeline API.
+
+    The one critically important key difference between StageAPI and
+    PipelineAPI:
+
+        * StageAPI: combinatorial (NO REGISTERS / LATCHES PERMITTED)
+        * PipelineAPI: synchronous (registers / latches MAY added on demand)
 
     RecordBasedStage:
     ----------------
