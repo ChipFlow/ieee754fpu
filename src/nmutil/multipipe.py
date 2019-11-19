@@ -19,8 +19,8 @@ from nmutil.stageapi import _spec
 
 from collections.abc import Sequence
 
-from .nmoperator import eq
-from .iocontrol import NextControl, PrevControl
+from nmutil.nmoperator import eq
+from nmutil.iocontrol import NextControl, PrevControl
 
 
 class MultiInControlBase(Elaboratable):
