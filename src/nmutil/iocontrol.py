@@ -4,79 +4,19 @@
     * http://bugs.libre-riscv.org/show_bug.cgi?id=64
     * http://bugs.libre-riscv.org/show_bug.cgi?id=57
 
-    Stage API:
-    ---------
+    Important: see Stage API (stageapi.py) in combination with below
 
-    stage requires compliance with a strict API that may be
-    implemented in several means, including as a static class.
+    Main classes: PrevControl and NextControl.
 
-    Stages do not HOLD data, and they definitely do not contain
-    signalling (ready/valid).  They do however specify the FORMAT
-    of the incoming and outgoing data, and they provide a means to
-    PROCESS that data (from incoming format to outgoing format).
+    These classes manage the data and the synchronisation state
+    to the previous and next stage, respectively.  ready/valid
+    signals are used by the Pipeline classes to tell if data
+    may be safely passed from stage to stage.
 
-    Stage Blocks really must be combinatorial blocks.  It would be ok
-    to have input come in from sync'd sources (clock-driven) however by
-    doing so they would no longer be deterministic, and chaining such
-    blocks with such side-effects together could result in unexpected,
-    unpredictable, unreproduceable behaviour.
-    So generally to be avoided, then unless you know what you are doing.
-
-    the methods of a stage instance must be as follows:
-
-    * ispec() - Input data format specification.  Takes a bit of explaining.
-                The requirements are: something that eventually derives from
-                nmigen Value must be returned *OR* an iterator or iterable
-                or sequence (list, tuple etc.) or generator must *yield*
-                thing(s) that (eventually) derive from the nmigen Value class.
-
-                Complex to state, very simple in practice:
-                see test_buf_pipe.py for over 25 worked examples.
-
-    * ospec() - Output data format specification.
-                format requirements identical to ispec.
-
-    * process(m, i) - Optional function for processing ispec-formatted data.
-                returns a combinatorial block of a result that
-                may be assigned to the output, by way of the "nmoperator.eq"
-                function.  Note that what is returned here can be
-                extremely flexible.  Even a dictionary can be returned
-                as long as it has fields that match precisely with the
-                Record into which its values is intended to be assigned.
-                Again: see example unit tests for details.
-
-    * setup(m, i) - Optional function for setting up submodules.
-                may be used for more complex stages, to link
-                the input (i) to submodules.  must take responsibility
-                for adding those submodules to the module (m).
-                the submodules must be combinatorial blocks and
-                must have their inputs and output linked combinatorially.
-
-    Both StageCls (for use with non-static classes) and Stage (for use
-    by static classes) are abstract classes from which, for convenience
-    and as a courtesy to other developers, anything conforming to the
-    Stage API may *choose* to derive.  See Liskov Substitution Principle:
-    https://en.wikipedia.org/wiki/Liskov_substitution_principle
-
-    StageChain:
-    ----------
-
-    A useful combinatorial wrapper around stages that chains them together
-    and then presents a Stage-API-conformant interface.  By presenting
-    the same API as the stages it wraps, it can clearly be used recursively.
-
-    ControlBase:
-    -----------
-
-    The base class for pipelines.  Contains previous and next ready/valid/data.
-    Also has an extremely useful "connect" function that can be used to
-    connect a chain of pipelines and present the exact same prev/next
-    ready/valid/data API.
-
-    Note: pipelines basically do not become pipelines as such until
-    handed to a derivative of ControlBase.  ControlBase itself is *not*
-    strictly considered a pipeline class.  Wishbone and AXI4 (master or
-    slave) could be derived from ControlBase, for example.
+    The connection from one stage to the next is carried out with
+    NextControl.connect_to_next.  It is *not* necessary to have
+    a PrevControl.connect_to_prev because it is functionally
+    directly equivalent to prev->next->connect_to_next.
 """
 
 from nmigen import Signal, Cat, Const, Module, Value, Elaboratable
