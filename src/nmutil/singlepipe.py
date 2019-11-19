@@ -13,7 +13,7 @@
     PipelineAPI:
 
         * StageAPI: combinatorial (NO REGISTERS / LATCHES PERMITTED)
-        * PipelineAPI: synchronous (registers / latches MAY added on demand)
+        * PipelineAPI: synchronous registers / latches get added here
 
     RecordBasedStage:
     ----------------
@@ -951,14 +951,14 @@ class FIFOControl(ControlBase):
         m.submodules.fn = fn = NextControl()
         fn.valid_o, fn.ready_i, fn.data_o  = fifo.readable, fifo.re, fifo.dout
         connections = fn._connect_out(self.n, fn=nmoperator.cat)
+        valid_eq, ready_eq, data_o = connections
 
         # ok ok so we can't just do the ready/valid eqs straight:
         # first 2 from connections are the ready/valid, 3rd is data.
         if self.fwft:
-            m.d.comb += connections[:2] # combinatorial on next ready/valid
+            m.d.comb += [valid_eq, ready_eq] # combinatorial on next ready/valid
         else:
-            m.d.sync += connections[:2]  # non-fwft mode needs sync
-        data_o = connections[2] # get the data
+            m.d.sync += [valid_eq, ready_eq] # non-fwft mode needs sync
         data_o = self._postprocess(data_o) # XXX TBD, does nothing right now
         m.d.comb += data_o
 
