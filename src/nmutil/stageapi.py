@@ -199,11 +199,12 @@ class StageHelper(Stage):
 
 
 class StageChain(StageHelper):
-    """ pass in a list of stages, and they will automatically be
-        chained together via their input and output specs into a
-        combinatorial chain, to create one giant combinatorial block.
+    """ pass in a list of stages (combinatorial blocks), and they will
+        automatically be chained together via their input and output specs
+        into a combinatorial chain, to create one giant combinatorial
+        block.
 
-        the end result basically conforms to the exact same Stage API.
+        the end result conforms to the exact same Stage API.
 
         * input to this class will be the input of the first stage
         * output of first stage goes into input of second
@@ -214,7 +215,7 @@ class StageChain(StageHelper):
         NOTE: whilst this is very similar to ControlBase.connect(), it is
         *really* important to appreciate that StageChain is pure
         combinatorial and bypasses (does not involve, at all, ready/valid
-        signalling of any kind).
+        signalling OF ANY KIND).
 
         ControlBase.connect on the other hand respects, connects, and uses
         ready/valid signalling.
@@ -232,7 +233,7 @@ class StageChain(StageHelper):
                          "driving from two sources, module is being flattened"
                          will be issued.
 
-        NOTE: do NOT use StageChain with combinatorial blocks that have
+        NOTE: DO NOT use StageChain with combinatorial blocks that have
         side-effects (state-based / clock-based input) or conditional
         (inter-chain) dependencies, unless you really know what you are doing.
     """
