@@ -164,7 +164,7 @@ def shape(i):
 def cat(i):
     """ flattens a compound structure recursively using Cat
     """
-    from nmigen.tools import flatten
+    from nmigen._utils import flatten
     #res = list(flatten(i)) # works (as of nmigen commit f22106e5) HOWEVER...
     res = list(Visitor().iterate(i)) # needed because input may be a sequence
     return Cat(*res)

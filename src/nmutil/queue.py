@@ -24,7 +24,7 @@
 # MODIFICATIONS.
 
 from nmigen import Module, Signal, Memory, Mux, Elaboratable
-from nmigen.tools import bits_for
+from nmigen.utils import bits_for
 from nmigen.cli import main
 from nmigen.lib.fifo import FIFOInterface
 
