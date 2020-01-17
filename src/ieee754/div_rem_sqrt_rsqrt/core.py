@@ -70,8 +70,7 @@ class DivPipeCoreOperation(enum.Enum):
     @classmethod
     def create_signal(cls, *, src_loc_at=0, **kwargs):
         """ Create a signal that can contain a ``DivPipeCoreOperation``. """
-        return Signal(min=min(map(int, cls)),
-                      max=max(map(int, cls)) + 2,
+        return Signal(range(min(map(int, cls)), max(map(int, cls)) + 2),
                       src_loc_at=(src_loc_at + 1),
                       decoder=lambda v: str(cls(v)),
                       **kwargs)
