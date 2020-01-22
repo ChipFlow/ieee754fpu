@@ -43,7 +43,7 @@ class PartitionPoints(dict):
                     raise TypeError("point must be a non-negative integer")
                 if point < 0:
                     raise ValueError("point must be a non-negative integer")
-                self[point] = Value.wrap(enabled)
+                self[point] = Value.cast(enabled)
 
     def like(self, name=None, src_loc_at=0, mul=1):
         """Create a new ``PartitionPoints`` with ``Signal``s for all values.

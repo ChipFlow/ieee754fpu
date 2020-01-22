@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# See Notices.txt for copyright information
+
 """
 Copyright (C) 2020 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
@@ -13,22 +16,23 @@ from nmigen import (Module, Signal, Elaboratable,
 from ieee754.part_mul_add.adder import PartitionedAdder
 
 class PartitionedSignal(Elaboratable):
-    def __init__(self, partition_points, *args, **kwargs)
-                 reset=0, reset_less=False,
-                 attrs=None, decoder=None, src_loc_at=0):
+    def __init__(self, partition_points, *args, **kwargs):
         self.partpoints = partition_points
         self.sig = Signal(*args, **kwargs)
         self.modnames = {}
         for name in ['add']:
             self.modnames[name] = 0
+        self.m = Module()
 
-    def elaboratable(self, platform):
-        self.m = m = Module()
-        return m
+    def elaborate(self, platform):
+        return self.m
 
     def get_modname(self, category):
         self.modnames[category] += 1
         return "%s%d" % (category, self.modnames[category])
+
+    def eq(self, val):
+        return self.sig.eq(val)
 
     def __xor__(self, other):
         if isinstance(other, PartitionedSignal):
