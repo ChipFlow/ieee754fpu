@@ -29,6 +29,7 @@ class PartitionedEq(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
 
         # make a series of "eqs", splitting a and b into partition chunks
         eqs = Signal(self.mwidth, reset_less=True)
@@ -39,21 +40,21 @@ class PartitionedEq(Elaboratable):
             end = keys[i]
             eql.append(self.a[start:end] == self.b[start:end])
             start = end # for next time round loop
-        m.d.comb += eqs.eq(Cat(*eql))
+        comb += eqs.eq(Cat(*eql))
 
         # now, based on the partition points, create the (multi-)boolean result
         eqsigs = []
         for i in range(self.mwidth):
-            eqsig = Signal(self.mwidth, name="eqsig%d"%i, reset_less=True)
+            eqsig = Signal(name="eqsig%d"%i, reset_less=True)
             if i == 0:
-                m.d.comb += eqsig.eq(eqs[i])
+                comb += eqsig.eq(eqs[i])
             else:
                 ppt = self.partition_points[keys[i-1]]
-                m.d.comb += eqsig.eq(eqs[i] & ppt & eqsigs[i-1])
+                comb += eqsig.eq(eqs[i] & ppt & eqsigs[i-1])
             eqsigs.append(eqsig)
         print ("eqsigs", eqsigs, self.output.shape())
-        # XXX moo?? something going on here
-        for i in range(self.mwidth):
-            m.d.comb += self.output[i].eq(eqsigs[i])
+
+        # assign cascade-SIMD-compares to output
+        comb += self.output.eq(Cat(*eqsigs))
 
         return m
