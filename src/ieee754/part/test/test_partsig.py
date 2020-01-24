@@ -28,7 +28,7 @@ class TestAddMod(Elaboratable):
         self.a = PartitionedSignal(partpoints, width)
         self.b = PartitionedSignal(partpoints, width)
         self.add_output = Signal(width)
-        self.eq_output = Signal(len(partpoints))
+        self.eq_output = Signal(len(partpoints)+1)
 
     def elaborate(self, platform):
         m = Module()
@@ -79,7 +79,7 @@ class TestPartitionPoints(unittest.TestCase):
             yield part_mask.eq(0b1111)
             yield from test_add("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
 
-            def test_eq(msg_prefix, *mask_list):
+            def test_eq(msg_prefix, *maskbit_list):
                 for a, b in [(0x0000, 0x0000),
                              (0x1234, 0x1234),
                              (0xABCD, 0xABCD),
@@ -90,19 +90,28 @@ class TestPartitionPoints(unittest.TestCase):
                     yield module.a.eq(a)
                     yield module.b.eq(b)
                     yield Delay(0.1e-6)
+                    # convert to mask_list
+                    mask_list = []
+                    for b in maskbit_list:
+                        v = 0
+                        for i in range(4):
+                            if b & (1<<i):
+                                v |= 0xf << (i*4)
+                        mask_list.append(v)
                     y = 0
                     for i, mask in enumerate(mask_list):
-                        y |= ((a & mask) == (b & mask)) << i
+                        if (a & mask) == (b & mask):
+                            y |= maskbit_list[i]
                     outval = (yield module.eq_output)
                     msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X}"
-                    self.assertEqual(y, outval, msg)
+                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
+                    self.assertEqual(y, outval, msg % str(maskbit_list))
             yield part_mask.eq(0)
-            yield from test_eq("16-bit", 0xFFFF)
+            yield from test_eq("16-bit", 0b1111)
             yield part_mask.eq(0b10)
-            yield from test_eq("8-bit", 0xFF00, 0x00FF)
+            yield from test_eq("8-bit", 0b1100, 0b0011)
             yield part_mask.eq(0b1111)
-            yield from test_eq("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
+            yield from test_eq("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
 
         sim.add_process(async_process)
         sim.run()
