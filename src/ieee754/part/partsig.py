@@ -17,13 +17,15 @@ http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
 from ieee754.part_mul_add.adder import PartitionedAdder
+from ieee754.part_mul_add.partpoints import make_partition
 from nmigen import (Signal,
                     )
 
 class PartitionedSignal:
-    def __init__(self, partition_points, *args, **kwargs):
-        self.partpoints = partition_points
+    def __init__(self, mask, *args, **kwargs):
         self.sig = Signal(*args, **kwargs)
+        width = self.sig.shape()[0] # get signal width
+        self.partpoints = make_partition(mask, width) # create partition points
         self.modnames = {}
         for name in ['add']:
             self.modnames[name] = 0

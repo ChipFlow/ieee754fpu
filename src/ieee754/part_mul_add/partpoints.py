@@ -4,6 +4,26 @@
 
 from nmigen import Signal, Value, Cat, C
 
+def make_partition(mask, width):
+    """ from a mask and a bitwidth, create partition points.
+        note that the assumption is that the mask indicates the
+        breakpoints in regular intervals, and that the last bit (MSB)
+        of the mask is therefore *ignored*.
+        mask len = 4, width == 16 will return:
+            {4: mask[0], 8: mask[1], 12: mask[2]}
+        mask len = 8, width == 64 will return:
+            {8: mask[0], 16: mask[1], 24: mask[2], .... 56: mask[6]}
+    """
+    ppoints = {}
+    mlen = mask.shape()[0]
+    ppos = mlen
+    midx = 0
+    while ppos < width:
+        ppoints[ppos] = mask[midx]
+        ppos += mlen
+        midx += 1
+    return ppoints
+
 
 class PartitionPoints(dict):
     """Partition points and corresponding ``Value``s.

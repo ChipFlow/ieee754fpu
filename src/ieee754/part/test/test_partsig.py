@@ -40,16 +40,11 @@ class TestAddMod(Elaboratable):
 class TestPartitionPoints(unittest.TestCase):
     def test(self):
         width = 16
-        partition_nibbles = Signal() # divide into 4-bits
-        partition_bytes = Signal()   # divide on 8-bits
-        partpoints = {0x4: partition_nibbles,
-                      0x8: partition_bytes | partition_nibbles,
-                      0xC: partition_nibbles}
-        module = TestAddMod(width, partpoints)
+        part_mask = Signal(4) # divide into 4-bits
+        module = TestAddMod(width, part_mask)
 
         sim = create_simulator(module,
-                              [partition_nibbles,
-                               partition_bytes,
+                              [part_mask,
                                module.a.sig,
                                module.b.sig,
                                module.add_output],
@@ -73,14 +68,11 @@ class TestPartitionPoints(unittest.TestCase):
                     msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}"
                     self.assertEqual(y, outval, msg)
-            yield partition_nibbles.eq(0)
-            yield partition_bytes.eq(0)
+            yield part_mask.eq(0)
             yield from test_add("16-bit", 0xFFFF)
-            yield partition_nibbles.eq(0)
-            yield partition_bytes.eq(1)
+            yield part_mask.eq(0b10)
             yield from test_add("8-bit", 0xFF00, 0x00FF)
-            yield partition_nibbles.eq(1)
-            yield partition_bytes.eq(0)
+            yield part_mask.eq(0b1111)
             yield from test_add("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
 
         sim.add_process(async_process)
