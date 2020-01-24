@@ -23,7 +23,7 @@ class PartitionedEq(Elaboratable):
         self.b = Signal(width, reset_less=True)
         self.partition_points = PartitionPoints(partition_points)
         self.mwidth = len(self.partition_points)
-        self.output = Signal(mwidth, reset_less=True)
+        self.output = Signal(self.mwidth, reset_less=True)
         if not self.partition_points.fits_in_width(width):
             raise ValueError("partition_points doesn't fit in width")
 
@@ -31,14 +31,15 @@ class PartitionedEq(Elaboratable):
         m = Module()
 
         # make a series of "eqs", splitting a and b into partition chunks
-        chunks = self.width // self.mwidth
         eqs = Signal(self.mwidth, reset_less=True)
         eql = []
-        keys = self.partition_points.keys()
+        keys = list(self.partition_points.keys())
         for i in range(len(keys)-1):
             start, end = keys[i], keys[i+1]
             eql.append(self.a[start:end] == self.b[start:end])
-        m.d.comb += eqs.eq(Cat(*l))
+        m.d.comb += eqs.eq(Cat(*eql))
 
         # now, based on the partition points, create the (multi-)boolean result
-        m.d.comb += self.out.eq(eqs) # TODO: respect partition points
+        m.d.comb += self.output.eq(eqs) # TODO: respect partition points
+
+        return m

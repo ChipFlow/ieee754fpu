@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
-from ieee754.part.partsig import PartitionedSignal
 from nmigen import Signal, Module, Elaboratable
 from nmigen.back.pysim import Simulator, Delay, Tick, Passive
 from nmigen.cli import verilog, rtlil
+
+from ieee754.part.partsig import PartitionedSignal
 
 import unittest
 
@@ -27,11 +28,13 @@ class TestAddMod(Elaboratable):
         self.a = PartitionedSignal(partpoints, width)
         self.b = PartitionedSignal(partpoints, width)
         self.add_output = Signal(width)
+        self.eq_output = Signal(len(partpoints))
 
     def elaborate(self, platform):
         m = Module()
         self.a.set_module(m)
         self.b.set_module(m)
+        m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.add_output.eq(self.a + self.b)
 
         return m
@@ -47,7 +50,8 @@ class TestPartitionPoints(unittest.TestCase):
                               [part_mask,
                                module.a.sig,
                                module.b.sig,
-                               module.add_output],
+                               module.add_output,
+                               module.eq_output],
                               "part_sig_add")
         def async_process():
             def test_add(msg_prefix, *mask_list):
@@ -74,6 +78,31 @@ class TestPartitionPoints(unittest.TestCase):
             yield from test_add("8-bit", 0xFF00, 0x00FF)
             yield part_mask.eq(0b1111)
             yield from test_add("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
+
+            def test_eq(msg_prefix, *mask_list):
+                for a, b in [(0x0000, 0x0000),
+                             (0x1234, 0x1234),
+                             (0xABCD, 0xABCD),
+                             (0xFFFF, 0x0000),
+                             (0x0000, 0x0000),
+                             (0xFFFF, 0xFFFF),
+                             (0x0000, 0xFFFF)]:
+                    yield module.a.eq(a)
+                    yield module.b.eq(b)
+                    yield Delay(0.1e-6)
+                    y = 0
+                    for i, mask in enumerate(mask_list):
+                        y |= ((a & mask) == (b & mask)) << i
+                    outval = (yield module.eq_output)
+                    msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
+                        f" => 0x{y:X} != 0x{outval:X}"
+                    self.assertEqual(y, outval, msg)
+            yield part_mask.eq(0)
+            yield from test_eq("16-bit", 0xFFFF)
+            yield part_mask.eq(0b10)
+            yield from test_eq("8-bit", 0xFF00, 0x00FF)
+            yield part_mask.eq(0b1111)
+            yield from test_eq("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
 
         sim.add_process(async_process)
         sim.run()

@@ -17,7 +17,9 @@ http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
 from ieee754.part_mul_add.adder import PartitionedAdder
+from ieee754.part_cmp.equal import PartitionedEq
 from ieee754.part_mul_add.partpoints import make_partition
+
 from nmigen import (Signal,
                     )
 
@@ -27,7 +29,7 @@ class PartitionedSignal:
         width = self.sig.shape()[0] # get signal width
         self.partpoints = make_partition(mask, width) # create partition points
         self.modnames = {}
-        for name in ['add']:
+        for name in ['add', 'eq']:
             self.modnames[name] = 0
 
     def set_module(self, m):
@@ -49,6 +51,19 @@ class PartitionedSignal:
         shape = self.sig.shape()
         pa = PartitionedAdder(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('add'), pa)
+        comb = self.m.d.comb
+        comb += pa.a.eq(self.sig)
+        if isinstance(other, PartitionedSignal):
+            comb += pa.b.eq(other.sig)
+        else:
+            comb += pa.b.eq(other)
+        return pa.output
+
+    def __eq__(self, other):
+        print ("eq", self, other)
+        shape = self.sig.shape()
+        pa = PartitionedEq(shape[0], self.partpoints)
+        setattr(self.m.submodules, self.get_modname('eq'), pa)
         comb = self.m.d.comb
         comb += pa.a.eq(self.sig)
         if isinstance(other, PartitionedSignal):
