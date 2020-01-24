@@ -11,21 +11,20 @@ the class turns into a SIMD variant of Signal.  *this is dynamic*.
 http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
-from nmigen import (Module, Signal, Elaboratable,
-                    )
 from ieee754.part_mul_add.adder import PartitionedAdder
+from nmigen import (Signal,
+                    )
 
-class PartitionedSignal(Elaboratable):
+class PartitionedSignal:
     def __init__(self, partition_points, *args, **kwargs):
         self.partpoints = partition_points
         self.sig = Signal(*args, **kwargs)
         self.modnames = {}
         for name in ['add']:
             self.modnames[name] = 0
-        self.m = Module()
 
-    def elaborate(self, platform):
-        return self.m
+    def set_module(self, m):
+        self.m = m
 
     def get_modname(self, category):
         self.modnames[category] += 1

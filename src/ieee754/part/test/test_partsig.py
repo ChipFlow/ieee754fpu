@@ -30,8 +30,8 @@ class TestAddMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
-        m.submodules.a = self.a
-        m.submodules.b = self.b
+        self.a.set_module(m)
+        self.b.set_module(m)
         m.d.comb += self.add_output.eq(self.a + self.b)
 
         return m
