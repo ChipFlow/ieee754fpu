@@ -44,14 +44,17 @@ class PartitionedEq(Elaboratable):
 
         # now, based on the partition points, create the (multi-)boolean result
         eqsigs = []
-        for i in range(self.mwidth):
+        idxs = list(range(self.mwidth))
+        #idxs.reverse()
+        for i in idxs:
             eqsig = Signal(name="eqsig%d"%i, reset_less=True)
-            if i == 0:
-                comb += eqsig.eq(eqs[i])
-            else:
-                ppt = self.partition_points[keys[i-1]]
-                comb += eqsig.eq(eqs[i] & ppt & eqsigs[i-1])
             eqsigs.append(eqsig)
+        for i in idxs:
+            if i == 0:
+                comb += eqsigs[i].eq(eqs[i])
+            else:
+                ppt = ~self.partition_points[keys[i-1]]
+                comb += eqsigs[i].eq((eqsigs[i-1] & ppt) | ~eqs[i])
         print ("eqsigs", eqsigs, self.output.shape())
 
         # assign cascade-SIMD-compares to output
