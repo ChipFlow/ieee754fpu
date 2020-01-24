@@ -8,6 +8,11 @@ dynamic-partitionable class similar to Signal, which, when the partition
 is fully open will be identical to Signal.  when partitions are closed,
 the class turns into a SIMD variant of Signal.  *this is dynamic*.
 
+the basic fundamental idea is: write code once, and if you want a SIMD
+version of it, use PartitionedSignal in place of Signal.  job done.
+this however requires the code to *not* be designed to use nmigen.If,
+nmigen.Case, or other constructs: only Mux and other logic.
+
 http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
