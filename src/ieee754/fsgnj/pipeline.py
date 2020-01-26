@@ -58,7 +58,3 @@ class FSGNJMuxInOut(ReservationStations):
 
         self.alu = FSGNJBasePipe(self.in_pspec)
         ReservationStations.__init__(self, num_rows)
-
-
-
-

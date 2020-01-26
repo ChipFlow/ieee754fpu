@@ -38,12 +38,24 @@ class FSGNJPipeMod(PipeModBase):
         # decode: XXX really should move to separate stage
         z1 = self.o.z
         a = self.i.a
+        b = self.i.b
 
-        comb += z1.eq(a)
+        opcode = self.i.ctx.op
+
+        sign = Signal()
+
+        with m.Switch(opcode):
+            with m.Case(0b00):
+                comb += sign.eq(b[31])
+            with m.Case(0b01):
+                comb += sign.eq(~b[31])
+            with m.Case(0b10):
+                comb += sign.eq(a[31] ^ b[31])
+
+        comb += z1.eq(Cat(a[0:31], sign))
+
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
 
         return m
-
-
