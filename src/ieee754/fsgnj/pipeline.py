@@ -16,15 +16,6 @@ from ieee754.pipeline import PipelineSpec, DynamicPipe
 from ieee754.fsgnj.fsgnj import FSGNJPipeMod
 
 
-# not used, yet
-# from nmigen import Signal
-class SignedOp:
-    def __init__(self):
-        self.signed = Signal(reset_less=True)
-
-    def eq(self, i):
-        return [self.signed.eq(i)]
-
 
 class FSGNJStage(DynamicPipe):
     """ FPConversion and De-norm
