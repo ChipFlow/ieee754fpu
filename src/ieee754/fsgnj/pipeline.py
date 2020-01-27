@@ -4,17 +4,12 @@ Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 """
 
-import sys
-import functools
-
 from nmutil.singlepipe import ControlBase
 from nmutil.concurrentunit import ReservationStations, num_bits
 
-from ieee754.fpcommon.normtopack import FPNormToPack
 from ieee754.pipeline import PipelineSpec, DynamicPipe
 
 from ieee754.fsgnj.fsgnj import FSGNJPipeMod
-
 
 
 class FSGNJStage(DynamicPipe):
@@ -22,8 +17,8 @@ class FSGNJStage(DynamicPipe):
     """
 
     def __init__(self, in_pspec):
-        sc = FSGNJPipeMod(in_pspec)
-        in_pspec.stage = sc
+        stage = FSGNJPipeMod(in_pspec)
+        in_pspec.stage = stage
         super().__init__(in_pspec)
 
 

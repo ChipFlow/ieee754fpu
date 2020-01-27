@@ -1,19 +1,16 @@
 # IEEE Floating Point Conversion
 # Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
-from nmigen import Module, Signal, Cat, Mux
-from nmigen.cli import main, verilog
+from nmigen import Module, Signal, Cat
 
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.basedata import FPBaseData
-from ieee754.fpcommon.postcalc import FPPostCalcData
 from ieee754.fpcommon.packdata import FPPackData
-
-from ieee754.fpcommon.fpbase import FPNumBaseRecord
 
 
 class FSGNJPipeMod(PipeModBase):
-    """ FP Sign injection - replaces operand A's sign bit with one generated from operand B
+    """ FP Sign injection - replaces operand A's sign bit with one
+        generated from operand B
 
         self.ctx.i.op & 0x3 == 0x0 : Copy sign bit from operand B
         self.ctx.i.op & 0x3 == 0x1 : Copy inverted sign bit from operand B
@@ -33,9 +30,6 @@ class FSGNJPipeMod(PipeModBase):
         m = Module()
         comb = m.d.comb
 
-        #m.submodules.sc_out_z = self.o.z
-
-        # decode: XXX really should move to separate stage
         z1 = self.o.z
         a = self.i.a
         b = self.i.b
@@ -53,7 +47,6 @@ class FSGNJPipeMod(PipeModBase):
                 comb += sign.eq(a[31] ^ b[31])
 
         comb += z1.eq(Cat(a[0:31], sign))
-
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
