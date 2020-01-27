@@ -1,5 +1,7 @@
-# IEEE Floating Point Conversion
+# IEEE Floating Point Conversion, FSGNJ
 # Copyright (C) 2019 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+# Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
+
 
 from nmigen import Module, Signal, Cat
 
