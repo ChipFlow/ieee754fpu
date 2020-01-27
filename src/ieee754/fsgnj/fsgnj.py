@@ -8,7 +8,6 @@ from nmigen import Module, Signal, Cat, Mux
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.packdata import FPPackData
-from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
 class FSGNJPipeMod(PipeModBase):
@@ -39,30 +38,26 @@ class FSGNJPipeMod(PipeModBase):
         z1 = self.o.z
 
         # Decode the input operands into sign, exponent, and mantissa
-        a1 = FPNumBaseRecord(width, False)
-        b1 = FPNumBaseRecord(width, False)
-        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
-        m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
-        comb += [a1.v.eq(self.i.a),
-                 b1.v.eq(self.i.b)]
+        a = self.i.a
+        b = self.i.b
 
         # Calculate the sign bit, with a chain of muxes.  has to be done
         # this way due to (planned) use of PartitionedSignal.  decreases
         # readability slightly, but hey.
 
         # Handle opcodes 0b00 and 0b01, copying or inverting the sign bit of B
-        sign = opcode[0] ^ b1.s # op[0]=0, sign unmodified, op[0]=1 inverts.
+        sign = opcode[0] ^ b[-1]  # op[0]=0, sign unmodified, op[0]=1 inverts.
 
         # Handle opcodes 0b10 and 0b11, XORing sign bits of a and b together.
         # opcode 0b11 is not defined in the RISCV spec; it is handled
         # here as equivalent to opcode 0b10 (i.e. a1.s XOR b1.s)
         # because this requires slightly less logic than making it the
         # same as opcode 0b00 (1 less Mux).
-        sign = Mux(opcode[1], b1.s ^ a1.s, sign)
+        sign = Mux(opcode[1], b[-1] ^ b[-1], sign)
 
         # Create the floating point number from the sign bit
         # calculated earlier and the exponent and mantissa of operand a
-        comb += z1.eq(a1.fp.create2(sign, a1.e, a1.m))
+        comb += z1.eq(Cat(a[:width-1], sign))
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
