@@ -18,47 +18,17 @@ there is some weirdness in x86 IEEE754 implementations when it comes
 to FP16 non-canonical NaNs.
 
 The following modifications are required to the sfpy berkeley-softfloat-3
-Makefile:
+submodule:
 
-    diff --git a/build/Linux-x86_64-GCC/Makefile b/build/Linux-x86_64-GCC/Makefile
-    index 2ee5dad..566d225 100644
-    --- a/build/Linux-x86_64-GCC/Makefile
-    +++ b/build/Linux-x86_64-GCC/Makefile
-    @@ -35,7 +35,7 @@
-     #=============================================================================
-     
-     SOURCE_DIR ?= ../../source
-    -SPECIALIZE_TYPE ?= 8086-SSE
-    +SPECIALIZE_TYPE ?= RISCV
-     
-     SOFTFLOAT_OPTS ?= \
-       -DSOFTFLOAT_ROUND_ODD -DINLINE_LEVEL=5 -DSOFTFLOAT_FAST_DIV32TO16 \
-    @@ -45,7 +45,7 @@ DELETE = rm -f
-     C_INCLUDES = -I. -I$(SOURCE_DIR)/$(SPECIALIZE_TYPE) -I$(SOURCE_DIR)/include
-     COMPILE_C = \
-       gcc -c -Werror-implicit-function-declaration -DSOFTFLOAT_FAST_INT64 \
-    -    $(SOFTFLOAT_OPTS) $(C_INCLUDES) -O2 -o $@
-    +    $(SOFTFLOAT_OPTS) $(C_INCLUDES) -O2 -fPIC -o $@
-     MAKELIB = ar crs $@
-     
-     OBJ = .o
+    cd /path/to/sfpy/berkeley-softfloat-3
+    git apply /path/to/ieee754fpu/berkeley-softfloat.patch
+
 
 
 The following modifications are required to the sfpy SoftPosit Makefile:
 
-    diff --git a/build/Linux-x86_64-GCC/Makefile b/build/Linux-x86_64-GCC/Makefile
-    index 7affd4b..25dd39e 100644
-    --- a/build/Linux-x86_64-GCC/Makefile
-    +++ b/build/Linux-x86_64-GCC/Makefile
-    @@ -69,7 +69,7 @@ endif
-     C_INCLUDES = -I. -I$(SOURCE_DIR)/$(SPECIALIZE_TYPE) -I$(SOURCE_DIR)/include
-     OPTIMISATION  = -O2 #-march=core-avx2
-     COMPILE_C = \
-    -  $(COMPILER) -c -Werror-implicit-function-declaration -DSOFTPOSIT_FAST_INT64 \
-    +  $(COMPILER) -fPIC -c -Werror-implicit-function-declaration -DSOFTPOSIT_FAST_INT64 \
-         $(SOFTPOSIT_OPTS) $(C_INCLUDES) $(OPTIMISATION) \
-         -o $@ 
-     MAKELIB = ar crs $@
+    cd /path/to/sfpy/SoftPosit
+    git apply /path/to/ieee754fpu/SoftPosit.patch
 
 # Useful resources
 

@@ -1,0 +1,13 @@
+diff --git a/build/Linux-x86_64-GCC/Makefile b/build/Linux-x86_64-GCC/Makefile
+index 7affd4b..25dd39e 100644
+--- a/build/Linux-x86_64-GCC/Makefile
++++ b/build/Linux-x86_64-GCC/Makefile
+@@ -69,7 +69,7 @@ endif
+ C_INCLUDES = -I. -I$(SOURCE_DIR)/$(SPECIALIZE_TYPE) -I$(SOURCE_DIR)/include
+ OPTIMISATION  = -O2 #-march=core-avx2
+ COMPILE_C = \
+-  $(COMPILER) -c -Werror-implicit-function-declaration -DSOFTPOSIT_FAST_INT64 \
++  $(COMPILER) -fPIC -c -Werror-implicit-function-declaration -DSOFTPOSIT_FAST_INT64 \
+     $(SOFTPOSIT_OPTS) $(C_INCLUDES) $(OPTIMISATION) \
+     -o $@ 
+ MAKELIB = ar crs $@
