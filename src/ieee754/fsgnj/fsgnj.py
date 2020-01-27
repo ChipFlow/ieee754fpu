@@ -3,7 +3,7 @@
 # Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
 
 
-from nmigen import Module, Signal, Cat
+from nmigen import Module, Signal, Cat, Mux
 
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.basedata import FPBaseData
@@ -49,15 +49,9 @@ class FSGNJPipeMod(PipeModBase):
 
         sign = Signal()
 
-        with m.Switch(opcode):
-            with m.Case(0b00):
-                comb += sign.eq(b1.s)
-            with m.Case(0b01):
-                comb += sign.eq(~b1.s)
-            with m.Case(0b10):
-                comb += sign.eq(a1.s ^ b1.s)
-            with m.Default():
-                comb += sign.eq(b1.s)
+        sign = Mux(opcode[0], ~b1.s, b1.s)
+        sign = Mux(opcode[1], sign ^ a1.s, sign)
+
 
         comb += z1.eq(a1.fp.create2(sign, a1.e, a1.m))
 
