@@ -28,6 +28,8 @@ class FSGNJPipeMod(PipeModBase):
 
     def elaborate(self, platform):
         m = Module()
+
+        width = self.pspec.width
         comb = m.d.comb
 
         z1 = self.o.z
@@ -40,13 +42,15 @@ class FSGNJPipeMod(PipeModBase):
 
         with m.Switch(opcode):
             with m.Case(0b00):
-                comb += sign.eq(b[31])
+                comb += sign.eq(b[-1])
             with m.Case(0b01):
-                comb += sign.eq(~b[31])
+                comb += sign.eq(~b[-1])
             with m.Case(0b10):
-                comb += sign.eq(a[31] ^ b[31])
+                comb += sign.eq(a[-1] ^ b[-1])
+            with m.Default():
+                comb += sign.eq(b[-1])
 
-        comb += z1.eq(Cat(a[0:31], sign))
+        comb += z1.eq(Cat(a[0:width-1], sign))
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
