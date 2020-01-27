@@ -53,7 +53,7 @@ class FSGNJPipeMod(PipeModBase):
         # here as equivalent to opcode 0b10 (i.e. a1.s XOR b1.s)
         # because this requires slightly less logic than making it the
         # same as opcode 0b00 (1 less Mux).
-        sign = Mux(opcode[1], b[-1] ^ b[-1], sign)
+        sign = Mux(opcode[1], a[-1] ^ b[-1], sign)
 
         # Create the floating point number from the sign bit
         # calculated earlier and the exponent and mantissa of operand a
