@@ -32,9 +32,10 @@ class FSGNJPipeMod(PipeModBase):
     def elaborate(self, platform):
         m = Module()
 
-        width = self.pspec.width
+        # useful clarity variables
         comb = m.d.comb
-
+        width = self.pspec.width
+        opcode = self.i.ctx.op
         z1 = self.o.z
 
         # Decode the input operands into sign, exponent, and mantissa
@@ -45,21 +46,19 @@ class FSGNJPipeMod(PipeModBase):
         comb += [a1.v.eq(self.i.a),
                  b1.v.eq(self.i.b)]
 
-        opcode = self.i.ctx.op
-
-
-        # Calculate the sign bit
-        sign = Signal(reset_less=True)
+        # Calculate the sign bit, with a chain of muxes.  has to be done
+        # this way due to (planned) use of PartitionedSignal.  decreases
+        # readability slightly, but hey.
 
         # Handle opcodes 0b00 and 0b01, copying or inverting the sign bit of B
-        sign = Mux(opcode[0], ~b1.s, b1.s)
+        sign = opcode[0] ^ b1.s # op[0]=0, sign unmodified, op[0]=1 inverts.
+
         # Handle opcodes 0b10 and 0b11, XORing sign bits of a and b together.
         # opcode 0b11 is not defined in the RISCV spec; it is handled
         # here as equivalent to opcode 0b10 (i.e. a1.s XOR b1.s)
         # because this requires slightly less logic than making it the
         # same as opcode 0b00 (1 less Mux).
         sign = Mux(opcode[1], b1.s ^ a1.s, sign)
-
 
         # Create the floating point number from the sign bit
         # calculated earlier and the exponent and mantissa of operand a
