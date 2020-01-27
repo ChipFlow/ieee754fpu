@@ -53,7 +53,7 @@ class FSGNJPipeMod(PipeModBase):
 
         # Handle opcodes 0b00 and 0b01, copying or inverting the sign bit of B
         sign = Mux(opcode[0], ~b1.s, b1.s)
-        # Handle opcodes 0b10 and 0b11, XORing the sign bits of a and b together.
+        # Handle opcodes 0b10 and 0b11, XORing sign bits of a and b together.
         # opcode 0b11 is not defined in the RISCV spec; it is handled
         # here as equivalent to opcode 0b10 (i.e. a1.s XOR b1.s)
         # because this requires slightly less logic than making it the
