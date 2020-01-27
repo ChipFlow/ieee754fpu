@@ -8,6 +8,7 @@ from nmigen import Module, Signal, Cat
 from nmutil.pipemodbase import PipeModBase
 from ieee754.fpcommon.basedata import FPBaseData
 from ieee754.fpcommon.packdata import FPPackData
+from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 
 
 class FSGNJPipeMod(PipeModBase):
@@ -37,6 +38,12 @@ class FSGNJPipeMod(PipeModBase):
         z1 = self.o.z
         a = self.i.a
         b = self.i.b
+        a1 = FPNumBaseRecord(width, False)
+        b1 = FPNumBaseRecord(width, False)
+        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
+        m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
+        comb += [a1.v.eq(self.i.a),
+                 b1.v.eq(self.i.b)]
 
         opcode = self.i.ctx.op
 
@@ -44,15 +51,15 @@ class FSGNJPipeMod(PipeModBase):
 
         with m.Switch(opcode):
             with m.Case(0b00):
-                comb += sign.eq(b[-1])
+                comb += sign.eq(b1.s)
             with m.Case(0b01):
-                comb += sign.eq(~b[-1])
+                comb += sign.eq(~b1.s)
             with m.Case(0b10):
-                comb += sign.eq(a[-1] ^ b[-1])
+                comb += sign.eq(a1.s ^ b1.s)
             with m.Default():
-                comb += sign.eq(b[-1])
+                comb += sign.eq(b1.s)
 
-        comb += z1.eq(Cat(a[0:width-1], sign))
+        comb += z1.eq(a1.fp.create2(sign, a1.e, a1.m))
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
