@@ -43,10 +43,12 @@ class PartitionedEq(Elaboratable):
         comb += eqs.eq(Cat(*eql))
 
         # now, based on the partition points, create the (multi-)boolean result
+        # this is a terrible way to do it, it's very laborious.  however it
+        # will actually "work".  optimisations come later
         eqsigs = []
         idxs = list(range(self.mwidth))
-        #idxs.reverse()
-        for i in idxs:
+        idxs.reverse()
+        for i in range(self.mwidth):
             eqsig = Signal(name="eqsig%d"%i, reset_less=True)
             eqsigs.append(eqsig)
         for i in idxs:
