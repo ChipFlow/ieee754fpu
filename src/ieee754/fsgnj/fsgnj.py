@@ -36,8 +36,6 @@ class FSGNJPipeMod(PipeModBase):
         width = self.pspec.width
         opcode = self.i.ctx.op
         z1 = self.o.z
-
-        # Decode the input operands into sign, exponent, and mantissa
         a = self.i.a
         b = self.i.b
 
