@@ -19,9 +19,17 @@ http://bugs.libre-riscv.org/show_bug.cgi?id=132
 from ieee754.part_mul_add.adder import PartitionedAdder
 from ieee754.part_cmp.equal import PartitionedEq
 from ieee754.part_mul_add.partpoints import make_partition
+from operator import or_, xor, and_, not_
 
 from nmigen import (Signal,
                     )
+def applyop(op1, op2, op):
+    if isinstance(op1, PartitionedSignal):
+        op1 = op1.sig
+    if isinstance(op2, PartitionedSignal):
+        op2 = op2.sig
+    return op(op1, op2)
+
 
 class PartitionedSignal:
     def __init__(self, mask, *args, **kwargs):
@@ -42,10 +50,23 @@ class PartitionedSignal:
     def eq(self, val):
         return self.sig.eq(val)
 
+    def __and__(self, other):
+        return applyop(self, other, and_)
+
+    def __rand__(self, other):
+        return applyop(other, self, and_)
+
+    def __or__(self, other):
+        return applyop(self, other, or_)
+
+    def __ror__(self, other):
+        return applyop(other, self, or_)
+
     def __xor__(self, other):
-        if isinstance(other, PartitionedSignal):
-            return self.sig ^ other.sig
-        return self.sig ^ other
+        return applyop(self, other, xor)
+
+    def __rxor__(self, other):
+        return applyop(other, self, xor)
 
     def __add__(self, other):
         shape = self.sig.shape()
