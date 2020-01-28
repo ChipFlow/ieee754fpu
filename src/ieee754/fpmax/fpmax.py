@@ -48,18 +48,24 @@ class FPMAXPipeMod(PipeModBase):
 
         has_nan = Signal()
         comb += has_nan.eq(a1.is_nan | b1.is_nan)
+        both_nan = Signal()
+        comb += both_nan.eq(a1.is_nan & b1.is_nan)
         with m.If(has_nan):
-            comb += z1.eq(Mux(a1.is_nan, self.i.b, self.i.a))
+            with m.If(both_nan):
+                comb += z1.eq(a1.fp.nan2(0))
+            with m.Else():
+                comb += z1.eq(Mux(a1.is_nan, self.i.b, self.i.a))
         with m.Else():
             with m.If(a1.s != b1.s):
                 
-                comb += z1.eq(Mux(a1.s, self.i.b, self.i.a))
+                comb += z1.eq(Mux(a1.s ^ opcode[0], self.i.b, self.i.a))
             with m.Else():
                 gt = Signal()
                 sign = Signal()
                 comb += sign.eq(a1.s)
                 comb += gt.eq(a1.v > b1.v)
-                comb += z1.eq(Mux(gt ^ sign, self.i.a, self.i.b))
+                comb += z1.eq(Mux(gt ^ sign ^ opcode[0],
+                                  self.i.a, self.i.b))
                               
 
         # copy the context (muxid, operator)
