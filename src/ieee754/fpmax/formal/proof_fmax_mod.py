@@ -104,8 +104,9 @@ def run_test(bits=32):
     il = rtlil.convert(m, ports=m.ports())
     with open("proof.il", "w") as f:
         f.write(il)
-    dirs = os.path.split(__file__)[0]
-    p = subprocess.Popen(['sby', '-f', '%s/proof.sby' % dirs],
+    filedir = os.path.dirname(os.path.realpath(__file__))
+    sbyfile = os.path.join(filedir, 'proof.sby')
+    p = subprocess.Popen(['sby', '-f', sbyfile],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     if p.wait() == 0:
