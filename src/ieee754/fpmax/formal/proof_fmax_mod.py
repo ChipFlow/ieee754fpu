@@ -41,7 +41,9 @@ class FPMAXDriver(Elaboratable):
                      b1.v.eq(self.b),
                      z1.v.eq(self.z)]
 
-        m.d.comb += Assert((z1.v == a1.v) | (z1.v == b1.v) | (z1.v == a1.fp.nan2(0)))
+        m.d.comb += Assert((z1.v == a1.v) | \
+                           (z1.v == b1.v) | \
+                           (z1.v == a1.fp.nan2(0)))
 
         with m.If(a1.is_nan & b1.is_nan):
             m.d.comb += Assert(z1.is_nan)
