@@ -1,0 +1,13 @@
+[options]
+mode bmc
+depth 5
+
+[engines]
+smtbmc yices
+
+[script]
+read_ilang proof.il
+prep -top top
+
+[files]
+proof.il
