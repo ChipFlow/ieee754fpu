@@ -9,7 +9,7 @@ from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from ieee754.fsgnj.fsgnj import FSGNJPipeMod
 from ieee754.pipeline import PipelineSpec
 import subprocess
-
+import os
 
 # This defines a module to drive the device under test and assert
 # properties about its outputs
@@ -89,7 +89,8 @@ def run_test(bits=32):
     il = rtlil.convert(m, ports=m.ports())
     with open("proof.il", "w") as f:
         f.write(il)
-    p = subprocess.Popen(['sby', '-f', 'proof.sby'],
+    dirs = os.path.split(__file__)[0]
+    p = subprocess.Popen(['sby', '-f', '%s/proof.sby' % dirs],
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     if p.wait() == 0:
