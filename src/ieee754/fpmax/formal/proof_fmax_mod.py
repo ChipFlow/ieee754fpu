@@ -1,15 +1,14 @@
 # Proof of correctness for FPMAX module
 # Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
 
-from nmigen import Module, Signal, Elaboratable, Cat, Mux
-from nmigen.asserts import Assert, Assume, AnyConst
-from nmigen.cli import rtlil
+from nmigen import Module, Signal, Elaboratable, Mux
+from nmigen.asserts import Assert, AnyConst
+from nmigen.test.utils import FHDLTestCase
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from ieee754.fpmax.fpmax import FPMAXPipeMod
 from ieee754.pipeline import PipelineSpec
-import subprocess
-import os
+import unittest
 
 
 # This defines a module to drive the device under test and assert
@@ -98,27 +97,12 @@ class FPMAXDriver(Elaboratable):
         return []
 
 
-def run_test(bits=32):
-    m = FPMAXDriver(PipelineSpec(bits, 2, 1))
-
-    il = rtlil.convert(m, ports=m.ports())
-    with open("proof.il", "w") as f:
-        f.write(il)
-    filedir = os.path.dirname(os.path.realpath(__file__))
-    sbyfile = os.path.join(filedir, 'proof.sby')
-    p = subprocess.Popen(['sby', '-f', sbyfile],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    if p.wait() == 0:
-        out, _ = p.communicate()
-        print("Proof successful!")
-        print(out.decode('utf-8'))
-    else:
-        print("Proof failed")
-        out, err = p.communicate()
-        print(out.decode('utf-8'))
-        print(err.decode('utf-8'))
+class FPMAXTestCase(FHDLTestCase):
+    def test_max(self):
+        for bits in [16, 32, 64]:
+            module = FPMAXDriver(PipelineSpec(bits, 2, 1))
+            self.assertFormal(module, mode="bmc", depth=4)
 
 
-if __name__ == "__main__":
-    run_test(bits=32)
+if __name__ == '__main__':
+    unittest.main()

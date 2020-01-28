@@ -3,13 +3,12 @@
 
 from nmigen import Module, Signal, Elaboratable
 from nmigen.asserts import Assert, Assume
-from nmigen.cli import rtlil
+from nmigen.test.utils import FHDLTestCase
 
 from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from ieee754.fsgnj.fsgnj import FSGNJPipeMod
 from ieee754.pipeline import PipelineSpec
-import subprocess
-import os
+import unittest
 
 # This defines a module to drive the device under test and assert
 # properties about its outputs
@@ -83,27 +82,12 @@ class FSGNJDriver(Elaboratable):
         return [self.a, self.b, self.z, self.opc, self.muxid]
 
 
-def run_test(bits=32):
-    m = FSGNJDriver(PipelineSpec(bits, 2, 2))
-
-    il = rtlil.convert(m, ports=m.ports())
-    with open("proof.il", "w") as f:
-        f.write(il)
-    dirs = os.path.split(__file__)[0]
-    p = subprocess.Popen(['sby', '-f', '%s/proof.sby' % dirs],
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
-    if p.wait() == 0:
-        out, _ = p.communicate()
-        print("Proof successful!")
-    else:
-        print("Proof failed")
-        out, err = p.communicate()
-        print(out.decode('utf-8'))
-        print(err.decode('utf-8'))
+class FPMAXTestCase(FHDLTestCase):
+    def test_max(self):
+        for bits in [16, 32, 64]:
+            module = FSGNJDriver(PipelineSpec(bits, 2, 2))
+            self.assertFormal(module, mode="bmc", depth=4)
 
 
-if __name__ == "__main__":
-    run_test(bits=32)
-    run_test(bits=16)
-    run_test(bits=64)
+if __name__ == '__main__':
+    unittest.main()
