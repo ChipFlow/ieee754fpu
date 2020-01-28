@@ -1,7 +1,7 @@
 # Proof of correctness for FPMAX module
 # Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
 
-from nmigen import Module, Signal, Elaboratable
+from nmigen import Module, Signal, Elaboratable, Cat, Mux
 from nmigen.asserts import Assert, Assume
 from nmigen.cli import rtlil
 
@@ -26,6 +26,7 @@ class FPMAXDriver(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        width = self.pspec.width
         m.submodules.dut = dut = FPMAXPipeMod(self.pspec)
 
         a1 = FPNumBaseRecord(self.pspec.width, False)
@@ -40,6 +41,28 @@ class FPMAXDriver(Elaboratable):
                      z1.v.eq(self.z)]
 
         m.d.comb += Assert((z1.v == a1.v) | (z1.v == b1.v) | (z1.v == a1.fp.nan2(0)))
+
+        with m.If(a1.is_nan & b1.is_nan):
+            m.d.comb += Assert(z1.is_nan)
+        with m.Elif(a1.is_nan & ~b1.is_nan):
+            m.d.comb += Assert(z1.v == b1.v)
+        with m.Elif(b1.is_nan & ~a1.is_nan):
+            m.d.comb += Assert(z1.v == a1.v)
+        with m.Else():
+            isrhs = Signal()
+            # if a1 is negative and b1 isn't, then we should return b1
+            with m.If(a1.s != b1.s):
+                m.d.comb += isrhs.eq(a1.s > b1.s)
+            with m.Else():
+                # if they both have the same sign
+                gt = Signal()
+                m.d.comb += gt.eq(self.a[0:width-1] < self.b[0:width-1])
+                m.d.comb += isrhs.eq(gt ^ a1.s)
+
+            with m.If(self.opc == 0):
+                m.d.comb += Assert(z1.v ==
+                                   Mux(self.opc[0] ^ isrhs,
+                                       b1.v, a1.v))
 
         # connect up the inputs and outputs. I think these could
         # theoretically be $anyconst/$anysync but I'm not sure nmigen
