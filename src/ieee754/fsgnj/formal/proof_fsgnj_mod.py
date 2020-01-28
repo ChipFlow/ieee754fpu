@@ -83,8 +83,8 @@ class FSGNJDriver(Elaboratable):
         return [self.a, self.b, self.z, self.opc, self.muxid]
 
 
-def run_test():
-    m = FSGNJDriver(PipelineSpec(32, 2, 2))
+def run_test(bits=32):
+    m = FSGNJDriver(PipelineSpec(bits, 2, 2))
 
     il = rtlil.convert(m, ports=m.ports())
     with open("proof.il", "w") as f:
@@ -95,7 +95,6 @@ def run_test():
     if p.wait() == 0:
         out, _ = p.communicate()
         print("Proof successful!")
-        print(out.decode('utf-8'))
     else:
         print("Proof failed")
         out, err = p.communicate()
@@ -104,4 +103,6 @@ def run_test():
 
 
 if __name__ == "__main__":
-    run_test()
+    run_test(bits=32)
+    run_test(bits=16)
+    run_test(bits=64)
