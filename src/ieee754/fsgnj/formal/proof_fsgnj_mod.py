@@ -5,6 +5,7 @@ from nmigen import Module, Signal, Elaboratable
 from nmigen.asserts import Assert, Assume
 from nmigen.cli import rtlil
 
+from ieee754.fpcommon.fpbase import FPNumDecode, FPNumBaseRecord
 from ieee754.fsgnj.fsgnj import FSGNJPipeMod
 from ieee754.pipeline import PipelineSpec
 import subprocess
@@ -27,6 +28,17 @@ class FSGNJDriver(Elaboratable):
 
         m.submodules.dut = dut = FSGNJPipeMod(self.pspec)
 
+        a1 = FPNumBaseRecord(self.pspec.width, False)
+        b1 = FPNumBaseRecord(self.pspec.width, False)
+        z1 = FPNumBaseRecord(self.pspec.width, False)
+        m.submodules.sc_decode_a = a1 = FPNumDecode(None, a1)
+        m.submodules.sc_decode_b = b1 = FPNumDecode(None, b1)
+        m.submodules.sc_decode_z = z1 = FPNumDecode(None, z1)
+
+        m.d.comb += [a1.v.eq(self.a),
+                     b1.v.eq(self.b),
+                     z1.v.eq(self.z)]
+
         # connect up the inputs and outputs. I think these could
         # theoretically be $anyconst/$anysync but I'm not sure nmigen
         # has support for that
@@ -43,7 +55,8 @@ class FSGNJDriver(Elaboratable):
         # The RISCV spec (page 70) says FSGNJ "produces a result that
         # takes all buts except the sign bit from [operand 1]". This
         # asserts that that holds true
-        m.d.comb += Assert(self.z[0:31] == self.a[0:31])
+        m.d.comb += Assert(z1.e == a1.e)
+        m.d.comb += Assert(z1.m == a1.m)
 
         with m.Switch(self.opc):
 
@@ -51,18 +64,18 @@ class FSGNJDriver(Elaboratable):
             # 0b00 in this case) "the result's sign bit is [operand
             # 2's] sign bit"
             with m.Case(0b00):
-                m.d.comb += Assert(self.z[-1] == self.b[-1])
+                m.d.comb += Assert(z1.s == b1.s)
 
             # The RISCV Spec (page 70) states that for FSGNJN (opcode
             # 0b01 in this case) "the result's sign bit is the opposite
             # of [operand 2's] sign bit"
             with m.Case(0b01):
-                m.d.comb += Assert(self.z[-1] == ~self.b[-1])
+                m.d.comb += Assert(z1.s == ~b1.s)
             # The RISCV Spec (page 70) states that for FSGNJX (opcode
             # 0b10 in this case) "the result's sign bit is the XOR of
             # the sign bits of [operand 1] and [operand 2]"
             with m.Case(0b10):
-                m.d.comb += Assert(self.z[-1] == (self.a[-1] ^ self.b[-1]))
+                m.d.comb += Assert(z1.s == (a1.s ^ b1.s))
 
         return m
 
@@ -80,7 +93,7 @@ def run_test():
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
     if p.wait() == 0:
-        out, err = p.communicate()
+        out, _ = p.communicate()
         print("Proof successful!")
         print(out.decode('utf-8'))
     else:
