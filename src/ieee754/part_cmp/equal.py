@@ -36,31 +36,36 @@ class PartitionedEq(Elaboratable):
         m = Module()
         comb = m.d.comb
 
-        # make a series of "eqs", splitting a and b into partition chunks
-        eqs = Signal(self.mwidth, reset_less=True)
-        eql = []
+        # ok first thing to note, before reading this (read the wiki page
+        # first), according to boolean algebra, these two are equivalent:
+        # (~[~eq0, ~eq1, ~eq2].bool()) == eq0 AND eq1 AND eq2.
+        #
+        # given that ~eqN is neN (not equal), we first create a series
+        # of != comparisons on the partitions, then chain the relevant
+        # ones together depending on partition points, BOOL those together
+        # and invert the result.
+
+        # make a series of "not-eqs", splitting a and b into partition chunks
+        nes = Signal(self.mwidth, reset_less=True)
+        nel = []
         keys = list(self.partition_points.keys()) + [self.width]
         start = 0
         for i in range(len(keys)):
             end = keys[i]
-            eql.append(self.a[start:end] != self.b[start:end]) # see bool below
+            nel.append(self.a[start:end] != self.b[start:end]) # see bool below
             start = end # for next time round loop
-        comb += eqs.eq(Cat(*eql))
+        comb += nes.eq(Cat(*nel))
 
         # now, based on the partition points, create the (multi-)boolean result
         # this is a terrible way to do it, it's very laborious.  however it
         # will actually "work".  optimisations come later
         eqsigs = []
-        idxs = list(range(self.mwidth))
-        idxs.reverse()
-        #bitrange = int(math.floor(math.log(self.mwidth-1)/math.log(2)))
         # first loop on bits in output
-        olist = []
         for i in range(self.mwidth):
             eqsig = Signal(name="eqsig%d"%i, reset_less=True)
             eqsigs.append(eqsig)
-            olist.append([])
 
+        # we want just the partition points, as a number
         ppoints = Signal(self.mwidth-1)
         comb += ppoints.eq(self.partition_points.as_sig())
 
@@ -81,21 +86,19 @@ class PartitionedEq(Elaboratable):
                         count += 1
                 idx[start] = count # update last point (or create it)
 
-                print (pval, bin(pval), idx)
+                #print (pval, bin(pval), idx)
                 for i in range(self.mwidth):
                     name = "andsig_%d_%d" % (pval, i)
                     if idx[start]:
-                        ands = eqs[i:i+idx[start]]
+                        ands = nes[i:i+idx[start]]
                         andsig = Signal(len(ands), name=name, reset_less=True)
                         ands = ands.bool() # create an AND cascade
-                        print ("ands", pval, i, ands)
+                        #print ("ands", pval, i, ands)
                     else:
                         andsig = Signal(name=name, reset_less=True)
                         ands = C(1)
                     comb += andsig.eq(ands)
-                    comb += eqsigs[i].eq(~andsig)
-
-        print ("eqsigs", eqsigs, self.output.shape())
+                    comb += eqsigs[i].eq(~andsig) # here's the inversion
 
         # assign cascade-SIMD-compares to output
         comb += self.output.eq(Cat(*eqsigs))
