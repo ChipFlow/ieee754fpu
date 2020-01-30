@@ -6,6 +6,11 @@ Copyright (C) 2020 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 
 dynamically-partitionable "comparison" class, directly equivalent
 to Signal.__eq__ except SIMD-partitionable
+
+See:
+
+* http://libre-riscv.org/3d_gpu/architecture/dynamic_simd/eq
+* http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
 from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
@@ -48,15 +53,53 @@ class PartitionedEq(Elaboratable):
         eqsigs = []
         idxs = list(range(self.mwidth))
         idxs.reverse()
+        #bitrange = int(math.floor(math.log(self.mwidth-1)/math.log(2)))
+        # first loop on bits in output
+        olist = []
         for i in range(self.mwidth):
             eqsig = Signal(name="eqsig%d"%i, reset_less=True)
             eqsigs.append(eqsig)
-        for i in idxs:
-            if i == 0:
-                comb += eqsigs[i].eq(eqs[i])
-            else:
-                ppt = ~self.partition_points[keys[i-1]]
-                comb += eqsigs[i].eq((eqsigs[i-1] & ppt) | ~eqs[i])
+            olist.append([])
+
+        ppoints = Signal(self.mwidth-1)
+        comb += ppoints.eq(self.partition_points.as_sig())
+
+        for pval in range(1<<(self.mwidth-1)): # for each partition point
+            cpv = C(pval, self.mwidth-1)
+            with m.If(ppoints == cpv):
+                # identify (find-first) transition points, and how long each
+                # partition is
+                start = 0
+                count = 1
+                idx = [0] * self.mwidth
+                psigs = []
+                for ipdx in range((self.mwidth-1)):
+                    pt = ppoints[ipdx]
+                    if pval & (1<<ipdx):
+                        pt = ~pt
+                    psigs.append(pt) # see AND-cascade trick
+                    if pval & (1<<ipdx):
+                        idx[start] = count
+                        start = ipdx + 1
+                        count = 1
+                    else:
+                        count += 1
+                idx[start] = count # update last point (or create it)
+
+                print (pval, idx)
+                for i in range(self.mwidth):
+                    ands = [] # collate a chain of eqs together
+                    for j in range(idx[i]):
+                        ands.append(~eqs[i+j]) # see AND-cascade trick
+                    name = "andsig_%d_%d" % (pval, i)
+                    if ands:
+                        andsig = Signal(len(ands), name=name, reset_less=True)
+                        ands = ~Cat(*ands).bool() # create an AND cascade
+                    else:
+                        ands = C(0)
+                    comb += andsig.eq(ands)
+                    comb += eqsigs[i].eq(andsig)
+
         print ("eqsigs", eqsigs, self.output.shape())
 
         # assign cascade-SIMD-compares to output
