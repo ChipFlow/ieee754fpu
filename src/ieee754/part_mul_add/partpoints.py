@@ -105,6 +105,11 @@ class PartitionPoints(dict):
                 bits.append(True)
         return Cat(*bits)
 
+    def as_sig(self):
+        """Create a straight concatenation of `self` signals
+        """
+        return Cat(self.values())
+
     def get_max_partition_count(self, width):
         """Get the maximum number of partitions.
 
