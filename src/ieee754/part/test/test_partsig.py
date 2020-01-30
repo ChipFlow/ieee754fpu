@@ -99,9 +99,11 @@ class TestPartitionPoints(unittest.TestCase):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
                     y = 0
+                    # do the partitioned tests
                     for i, mask in enumerate(mask_list):
                         if (a & mask) == (b & mask):
                             y |= maskbit_list[i]
+                    # check the result
                     outval = (yield module.eq_output)
                     msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}, masklist %s"
