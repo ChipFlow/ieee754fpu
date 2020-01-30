@@ -38,12 +38,28 @@ class PartitionedEq(Elaboratable):
 
         # ok first thing to note, before reading this (read the wiki page
         # first), according to boolean algebra, these two are equivalent:
-        # (~[~eq0, ~eq1, ~eq2].bool()) == eq0 AND eq1 AND eq2.
+        # (~[~eq0, ~eq1, ~eq2].bool()) is the same as (eq0 AND eq1 AND eq2)
+        # where bool() is the *OR* of all bits in the list.
         #
         # given that ~eqN is neN (not equal), we first create a series
         # of != comparisons on the partitions, then chain the relevant
         # ones together depending on partition points, BOOL those together
         # and invert the result.
+        #
+        # the outer loop is on the partition value.  the preparation phase
+        # (idx array) is to work out how and when the eqs (ne's) are to be
+        # chained together.  finally an inner loop - one per bit - grabs
+        # each chain, on a per-output-bit basis.
+        #
+        # the result is that for each partition-point permutation you get
+        # a different set of output results for each bit.  it's... messy
+        # but functional.
+
+        # prepare the output bits (name them for convenience)
+        eqsigs = []
+        for i in range(self.mwidth):
+            eqsig = Signal(name="eqsig%d"%i, reset_less=True)
+            eqsigs.append(eqsig)
 
         # make a series of "not-eqs", splitting a and b into partition chunks
         nes = Signal(self.mwidth, reset_less=True)
@@ -59,21 +75,15 @@ class PartitionedEq(Elaboratable):
         # now, based on the partition points, create the (multi-)boolean result
         # this is a terrible way to do it, it's very laborious.  however it
         # will actually "work".  optimisations come later
-        eqsigs = []
-        # first loop on bits in output
-        for i in range(self.mwidth):
-            eqsig = Signal(name="eqsig%d"%i, reset_less=True)
-            eqsigs.append(eqsig)
 
         # we want just the partition points, as a number
         ppoints = Signal(self.mwidth-1)
         comb += ppoints.eq(self.partition_points.as_sig())
 
-        for pval in range(1<<(self.mwidth-1)): # for each partition point
-            cpv = C(pval, self.mwidth-1)
-            with m.If(ppoints == cpv):
-                # identify (find-first) transition points, and how long each
-                # partition is
+        with m.Switch(ppoints):
+            for pval in range(1<<(self.mwidth-1)): # for each partition point
+                # identify (find-first) transition points, and how
+                # long each partition is
                 start = 0
                 count = 1
                 idx = [0] * self.mwidth
@@ -86,19 +96,19 @@ class PartitionedEq(Elaboratable):
                         count += 1
                 idx[start] = count # update last point (or create it)
 
-                #print (pval, bin(pval), idx)
-                for i in range(self.mwidth):
-                    name = "andsig_%d_%d" % (pval, i)
-                    if idx[start]:
+                # now for each partition combination,
+                with m.Case(pval):
+                    #print (pval, bin(pval), idx)
+                    for i in range(self.mwidth):
+                        n = "andsig_%d_%d" % (pval, i)
+                        if not idx[start]:
+                            continue
                         ands = nes[i:i+idx[start]]
-                        andsig = Signal(len(ands), name=name, reset_less=True)
+                        andsig = Signal(len(ands), name=n, reset_less=True)
                         ands = ands.bool() # create an AND cascade
                         #print ("ands", pval, i, ands)
-                    else:
-                        andsig = Signal(name=name, reset_less=True)
-                        ands = C(1)
-                    comb += andsig.eq(ands)
-                    comb += eqsigs[i].eq(~andsig) # here's the inversion
+                        comb += andsig.eq(ands)
+                        comb += eqsigs[i].eq(~andsig) # here's the inversion
 
         # assign cascade-SIMD-compares to output
         comb += self.output.eq(Cat(*eqsigs))
