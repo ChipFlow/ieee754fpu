@@ -92,10 +92,10 @@ class TestPartitionPoints(unittest.TestCase):
                     yield Delay(0.1e-6)
                     # convert to mask_list
                     mask_list = []
-                    for b in maskbit_list:
+                    for mb in maskbit_list:
                         v = 0
                         for i in range(4):
-                            if b & (1<<i):
+                            if mb & (1<<i):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
                     y = 0
