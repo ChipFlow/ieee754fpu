@@ -43,7 +43,7 @@ class PartitionedEq(Elaboratable):
         start = 0
         for i in range(len(keys)):
             end = keys[i]
-            eql.append(self.a[start:end] == self.b[start:end])
+            eql.append(self.a[start:end] != self.b[start:end]) # see bool below
             start = end # for next time round loop
         comb += eqs.eq(Cat(*eql))
 
@@ -72,13 +72,8 @@ class PartitionedEq(Elaboratable):
                 start = 0
                 count = 1
                 idx = [0] * self.mwidth
-                psigs = []
                 for ipdx in range((self.mwidth-1)):
-                    pt = ppoints[ipdx]
-                    if pval & (1<<ipdx):
-                        pt = ~pt
-                    psigs.append(pt) # see AND-cascade trick
-                    if pval & (1<<ipdx):
+                    if (pval & (1<<ipdx)):
                         idx[start] = count
                         start = ipdx + 1
                         count = 1
@@ -86,19 +81,19 @@ class PartitionedEq(Elaboratable):
                         count += 1
                 idx[start] = count # update last point (or create it)
 
-                print (pval, idx)
+                print (pval, bin(pval), idx)
                 for i in range(self.mwidth):
-                    ands = [] # collate a chain of eqs together
-                    for j in range(idx[i]):
-                        ands.append(~eqs[i+j]) # see AND-cascade trick
                     name = "andsig_%d_%d" % (pval, i)
-                    if ands:
+                    if idx[start]:
+                        ands = eqs[i:i+idx[start]]
                         andsig = Signal(len(ands), name=name, reset_less=True)
-                        ands = ~Cat(*ands).bool() # create an AND cascade
+                        ands = ands.bool() # create an AND cascade
+                        print ("ands", pval, i, ands)
                     else:
-                        ands = C(0)
+                        andsig = Signal(name=name, reset_less=True)
+                        ands = C(1)
                     comb += andsig.eq(ands)
-                    comb += eqsigs[i].eq(andsig)
+                    comb += eqsigs[i].eq(~andsig)
 
         print ("eqsigs", eqsigs, self.output.shape())
 
