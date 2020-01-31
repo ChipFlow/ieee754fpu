@@ -313,4 +313,4 @@ def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
     for i in range(dut.num_rows):
         fns.append(test.rcv(i))
         fns.append(test.send(i))
-    run_simulation(dut, fns, vcd_name="%s.vcd" % name)
+    run_simulation(dut, {"sync": fns}, vcd_name="%s.vcd" % name)
