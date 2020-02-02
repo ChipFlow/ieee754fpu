@@ -14,6 +14,8 @@ def fpcmp_eq(a, b):
 def fpcmp_lt(a, b):
     return Float32(a.lt(b))
 
+def fpcmp_le(a, b):
+    return Float32(a.le(b))
 
 def test_fpcmp_eq():
     dut = FPCMPMuxInOut(32, 4)
@@ -25,8 +27,14 @@ def test_fpcmp_lt():
     runfp(dut, 32, "test_fpcmp_lt", Float32, fpcmp_lt,
           n_vals=100, opcode=0b00)
 
+def test_fpcmp_le():
+    dut = FPCMPMuxInOut(32, 4)
+    runfp(dut, 32, "test_fpcmp_le", Float32, fpcmp_le,
+          n_vals=100, opcode=0b01)
+
 
 if __name__ == '__main__':
     for i in range(50):
         test_fpcmp_lt()
         test_fpcmp_eq()
+        test_fpcmp_le()

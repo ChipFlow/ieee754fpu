@@ -50,6 +50,15 @@ class FPCMPPipeMod(PipeModBase):
         m.d.comb += ab_equal.eq(a1.v == b1.v)
         contains_nan = Signal()
         m.d.comb += contains_nan.eq(a1.is_nan | b1.is_nan)
+        a_lt_b = Signal()
+        with m.If(a1.s != b1.s):
+            comb += a_lt_b.eq(a1.s > b1.s)
+        with m.Elif(a1.s == 0):
+            comb += a_lt_b.eq(a1.v[0:31] < b1.v[0:31])
+        with m.Else():
+            comb += a_lt_b.eq(a1.v[0:31] > b1.v[0:31])
+            
+        
 
         with m.If(contains_nan):
             m.d.comb += z1.eq(0)
@@ -57,6 +66,10 @@ class FPCMPPipeMod(PipeModBase):
             with m.Switch(opcode):
                 with m.Case(0b10):
                     comb += z1.eq(ab_equal)
+                with m.Case(0b00):
+                    comb += z1.eq(a_lt_b)
+                with m.Case(0b01):
+                    comb += z1.eq(a_lt_b | ab_equal)
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
