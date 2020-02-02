@@ -51,25 +51,43 @@ class FPCMPPipeMod(PipeModBase):
         contains_nan = Signal()
         m.d.comb += contains_nan.eq(a1.is_nan | b1.is_nan)
         a_lt_b = Signal()
-        with m.If(a1.s != b1.s):
-            comb += a_lt_b.eq(a1.s > b1.s)
-        with m.Elif(a1.s == 0):
-            comb += a_lt_b.eq(a1.v[0:31] < b1.v[0:31])
-        with m.Else():
-            comb += a_lt_b.eq(a1.v[0:31] > b1.v[0:31])
-            
-        
 
-        with m.If(contains_nan):
-            m.d.comb += z1.eq(0)
-        with m.Else():
-            with m.Switch(opcode):
-                with m.Case(0b10):
-                    comb += z1.eq(ab_equal)
-                with m.Case(0b00):
-                    comb += z1.eq(a_lt_b)
-                with m.Case(0b01):
-                    comb += z1.eq(a_lt_b | ab_equal)
+        # if(a1.s != b1.s):
+        #    a_lt_b = a1.s > b1.s (a is more negative than b)
+        signs_same = Signal()
+        comb += signs_same.eq(a1.s > b1.s)
+
+        # else:  # a1.s == b1.s
+        #    if(a1.s == 0):
+        #         a_lt_b = a[0:31] < b[0:31]
+        #    else:
+        #         a_lt_b = a[0:31] > b[0:31]
+        signs_different = Signal()
+        comb += signs_different.eq(Mux(a1.s,
+                                       (a1.v[0:31] > b1.v[0:31]),
+                                       (a1.v[0:31] < b1.v[0:31])))
+
+        comb += a_lt_b.eq(Mux(a1.s == b1.s,
+                              signs_different,
+                              signs_same))    
+
+        no_nan = Signal()
+        # switch(opcode):
+        #   case(0b00): # lt
+        #       no_nan = a_lt_b
+        #   case(0b01): # le
+        #       no_nan = ab_equal
+        #   case(0b10):
+        #       no_nan = a_lt_b | ab_equal
+        comb += no_nan.eq(
+            Mux(opcode != 0b00, ab_equal, 0) |
+            Mux(opcode[1], 0, a_lt_b))
+
+        # if(a1.is_nan | b1.is_nan):
+        #    z1 = 0
+        # else:
+        #    z1 = no_nan
+        comb += z1.eq(Mux(contains_nan, 0, no_nan))
 
         # copy the context (muxid, operator)
         comb += self.o.ctx.eq(self.i.ctx)
