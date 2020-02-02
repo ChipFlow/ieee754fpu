@@ -9,6 +9,11 @@ import math
 
 
 def fpmax_f32_max(a, b):
+    # Apparently, sfpy doesn't include a min or max function. Python's
+    # min/max work, however python min/max are not IEEE754 Compliant
+    # (namely, they don't behave correctly with NaNs
+    # IEEE754 defines max(num, NaN) and max(NaN, num) as both
+    # returning num (and the same for min)
     if math.isnan(a) or math.isnan(b):
         if math.isnan(a) and math.isnan(b):
             return Float32(float('nan'))
@@ -46,5 +51,5 @@ def test_fpmax_f32_min():
 
 if __name__ == '__main__':
     for i in range(50):
-        test_fpmax_f32_min()
         test_fpmax_f32_max()
+        test_fpmax_f32_min()

@@ -46,7 +46,7 @@ class FPCMPMuxInOut(ReservationStations):
         Fan-in and Fan-out are combinatorial.
     """
 
-    def __init__(self, in_width, num_rows, op_wid=1):
+    def __init__(self, in_width, num_rows, op_wid=2):
         self.op_wid = op_wid
         self.id_wid = num_bits(num_rows)
 
