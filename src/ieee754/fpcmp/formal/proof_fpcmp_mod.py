@@ -48,12 +48,27 @@ class FPCMPDriver(Elaboratable):
 
         m.d.comb += Assert((z1.v == 0) | (z1.v == 1))
 
+        a_lt_b = Signal()
+
+        with m.If(a1.s != b1.s):
+            m.d.comb += a_lt_b.eq(a1.s > b1.s)
+        with m.Elif(a1.s == 0):
+            m.d.comb += a_lt_b.eq(a1.v[0:31] < b1.v[0:31])
+        with m.Else():
+            m.d.comb += a_lt_b.eq(a1.v[0:31] > b1.v[0:31])
+
+
         with m.If(a1.is_nan | b1.is_nan):
             m.d.comb += Assert(z1.v == 0)
         with m.Else():
             with m.Switch(opc):
                 with m.Case(0b10):
                     m.d.comb += Assert(z1.v == (a1.v == b1.v))
+                with m.Case(0b00):
+                    m.d.comb += Assert(z1.v == (a_lt_b))
+                with m.Case(0b01):
+                    m.d.comb += Assert(z1.v == (a_lt_b |
+                                                (a1.v == b1.v)))
             
 
 
@@ -72,7 +87,7 @@ class FPCMPDriver(Elaboratable):
 
 class FPCMPTestCase(FHDLTestCase):
     def test_fpcmp(self):
-        for bits in [16, 32, 64]:
+        for bits in [32, 16, 64]:
             module = FPCMPDriver(PipelineSpec(bits, 2, 2))
             self.assertFormal(module, mode="bmc", depth=4)
 
