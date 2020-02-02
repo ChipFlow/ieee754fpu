@@ -50,12 +50,17 @@ class FPCMPDriver(Elaboratable):
 
         a_lt_b = Signal()
 
-        with m.If(a1.s != b1.s):
+        with m.If(a1.is_zero & b1.is_zero):
+            m.d.comb += a_lt_b.eq(0)
+        with m.Elif(a1.s != b1.s):
             m.d.comb += a_lt_b.eq(a1.s > b1.s)
         with m.Elif(a1.s == 0):
-            m.d.comb += a_lt_b.eq(a1.v[0:31] < b1.v[0:31])
+            m.d.comb += a_lt_b.eq(a1.v[0:width-1] < b1.v[0:width-1])
         with m.Else():
-            m.d.comb += a_lt_b.eq(a1.v[0:31] > b1.v[0:31])
+            m.d.comb += a_lt_b.eq(a1.v[0:width-1] > b1.v[0:width-1])
+
+        a_eq_b = Signal()
+        m.d.comb += a_eq_b.eq((a1.v == b1.v) | (a1.is_zero & b1.is_zero))
 
 
         with m.If(a1.is_nan | b1.is_nan):
@@ -63,12 +68,12 @@ class FPCMPDriver(Elaboratable):
         with m.Else():
             with m.Switch(opc):
                 with m.Case(0b10):
-                    m.d.comb += Assert(z1.v == (a1.v == b1.v))
+                    m.d.comb += Assert((z1.v == a_eq_b))
                 with m.Case(0b00):
                     m.d.comb += Assert(z1.v == (a_lt_b))
                 with m.Case(0b01):
-                    m.d.comb += Assert(z1.v == (a_lt_b |
-                                                (a1.v == b1.v)))
+                    m.d.comb += Assert(z1.v == (a_lt_b | a_eq_b))
+        
             
 
 

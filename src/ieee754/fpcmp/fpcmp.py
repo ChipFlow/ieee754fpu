@@ -46,13 +46,20 @@ class FPCMPPipeMod(PipeModBase):
         m.d.comb += [a1.v.eq(self.i.a),
                      b1.v.eq(self.i.b)]
 
+        both_zero = Signal()
+        comb += both_zero.eq((a1.v[0:width-1] == 0) &
+                             (b1.v[0:width-1] == 0))
+
         ab_equal = Signal()
-        m.d.comb += ab_equal.eq(a1.v == b1.v)
+        m.d.comb += ab_equal.eq((a1.v == b1.v) | both_zero)
+
         contains_nan = Signal()
         m.d.comb += contains_nan.eq(a1.is_nan | b1.is_nan)
         a_lt_b = Signal()
 
-        # if(a1.s != b1.s):
+        # if(a1.is_zero && b1.is_zero):
+        #    a_lt_b = 0
+        # elif(a1.s != b1.s):
         #    a_lt_b = a1.s > b1.s (a is more negative than b)
         signs_same = Signal()
         comb += signs_same.eq(a1.s > b1.s)
@@ -64,12 +71,13 @@ class FPCMPPipeMod(PipeModBase):
         #         a_lt_b = a[0:31] > b[0:31]
         signs_different = Signal()
         comb += signs_different.eq(Mux(a1.s,
-                                       (a1.v[0:31] > b1.v[0:31]),
-                                       (a1.v[0:31] < b1.v[0:31])))
+                                       (a1.v[0:width-1] > b1.v[0:width-1]),
+                                       (a1.v[0:width-1] < b1.v[0:width-1])))
 
-        comb += a_lt_b.eq(Mux(a1.s == b1.s,
+        comb += a_lt_b.eq(Mux(both_zero, 0,
+                              Mux(a1.s == b1.s,
                               signs_different,
-                              signs_same))    
+                              signs_same)))
 
         no_nan = Signal()
         # switch(opcode):
