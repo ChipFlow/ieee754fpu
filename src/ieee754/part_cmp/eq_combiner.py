@@ -24,7 +24,7 @@ class Twomux(Elaboratable):
 #equals.py's giant switch statement. The idea is to use a tree of two
 #input/two output multiplexors and or gates to select whether each
 #signal is or isn't combined with its neighbors.
-class Combiner(Elaboratable):
+class EQCombiner(Elaboratable):
     def __init__(self, width):
         self.width = width
         self.neqs = Signal(width, reset_less=True)

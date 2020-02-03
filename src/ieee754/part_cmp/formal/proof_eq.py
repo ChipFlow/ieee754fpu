@@ -6,7 +6,7 @@ from nmigen.asserts import Assert, AnyConst
 from nmigen.test.utils import FHDLTestCase
 from nmigen.cli import rtlil
 
-from ieee754.part_cmp.partition_combiner import Combiner
+from ieee754.part_cmp.eq_combiner import EQCombiner
 import unittest
 
 
@@ -31,7 +31,7 @@ class CombinerDriver(Elaboratable):
                      gates.eq(AnyConst(width)),
                      neqs.eq(~eqs)]
 
-        m.submodules.dut = dut = Combiner(width)
+        m.submodules.dut = dut = EQCombiner(width)
 
         with m.Switch(gates):
             with m.Case(0b11):
@@ -61,12 +61,12 @@ class CombinerDriver(Elaboratable):
 
         return m
 
-class CombinerTestCase(FHDLTestCase):
+class EQCombinerTestCase(FHDLTestCase):
     def test_combiner(self):
         module = CombinerDriver()
         self.assertFormal(module, mode="bmc", depth=4)
     def test_ilang(self):
-        dut = Combiner(3)
+        dut = EQCombiner(3)
         vl = rtlil.convert(dut, ports=dut.ports())
         with open("partition_combiner.il", "w") as f:
             f.write(vl)
