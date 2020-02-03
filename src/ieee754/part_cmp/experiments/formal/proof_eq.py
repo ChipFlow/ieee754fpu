@@ -6,7 +6,7 @@ from nmigen.asserts import Assert, AnyConst
 from nmigen.test.utils import FHDLTestCase
 from nmigen.cli import rtlil
 
-from ieee754.part_cmp.eq_combiner import EQCombiner
+from ieee754.part_cmp.experiments.eq_combiner import EQCombiner
 import unittest
 
 
