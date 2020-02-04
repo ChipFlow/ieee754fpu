@@ -40,7 +40,7 @@ class GTCombiner(Elaboratable):
 
         previnput = self.gts[-1] | (self.eqs[-1] & self.mux_input)
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
-            m.submodules["mux{}".format(i)] = mux = Combiner()
+            m.submodules["mux%d" % i] = mux = Combiner()
 
             comb += mux.ina.eq(previnput)
             comb += mux.inb.eq(self.mux_input)

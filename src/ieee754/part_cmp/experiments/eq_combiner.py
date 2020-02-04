@@ -37,7 +37,7 @@ class EQCombiner(Elaboratable):
 
         previnput = self.neqs[-1]
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
-            m.submodules["mux{}".format(i)] = mux = Twomux()
+            m.submodules["mux%d" % i] = mux = Twomux()
 
             comb += mux.ina.eq(previnput)
             comb += mux.inb.eq(0)
