@@ -1,7 +1,21 @@
 from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part_cmp.experiments.eq_combiner import Twomux
 
+class Combiner(Elaboratable):
+    def __init__(self):
+        self.ina = Signal()
+        self.inb = Signal()
+        self.sel = Signal()
+        self.outa = Signal()
+        self.outb = Signal()
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+
+        comb += self.outa.eq(Mux(self.sel, self.inb, self.ina))
+        comb += self.outb.eq(self.sel & self.ina)
+
+        return m
 
 # This is similar to EQCombiner, except that for a greater than
 # comparison, it needs to deal with both the greater than and equals
@@ -26,13 +40,13 @@ class GTCombiner(Elaboratable):
 
         previnput = self.gts[-1] | (self.eqs[-1] & self.mux_input)
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
-            m.submodules["mux{}".format(i)] = mux = Twomux()
+            m.submodules["mux{}".format(i)] = mux = Combiner()
 
             comb += mux.ina.eq(previnput)
             comb += mux.inb.eq(self.mux_input)
             comb += mux.sel.eq(self.gates[i-1])
             comb += self.outputs[i].eq(mux.outb)
-            previnput =  self.gts[i-1] | (self.eqs[i-1] & mux.outa)
+            previnput = self.gts[i-1] | (self.eqs[i-1] & mux.outa)
 
         comb += self.outputs[0].eq(previnput)
 

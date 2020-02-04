@@ -71,12 +71,16 @@ class CombinerDriver(Elaboratable):
                         comb += Assert(out[i] == eqs[i])
                 with m.Case(0b00):
                     comb += Assert(out[0] == (eqs[0] & eqs[1] & eqs[2]))
+                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[2] == 0)
                 with m.Case(0b10):
                     comb += Assert(out[0] == (eqs[0] & eqs[1]))
+                    comb += Assert(out[1] == 0)
                     comb += Assert(out[2] == eqs[2])
                 with m.Case(0b01):
                     comb += Assert(out[0] == eqs[0])
                     comb += Assert(out[1] == (eqs[1] & eqs[2]))
+                    comb += Assert(out[2] == 0)
 
 
 
