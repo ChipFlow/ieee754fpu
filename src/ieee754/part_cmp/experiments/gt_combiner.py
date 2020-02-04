@@ -2,12 +2,14 @@ from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
 
 class Combiner(Elaboratable):
+
     def __init__(self):
         self.ina = Signal()
         self.inb = Signal()
         self.sel = Signal()
         self.outa = Signal()
         self.outb = Signal()
+
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
@@ -25,7 +27,9 @@ class Combiner(Elaboratable):
 # partition's greater than flag is set, or the current partition's
 # equal flag is set AND the previous partition's greater than output
 # is true
+
 class GTCombiner(Elaboratable):
+
     def __init__(self, width):
         self.width = width
         self.mux_input = Signal(reset_less=True)  # right hand side mux input
@@ -39,6 +43,7 @@ class GTCombiner(Elaboratable):
         comb = m.d.comb
 
         previnput = self.gts[-1] | (self.eqs[-1] & self.mux_input)
+
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
             m.submodules["mux%d" % i] = mux = Combiner()
 

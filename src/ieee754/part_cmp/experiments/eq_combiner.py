@@ -2,14 +2,15 @@ from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
 
 
-
 class Twomux(Elaboratable):
+
     def __init__(self):
         self.ina = Signal()
         self.inb = Signal()
         self.sel = Signal()
         self.outa = Signal()
         self.outb = Signal()
+
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
@@ -24,7 +25,9 @@ class Twomux(Elaboratable):
 #equals.py's giant switch statement. The idea is to use a tree of two
 #input/two output multiplexors and or gates to select whether each
 #signal is or isn't combined with its neighbors.
+
 class EQCombiner(Elaboratable):
+
     def __init__(self, width):
         self.width = width
         self.neqs = Signal(width, reset_less=True)
@@ -36,6 +39,7 @@ class EQCombiner(Elaboratable):
         comb = m.d.comb
 
         previnput = self.neqs[-1]
+
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
             m.submodules["mux%d" % i] = mux = Twomux()
 
