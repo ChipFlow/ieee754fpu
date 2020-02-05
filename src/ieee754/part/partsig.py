@@ -17,7 +17,7 @@ http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
 from ieee754.part_mul_add.adder import PartitionedAdder
-from ieee754.part_cmp.equal import PartitionedEq
+from ieee754.part_cmp.equal_ortree import PartitionedEq
 from ieee754.part_mul_add.partpoints import make_partition
 from operator import or_, xor, and_, not_
 

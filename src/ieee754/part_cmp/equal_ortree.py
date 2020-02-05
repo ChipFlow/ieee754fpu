@@ -17,7 +17,7 @@ from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
 from nmigen.cli import main
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part_cmp.experiments.eq_combiner import Twomux
+from ieee754.part_cmp.experiments.eq_combiner import EQCombiner
 
 
 class PartitionedEq(Elaboratable):
@@ -37,6 +37,7 @@ class PartitionedEq(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
+        m.submodules.eqc = eqc = EQCombiner(self.mwidth)
 
         # make a series of "not-eqs", splitting a and b into partition chunks
         nes = Signal(self.mwidth, reset_less=True)
@@ -49,22 +50,9 @@ class PartitionedEq(Elaboratable):
             start = end # for next time round loop
         comb += nes.eq(Cat(*nel))
 
-        # get the partition points (gates) as a signal
-
-        part_points = Signal(self.mwidth-1)
-        comb += part_points.eq(self.partition_points.as_sig())
-
-        prevresult = nes[-1]
-
-        for bit in range(self.mwidth-1, 0, -1): # counts down from mwidth-1 to 1
-            m.submodules["mux%d" % bit] = mux = Twomux()
-            comb += mux.ina.eq(prevresult)
-            comb += mux.inb.eq(0)
-            comb += mux.sel.eq(~part_points[bit-1])
-            comb += self.output[bit].eq(mux.outa ^ part_points[bit-1])
-            prevresult = mux.outb | nes[i-1]
-
-        comb += self.output[0].eq(~prevresult)
+        comb += eqc.gates.eq(self.partition_points.as_sig())
+        comb += eqc.neqs.eq(nes)
+        comb += self.output[0].eq(eqc.outputs)
         
 
         return m
