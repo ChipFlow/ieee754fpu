@@ -21,6 +21,9 @@ from ieee754.part_cmp.experiments.gt_combiner import GTCombiner
 
 
 class PartitionedEqGtGe(Elaboratable):
+    EQ = C(0b00, 2)
+    GT = C(0b01, 2)
+    GE = C(0b10, 2)
 
     # Expansion of the partitioned equals module to handle Greater
     # Than and Greater than or Equal to. The function being evaluated
