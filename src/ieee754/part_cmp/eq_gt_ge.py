@@ -77,13 +77,13 @@ class PartitionedEqGtGe(Elaboratable):
             with m.Case(0b10):   # greater than or equal to
                 comb += aux_input.eq(1)
                 comb += gt_en.eq(1)
-        
+
         comb += gtc.gates.eq(self.partition_points.as_sig())
         comb += gtc.eqs.eq(eqs)
         comb += gtc.gts.eq(gts)
         comb += gtc.aux_input.eq(aux_input)
         comb += gtc.gt_en.eq(gt_en)
         comb += self.output.eq(gtc.outputs)
-        
+
 
         return m
