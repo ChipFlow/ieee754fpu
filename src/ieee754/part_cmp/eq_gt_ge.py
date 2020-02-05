@@ -107,13 +107,17 @@ if __name__ == "__main__":
     sim = Simulator(m)
 
     def process():
-        yield mask.eq(0b10)
+        yield mask.eq(0b010)
         yield egg.a.eq(0xf000)
         yield egg.b.eq(0)
         yield Delay(1e-6)
         out = yield egg.output
         print ("out", bin(out))
-        yield mask.eq(0b1111)
+        yield mask.eq(0b111)
+        yield egg.a.eq(0x0000)
+        yield egg.b.eq(0)
+        yield Delay(1e-6)
+        yield mask.eq(0b010)
         yield egg.a.eq(0x0000)
         yield egg.b.eq(0)
         yield Delay(1e-6)
