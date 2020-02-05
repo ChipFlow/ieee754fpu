@@ -7,7 +7,7 @@ from nmigen.test.utils import FHDLTestCase
 from nmigen.cli import rtlil
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part_cmp.equal_ortree import PartitionedEq
+from ieee754.part_cmp.experiments.equal_ortree import PartitionedEq
 import unittest
 
 
