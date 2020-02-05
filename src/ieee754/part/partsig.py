@@ -84,9 +84,10 @@ class PartitionedSignal:
     def __eq__(self, other):
         print ("eq", self, other)
         shape = self.sig.shape()
-        pa = PartitionedEq(shape[0], self.partpoints)
+        pa = PartitionedEqGtGe(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('eq'), pa)
         comb = self.m.d.comb
+        comb += pa.opcode.eq(PartitionedEqGtGe.EQ) # set opcode to EQ
         comb += pa.a.eq(self.sig)
         if isinstance(other, PartitionedSignal):
             comb += pa.b.eq(other.sig)
