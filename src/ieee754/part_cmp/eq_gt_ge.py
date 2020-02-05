@@ -15,10 +15,11 @@ See:
 
 from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
 from nmigen.back.pysim import Simulator, Delay, Settle
-from nmigen.cli import main
+from nmigen.cli import main, rtlil
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_cmp.gt_combiner import GTCombiner
+from ieee754.part_cmp.reorder_results import ReorderResults
 
 
 class PartitionedEqGtGe(Elaboratable):
@@ -50,6 +51,8 @@ class PartitionedEqGtGe(Elaboratable):
         comb = m.d.comb
         m.submodules.gtc = gtc = GTCombiner(self.mwidth)
 
+        m.submodules.reorder = reorder = ReorderResults(self.mwidth)
+
         # make a series of "eqs" and "gts", splitting a and b into
         # partition chunks
         eqs = Signal(self.mwidth, reset_less=True)
@@ -63,7 +66,7 @@ class PartitionedEqGtGe(Elaboratable):
             end = keys[i]
             eql.append(self.a[start:end] == self.b[start:end])
             gtl.append(self.a[start:end] > self.b[start:end])
-            start = end # for next time round loop
+            start = end  # for next time round loop
         comb += eqs.eq(Cat(*eql))
         comb += gts.eq(Cat(*gtl))
 
@@ -84,12 +87,18 @@ class PartitionedEqGtGe(Elaboratable):
                 comb += aux_input.eq(1)
                 comb += gt_en.eq(1)
 
+        results = Signal(self.mwidth, reset_less=True)
         comb += gtc.gates.eq(self.partition_points.as_sig())
         comb += gtc.eqs.eq(eqs)
         comb += gtc.gts.eq(gts)
         comb += gtc.aux_input.eq(aux_input)
         comb += gtc.gt_en.eq(gt_en)
-        comb += self.output.eq(gtc.outputs)
+        comb += results.eq(gtc.outputs)
+
+        comb += reorder.results_in.eq(results)
+        comb += reorder.gates.eq(self.partition_points.as_sig())
+
+        comb += self.output.eq(reorder.output)
 
         return m
 
@@ -110,9 +119,10 @@ if __name__ == "__main__":
         yield mask.eq(0b010)
         yield egg.a.eq(0xf000)
         yield egg.b.eq(0)
+        yield egg.opcode.eq(0b00)
         yield Delay(1e-6)
         out = yield egg.output
-        print ("out", bin(out))
+        print("out", bin(out))
         yield mask.eq(0b111)
         yield egg.a.eq(0x0000)
         yield egg.b.eq(0)
@@ -122,7 +132,7 @@ if __name__ == "__main__":
         yield egg.b.eq(0)
         yield Delay(1e-6)
         out = yield egg.output
-        print ("out", bin(out))
+        print("out", bin(out))
 
     sim.add_process(process)
     with sim.write_vcd("eq_gt_ge.vcd", "eq_gt_ge.gtkw", traces=egg.ports()):
