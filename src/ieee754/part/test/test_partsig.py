@@ -105,7 +105,7 @@ class TestPartitionPoints(unittest.TestCase):
                             y |= maskbit_list[i]
                     # check the result
                     outval = (yield module.eq_output)
-                    msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
+                    msg = f"{msg_prefix}: 0x{a:X} == 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}, masklist %s"
                     #print ((msg % str(maskbit_list)).format(locals()))
                     self.assertEqual(y, outval, msg % str(maskbit_list))
