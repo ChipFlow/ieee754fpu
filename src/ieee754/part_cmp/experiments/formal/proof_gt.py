@@ -50,16 +50,16 @@ class CombinerDriver(Elaboratable):
                         comb += Assert(out[i] == gts[i])
                 with m.Case(0b10):
                     comb += Assert(out[2] == gts[2])
-                    comb += Assert(out[1] == 0)
-                    comb += Assert(out[0] == (gts[0] | (eqs[0] & gts[1])))
+                    comb += Assert(out[1] == (gts[1] | (eqs[1] & gts[0])))
+                    comb += Assert(out[0] == 0)
                 with m.Case(0b01):
-                    comb += Assert(out[2] == 0)
-                    comb += Assert(out[1] == (gts[1] | (eqs[1] & gts[2])))
+                    comb += Assert(out[2] == (gts[2] | (eqs[2] & gts[1])))
+                    comb += Assert(out[1] == 0)
                     comb += Assert(out[0] == gts[0])
                 with m.Case(0b00):
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[2] == (gts[2] | (eqs[2] & (gts[1] | (eqs[1] & gts[0])))))
                     comb += Assert(out[1] == 0)
-                    comb += Assert(out[0] == (gts[0] | (eqs[0] & (gts[1] | (eqs[1] & gts[2])))))
+                    comb += Assert(out[0] == 0)
         # With the aux_input set to 1, this should work similarly to
         # eq_combiner. It appears this is the case, however the
         # ungated inputs are not set to 0 like they are in eq
@@ -69,17 +69,17 @@ class CombinerDriver(Elaboratable):
                     for i in range(out.width):
                         comb += Assert(out[i] == eqs[i])
                 with m.Case(0b00):
-                    comb += Assert(out[0] == (eqs[0] & eqs[1] & eqs[2]))
+                    comb += Assert(out[2] == (eqs[0] & eqs[1] & eqs[2]))
                     comb += Assert(out[1] == 0)
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[0] == 0)
                 with m.Case(0b10):
-                    comb += Assert(out[0] == (eqs[0] & eqs[1]))
-                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[0] == 0)
+                    comb += Assert(out[1] == (eqs[0] & eqs[1]))
                     comb += Assert(out[2] == eqs[2])
                 with m.Case(0b01):
                     comb += Assert(out[0] == eqs[0])
-                    comb += Assert(out[1] == (eqs[1] & eqs[2]))
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[2] == (eqs[1] & eqs[2]))
 
 
 
@@ -100,7 +100,7 @@ class GTCombinerTestCase(FHDLTestCase):
     def test_ilang(self):
         dut = GTCombiner(3)
         vl = rtlil.convert(dut, ports=dut.ports())
-        with open("partition_combiner.il", "w") as f:
+        with open("gt_combiner.il", "w") as f:
             f.write(vl)
 
 

@@ -43,20 +43,20 @@ class GTCombiner(Elaboratable):
         m = Module()
         comb = m.d.comb
 
-        previnput = (self.gts[-1] & self.gt_en) | (self.eqs[-1] & self.aux_input)
+        previnput = (self.gts[0] & self.gt_en) | (self.eqs[0] & self.aux_input)
 
-        for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
+        for i in range(self.width-1): 
             m.submodules["mux%d" % i] = mux = Combiner()
 
             comb += mux.ina.eq(previnput)
             comb += mux.inb.eq(self.aux_input)
-            comb += mux.sel.eq(self.gates[i-1])
+            comb += mux.sel.eq(self.gates[i])
             comb += self.outputs[i].eq(mux.outb)
-            previnput = (self.gts[i-1] & self.gt_en) | (self.eqs[i-1] & mux.outa)
+            previnput = (self.gts[i+1] & self.gt_en) | (self.eqs[i+1] & mux.outa)
 
-        comb += self.outputs[0].eq(previnput)
+        comb += self.outputs[-1].eq(previnput)
 
         return m
 
     def ports(self):
-        return [self.eqs, self.gts, self.gates, self.outputs]
+        return [self.eqs, self.gts, self.gates, self.outputs, self.gt_en, self.aux_input]
