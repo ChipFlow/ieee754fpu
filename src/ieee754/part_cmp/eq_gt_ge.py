@@ -18,7 +18,7 @@ from nmigen.back.pysim import Simulator, Delay, Settle
 from nmigen.cli import main
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part_cmp.experiments.gt_combiner import GTCombiner
+from ieee754.part_cmp.gt_combiner import GTCombiner
 
 
 class PartitionedEqGtGe(Elaboratable):

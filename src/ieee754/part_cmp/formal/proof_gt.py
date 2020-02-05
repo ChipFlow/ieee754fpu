@@ -6,7 +6,7 @@ from nmigen.asserts import Assert, AnyConst, Assume
 from nmigen.test.utils import FHDLTestCase
 from nmigen.cli import rtlil
 
-from ieee754.part_cmp.experiments.gt_combiner import GTCombiner
+from ieee754.part_cmp.gt_combiner import GTCombiner
 import unittest
 
 
