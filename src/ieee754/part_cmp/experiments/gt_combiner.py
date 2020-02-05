@@ -32,7 +32,8 @@ class GTCombiner(Elaboratable):
 
     def __init__(self, width):
         self.width = width
-        self.mux_input = Signal(reset_less=True)  # right hand side mux input
+        self.aux_input = Signal(reset_less=True)  # right hand side mux input
+        self.gt_en = Signal(reset_less=True)      # enable or disable the gt signal
         self.eqs = Signal(width, reset_less=True) # the flags for EQ
         self.gts = Signal(width, reset_less=True) # the flags for GT
         self.gates = Signal(width-1, reset_less=True)
@@ -42,16 +43,16 @@ class GTCombiner(Elaboratable):
         m = Module()
         comb = m.d.comb
 
-        previnput = self.gts[-1] | (self.eqs[-1] & self.mux_input)
+        previnput = (self.gts[-1] & self.gt_en) | (self.eqs[-1] & self.aux_input)
 
         for i in range(self.width-1, 0, -1): # counts down from width-1 to 1
             m.submodules["mux%d" % i] = mux = Combiner()
 
             comb += mux.ina.eq(previnput)
-            comb += mux.inb.eq(self.mux_input)
+            comb += mux.inb.eq(self.aux_input)
             comb += mux.sel.eq(self.gates[i-1])
             comb += self.outputs[i].eq(mux.outb)
-            previnput = self.gts[i-1] | (self.eqs[i-1] & mux.outa)
+            previnput = (self.gts[i-1] & self.gt_en) | (self.eqs[i-1] & mux.outa)
 
         comb += self.outputs[0].eq(previnput)
 
