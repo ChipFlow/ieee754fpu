@@ -44,8 +44,8 @@ class GTCombiner(Elaboratable):
         #   module performs a partitioned greater than or equals
         #   comparison
         self.aux_input = Signal(reset_less=True)  # right hand side mux input
-        self.gt_en = Signal(reset_less=True)      # enable or disable the gt signal
-        
+        self.gt_en = Signal(reset_less=True)      # enable or disable gt signal
+
         self.eqs = Signal(width, reset_less=True) # the flags for EQ
         self.gts = Signal(width, reset_less=True) # the flags for GT
         self.gates = Signal(width-1, reset_less=True)
@@ -57,18 +57,20 @@ class GTCombiner(Elaboratable):
 
         previnput = (self.gts[0] & self.gt_en) | (self.eqs[0] & self.aux_input)
 
-        for i in range(self.width-1): 
+        for i in range(self.width-1):
             m.submodules["mux%d" % i] = mux = Combiner()
 
             comb += mux.ina.eq(previnput)
             comb += mux.inb.eq(self.aux_input)
             comb += mux.sel.eq(self.gates[i])
             comb += self.outputs[i].eq(mux.outb)
-            previnput = (self.gts[i+1] & self.gt_en) | (self.eqs[i+1] & mux.outa)
+            previnput = (self.gts[i+1] & self.gt_en) | \
+                        (self.eqs[i+1] & mux.outa)
 
         comb += self.outputs[-1].eq(previnput)
 
         return m
 
     def ports(self):
-        return [self.eqs, self.gts, self.gates, self.outputs, self.gt_en, self.aux_input]
+        return [self.eqs, self.gts, self.gates, self.outputs,
+                self.gt_en, self.aux_input]
