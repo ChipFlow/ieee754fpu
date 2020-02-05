@@ -52,7 +52,7 @@ class PartitionedEq(Elaboratable):
 
         comb += eqc.gates.eq(self.partition_points.as_sig())
         comb += eqc.neqs.eq(nes)
-        comb += self.output[0].eq(eqc.outputs)
+        comb += self.output.eq(eqc.outputs)
         
 
         return m
