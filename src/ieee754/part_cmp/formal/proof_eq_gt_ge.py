@@ -44,7 +44,6 @@ class EqualsDriver(Elaboratable):
             points[i*8+8] = gates[i]
         out = Signal(mwidth)
 
-        
         comb += [a.eq(AnyConst(width)),
                  b.eq(AnyConst(width)),
                  opcode.eq(AnyConst(opcode.width)),
@@ -60,49 +59,60 @@ class EqualsDriver(Elaboratable):
                 with m.Case(0b00):
                     comb += Assert(out[-1] == (a == b))
                 with m.Case(0b01):
-                    comb += Assert(out[2] == ((a_intervals[1] == b_intervals[1]) &
-                                              (a_intervals[2] == b_intervals[2])))
+                    comb += Assert(out[2] == ((a_intervals[1] == \
+                                    b_intervals[1]) &
+                                              (a_intervals[2] == \
+                                    b_intervals[2])))
                     comb += Assert(out[0] == (a_intervals[0] == b_intervals[0]))
                 with m.Case(0b10):
-                    comb += Assert(out[1] == ((a_intervals[0] == b_intervals[0]) &
-                                              (a_intervals[1] == b_intervals[1])))
+                    comb += Assert(out[1] == ((a_intervals[0] == \
+                                    b_intervals[0]) &
+                                              (a_intervals[1] == \
+                                    b_intervals[1])))
                     comb += Assert(out[2] == (a_intervals[2] == b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):
-                        comb += Assert(out[i] == (a_intervals[i] == b_intervals[i]))
+                        comb += Assert(out[i] == \
+                                    (a_intervals[i] == b_intervals[i]))
         with m.If(opcode == 0b01):
             with m.Switch(gates):
                 with m.Case(0b00):
                     comb += Assert(out[-1] == (a > b))
                 with m.Case(0b01):
                     comb += Assert(out[0] == (a_intervals[0] > b_intervals[0]))
-                                            
+
                     comb += Assert(out[1] == 0)
-                    comb += Assert(out[2] == (Cat(*a_intervals[1:3]) > Cat(*b_intervals[1:3])))
+                    comb += Assert(out[2] == (Cat(*a_intervals[1:3]) > \
+                                    Cat(*b_intervals[1:3])))
                 with m.Case(0b10):
                     comb += Assert(out[0] == 0)
-                    comb += Assert(out[1] == (Cat(*a_intervals[0:2]) > Cat(*b_intervals[0:2])))
+                    comb += Assert(out[1] == (Cat(*a_intervals[0:2]) > \
+                                    Cat(*b_intervals[0:2])))
                     comb += Assert(out[2] == (a_intervals[2] > b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):
-                        comb += Assert(out[i] == (a_intervals[i] > b_intervals[i]))
+                        comb += Assert(out[i] == (a_intervals[i] > \
+                                    b_intervals[i]))
         with m.If(opcode == 0b10):
             with m.Switch(gates):
                 with m.Case(0b00):
                     comb += Assert(out[-1] == (a >= b))
                 with m.Case(0b01):
                     comb += Assert(out[0] == (a_intervals[0] >= b_intervals[0]))
-                                            
+
                     comb += Assert(out[1] == 0)
-                    comb += Assert(out[2] == (Cat(*a_intervals[1:3]) >= Cat(*b_intervals[1:3])))
+                    comb += Assert(out[2] == (Cat(*a_intervals[1:3]) >= \
+                                    Cat(*b_intervals[1:3])))
                 with m.Case(0b10):
                     comb += Assert(out[0] == 0)
-                    comb += Assert(out[1] == (Cat(*a_intervals[0:2]) >= Cat(*b_intervals[0:2])))
+                    comb += Assert(out[1] == (Cat(*a_intervals[0:2]) >= \
+                                    Cat(*b_intervals[0:2])))
                     comb += Assert(out[2] == (a_intervals[2] >= b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):
-                        comb += Assert(out[i] == (a_intervals[i] >= b_intervals[i]))
-                
+                        comb += Assert(out[i] == \
+                                    (a_intervals[i] >= b_intervals[i]))
+
 
 
         comb += [dut.a.eq(a),
@@ -118,4 +128,4 @@ class PartitionedEqTestCase(FHDLTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-            
+
