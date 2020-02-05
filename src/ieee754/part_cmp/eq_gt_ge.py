@@ -46,7 +46,8 @@ class PartitionedEqGtGe(Elaboratable):
         comb = m.d.comb
         m.submodules.gtc = gtc = GTCombiner(self.mwidth)
 
-        # make a series of "eqs" and "gts", splitting a and b into partition chunks
+        # make a series of "eqs" and "gts", splitting a and b into
+        # partition chunks
         eqs = Signal(self.mwidth, reset_less=True)
         eql = []
         gts = Signal(self.mwidth, reset_less=True)
@@ -62,9 +63,10 @@ class PartitionedEqGtGe(Elaboratable):
         comb += eqs.eq(Cat(*eql))
         comb += gts.eq(Cat(*gtl))
 
-        # Signal to control the constant injected into the partition next to a closed gate
+        # control the constant injected into the partition
+        # next to a closed gate
         aux_input = Signal()
-        # Signal to enable or disable the gt input for the gt partition combiner
+        # enable or disable the gt input for the gt partition combiner
         gt_en = Signal()
 
         with m.Switch(self.opcode):
@@ -84,6 +86,5 @@ class PartitionedEqGtGe(Elaboratable):
         comb += gtc.aux_input.eq(aux_input)
         comb += gtc.gt_en.eq(gt_en)
         comb += self.output.eq(gtc.outputs)
-
 
         return m
