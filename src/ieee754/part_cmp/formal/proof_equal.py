@@ -43,7 +43,6 @@ class EqualsDriver(Elaboratable):
             points[i*4+4] = gates[i]
         out = Signal(mwidth)
 
-        
         comb += [a.eq(AnyConst(width)),
                  b.eq(AnyConst(width)),
                  gates.eq(AnyConst(mwidth-1))]
@@ -89,7 +88,7 @@ class EqualsDriver(Elaboratable):
             with m.Case(0b111):
                 for i in range(mwidth-1):
                     comb += Assert(out[i] == (a_intervals[i] == b_intervals[i]))
-                
+
 
 
         comb += [dut.a.eq(a),
@@ -104,4 +103,4 @@ class PartitionedEqTestCase(FHDLTestCase):
 
 if __name__ == "__main__":
     unittest.main()
-            
+
