@@ -32,8 +32,20 @@ class GTCombiner(Elaboratable):
 
     def __init__(self, width):
         self.width = width
+
+        # These two signals allow this module to do more than just a
+        # partitioned greater than comparison.
+        # - If aux_input is set to 0 and gt_en is set to 1, then this
+        #   module performs a partitioned greater than comparision
+        # - If aux_input is set to 1 and gt_en is set to 0, then this
+        #   module is functionally equivalent to the eq_combiner
+        #   module.
+        # - If aux_input is set to 1 and gt_en is set to 1, then this
+        #   module performs a partitioned greater than or equals
+        #   comparison
         self.aux_input = Signal(reset_less=True)  # right hand side mux input
         self.gt_en = Signal(reset_less=True)      # enable or disable the gt signal
+        
         self.eqs = Signal(width, reset_less=True) # the flags for EQ
         self.gts = Signal(width, reset_less=True) # the flags for GT
         self.gates = Signal(width-1, reset_less=True)
