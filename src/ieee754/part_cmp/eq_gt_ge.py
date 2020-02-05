@@ -14,6 +14,7 @@ See:
 """
 
 from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
+from nmigen.back.pysim import Simulator, Delay, Settle
 from nmigen.cli import main
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
@@ -91,3 +92,34 @@ class PartitionedEqGtGe(Elaboratable):
         comb += self.output.eq(gtc.outputs)
 
         return m
+
+    def ports(self):
+        return [self.a, self.b, self.opcode,
+                self.partition_points.as_sig(),
+                self.output]
+
+if __name__ == "__main__":
+    from ieee754.part_mul_add.partpoints import make_partition
+    m = Module()
+    mask = Signal(4)
+    m.submodules.egg = egg = PartitionedEqGtGe(16, make_partition(mask, 16))
+
+    sim = Simulator(m)
+
+    def process():
+        yield mask.eq(0b10)
+        yield egg.a.eq(0xf000)
+        yield egg.b.eq(0)
+        yield Delay(1e-6)
+        out = yield egg.output
+        print ("out", bin(out))
+        yield mask.eq(0b1111)
+        yield egg.a.eq(0x0000)
+        yield egg.b.eq(0)
+        yield Delay(1e-6)
+        out = yield egg.output
+        print ("out", bin(out))
+
+    sim.add_process(process)
+    with sim.write_vcd("eq_gt_ge.vcd", "eq_gt_ge.gtkw", traces=egg.ports()):
+        sim.run()
