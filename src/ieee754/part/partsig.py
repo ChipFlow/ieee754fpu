@@ -81,43 +81,33 @@ class PartitionedSignal:
             comb += pa.b.eq(other)
         return pa.output
 
-    def __eq__(self, other):
-        shape = self.sig.shape()
-        pa = PartitionedEqGtGe(shape[0], self.partpoints)
-        setattr(self.m.submodules, self.get_modname('eq'), pa)
+    def _compare(self, width, op1, op2, opname, optype):
+        #print (opname, op1, op2)
+        pa = PartitionedEqGtGe(width, self.partpoints)
+        setattr(self.m.submodules, self.get_modname(opname), pa)
         comb = self.m.d.comb
-        comb += pa.opcode.eq(PartitionedEqGtGe.EQ) # set opcode to EQ
-        comb += pa.a.eq(self.sig)
-        if isinstance(other, PartitionedSignal):
-            comb += pa.b.eq(other.sig)
+        comb += pa.opcode.eq(optype) # set opcode
+        if isinstance(op1, PartitionedSignal):
+            comb += pa.a.eq(op1.sig)
         else:
-            comb += pa.b.eq(other)
+            comb += pa.a.eq(op1)
+        if isinstance(op2, PartitionedSignal):
+            comb += pa.b.eq(op2.sig)
+        else:
+            comb += pa.b.eq(op2)
         return pa.output
+
+    def __eq__(self, other):
+        width = self.sig.shape()[0]
+        return self._compare(width, self, other, "eq", PartitionedEqGtGe.EQ)
+
+    def __ne__(self, other):
+        return ~self.__eq__(other)
 
     def __gt__(self, other):
-        print ("gt", self, other)
-        shape = self.sig.shape()
-        pa = PartitionedEqGtGe(shape[0], self.partpoints)
-        setattr(self.m.submodules, self.get_modname('gt'), pa)
-        comb = self.m.d.comb
-        comb += pa.opcode.eq(PartitionedEqGtGe.GT) # set opcode to GT
-        comb += pa.a.eq(self.sig)
-        if isinstance(other, PartitionedSignal):
-            comb += pa.b.eq(other.sig)
-        else:
-            comb += pa.b.eq(other)
-        return pa.output
+        width = self.sig.shape()[0]
+        return self._compare(width, self, other, "gt", PartitionedEqGtGe.GT)
 
     def __ge__(self, other):
-        print ("ge", self, other)
-        shape = self.sig.shape()
-        pa = PartitionedEqGtGe(shape[0], self.partpoints)
-        setattr(self.m.submodules, self.get_modname('ge'), pa)
-        comb = self.m.d.comb
-        comb += pa.opcode.eq(PartitionedEqGtGe.GE) # set opcode to GE
-        comb += pa.a.eq(self.sig)
-        if isinstance(other, PartitionedSignal):
-            comb += pa.b.eq(other.sig)
-        else:
-            comb += pa.b.eq(other)
-        return pa.output
+        width = self.sig.shape()[0]
+        return self._compare(width, self, other, "ge", PartitionedEqGtGe.GE)
