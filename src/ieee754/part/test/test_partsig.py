@@ -29,11 +29,13 @@ class TestAddMod(Elaboratable):
         self.b = PartitionedSignal(partpoints, width)
         self.add_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
+        self.gt_output = Signal(len(partpoints)+1)
 
     def elaborate(self, platform):
         m = Module()
         self.a.set_module(m)
         self.b.set_module(m)
+        m.d.comb += self.gt_output.eq(self.a > self.b)
         m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.add_output.eq(self.a + self.b)
 
@@ -102,6 +104,44 @@ class TestPartitionPoints(unittest.TestCase):
                     # do the partitioned tests
                     for i, mask in enumerate(mask_list):
                         if (a & mask) == (b & mask):
+                            # OR y with the lowest set bit in the mask
+                            y |= (maskbit_list[i] & ~(maskbit_list[i]-1))
+                    # check the result
+                    outval = (yield module.eq_output)
+                    msg = f"{msg_prefix}: 0x{a:X} == 0x{b:X}" + \
+                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
+                    #print ((msg % str(maskbit_list)).format(locals()))
+                    self.assertEqual(y, outval, msg % str(maskbit_list))
+            yield part_mask.eq(0)
+            yield from test_eq("16-bit", 0b1111)
+            yield part_mask.eq(0b10)
+            yield from test_eq("8-bit", 0b1100, 0b0011)
+            yield part_mask.eq(0b1111)
+            yield from test_eq("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
+
+            def test_gt(msg_prefix, *maskbit_list):
+                for a, b in [(0x0000, 0x0000),
+                             (0x1234, 0x1234),
+                             (0xABCD, 0xABCD),
+                             (0xFFFF, 0x0000),
+                             (0x0000, 0x0000),
+                             (0xFFFF, 0xFFFF),
+                             (0x0000, 0xFFFF)]:
+                    yield module.a.eq(a)
+                    yield module.b.eq(b)
+                    yield Delay(0.1e-6)
+                    # convert to mask_list
+                    mask_list = []
+                    for mb in maskbit_list:
+                        v = 0
+                        for i in range(4):
+                            if mb & (1<<i):
+                                v |= 0xf << (i*4)
+                        mask_list.append(v)
+                    y = 0
+                    # do the partitioned tests
+                    for i, mask in enumerate(mask_list):
+                        if (a & mask) > (b & mask):
                             # OR y with the lowest set bit in the mask
                             y |= (maskbit_list[i] & ~(maskbit_list[i]-1))
                     # check the result

@@ -38,7 +38,7 @@ class PartitionedSignal:
         width = self.sig.shape()[0] # get signal width
         self.partpoints = make_partition(mask, width) # create partition points
         self.modnames = {}
-        for name in ['add', 'eq']:
+        for name in ['add', 'eq', 'gt']:
             self.modnames[name] = 0
 
     def set_module(self, m):
@@ -82,12 +82,25 @@ class PartitionedSignal:
         return pa.output
 
     def __eq__(self, other):
-        print ("eq", self, other)
         shape = self.sig.shape()
         pa = PartitionedEqGtGe(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('eq'), pa)
         comb = self.m.d.comb
         comb += pa.opcode.eq(PartitionedEqGtGe.EQ) # set opcode to EQ
+        comb += pa.a.eq(self.sig)
+        if isinstance(other, PartitionedSignal):
+            comb += pa.b.eq(other.sig)
+        else:
+            comb += pa.b.eq(other)
+        return pa.output
+
+    def __gt__(self, other):
+        print ("gt", self, other)
+        shape = self.sig.shape()
+        pa = PartitionedEqGtGe(shape[0], self.partpoints)
+        setattr(self.m.submodules, self.get_modname('gt'), pa)
+        comb = self.m.d.comb
+        comb += pa.opcode.eq(PartitionedEqGtGe.GT) # set opcode to GT
         comb += pa.a.eq(self.sig)
         if isinstance(other, PartitionedSignal):
             comb += pa.b.eq(other.sig)
