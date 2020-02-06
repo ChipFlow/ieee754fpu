@@ -102,7 +102,8 @@ class TestPartitionPoints(unittest.TestCase):
                     # do the partitioned tests
                     for i, mask in enumerate(mask_list):
                         if (a & mask) == (b & mask):
-                            y |= maskbit_list[i]
+                            # OR y with the lowest set bit in the mask
+                            y |= (maskbit_list[i] & ~(maskbit_list[i]-1))
                     # check the result
                     outval = (yield module.eq_output)
                     msg = f"{msg_prefix}: 0x{a:X} == 0x{b:X}" + \
