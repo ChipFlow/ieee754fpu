@@ -51,6 +51,15 @@ class PartitionedSignal:
     def eq(self, val):
         return self.sig.eq(val)
 
+    # unary  ops that require partitioning
+
+    def __invert__(self):
+        return Operator("~", [self])
+    def __neg__(self):
+        return Operator("-", [self])
+
+    # binary ops that don't require partitioning
+
     def __and__(self, other):
         return applyop(self, other, and_)
 
@@ -69,6 +78,8 @@ class PartitionedSignal:
     def __rxor__(self, other):
         return applyop(other, self, xor)
 
+    # binary ops that need partitioning
+
     def __add__(self, other):
         shape = self.sig.shape()
         pa = PartitionedAdder(shape[0], self.partpoints)
@@ -80,6 +91,51 @@ class PartitionedSignal:
         else:
             comb += pa.b.eq(other)
         return pa.output
+
+    def __radd__(self, other):
+        return Operator("+", [other, self])
+    def __sub__(self, other):
+        return Operator("-", [self, other])
+    def __rsub__(self, other):
+        return Operator("-", [other, self])
+
+    def __mul__(self, other):
+        return Operator("*", [self, other])
+    def __rmul__(self, other):
+        return Operator("*", [other, self])
+
+    def __check_divisor(self):
+        width, signed = self.shape()
+        if signed:
+            # Python's division semantics and Verilog's division semantics
+            # differ for negative divisors (Python uses div/mod, Verilog
+            # uses quo/rem); for now, avoid the issue
+            # completely by prohibiting such division operations.
+            raise NotImplementedError(
+                    "Division by a signed value is not supported")
+    def __mod__(self, other):
+        other = Value.cast(other)
+        other.__check_divisor()
+        return Operator("%", [self, other])
+    def __rmod__(self, other):
+        self.__check_divisor()
+        return Operator("%", [other, self])
+    def __floordiv__(self, other):
+        other = Value.cast(other)
+        other.__check_divisor()
+        return Operator("//", [self, other])
+    def __rfloordiv__(self, other):
+        self.__check_divisor()
+        return Operator("//", [other, self])
+
+    def __lshift__(self, other):
+        return Operator("<<", [self, other])
+    def __rlshift__(self, other):
+        return Operator("<<", [other, self])
+    def __rshift__(self, other):
+        return Operator(">>", [self, other])
+
+    # binary comparison ops that need partitioning
 
     def _compare(self, width, op1, op2, opname, optype):
         #print (opname, op1, op2)
