@@ -102,12 +102,22 @@ class PartitionedSignal:
         return self._compare(width, self, other, "eq", PartitionedEqGtGe.EQ)
 
     def __ne__(self, other):
-        return ~self.__eq__(other)
+        width = self.sig.shape()[0]
+        invert = ~self.sig # invert the input before compare EQ.
+        return self._compare(width, invert, other, "eq", PartitionedEqGtGe.EQ)
 
     def __gt__(self, other):
         width = self.sig.shape()[0]
         return self._compare(width, self, other, "gt", PartitionedEqGtGe.GT)
 
+    def __lt__(self, other):
+        width = self.sig.shape()[0]
+        return self._compare(width, other, self, "gt", PartitionedEqGtGe.GT)
+
     def __ge__(self, other):
         width = self.sig.shape()[0]
         return self._compare(width, self, other, "ge", PartitionedEqGtGe.GE)
+
+    def __le__(self, other):
+        width = self.sig.shape()[0]
+        return self._compare(width, other, self, "ge", PartitionedEqGtGe.GE)
