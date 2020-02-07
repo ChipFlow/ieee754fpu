@@ -61,6 +61,7 @@ class PartitionedSignal:
     # unary ops that require partitioning
 
     def __neg__(self):
+        # TODO use PartitionedAdder for this, with a "neg" mode?
         return Operator("-", [self])
 
     # binary ops that don't require partitioning
