@@ -49,6 +49,8 @@ class PartitionedSignal:
         return "%s%d" % (category, self.modnames[category])
 
     def eq(self, val):
+        if isinstance(val, PartitionedSignal):
+            return self.sig.eq(val.sig)
         return self.sig.eq(val)
 
     # unary  ops that require partitioning

@@ -26,6 +26,7 @@ def create_simulator(module, traces, test_name):
 
 class TestAddMod(Elaboratable):
     def __init__(self, width, partpoints):
+        self.partpoints = partpoints
         self.a = PartitionedSignal(partpoints, width)
         self.b = PartitionedSignal(partpoints, width)
         self.add_output = Signal(width)
@@ -49,7 +50,8 @@ class TestAddMod(Elaboratable):
         m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.ge_output.eq(self.a >= self.b)
         m.d.comb += self.add_output.eq(self.a + self.b)
-        m.d.comb += self.mux_out.eq(PMux(m, self.a, self.b, self.mux_sel))
+        ppts = self.partpoints
+        m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
 
         return m
 
