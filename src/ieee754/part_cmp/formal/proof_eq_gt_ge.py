@@ -58,21 +58,21 @@ class EqualsDriver(Elaboratable):
             with m.Switch(gates):
                 with m.Case(0b00):
                     comb += Assert(out[0] == (a == b))
-                    comb += Assert(out[1] == 0)
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[1] == out[0])
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b01):
                     comb += Assert(out[0] == (a_intervals[0] == b_intervals[0]))
                     comb += Assert(out[1] == ((a_intervals[1] == \
                                     b_intervals[1]) &
                                               (a_intervals[2] == \
                                     b_intervals[2])))
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b10):
                     comb += Assert(out[0] == ((a_intervals[0] == \
                                     b_intervals[0]) &
                                               (a_intervals[1] == \
                                     b_intervals[1])))
-                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[1] == out[0])
                     comb += Assert(out[2] == (a_intervals[2] == b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):
@@ -81,17 +81,19 @@ class EqualsDriver(Elaboratable):
         with m.If(opcode == 0b01):
             with m.Switch(gates):
                 with m.Case(0b00):
-                    comb += Assert(out == (a > b))
+                    comb += Assert(out[0] == (a > b))
+                    comb += Assert(out[1] == out[0])
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b01):
                     comb += Assert(out[0] == (a_intervals[0] > b_intervals[0]))
 
                     comb += Assert(out[1] == (Cat(*a_intervals[1:3]) > \
                                               Cat(*b_intervals[1:3])))
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b10):
                     comb += Assert(out[0] == (Cat(*a_intervals[0:2]) > \
                                               Cat(*b_intervals[0:2])))
-                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[1] == out[0])
                     comb += Assert(out[2] == (a_intervals[2] > b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):
@@ -100,17 +102,19 @@ class EqualsDriver(Elaboratable):
         with m.If(opcode == 0b10):
             with m.Switch(gates):
                 with m.Case(0b00):
-                    comb += Assert(out == (a >= b))
+                    comb += Assert(out[0] == (a >= b))
+                    comb += Assert(out[1] == out[0])
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b01):
                     comb += Assert(out[0] == (a_intervals[0] >= b_intervals[0]))
 
                     comb += Assert(out[1] == (Cat(*a_intervals[1:3]) >= \
                                               Cat(*b_intervals[1:3])))
-                    comb += Assert(out[2] == 0)
+                    comb += Assert(out[2] == out[1])
                 with m.Case(0b10):
                     comb += Assert(out[0] == (Cat(*a_intervals[0:2]) >= \
                                               Cat(*b_intervals[0:2])))
-                    comb += Assert(out[1] == 0)
+                    comb += Assert(out[1] == out[0])
                     comb += Assert(out[2] == (a_intervals[2] >= b_intervals[2]))
                 with m.Case(0b11):
                     for i in range(mwidth-1):

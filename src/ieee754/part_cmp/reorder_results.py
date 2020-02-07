@@ -23,7 +23,7 @@ class ReorderResults(Elaboratable):
         for i in range(width-2, -1, -1):  # counts down from width-1 to 0
             cur = Signal()
             comb += cur.eq(current_result)
-            comb += self.output[i+1].eq(cur & self.gates[i])
+            comb += self.output[i+1].eq(cur)
             current_result = Mux(self.gates[i], self.results_in[i], cur)
 
             comb += self.output[0].eq(current_result)
