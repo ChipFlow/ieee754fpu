@@ -53,10 +53,13 @@ class PartitionedSignal:
             return self.sig.eq(val.sig)
         return self.sig.eq(val)
 
-    # unary  ops that require partitioning
+    # unary ops that do not require partitioning
 
     def __invert__(self):
-        return Operator("~", [self])
+        return ~self.sig
+
+    # unary ops that require partitioning
+
     def __neg__(self):
         return Operator("-", [self])
 
