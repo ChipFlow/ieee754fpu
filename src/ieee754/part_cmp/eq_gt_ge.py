@@ -3,14 +3,16 @@
 
 """
 Copyright (C) 2020 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
+Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
 
 dynamically-partitionable "comparison" class, directly equivalent
-to Signal.__eq__ except SIMD-partitionable
+to Signal.__eq__, __gt__ and __ge__, except SIMD-partitionable
 
 See:
 
-* http://libre-riscv.org/3d_gpu/architecture/dynamic_simd/eq
+* http://libre-riscv.org/3d_gpu/architecture/dynamic_simd/
 * http://bugs.libre-riscv.org/show_bug.cgi?id=132
+* http://bugs.libre-riscv.org/show_bug.cgi?id=171
 """
 
 from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
