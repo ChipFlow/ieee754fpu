@@ -86,6 +86,15 @@ class PartitionedSignal:
 
     # binary ops that need partitioning
 
+    def __lshift__(self, other):
+        return Operator("<<", [self, other])
+    def __rlshift__(self, other):
+        return Operator("<<", [other, self])
+    def __rshift__(self, other):
+        return Operator(">>", [self, other])
+    def __rrshift__(self, other):
+        return Operator(">>", [other, self])
+
     def __add__(self, other):
         shape = self.sig.shape()
         pa = PartitionedAdder(shape[0], self.partpoints)
