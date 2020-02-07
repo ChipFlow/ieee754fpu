@@ -16,6 +16,16 @@ See:
 from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
 
+modcount = 0 # global for now
+def PMux(m, sel, a, b):
+    modcount += 1
+    pm = PartitionedMux(a.shape()[0])
+    m.d.comb += pm.a.eq(a)
+    m.d.comb += pm.b.eq(b)
+    m.d.comb += pm.sel.eq(sel)
+    setattr(m.submodules, "pmux%d" % modcount, pm)
+    return pm.output
+
 class PartitionedMux(Elaboratable):
     """PartitionedMux: Partitioned "Mux"
 
@@ -33,8 +43,8 @@ class PartitionedMux(Elaboratable):
         self.b = Signal(width, reset_less=True)
         self.sel = Signal(self.mwidth, reset_less=True)
         self.output = Signal(width, reset_less=True)
-        assert self.partition_points.fits_in_width(width),
-                    ("partition_points doesn't fit in width")
+        assert (self.partition_points.fits_in_width(width),
+                    "partition_points doesn't fit in width")
 
     def elaborate(self, platform):
         m = Module()
@@ -54,3 +64,4 @@ class PartitionedMux(Elaboratable):
 
     def ports(self):
         return [self.a, self.b, self.sel, self.output]
+
