@@ -44,8 +44,8 @@ class PartitionedEqGtGe(Elaboratable):
         self.partition_points = PartitionPoints(partition_points)
         self.mwidth = len(self.partition_points)+1
         self.output = Signal(self.mwidth, reset_less=True)
-        assert self.partition_points.fits_in_width(width),
-                "partition_points doesn't fit in width"
+        assert (self.partition_points.fits_in_width(width),
+                "partition_points doesn't fit in width")
 
     def elaborate(self, platform):
         m = Module()
