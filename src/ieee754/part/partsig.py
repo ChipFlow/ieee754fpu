@@ -159,8 +159,10 @@ class PartitionedSignal:
 
     def __ne__(self, other):
         width = self.sig.shape()[0]
-        invert = ~self.sig # invert the input before compare EQ. TODO: NE op
-        return self._compare(width, invert, other, "eq", PartitionedEqGtGe.EQ)
+        eq = self._compare(width, self, other, "eq", PartitionedEqGtGe.EQ)
+        ne = Signal(eq.width)
+        self.m.d.comb += ne.eq(~eq)
+        return ne
 
     def __gt__(self, other):
         width = self.sig.shape()[0]

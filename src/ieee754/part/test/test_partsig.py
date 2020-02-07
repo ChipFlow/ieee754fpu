@@ -151,7 +151,7 @@ class TestPartitionPoints(unittest.TestCase):
                                         (test_ge_fn, "ge"),
                                         (test_lt_fn, "lt"),
                                         (test_le_fn, "le"),
-                                        #(test_ne_fn, "ne"), # NE not actually working at the moment
+                                        (test_ne_fn, "ne"),
                                         ):
                 yield part_mask.eq(0)
                 yield from test_binop("16-bit", test_fn, mod_attr, 0b1111)
