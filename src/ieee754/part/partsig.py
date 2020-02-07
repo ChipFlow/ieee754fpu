@@ -13,7 +13,7 @@ version of it, use PartitionedSignal in place of Signal.  job done.
 this however requires the code to *not* be designed to use nmigen.If,
 nmigen.Case, or other constructs: only Mux and other logic.
 
-http://bugs.libre-riscv.org/show_bug.cgi?id=132
+* http://bugs.libre-riscv.org/show_bug.cgi?id=132
 """
 
 from ieee754.part_mul_add.adder import PartitionedAdder
@@ -177,3 +177,59 @@ class PartitionedSignal:
     def __le__(self, other):
         width = self.sig.shape()[0]
         return self._compare(width, other, self, "ge", PartitionedEqGtGe.GE)
+
+    # useful operators
+
+    def bool(self):
+        """Conversion to boolean.
+
+        Returns
+        -------
+        Value, out
+            ``1`` if any bits are set, ``0`` otherwise.
+        """
+        return Operator("b", [self])
+
+    def any(self):
+        """Check if any bits are ``1``.
+
+        Returns
+        -------
+        Value, out
+            ``1`` if any bits are set, ``0`` otherwise.
+        """
+        return Operator("r|", [self])
+
+    def all(self):
+        """Check if all bits are ``1``.
+
+        Returns
+        -------
+        Value, out
+            ``1`` if all bits are set, ``0`` otherwise.
+        """
+        return Operator("r&", [self])
+
+    def xor(self):
+        """Compute pairwise exclusive-or of every bit.
+
+        Returns
+        -------
+        Value, out
+            ``1`` if an odd number of bits are set, ``0`` if an
+                  even number of bits are set.
+        """
+        return Operator("r^", [self])
+
+    def implies(premise, conclusion):
+        """Implication.
+
+        Returns
+        -------
+        Value, out
+            ``0`` if ``premise`` is true and ``conclusion`` is not,
+            ``1`` otherwise.
+        """
+        return ~premise | conclusion
+
+
