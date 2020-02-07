@@ -57,12 +57,12 @@ class PartitionedMux(Elaboratable):
         # loop across all partition ranges.
         # drop the selection directly into the output.
         keys = list(self.partition_points.keys()) + [self.width]
-        start = 0
+        stt = 0
         for i in range(len(keys)):
             end = keys[i]
-            mux = self.output[start:end]
-            comb += mux.eq(self.a[start:end] == self.b[start:end])
-            start = end  # for next time round loop
+            mux = self.output[stt:end]
+            comb += mux.eq(Mux(self.sel[i], self.a[stt:end], self.b[stt:end]))
+            stt = end  # for next time round loop
 
         return m
 
