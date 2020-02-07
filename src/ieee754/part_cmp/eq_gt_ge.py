@@ -52,6 +52,7 @@ class PartitionedEqGtGe(Elaboratable):
         m.submodules.gtc = gtc = GTCombiner(self.mwidth)
 
         m.submodules.reorder = reorder = ReorderResults(self.mwidth)
+        m.submodules.ripple = ripple = RippleLSB(self.mwidth)
 
         # make a series of "eqs" and "gts", splitting a and b into
         # partition chunks
@@ -97,8 +98,10 @@ class PartitionedEqGtGe(Elaboratable):
 
         comb += reorder.results_in.eq(results)
         comb += reorder.gates.eq(self.partition_points.as_sig())
+        comb += ripple.results_in.eq(reorder.output)
+        comb += ripple.gates.eq(self.partition_points.as_sig())
 
-        comb += self.output.eq(reorder.output)
+        comb += self.output.eq(ripple.output)
 
         return m
 
