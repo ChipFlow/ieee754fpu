@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
-"""Integer Multiplication."""
+"""Partitioned Integer Addition.
+
+See:
+* https://libre-riscv.org/3d_gpu/architecture/dynamic_simd/add/
+"""
 
 from nmigen import Signal, Module, Value, Elaboratable, Cat, C, Mux, Repl
 from nmigen.hdl.ast import Assign
@@ -43,10 +47,11 @@ class FullAdder(Elaboratable):
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
-        m.d.comb += self.sum.eq(self.in0 ^ self.in1 ^ self.in2)
-        m.d.comb += self.carry.eq((self.in0 & self.in1)
-                                  | (self.in1 & self.in2)
-                                  | (self.in2 & self.in0))
+        comb = m.d.comb
+        comb += self.sum.eq(self.in0 ^ self.in1 ^ self.in2)
+        comb += self.carry.eq((self.in0 & self.in1)
+                              | (self.in1 & self.in2)
+                              | (self.in2 & self.in0))
         return m
 
 
@@ -88,20 +93,21 @@ class MaskedFullAdder(Elaboratable):
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
+        comb = m.d.comb
         s1 = Signal(self.width, reset_less=True)
         s2 = Signal(self.width, reset_less=True)
         s3 = Signal(self.width, reset_less=True)
         c1 = Signal(self.width, reset_less=True)
         c2 = Signal(self.width, reset_less=True)
         c3 = Signal(self.width, reset_less=True)
-        m.d.comb += self.sum.eq(self.in0 ^ self.in1 ^ self.in2)
-        m.d.comb += s1.eq(Cat(0, self.in0))
-        m.d.comb += s2.eq(Cat(0, self.in1))
-        m.d.comb += s3.eq(Cat(0, self.in2))
-        m.d.comb += c1.eq(s1 & s2 & self.mask)
-        m.d.comb += c2.eq(s2 & s3 & self.mask)
-        m.d.comb += c3.eq(s3 & s1 & self.mask)
-        m.d.comb += self.mcarry.eq(c1 | c2 | c3)
+        comb += self.sum.eq(self.in0 ^ self.in1 ^ self.in2)
+        comb += s1.eq(Cat(0, self.in0))
+        comb += s2.eq(Cat(0, self.in1))
+        comb += s3.eq(Cat(0, self.in2))
+        comb += c1.eq(s1 & s2 & self.mask)
+        comb += c2.eq(s2 & s3 & self.mask)
+        comb += c3.eq(s3 & s1 & self.mask)
+        comb += self.mcarry.eq(c1 | c2 | c3)
         return m
 
 
@@ -155,6 +161,7 @@ class PartitionedAdder(Elaboratable):
     def elaborate(self, platform):
         """Elaborate this module."""
         m = Module()
+        comb = m.d.comb
         expanded_a = Signal(self._expanded_width, reset_less=True)
         expanded_b = Signal(self._expanded_width, reset_less=True)
         expanded_o = Signal(self._expanded_width, reset_less=True)
@@ -190,13 +197,14 @@ class PartitionedAdder(Elaboratable):
             expanded_index += 1
 
         # combine above using Cat
-        m.d.comb += Cat(*ea).eq(Cat(*al))
-        m.d.comb += Cat(*eb).eq(Cat(*bl))
-        m.d.comb += Cat(*ol).eq(Cat(*eo))
+        comb += Cat(*ea).eq(Cat(*al))
+        comb += Cat(*eb).eq(Cat(*bl))
+        comb += Cat(*ol).eq(Cat(*eo))
 
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
-        m.d.comb += expanded_o.eq(expanded_a + expanded_b)
+        comb += expanded_o.eq(expanded_a + expanded_b)
+
         return m
 
 
