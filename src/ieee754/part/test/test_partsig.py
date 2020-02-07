@@ -10,6 +10,12 @@ from ieee754.part.partsig import PartitionedSignal
 from ieee754.part_mux.part_mux import PMux
 
 import unittest
+import itertools
+
+
+def perms(k):
+    return map(''.join, itertools.product('01', repeat=k))
+
 
 def create_ilang(dut, traces, test_name):
     vl = rtlil.convert(dut, ports=traces)
@@ -165,17 +171,13 @@ class TestPartitionPoints(unittest.TestCase):
                                       0b1000, 0b0100, 0b0010, 0b0001)
 
             def test_muxop(msg_prefix, *maskbit_list):
-                for a, b, sel in [(0x0000, 0x0000, 0b0110),
-                             (0x1234, 0x1234, 0b1010),
-                             (0xABCD, 0xABCD, 0b1100),
-                             (0xFFFF, 0x0000, 0b0011),
-                             (0x0000, 0x0000, 0b1001),
-                             (0xFFFF, 0xFFFF, 0b1101),
-                             (0x0000, 0xFFFF, 0b1100)]:
-                    yield module.a.eq(a)
-                    yield module.b.eq(b)
-                    yield module.mux_sel.eq(sel)
-                    yield Delay(0.1e-6)
+                for a, b in [(0x0000, 0x0000),
+                             (0x1234, 0x1234),
+                             (0xABCD, 0xABCD),
+                             (0xFFFF, 0x0000),
+                             (0x0000, 0x0000),
+                             (0xFFFF, 0xFFFF),
+                             (0x0000, 0xFFFF)]:
                     # convert to mask_list
                     mask_list = []
                     for mb in maskbit_list:
@@ -184,19 +186,35 @@ class TestPartitionPoints(unittest.TestCase):
                             if mb & (1<<i):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
-                    y = 0
-                    # do the partitioned tests
-                    for i, mask in enumerate(mask_list):
-                        if (sel & mask):
-                            y |= (a & mask)
-                        else:
-                            y |= (b & mask)
-                    # check the result
-                    outval = (yield module.mux_out)
-                    msg = f"{msg_prefix}: mux 0x{a:X} == 0x{b:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                    #print ((msg % str(maskbit_list)).format(locals()))
-                    self.assertEqual(y, outval, msg % str(maskbit_list))
+
+                    # TODO: sel needs to go through permutations of mask_list
+                    for p in perms(len(mask_list)):
+
+                        sel = 0
+                        selmask = 0
+                        for i, v in enumerate(p):
+                            if v == '1':
+                                sel |= maskbit_list[i]
+                                selmask |= mask_list[i]
+
+                        yield module.a.eq(a)
+                        yield module.b.eq(b)
+                        yield module.mux_sel.eq(sel)
+                        yield Delay(0.1e-6)
+                        y = 0
+                        # do the partitioned tests
+                        for i, mask in enumerate(mask_list):
+                            if (selmask & mask):
+                                y |= (a & mask)
+                            else:
+                                y |= (b & mask)
+                        # check the result
+                        outval = (yield module.mux_out)
+                        msg = f"{msg_prefix}: mux " + \
+                            f"0x{sel:X} ? 0x{a:X} : 0x{b:X}" + \
+                            f" => 0x{y:X} != 0x{outval:X}, masklist %s"
+                        #print ((msg % str(maskbit_list)).format(locals()))
+                        self.assertEqual(y, outval, msg % str(maskbit_list))
 
             yield part_mask.eq(0)
             yield from test_muxop("16-bit", 0b1111)
