@@ -26,7 +26,7 @@ class RippleLSB(Elaboratable):
         comb += self.output[0].eq(current_result)
 
         for i in range(width-1):
-            cur = Signal("cur%d" % i)
+            cur = Signal(name="cur%d" % i)
             comb += cur.eq(current_result)
             current_result = Mux(self.gates[i], self.results_in[i+1], cur)
             comb += self.output[i+1].eq(current_result)

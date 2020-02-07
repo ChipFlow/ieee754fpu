@@ -131,7 +131,7 @@ class TestPartitionPoints(unittest.TestCase):
                     for i, mask in enumerate(mask_list):
                         if test_fn(a, b, mask):
                             # OR y with the lowest set bit in the mask
-                            y |= (maskbit_list[i] & ~(maskbit_list[i]-1))
+                            y |= maskbit_list[i]
                     # check the result
                     outval = (yield getattr(module, "%s_output" % mod_attr))
                     msg = f"{msg_prefix}: {mod_attr} 0x{a:X} == 0x{b:X}" + \

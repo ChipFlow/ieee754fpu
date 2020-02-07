@@ -20,6 +20,7 @@ from nmigen.cli import main, rtlil
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_cmp.gt_combiner import GTCombiner
 from ieee754.part_cmp.reorder_results import ReorderResults
+from ieee754.part_cmp.ripple import RippleLSB
 
 
 class PartitionedEqGtGe(Elaboratable):
