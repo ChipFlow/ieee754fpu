@@ -15,7 +15,7 @@ class Combiner(Elaboratable):
         comb = m.d.comb
 
         comb += self.outa.eq(Mux(self.sel, self.inb, self.ina))
-        comb += self.outb.eq(self.sel & self.ina)
+        comb += self.outb.eq(self.ina)
 
         return m
 
