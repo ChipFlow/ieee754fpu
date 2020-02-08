@@ -24,12 +24,14 @@ from operator import or_, xor, and_, not_
 
 from nmigen import (Signal,
                     )
-def applyop(op1, op2, op):
+
+def getsig(op1):
     if isinstance(op1, PartitionedSignal):
         op1 = op1.sig
-    if isinstance(op2, PartitionedSignal):
-        op2 = op2.sig
-    return op(op1, op2)
+    return op1
+
+def applyop(op1, op2, op):
+    return op(getsig(op1), getsig(op2))
 
 
 class PartitionedSignal:
@@ -49,9 +51,7 @@ class PartitionedSignal:
         return "%s%d" % (category, self.modnames[category])
 
     def eq(self, val):
-        if isinstance(val, PartitionedSignal):
-            return self.sig.eq(val.sig)
-        return self.sig.eq(val)
+        return self.sig.eq(getsig(val))
 
     # unary ops that do not require partitioning
 
@@ -98,24 +98,27 @@ class PartitionedSignal:
     def __rrshift__(self, other):
         return Operator(">>", [other, self])
 
-    def __add__(self, other):
-        shape = self.sig.shape()
+    def add_op(self, op1, op2):
+        op1 = getsig(op1)
+        op2 = getsig(op2)
+        shape = op1.shape()
         pa = PartitionedAdder(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('add'), pa)
         comb = self.m.d.comb
-        comb += pa.a.eq(self.sig)
-        if isinstance(other, PartitionedSignal):
-            comb += pa.b.eq(other.sig)
-        else:
-            comb += pa.b.eq(other)
+        comb += pa.a.eq(op1)
+        comb += pa.b.eq(op2)
         return pa.output
 
+    def __add__(self, other):
+        return self.add_op(self, other)
+
     def __radd__(self, other):
-        return Operator("+", [other, self])
+        return self.add_op(other, self)
+
     def __sub__(self, other):
-        return Operator("-", [self, other])
+        return self.sub_op(self, other) # TODO, subop
     def __rsub__(self, other):
-        return Operator("-", [other, self])
+        return self.sub_op(other, self) # TODO, subop
 
     def __mul__(self, other):
         return Operator("*", [self, other])
