@@ -86,6 +86,9 @@ class PartitionedSignal:
 
     # binary ops that need partitioning
 
+    # TODO: detect if the 2nd operand is a Const, a Signal or a
+    # PartitionedSignal.  if it's a Const or a Signal, a global shift
+    # can occur.  if it's a PartitionedSignal, that's much more interesting.
     def __lshift__(self, other):
         return Operator("<<", [self, other])
     def __rlshift__(self, other):
