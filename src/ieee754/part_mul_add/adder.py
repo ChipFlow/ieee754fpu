@@ -145,13 +145,15 @@ class PartitionedAdder(Elaboratable):
         """
         self.width = width
         self.pmul = partition_step
+        self.partition_points = PartitionPoints(partition_points)
         self.a = Signal(width, reset_less=True)
         self.b = Signal(width, reset_less=True)
+        self.carry_in = Signal(self.partition_points.get_max_partition_count(width))
+        self.carry_out = Signal(self.partition_points.get_max_partition_count(width))
         self.output = Signal(width, reset_less=True)
-        self.partition_points = PartitionPoints(partition_points)
         if not self.partition_points.fits_in_width(width):
             raise ValueError("partition_points doesn't fit in width")
-        expanded_width = 0
+        expanded_width = 2
         for i in range(self.width):
             if i in self.partition_points:
                 expanded_width += 1
@@ -178,16 +180,28 @@ class PartitionedAdder(Elaboratable):
         # however by that time we've got the effect that we wanted: the
         # carry has been carried *over* the break point.
 
+        carry_bit = 0
+        al.append(self.carry_in[carry_bit])
+        bl.append(self.carry_in[carry_bit])
+        ea.append(expanded_a[expanded_index])
+        eb.append(expanded_b[expanded_index])
+        carry_bit += 1
+        expanded_index += 1
+        
         for i in range(self.width):
             pi = i/self.pmul # double the range of the partition point test
             if pi.is_integer() and pi in self.partition_points:
                 # add extra bit set to 0 + 0 for enabled partition points
+                a_bit = Signal()
+                m.d.comb += a_bit.eq(~self.partition_points[pi] |
+                                     (self.partition_points[pi] & self.carry_in[carry_bit]))
                 # and 1 + 0 for disabled partition points
                 ea.append(expanded_a[expanded_index])
-                al.append(~self.partition_points[pi]) # add extra bit in a
+                al.append(a_bit) # add extra bit in a
                 eb.append(expanded_b[expanded_index])
-                bl.append(C(0)) # yes, add a zero
+                bl.append(self.carry_in[carry_bit]) # yes, add a zero
                 expanded_index += 1 # skip the extra point.  NOT in the output
+                carry_bit += 1
             ea.append(expanded_a[expanded_index])
             eb.append(expanded_b[expanded_index])
             eo.append(expanded_o[expanded_index])
@@ -195,6 +209,8 @@ class PartitionedAdder(Elaboratable):
             bl.append(self.b[i])
             ol.append(self.output[i])
             expanded_index += 1
+        al.append(0)
+        bl.append(0)
 
         # combine above using Cat
         comb += Cat(*ea).eq(Cat(*al))
