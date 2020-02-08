@@ -170,7 +170,7 @@ class PartitionedAdder(Elaboratable):
 
         expanded_index = 0
         # store bits in a list, use Cat later.  graphviz is much cleaner
-        al, bl, ol, ea, eb, eo = [],[],[],[],[],[]
+        al, bl, ol, cl, ea, eb, eo, co = [],[],[],[],[],[],[],[]
 
         # partition points are "breaks" (extra zeros or 1s) in what would
         # otherwise be a massive long add.  when the "break" points are 0,
@@ -200,6 +200,8 @@ class PartitionedAdder(Elaboratable):
                 al.append(a_bit) # add extra bit in a
                 eb.append(expanded_b[expanded_index])
                 bl.append(self.carry_in[carry_bit]) # yes, add a zero
+                co.append(expanded_o[expanded_index])
+                cl.append(self.carry_out[carry_bit-1])
                 expanded_index += 1 # skip the extra point.  NOT in the output
                 carry_bit += 1
             ea.append(expanded_a[expanded_index])
@@ -211,11 +213,14 @@ class PartitionedAdder(Elaboratable):
             expanded_index += 1
         al.append(0)
         bl.append(0)
+        co.append(expanded_o[expanded_index])
+        cl.append(self.carry_out[carry_bit-1])
 
         # combine above using Cat
         comb += Cat(*ea).eq(Cat(*al))
         comb += Cat(*eb).eq(Cat(*bl))
         comb += Cat(*ol).eq(Cat(*eo))
+        comb += Cat(*cl).eq(Cat(*co))
 
         # use only one addition to take advantage of look-ahead carry and
         # special hardware on FPGAs
