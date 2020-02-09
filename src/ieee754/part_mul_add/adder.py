@@ -131,31 +131,31 @@ class PartitionedAdder(Elaboratable):
     :attribute a: the first input to the adder
     :attribute b: the second input to the adder
     :attribute output: the sum output
-    :attribute partition_points: the input partition points. Modification not
+    :attribute part_pts: the input partition points. Modification not
         supported, except for by ``Signal.eq``.
     """
 
-    def __init__(self, width, partition_points, partition_step=1):
+    def __init__(self, width, part_pts, partition_step=1):
         """Create a ``PartitionedAdder``.
 
         :param width: the bit width of the input and output
-        :param partition_points: the input partition points
+        :param part_pts: the input partition points
         :param partition_step: a multiplier (typically double) step
                                which in-place "expands" the partition points
         """
         self.width = width
         self.pmul = partition_step
-        self.partition_points = PartitionPoints(partition_points)
+        self.part_pts = PartitionPoints(part_pts)
         self.a = Signal(width, reset_less=True)
         self.b = Signal(width, reset_less=True)
-        self.carry_in = Signal(self.partition_points.get_max_partition_count(width))
-        self.carry_out = Signal(self.partition_points.get_max_partition_count(width))
+        self.carry_in = Signal(self.part_pts.get_max_partition_count(width))
+        self.carry_out = Signal(self.part_pts.get_max_partition_count(width))
         self.output = Signal(width, reset_less=True)
-        if not self.partition_points.fits_in_width(width):
+        if not self.part_pts.fits_in_width(width):
             raise ValueError("partition_points doesn't fit in width")
         expanded_width = 2
         for i in range(self.width):
-            if i in self.partition_points:
+            if i in self.part_pts:
                 expanded_width += 1
             expanded_width += 1
         self._expanded_width = expanded_width
@@ -187,20 +187,21 @@ class PartitionedAdder(Elaboratable):
         eb.append(expanded_b[expanded_index])
         carry_bit += 1
         expanded_index += 1
-        
+
         for i in range(self.width):
             pi = i/self.pmul # double the range of the partition point test
-            if pi.is_integer() and pi in self.partition_points:
+            if pi.is_integer() and pi in self.part_pts:
                 # add extra bit set to 0 + 0 for enabled partition points
                 a_bit = Signal()
-                m.d.comb += a_bit.eq(~self.partition_points[pi] |
-                                     (self.partition_points[pi] & self.carry_in[carry_bit]))
+                m.d.comb += a_bit.eq(~self.part_pts[pi] |
+                                     (self.part_pts[pi] & \
+                                      self.carry_in[carry_bit]))
                 # and 1 + 0 for disabled partition points
                 ea.append(expanded_a[expanded_index])
                 al.append(a_bit) # add extra bit in a
                 eb.append(expanded_b[expanded_index])
                 bl.append(self.carry_in[carry_bit] &
-                          self.partition_points[pi]) # yes, add a zero
+                          self.part_pts[pi]) # yes, add a zero
                 co.append(expanded_o[expanded_index])
                 cl.append(self.carry_out[carry_bit-1])
                 expanded_index += 1 # skip the extra point.  NOT in the output
