@@ -47,7 +47,7 @@ class FPRoundMod(PipeModBase):
         im = self.i.z.m
         ie = self.i.z.e
         msb1s = Signal(reset_less=True)
-        comb += msb1s.eq(~(~self.i.z.m).bool())  # all 1s
+        comb += msb1s.eq(self.i.z.m.all())  # all 1s
         comb += self.o.z.m.eq(Mux(self.i.roundz, im+1, im))  # mantissa up
         comb += self.o.z.e.eq(Mux(msb1s & self.i.roundz, ie + 1, ie)) # exp up
 
