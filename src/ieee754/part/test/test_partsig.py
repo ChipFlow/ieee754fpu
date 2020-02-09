@@ -46,7 +46,8 @@ class TestAddMod(Elaboratable):
         self.mux_sel = Signal(len(partpoints)+1)
         self.mux_out = Signal(width)
         self.carry_in = Signal(len(partpoints)+1)
-        self.carry_out = Signal(len(partpoints)+1)
+        self.add_carry_out = Signal(len(partpoints)+1)
+        self.sub_carry_out = Signal(len(partpoints)+1)
 
     def elaborate(self, platform):
         m = Module()
@@ -58,10 +59,17 @@ class TestAddMod(Elaboratable):
         m.d.comb += self.gt_output.eq(self.a > self.b)
         m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.ge_output.eq(self.a >= self.b)
+        # add
         add_out, add_carry = self.a.add_op(self.a, self.b,
                                            self.carry_in)
         m.d.comb += self.add_output.eq(add_out)
-        m.d.comb += self.carry_out.eq(add_carry)
+        m.d.comb += self.add_carry_out.eq(add_carry)
+        if hasattr(self.a, "sub_op"): # TODO, remove this
+            # sub
+            sub_out, sub_carry = self.a.sub_op(self.a, self.b,
+                                               self.carry_in)
+            m.d.comb += self.sub_output.eq(sub_out)
+            m.d.comb += self.sub_carry_out.eq(add_carry)
         ppts = self.partpoints
         m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
 
@@ -82,6 +90,38 @@ class TestPartitionPoints(unittest.TestCase):
                                module.eq_output],
                               "part_sig_add")
         def async_process():
+
+            def test_add_fn(carry_in, a, b, mask):
+                lsb = mask & ~(mask-1) if carry else 0
+                return mask & ((a & mask) + (b & mask) + lsb)
+
+            def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
+                rand_data = []
+                for i in range(100):
+                    a, b = randint(0, 1<<16), randint(0, 1<<16)
+                    rand_data.append((a, b))
+                for a, b in [(0x0000, 0x0000),
+                             (0x1234, 0x1234),
+                             (0xABCD, 0xABCD),
+                             (0xFFFF, 0x0000),
+                             (0x0000, 0x0000),
+                             (0xFFFF, 0xFFFF),
+                             (0x0000, 0xFFFF)] + rand_data:
+                    yield module.a.eq(a)
+                    yield module.b.eq(b)
+                    carry_sig = 0xf if carry else 0
+                    yield module.carry_in.eq(carry_sig)
+                    yield Delay(0.1e-6)
+                    y = 0
+                    for i, mask in enumerate(mask_list):
+                        y |= test_fn(carry, a, b, mask)
+                    outval = (yield getattr(module, "%s_output" % mod_attr))
+                    # TODO: get (and test) carry output as well
+                    print(a, b, outval, carry)
+                    msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
+                        f" => 0x{y:X} != 0x{outval:X}"
+                    self.assertEqual(y, outval, msg)
+
             def test_add(msg_prefix, carry, *mask_list):
                 rand_data = []
                 for i in range(100):
@@ -103,7 +143,6 @@ class TestPartitionPoints(unittest.TestCase):
                     for i, mask in enumerate(mask_list):
                         lsb = mask & ~(mask-1) if carry else 0
                         y |= mask & ((a & mask) + (b & mask) + lsb)
-                    outval = (yield module.add_output)
                     print(a, b, outval, carry)
                     msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}"
