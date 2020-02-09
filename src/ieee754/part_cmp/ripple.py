@@ -58,7 +58,6 @@ class MoveMSBDown(Elaboratable):
         width = self.width
         intermed = Signal(width, reset_less=True)
 
-
         # first propagate MSB down until the nearest partition gate
         comb += intermed[-1].eq(self.results_in[-1]) # start at MSB
         for i in range(width-2, -1, -1):
