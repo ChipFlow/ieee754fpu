@@ -57,7 +57,8 @@ class TestAddMod(Elaboratable):
         m.d.comb += self.gt_output.eq(self.a > self.b)
         m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.ge_output.eq(self.a >= self.b)
-        add_out, add_carry = self.a.addc(self.b, self.carry_in)
+        add_out, add_carry = self.a.add_op(self.a, self.b,
+                                           self.carry_in)
         m.d.comb += self.add_output.eq(add_out)
         m.d.comb += self.carry_out.eq(add_carry)
         ppts = self.partpoints

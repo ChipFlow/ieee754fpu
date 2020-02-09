@@ -98,7 +98,7 @@ class PartitionedSignal:
     def __rrshift__(self, other):
         return Operator(">>", [other, self])
 
-    def add_op(self, op1, op2):
+    def add_op(self, op1, op2, carry):
         op1 = getsig(op1)
         op2 = getsig(op2)
         shape = op1.shape()
@@ -107,23 +107,13 @@ class PartitionedSignal:
         comb = self.m.d.comb
         comb += pa.a.eq(op1)
         comb += pa.b.eq(op2)
-        return pa.output
+        comb += pa.carry_in.eq(carry)
+        return (pa.output, pa.carry_out)
 
     def __add__(self, other):
-        return self.add_op(self, other)
+        result, _ =self.add_op(self, other, carry=0)
+        return result
 
-    def addc(self, other, carry):
-        shape = self.sig.shape()
-        pa = PartitionedAdder(shape[0], self.partpoints)
-        setattr(self.m.submodules, self.get_modname('add'), pa)
-        comb = self.m.d.comb
-        comb += pa.a.eq(self.sig)
-        comb += pa.carry_in.eq(carry)
-        if isinstance(other, PartitionedSignal):
-            comb += pa.b.eq(other.sig)
-        else:
-            comb += pa.b.eq(other)
-        return (pa.output, pa.carry_out)
 
     def __radd__(self, other):
         return self.add_op(other, self)
