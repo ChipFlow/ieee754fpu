@@ -112,6 +112,19 @@ class PartitionedSignal:
     def __add__(self, other):
         return self.add_op(self, other)
 
+    def addc(self, other, carry):
+        shape = self.sig.shape()
+        pa = PartitionedAdder(shape[0], self.partpoints)
+        setattr(self.m.submodules, self.get_modname('add'), pa)
+        comb = self.m.d.comb
+        comb += pa.a.eq(self.sig)
+        comb += pa.carry_in.eq(carry)
+        if isinstance(other, PartitionedSignal):
+            comb += pa.b.eq(other.sig)
+        else:
+            comb += pa.b.eq(other)
+        return (pa.output, pa.carry_out)
+
     def __radd__(self, other):
         return self.add_op(other, self)
 

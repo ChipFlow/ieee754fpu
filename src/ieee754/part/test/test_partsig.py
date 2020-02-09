@@ -44,6 +44,8 @@ class TestAddMod(Elaboratable):
         self.le_output = Signal(len(partpoints)+1)
         self.mux_sel = Signal(len(partpoints)+1)
         self.mux_out = Signal(width)
+        self.carry_in = Signal(len(partpoints)+1)
+        self.carry_out = Signal(len(partpoints)+1)
 
     def elaborate(self, platform):
         m = Module()
@@ -55,7 +57,9 @@ class TestAddMod(Elaboratable):
         m.d.comb += self.gt_output.eq(self.a > self.b)
         m.d.comb += self.eq_output.eq(self.a == self.b)
         m.d.comb += self.ge_output.eq(self.a >= self.b)
-        m.d.comb += self.add_output.eq(self.a + self.b)
+        add_out, add_carry = self.a.addc(self.b, self.carry_in)
+        m.d.comb += self.add_output.eq(add_out)
+        m.d.comb += self.carry_out.eq(add_carry)
         ppts = self.partpoints
         m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
 
@@ -76,7 +80,7 @@ class TestPartitionPoints(unittest.TestCase):
                                module.eq_output],
                               "part_sig_add")
         def async_process():
-            def test_add(msg_prefix, *mask_list):
+            def test_add(msg_prefix, carry, *mask_list):
                 for a, b in [(0x0000, 0x0000),
                              (0x1234, 0x1234),
                              (0xABCD, 0xABCD),
@@ -86,20 +90,27 @@ class TestPartitionPoints(unittest.TestCase):
                              (0x0000, 0xFFFF)]:
                     yield module.a.eq(a)
                     yield module.b.eq(b)
+                    carry_sig = 0xf if carry else 0
+                    yield module.carry_in.eq(carry_sig)
                     yield Delay(0.1e-6)
                     y = 0
-                    for mask in mask_list:
-                        y |= mask & ((a & mask) + (b & mask))
+                    for i, mask in enumerate(mask_list):
+                        lsb = mask & ~(mask-1) if carry else 0
+                        y |= mask & ((a & mask) + (b & mask) + lsb)
                     outval = (yield module.add_output)
+                    print(a, b, outval, carry)
                     msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}"
                     self.assertEqual(y, outval, msg)
             yield part_mask.eq(0)
-            yield from test_add("16-bit", 0xFFFF)
+            yield from test_add("16-bit", 1, 0xFFFF)
+            yield from test_add("16-bit", 0, 0xFFFF)
             yield part_mask.eq(0b10)
-            yield from test_add("8-bit", 0xFF00, 0x00FF)
+            yield from test_add("8-bit", 0, 0xFF00, 0x00FF)
+            yield from test_add("8-bit", 1, 0xFF00, 0x00FF)
             yield part_mask.eq(0b1111)
-            yield from test_add("4-bit", 0xF000, 0x0F00, 0x00F0, 0x000F)
+            yield from test_add("4-bit", 0, 0xF000, 0x0F00, 0x00F0, 0x000F)
+            yield from test_add("4-bit", 1, 0xF000, 0x0F00, 0x00F0, 0x000F)
 
             def test_ne_fn(a, b, mask):
                 return (a & mask) != (b & mask)
