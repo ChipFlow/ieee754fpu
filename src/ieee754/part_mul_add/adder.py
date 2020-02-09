@@ -204,7 +204,7 @@ class PartitionedAdder(Elaboratable):
             pi = i/self.pmul # double the range of the partition point test
             if pi.is_integer() and pi in self.part_pts:
                 # add extra bit set to 0 + 0 for enabled partition points
-                a_bit = Signal()
+                a_bit = Signal(name="a_bit_%d" % i, reset_less=True)
                 carry_in = self.carry_in[carry_bit] # convenience
                 m.d.comb += a_bit.eq(self.part_pts[pi].implies(carry_in))
                 # and 1 + 0 for disabled partition points
