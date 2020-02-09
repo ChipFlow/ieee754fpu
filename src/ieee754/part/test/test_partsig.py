@@ -92,7 +92,13 @@ class TestPartitionPoints(unittest.TestCase):
         def async_process():
 
             def test_add_fn(carry_in, a, b, mask):
-                lsb = mask & ~(mask-1) if carry else 0
+                lsb = mask & ~(mask-1) if carry_in else 0
+                return mask & ((a & mask) + (b & mask) + lsb)
+
+            def test_sub_fn(carry_in, a, b, mask):
+                raise NotImplementedError
+                # TODO
+                lsb = mask & ~(mask-1) if carry_in else 0
                 return mask & ((a & mask) + (b & mask) + lsb)
 
             def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
@@ -122,40 +128,22 @@ class TestPartitionPoints(unittest.TestCase):
                         f" => 0x{y:X} != 0x{outval:X}"
                     self.assertEqual(y, outval, msg)
 
-            def test_add(msg_prefix, carry, *mask_list):
-                rand_data = []
-                for i in range(100):
-                    a, b = randint(0, 1<<16), randint(0, 1<<16)
-                    rand_data.append((a, b))
-                for a, b in [(0x0000, 0x0000),
-                             (0x1234, 0x1234),
-                             (0xABCD, 0xABCD),
-                             (0xFFFF, 0x0000),
-                             (0x0000, 0x0000),
-                             (0xFFFF, 0xFFFF),
-                             (0x0000, 0xFFFF)] + rand_data:
-                    yield module.a.eq(a)
-                    yield module.b.eq(b)
-                    carry_sig = 0xf if carry else 0
-                    yield module.carry_in.eq(carry_sig)
-                    yield Delay(0.1e-6)
-                    y = 0
-                    for i, mask in enumerate(mask_list):
-                        lsb = mask & ~(mask-1) if carry else 0
-                        y |= mask & ((a & mask) + (b & mask) + lsb)
-                    print(a, b, outval, carry)
-                    msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X}"
-                    self.assertEqual(y, outval, msg)
-            yield part_mask.eq(0)
-            yield from test_add("16-bit", 1, 0xFFFF)
-            yield from test_add("16-bit", 0, 0xFFFF)
-            yield part_mask.eq(0b10)
-            yield from test_add("8-bit", 0, 0xFF00, 0x00FF)
-            yield from test_add("8-bit", 1, 0xFF00, 0x00FF)
-            yield part_mask.eq(0b1111)
-            yield from test_add("4-bit", 0, 0xF000, 0x0F00, 0x00F0, 0x000F)
-            yield from test_add("4-bit", 1, 0xF000, 0x0F00, 0x00F0, 0x000F)
+            for (test_fn, mod_attr) in ((test_add_fn, "add"),
+                                        #(test_sub_fn, "sub"),
+                                        ):
+                yield part_mask.eq(0)
+                yield from test_op("16-bit", 1, test_fn, mod_attr, 0xFFFF)
+                yield from test_op("16-bit", 0, test_fn, mod_attr, 0xFFFF)
+                yield part_mask.eq(0b10)
+                yield from test_op("8-bit", 0, test_fn, mod_attr,
+                                               0xFF00, 0x00FF)
+                yield from test_op("8-bit", 1, test_fn, mod_attr, 
+                                               0xFF00, 0x00FF)
+                yield part_mask.eq(0b1111)
+                yield from test_op("4-bit", 0, test_fn, mod_attr,
+                                               0xF000, 0x0F00, 0x00F0, 0x000F)
+                yield from test_op("4-bit", 1, test_fn, mod_attr, 
+                                               0xF000, 0x0F00, 0x00F0, 0x000F)
 
             def test_ne_fn(a, b, mask):
                 return (a & mask) != (b & mask)
