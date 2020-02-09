@@ -338,7 +338,7 @@ class mulAddRecFNToRaw_postMul(Elaboratable):
                     intermed_highAlignedSigC[(sigWidth + 1):sigWidth],
                     0b0))),
             CDom_absSigSumExtra.eq(Mux(doSubMags,
-                          ~(sigSum[1:sigWidth+1]).all()),
+                          ~(sigSum[1:sigWidth+1].all())),
                           sigSum[1:sigWidth + 2].bool())),
             CDom_mainSig.eq(
                 (CDom_absSigSum<<intermed_CDom_CAlignDist)>>(sigWidth - 3)),
