@@ -127,6 +127,18 @@ class PartitionedAdder(Elaboratable):
     exp-o    : ....xN...xN...xN...xN... (32+4 bits - x to be discarded)
     o        : .... N... N... N... N... (32 bits - x ignored, N is carry-over)
 
+    partition:      p    p    p    p      (4 bits)
+    carry-in :           c    c    c    c (4 bits)
+    C = c & P:           C    C    C    c (4 bits)
+    I = P=>c :           I    I    I    I (4 bits)
+    a        :  AAAA AAAA AAAA AAAA AAAA  (32 bits)
+    b        :  BBBB BBBB BBBB BBBB BBBB  (32 bits)
+    exp-a    : 0AAAApAAAACAAAACAAAACAAAAc (32+4 bits, P=1 if no partition)
+    exp-b    : 0BBBB0BBBBIBBBBIBBBBIBBBBI (32 bits plus 4 zeros)
+    exp-o    : o....oN...oN...oN...oN...x (32+4 bits - x to be discarded)
+    o        :  .... N... N... N... N... (32 bits - x ignored, N is carry-over)
+    carry-out:      o    o    o    o      (4 bits)
+
     :attribute width: the bit width of the input and output. Read-only.
     :attribute a: the first input to the adder
     :attribute b: the second input to the adder
