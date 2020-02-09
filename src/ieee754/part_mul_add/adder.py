@@ -193,15 +193,13 @@ class PartitionedAdder(Elaboratable):
             if pi.is_integer() and pi in self.part_pts:
                 # add extra bit set to 0 + 0 for enabled partition points
                 a_bit = Signal()
-                m.d.comb += a_bit.eq(~self.part_pts[pi] |
-                                     (self.part_pts[pi] & \
-                                      self.carry_in[carry_bit]))
+                carry_in = self.carry_in[carry_bit] # convenience
+                m.d.comb += a_bit.eq(self.part_pts[pi].implies(carry_in))
                 # and 1 + 0 for disabled partition points
                 ea.append(expanded_a[expanded_index])
                 al.append(a_bit) # add extra bit in a
                 eb.append(expanded_b[expanded_index])
-                bl.append(self.carry_in[carry_bit] &
-                          self.part_pts[pi]) # yes, add a zero
+                bl.append(carry_in & self.part_pts[pi]) # yes, add a zero
                 co.append(expanded_o[expanded_index])
                 cl.append(self.carry_out[carry_bit-1])
                 expanded_index += 1 # skip the extra point.  NOT in the output
