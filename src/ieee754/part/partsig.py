@@ -90,12 +90,16 @@ class PartitionedSignal:
     # PartitionedSignal.  if it's a Const or a Signal, a global shift
     # can occur.  if it's a PartitionedSignal, that's much more interesting.
     def __lshift__(self, other):
+        raise NotImplementedError
         return Operator("<<", [self, other])
     def __rlshift__(self, other):
+        raise NotImplementedError
         return Operator("<<", [other, self])
     def __rshift__(self, other):
+        raise NotImplementedError
         return Operator(">>", [self, other])
     def __rrshift__(self, other):
+        raise NotImplementedError
         return Operator(">>", [other, self])
 
     def add_op(self, op1, op2, carry):
@@ -138,26 +142,23 @@ class PartitionedSignal:
             raise NotImplementedError(
                     "Division by a signed value is not supported")
     def __mod__(self, other):
+        raise NotImplementedError
         other = Value.cast(other)
         other.__check_divisor()
         return Operator("%", [self, other])
     def __rmod__(self, other):
+        raise NotImplementedError
         self.__check_divisor()
         return Operator("%", [other, self])
     def __floordiv__(self, other):
+        raise NotImplementedError
         other = Value.cast(other)
         other.__check_divisor()
         return Operator("//", [self, other])
     def __rfloordiv__(self, other):
+        raise NotImplementedError
         self.__check_divisor()
         return Operator("//", [other, self])
-
-    def __lshift__(self, other):
-        return Operator("<<", [self, other])
-    def __rlshift__(self, other):
-        return Operator("<<", [other, self])
-    def __rshift__(self, other):
-        return Operator(">>", [self, other])
 
     # binary comparison ops that need partitioning
 
@@ -214,6 +215,7 @@ class PartitionedSignal:
         Value, out
             ``1`` if any bits are set, ``0`` otherwise.
         """
+        raise NotImplementedError
         return Operator("b", [self])
 
     def any(self):
@@ -224,6 +226,7 @@ class PartitionedSignal:
         Value, out
             ``1`` if any bits are set, ``0`` otherwise.
         """
+        raise NotImplementedError
         return Operator("r|", [self])
 
     def all(self):
@@ -234,6 +237,7 @@ class PartitionedSignal:
         Value, out
             ``1`` if all bits are set, ``0`` otherwise.
         """
+        raise NotImplementedError
         return Operator("r&", [self])
 
     def xor(self):
@@ -245,6 +249,7 @@ class PartitionedSignal:
             ``1`` if an odd number of bits are set, ``0`` if an
                   even number of bits are set.
         """
+        raise NotImplementedError
         return Operator("r^", [self])
 
     def implies(premise, conclusion):
