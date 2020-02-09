@@ -9,6 +9,7 @@ from nmigen.cli import verilog, rtlil
 from ieee754.part.partsig import PartitionedSignal
 from ieee754.part_mux.part_mux import PMux
 
+from random import randint
 import unittest
 import itertools
 
@@ -82,13 +83,17 @@ class TestPartitionPoints(unittest.TestCase):
                               "part_sig_add")
         def async_process():
             def test_add(msg_prefix, carry, *mask_list):
+                rand_data = []
+                for i in range(100):
+                    a, b = randint(0, 1<<16), randint(0, 1<<16)
+                    rand_data.append((a, b))
                 for a, b in [(0x0000, 0x0000),
                              (0x1234, 0x1234),
                              (0xABCD, 0xABCD),
                              (0xFFFF, 0x0000),
                              (0x0000, 0x0000),
                              (0xFFFF, 0xFFFF),
-                             (0x0000, 0xFFFF)]:
+                             (0x0000, 0xFFFF)] + rand_data:
                     yield module.a.eq(a)
                     yield module.b.eq(b)
                     carry_sig = 0xf if carry else 0
