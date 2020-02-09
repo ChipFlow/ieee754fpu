@@ -106,10 +106,10 @@ class FPCVTDownConvertMod(PipeModBase):
             mo = Signal(self.o.z.m_width-1)
             comb += mo.eq(a1.m[ms:me])
             with m.If(self.o.of.roundz):
-                with m.If(((~mo).bool())):  # mantissa-out is all 1s
-                    comb += self.o.z.create(a1.s, a1.e, mo+1)
-                with m.Else():
+                with m.If((mo.all())):  # mantissa-out is all 1s
                     comb += self.o.z.create(a1.s, a1.e+1, mo+1)
+                with m.Else():
+                    comb += self.o.z.create(a1.s, a1.e, mo+1)
             with m.Else():
                 comb += self.o.z.create(a1.s, a1.e, a1.m[-self.o.z.rmw-1:])
 
