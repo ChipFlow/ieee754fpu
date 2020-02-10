@@ -1,5 +1,5 @@
 from nmigen import Signal, Module, Elaboratable, Mux
-from ieee754.part_mul_add.partpoints import PartitionPoints
+
 
 class Combiner(Elaboratable):
 
@@ -28,6 +28,7 @@ class Combiner(Elaboratable):
 # equal flag is set AND the previous partition's greater than output
 # is true
 
+
 class GTCombiner(Elaboratable):
 
     def __init__(self, width):
@@ -46,8 +47,8 @@ class GTCombiner(Elaboratable):
         self.aux_input = Signal(reset_less=True)  # right hand side mux input
         self.gt_en = Signal(reset_less=True)      # enable or disable gt signal
 
-        self.eqs = Signal(width, reset_less=True) # the flags for EQ
-        self.gts = Signal(width, reset_less=True) # the flags for GT
+        self.eqs = Signal(width, reset_less=True)  # the flags for EQ
+        self.gts = Signal(width, reset_less=True)  # the flags for GT
         self.gates = Signal(width-1, reset_less=True)
         self.outputs = Signal(width, reset_less=True)
 

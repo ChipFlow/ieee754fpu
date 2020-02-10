@@ -3,7 +3,7 @@
 # bits need to be reversed through the width of the partition. This
 # module does that
 from nmigen import Signal, Module, Elaboratable, Mux
-from ieee754.part_mul_add.partpoints import PartitionPoints
+
 
 class ReorderResults(Elaboratable):
     def __init__(self, width):

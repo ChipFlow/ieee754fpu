@@ -15,14 +15,12 @@ See:
 * http://bugs.libre-riscv.org/show_bug.cgi?id=171
 """
 
-from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
-from nmigen.back.pysim import Simulator, Delay, Settle
-from nmigen.cli import main, rtlil
+from nmigen import Signal, Module, Elaboratable, Cat, C
+from nmigen.back.pysim import Simulator, Delay
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_cmp.gt_combiner import GTCombiner
 from ieee754.part_cmp.reorder_results import ReorderResults
-from ieee754.part_cmp.ripple import RippleLSB
 
 
 class PartitionedEqGtGe(Elaboratable):
@@ -47,7 +45,7 @@ class PartitionedEqGtGe(Elaboratable):
         self.mwidth = len(self.partition_points)+1
         self.output = Signal(self.mwidth, reset_less=True)
         assert self.partition_points.fits_in_width(width), \
-                "partition_points doesn't fit in width"
+            "partition_points doesn't fit in width"
 
     def elaborate(self, platform):
         m = Module()
@@ -109,6 +107,7 @@ class PartitionedEqGtGe(Elaboratable):
         return [self.a, self.b, self.opcode,
                 self.partition_points.as_sig(),
                 self.output]
+
 
 if __name__ == "__main__":
     from ieee754.part_mul_add.partpoints import make_partition
