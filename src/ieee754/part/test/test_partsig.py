@@ -49,6 +49,7 @@ class TestAddMod(Elaboratable):
         self.carry_in = Signal(len(partpoints)+1)
         self.add_carry_out = Signal(len(partpoints)+1)
         self.sub_carry_out = Signal(len(partpoints)+1)
+        self.neg_output = Signal(width)
 
     def elaborate(self, platform):
         m = Module()
@@ -71,6 +72,7 @@ class TestAddMod(Elaboratable):
                                                self.carry_in)
             m.d.comb += self.sub_output.eq(sub_out)
             m.d.comb += self.sub_carry_out.eq(add_carry)
+        m.d.comb += self.neg_output.eq(-self.a)
         ppts = self.partpoints
         m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
 
@@ -99,6 +101,10 @@ class TestPartitionPoints(unittest.TestCase):
             def test_sub_fn(carry_in, a, b, mask):
                 lsb = mask & ~(mask-1) if carry_in else 0
                 return mask & ((a & mask) + (~b & mask) + lsb)
+
+            def test_neg_fn(carry_in, a, b, mask):
+                lsb = mask & ~(mask-1) if carry_in else 0
+                return mask & ((a & mask) + (~0 & mask)) 
 
             def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
                 rand_data = []
@@ -129,6 +135,7 @@ class TestPartitionPoints(unittest.TestCase):
 
             for (test_fn, mod_attr) in ((test_add_fn, "add"),
                                         (test_sub_fn, "sub"),
+                                        (test_neg_fn, "neg"),
                                         ):
                 yield part_mask.eq(0)
                 yield from test_op("16-bit", 1, test_fn, mod_attr, 0xFFFF)
