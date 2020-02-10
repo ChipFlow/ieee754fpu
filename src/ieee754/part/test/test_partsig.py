@@ -66,12 +66,10 @@ class TestAddMod(Elaboratable):
                                            self.carry_in)
         m.d.comb += self.add_output.eq(add_out)
         m.d.comb += self.add_carry_out.eq(add_carry)
-        if hasattr(self.a, "sub_op"): # TODO, remove this
-            # sub
-            sub_out, sub_carry = self.a.sub_op(self.a, self.b,
-                                               self.carry_in)
-            m.d.comb += self.sub_output.eq(sub_out)
-            m.d.comb += self.sub_carry_out.eq(add_carry)
+        sub_out, sub_carry = self.a.sub_op(self.a, self.b,
+                                            self.carry_in)
+        m.d.comb += self.sub_output.eq(sub_out)
+        m.d.comb += self.sub_carry_out.eq(add_carry)
         m.d.comb += self.neg_output.eq(-self.a)
         ppts = self.partpoints
         m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))

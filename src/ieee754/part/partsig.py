@@ -135,10 +135,10 @@ class PartitionedSignal:
         return result
 
     def __sub__(self, other):
-        result, _ = self.sub_op(self, other) # TODO, subop
+        result, _ = self.sub_op(self, other)
         return result
     def __rsub__(self, other):
-        result, _ = self.sub_op(other, self) # TODO, subop
+        result, _ = self.sub_op(other, self)
         return result
 
     def __mul__(self, other):
