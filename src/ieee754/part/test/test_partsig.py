@@ -3,8 +3,8 @@
 # See Notices.txt for copyright information
 
 from nmigen import Signal, Module, Elaboratable
-from nmigen.back.pysim import Simulator, Delay, Tick, Passive
-from nmigen.cli import verilog, rtlil
+from nmigen.back.pysim import Simulator, Delay
+from nmigen.cli import rtlil
 
 from ieee754.part.partsig import PartitionedSignal
 from ieee754.part_mux.part_mux import PMux
@@ -31,6 +31,7 @@ def create_simulator(module, traces, test_name):
                      gtkw_file=open(test_name + ".gtkw", "w"),
                      traces=traces)
 
+
 class TestAddMod(Elaboratable):
     def __init__(self, width, partpoints):
         self.partpoints = partpoints
@@ -53,26 +54,27 @@ class TestAddMod(Elaboratable):
 
     def elaborate(self, platform):
         m = Module()
+        comb = m.d.comb
         self.a.set_module(m)
         self.b.set_module(m)
-        m.d.comb += self.lt_output.eq(self.a < self.b)
-        m.d.comb += self.ne_output.eq(self.a != self.b)
-        m.d.comb += self.le_output.eq(self.a <= self.b)
-        m.d.comb += self.gt_output.eq(self.a > self.b)
-        m.d.comb += self.eq_output.eq(self.a == self.b)
-        m.d.comb += self.ge_output.eq(self.a >= self.b)
+        comb += self.lt_output.eq(self.a < self.b)
+        comb += self.ne_output.eq(self.a != self.b)
+        comb += self.le_output.eq(self.a <= self.b)
+        comb += self.gt_output.eq(self.a > self.b)
+        comb += self.eq_output.eq(self.a == self.b)
+        comb += self.ge_output.eq(self.a >= self.b)
         # add
         add_out, add_carry = self.a.add_op(self.a, self.b,
                                            self.carry_in)
-        m.d.comb += self.add_output.eq(add_out)
-        m.d.comb += self.add_carry_out.eq(add_carry)
+        comb += self.add_output.eq(add_out)
+        comb += self.add_carry_out.eq(add_carry)
         sub_out, sub_carry = self.a.sub_op(self.a, self.b,
-                                            self.carry_in)
-        m.d.comb += self.sub_output.eq(sub_out)
-        m.d.comb += self.sub_carry_out.eq(add_carry)
-        m.d.comb += self.neg_output.eq(-self.a)
+                                           self.carry_in)
+        comb += self.sub_output.eq(sub_out)
+        comb += self.sub_carry_out.eq(add_carry)
+        comb += self.neg_output.eq(-self.a)
         ppts = self.partpoints
-        m.d.comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
+        comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
 
         return m
 
@@ -80,16 +82,17 @@ class TestAddMod(Elaboratable):
 class TestPartitionPoints(unittest.TestCase):
     def test(self):
         width = 16
-        part_mask = Signal(4) # divide into 4-bits
+        part_mask = Signal(4)  # divide into 4-bits
         module = TestAddMod(width, part_mask)
 
         sim = create_simulator(module,
-                              [part_mask,
-                               module.a.sig,
-                               module.b.sig,
-                               module.add_output,
-                               module.eq_output],
-                              "part_sig_add")
+                               [part_mask,
+                                module.a.sig,
+                                module.b.sig,
+                                module.add_output,
+                                module.eq_output],
+                               "part_sig_add")
+
         def async_process():
 
             def test_add_fn(carry_in, a, b, mask):
@@ -101,13 +104,12 @@ class TestPartitionPoints(unittest.TestCase):
                 return mask & ((a & mask) + (~b & mask) + lsb)
 
             def test_neg_fn(carry_in, a, b, mask):
-                lsb = mask & ~(mask-1) if carry_in else 0
-                return mask & ((a & mask) + (~0 & mask)) 
+                return mask & ((a & mask) + (~0 & mask))
 
             def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
                 rand_data = []
                 for i in range(100):
-                    a, b = randint(0, 1<<16), randint(0, 1<<16)
+                    a, b = randint(0, 1 << 16), randint(0, 1 << 16)
                     rand_data.append((a, b))
                 for a, b in [(0x0000, 0x0000),
                              (0x1234, 0x1234),
@@ -140,14 +142,14 @@ class TestPartitionPoints(unittest.TestCase):
                 yield from test_op("16-bit", 0, test_fn, mod_attr, 0xFFFF)
                 yield part_mask.eq(0b10)
                 yield from test_op("8-bit", 0, test_fn, mod_attr,
-                                               0xFF00, 0x00FF)
-                yield from test_op("8-bit", 1, test_fn, mod_attr, 
-                                               0xFF00, 0x00FF)
+                                   0xFF00, 0x00FF)
+                yield from test_op("8-bit", 1, test_fn, mod_attr,
+                                   0xFF00, 0x00FF)
                 yield part_mask.eq(0b1111)
                 yield from test_op("4-bit", 0, test_fn, mod_attr,
-                                               0xF000, 0x0F00, 0x00F0, 0x000F)
-                yield from test_op("4-bit", 1, test_fn, mod_attr, 
-                                               0xF000, 0x0F00, 0x00F0, 0x000F)
+                                   0xF000, 0x0F00, 0x00F0, 0x000F)
+                yield from test_op("4-bit", 1, test_fn, mod_attr,
+                                   0xF000, 0x0F00, 0x00F0, 0x000F)
 
             def test_ne_fn(a, b, mask):
                 return (a & mask) != (b & mask)
@@ -186,7 +188,7 @@ class TestPartitionPoints(unittest.TestCase):
                     for mb in maskbit_list:
                         v = 0
                         for i in range(4):
-                            if mb & (1<<i):
+                            if mb & (1 << i):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
                     y = 0
@@ -199,7 +201,7 @@ class TestPartitionPoints(unittest.TestCase):
                     outval = (yield getattr(module, "%s_output" % mod_attr))
                     msg = f"{msg_prefix}: {mod_attr} 0x{a:X} == 0x{b:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                    print ((msg % str(maskbit_list)).format(locals()))
+                    print((msg % str(maskbit_list)).format(locals()))
                     self.assertEqual(y, outval, msg % str(maskbit_list))
 
             for (test_fn, mod_attr) in ((test_eq_fn, "eq"),
@@ -231,7 +233,7 @@ class TestPartitionPoints(unittest.TestCase):
                     for mb in maskbit_list:
                         v = 0
                         for i in range(4):
-                            if mb & (1<<i):
+                            if mb & (1 << i):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
 
@@ -261,7 +263,7 @@ class TestPartitionPoints(unittest.TestCase):
                         msg = f"{msg_prefix}: mux " + \
                             f"0x{sel:X} ? 0x{a:X} : 0x{b:X}" + \
                             f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                        #print ((msg % str(maskbit_list)).format(locals()))
+                        # print ((msg % str(maskbit_list)).format(locals()))
                         self.assertEqual(y, outval, msg % str(maskbit_list))
 
             yield part_mask.eq(0)
@@ -274,6 +276,6 @@ class TestPartitionPoints(unittest.TestCase):
         sim.add_process(async_process)
         sim.run()
 
+
 if __name__ == '__main__':
     unittest.main()
-
