@@ -17,18 +17,18 @@ nmigen.Case, or other constructs: only Mux and other logic.
 """
 
 from ieee754.part_mul_add.adder import PartitionedAdder
-#from ieee754.part_cmp.equal_ortree import PartitionedEq
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
 from ieee754.part_mul_add.partpoints import make_partition
 from operator import or_, xor, and_, not_
 
-from nmigen import (Signal,
-                    )
+from nmigen import (Signal)
+
 
 def getsig(op1):
     if isinstance(op1, PartitionedSignal):
         op1 = op1.sig
     return op1
+
 
 def applyop(op1, op2, op):
     return op(getsig(op1), getsig(op2))
@@ -37,8 +37,9 @@ def applyop(op1, op2, op):
 class PartitionedSignal:
     def __init__(self, mask, *args, **kwargs):
         self.sig = Signal(*args, **kwargs)
-        width = self.sig.shape()[0] # get signal width
-        self.partpoints = make_partition(mask, width) # create partition points
+        width = self.sig.shape()[0]  # get signal width
+        # create partition points
+        self.partpoints = make_partition(mask, width)
         self.modnames = {}
         for name in ['add', 'eq', 'gt', 'ge']:
             self.modnames[name] = 0
@@ -61,7 +62,7 @@ class PartitionedSignal:
     # unary ops that require partitioning
 
     def __neg__(self):
-        result, _ = self.add_op(self, ~0, carry=0) # TODO, subop
+        result, _ = self.add_op(self, ~0, carry=0)  # TODO, subop
         return result
 
     # binary ops that don't require partitioning
@@ -92,12 +93,15 @@ class PartitionedSignal:
     def __lshift__(self, other):
         raise NotImplementedError
         return Operator("<<", [self, other])
+
     def __rlshift__(self, other):
         raise NotImplementedError
         return Operator("<<", [other, self])
+
     def __rshift__(self, other):
         raise NotImplementedError
         return Operator(">>", [self, other])
+
     def __rrshift__(self, other):
         raise NotImplementedError
         return Operator(">>", [other, self])
@@ -127,22 +131,24 @@ class PartitionedSignal:
         return (pa.output, pa.carry_out)
 
     def __add__(self, other):
-        result, _ =self.add_op(self, other, carry=0)
+        result, _ = self.add_op(self, other, carry=0)
         return result
 
     def __radd__(self, other):
-        result, _ =self.add_op(other, self)
+        result, _ = self.add_op(other, self)
         return result
 
     def __sub__(self, other):
         result, _ = self.sub_op(self, other)
         return result
+
     def __rsub__(self, other):
         result, _ = self.sub_op(other, self)
         return result
 
     def __mul__(self, other):
         return Operator("*", [self, other])
+
     def __rmul__(self, other):
         return Operator("*", [other, self])
 
@@ -155,20 +161,24 @@ class PartitionedSignal:
             # completely by prohibiting such division operations.
             raise NotImplementedError(
                     "Division by a signed value is not supported")
+
     def __mod__(self, other):
         raise NotImplementedError
         other = Value.cast(other)
         other.__check_divisor()
         return Operator("%", [self, other])
+
     def __rmod__(self, other):
         raise NotImplementedError
         self.__check_divisor()
         return Operator("%", [other, self])
+
     def __floordiv__(self, other):
         raise NotImplementedError
         other = Value.cast(other)
         other.__check_divisor()
         return Operator("//", [self, other])
+
     def __rfloordiv__(self, other):
         raise NotImplementedError
         self.__check_divisor()
@@ -177,11 +187,11 @@ class PartitionedSignal:
     # binary comparison ops that need partitioning
 
     def _compare(self, width, op1, op2, opname, optype):
-        #print (opname, op1, op2)
+        # print (opname, op1, op2)
         pa = PartitionedEqGtGe(width, self.partpoints)
         setattr(self.m.submodules, self.get_modname(opname), pa)
         comb = self.m.d.comb
-        comb += pa.opcode.eq(optype) # set opcode
+        comb += pa.opcode.eq(optype)  # set opcode
         if isinstance(op1, PartitionedSignal):
             comb += pa.a.eq(op1.sig)
         else:
@@ -276,5 +286,3 @@ class PartitionedSignal:
             ``1`` otherwise.
         """
         return ~premise | conclusion
-
-
