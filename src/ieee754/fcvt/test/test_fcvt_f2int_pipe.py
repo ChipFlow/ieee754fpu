@@ -2,7 +2,8 @@
 """
 
 from ieee754.fcvt.pipeline import (FPCVTF2IntMuxInOut,)
-from ieee754.fpcommon.test.fpmux import runfp
+from ieee754.fpcommon.test.fpmux import (runfp, create_random)
+from ieee754.fcvt.test.rangelimited import create_int
 
 import sfpy
 from sfpy import Float64, Float32, Float16
@@ -92,22 +93,34 @@ def test_int_pipe_i32_f32():
 
 def test_int_pipe_f64_i64():
     dut = FPCVTF2IntMuxInOut(64, 64, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 64))
+    vals += create_random(dut.num_rows, 64, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i64", Float64, fcvt_f64_i64,
-                True, n_vals=100, opcode=0x1)
+                True, vals=vals, opcode=0x1)
 
 def test_int_pipe_f64_i32():
     # XXX TODO: reduce range of FP num to actually fit (almost) into I32
     # http://bugs.libre-riscv.org/show_bug.cgi?id=113
     dut = FPCVTF2IntMuxInOut(64, 32, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 32))
+    vals += create_random(dut.num_rows, 32, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i32", Float64, fcvt_f64_i32,
-                    True, n_vals=100, opcode=0x1)
+                    True, vals=vals, opcode=0x1)
 
 def test_int_pipe_f64_i16():
     # XXX TODO: reduce range of FP num to actually fit (almost) into I16
     # http://bugs.libre-riscv.org/show_bug.cgi?id=113
     dut = FPCVTF2IntMuxInOut(64, 16, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 16))
+    vals += create_random(dut.num_rows, 16, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_i16", Float64, fcvt_f64_i16,
-                    True, n_vals=100, opcode=0x1)
+                    True, vals=vals, opcode=0x1)
 
 def test_int_pipe_f32_i32():
     dut = FPCVTF2IntMuxInOut(32, 32, 4, op_wid=1)
@@ -137,8 +150,12 @@ def test_int_pipe_ui16_f64():
 
 def test_int_pipe_f32_ui32():
     dut = FPCVTF2IntMuxInOut(32, 32, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float32, 32))
+    vals += create_random(dut.num_rows, 32, True, 10)
     runfp(dut, 32, "test_fcvt_f2int_pipe_f32_ui32", Float32, fcvt_f32_ui32,
-                    True, n_vals=100)
+                    True, vals=vals)
 
 def test_int_pipe_ui32_f64():
     dut = FPCVTIntMuxInOut(32, 64, 4, op_wid=1)
@@ -171,18 +188,30 @@ def test_int_pipe_ui32_f16():
 
 def test_int_pipe_f64_ui64():
     dut = FPCVTF2IntMuxInOut(64, 64, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 64))
+    vals += create_random(dut.num_rows, 64, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui64", Float64, fcvt_f64_ui64,
-                    True, n_vals=100)
+                    True, vals=vals)
 
 def test_int_pipe_f64_ui32():
     dut = FPCVTF2IntMuxInOut(64, 32, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 32))
+    vals += create_random(dut.num_rows, 32, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui32", Float64, fcvt_f64_ui32,
-                    True, n_vals=100)
+                    True, vals=vals)
 
 def test_int_pipe_f64_ui16():
     dut = FPCVTF2IntMuxInOut(64, 16, 4, op_wid=1)
+    vals = []
+    for i in range(100):
+        vals.append(create_int(Float64, 16))
+    vals += create_random(dut.num_rows, 16, True, 10)
     runfp(dut, 64, "test_fcvt_f2int_pipe_f64_ui16", Float64, fcvt_f64_ui16,
-                    True, n_vals=100)
+                    True, vals=vals)
 
 if __name__ == '__main__':
     for i in range(200):
