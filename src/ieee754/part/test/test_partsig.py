@@ -37,6 +37,7 @@ class TestAddMod(Elaboratable):
         self.a = PartitionedSignal(partpoints, width)
         self.b = PartitionedSignal(partpoints, width)
         self.add_output = Signal(width)
+        self.sub_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
         self.gt_output = Signal(len(partpoints)+1)
         self.ge_output = Signal(len(partpoints)+1)
@@ -96,10 +97,8 @@ class TestPartitionPoints(unittest.TestCase):
                 return mask & ((a & mask) + (b & mask) + lsb)
 
             def test_sub_fn(carry_in, a, b, mask):
-                raise NotImplementedError
-                # TODO
                 lsb = mask & ~(mask-1) if carry_in else 0
-                return mask & ((a & mask) + (b & mask) + lsb)
+                return mask & ((a & mask) + (~b & mask) + lsb)
 
             def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
                 rand_data = []
@@ -129,7 +128,7 @@ class TestPartitionPoints(unittest.TestCase):
                     self.assertEqual(y, outval, msg)
 
             for (test_fn, mod_attr) in ((test_add_fn, "add"),
-                                        #(test_sub_fn, "sub"),
+                                        (test_sub_fn, "sub"),
                                         ):
                 yield part_mask.eq(0)
                 yield from test_op("16-bit", 1, test_fn, mod_attr, 0xFFFF)

@@ -114,18 +114,32 @@ class PartitionedSignal:
         comb += pa.carry_in.eq(carry)
         return (pa.output, pa.carry_out)
 
+    def sub_op(self, op1, op2, carry=~0):
+        op1 = getsig(op1)
+        op2 = getsig(op2)
+        shape = op1.shape()
+        pa = PartitionedAdder(shape[0], self.partpoints)
+        setattr(self.m.submodules, self.get_modname('add'), pa)
+        comb = self.m.d.comb
+        comb += pa.a.eq(op1)
+        comb += pa.b.eq(~op2)
+        comb += pa.carry_in.eq(carry)
+        return (pa.output, pa.carry_out)
+
     def __add__(self, other):
         result, _ =self.add_op(self, other, carry=0)
         return result
 
-
     def __radd__(self, other):
-        return self.add_op(other, self)
+        result, _ =self.add_op(other, self)
+        return result
 
     def __sub__(self, other):
-        return self.sub_op(self, other) # TODO, subop
+        result, _ = self.sub_op(self, other) # TODO, subop
+        return result
     def __rsub__(self, other):
-        return self.sub_op(other, self) # TODO, subop
+        result, _ = self.sub_op(other, self) # TODO, subop
+        return result
 
     def __mul__(self, other):
         return Operator("*", [self, other])
