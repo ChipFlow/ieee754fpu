@@ -5,6 +5,7 @@
     and used as a routing ID on the fanout.
 """
 
+import os
 from random import randint
 from nmigen.compat.sim import run_simulation
 from nmigen.cli import verilog, rtlil
@@ -301,8 +302,10 @@ def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
           vals=None, opcode=None, cancel=False):
+    if not os.path.exists("sim_out"):
+        os.makedirs("sim_out")
     vl = rtlil.convert(dut, ports=dut.ports())
-    with open("%s.il" % name, "w") as f:
+    with open("sim_out/%s.il" % name, "w") as f:
         f.write(vl)
 
     if vals is None:
@@ -313,4 +316,4 @@ def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
     for i in range(dut.num_rows):
         fns.append(test.rcv(i))
         fns.append(test.send(i))
-    run_simulation(dut, {"sync": fns}, vcd_name="%s.vcd" % name)
+    run_simulation(dut, {"sync": fns}, vcd_name="sim_out/%s.vcd" % name)
