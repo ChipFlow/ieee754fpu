@@ -273,6 +273,7 @@ class PartitionedSignal:
             ``1`` if an odd number of bits are set, ``0`` if an
                   even number of bits are set.
         """
+        # XXXX TODO: return partition-mask-sized set of bits
         raise NotImplementedError
         return Operator("r^", [self])
 
@@ -285,4 +286,5 @@ class PartitionedSignal:
             ``0`` if ``premise`` is true and ``conclusion`` is not,
             ``1`` otherwise.
         """
+        # amazingly, this should actually work.
         return ~premise | conclusion
