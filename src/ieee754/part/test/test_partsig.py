@@ -149,7 +149,8 @@ class TestPartitionPoints(unittest.TestCase):
                         c_outval = (yield getattr(module,
                                                   "%s_carry_out" % mod_attr))
                         msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
-                            f" => 0x{carry_result:X} != 0x{c_outval:X} ({mod_attr})"
+                            f" => 0x{carry_result:X} != 0x{c_outval:X}" + \
+                            " ({mod_attr})"
                         self.assertEqual(carry_result, c_outval, msg)
 
             for (test_fn, mod_attr) in ((test_add_fn, "add"),
