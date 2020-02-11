@@ -11,7 +11,7 @@ probability of being within the target range or just outside of it
 from random import randint
 from sfpy import Float16, Float32, Float64
 
-def create_ranged_target(fkls, target):
+def create_ranged_target(fkls, target, factor=500.0):
     """create a targetted floating-point number just within
        the min/max range, by +/- 0.5%
     """
@@ -20,7 +20,7 @@ def create_ranged_target(fkls, target):
     res = fkls(target)
     fracwid = 1<<50 # biiig number...
     frac = float(randint(0, fracwid)-fracwid/2) / (fracwid/2) # +/- 0.99999
-    frac = (frac + 500.0) / 500.0 # change to 0.1%
+    frac = (frac + factor) / factor # change to 0.5% (when factor=500)
     res = res * fkls(frac)
 
     return res.bits
@@ -29,19 +29,19 @@ def create_ranged_fp16(fkls):
     return create_ranged_target(fkls, 65519.0)
 
 def create_ranged_min_fp16(fkls):
-    return create_ranged_target(fkls, pow(2, -24))
+    return create_ranged_target(fkls, pow(2, -24), factor=2.0)
 
 def create_ranged_min_normal_fp16(fkls):
-    return create_ranged_target(fkls, pow(2, -14))
+    return create_ranged_target(fkls, pow(2, -14), factor=2.0)
 
 def create_ranged_fp32(fkls):
     return create_ranged_target(fkls, 3.402823466E38)
 
 def create_ranged_min_fp32(fkls):
-    return create_ranged_target(fkls, pow(2, -149))
+    return create_ranged_target(fkls, pow(2, -149), factor=2.0)
 
 def create_ranged_min_normal_fp32(fkls):
-    return create_ranged_target(fkls, pow(2, -126))
+    return create_ranged_target(fkls, pow(2, -126), factor=2.0)
 
 def create_ranged_float(fkls, mainwid, fracwid):
     """create a floating-point number
