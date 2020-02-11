@@ -28,8 +28,20 @@ def create_ranged_target(fkls, target):
 def create_ranged_fp16(fkls):
     return create_ranged_target(fkls, 65519.0)
 
+def create_ranged_min_fp16(fkls):
+    return create_ranged_target(fkls, pow(2, -24))
+
+def create_ranged_min_normal_fp16(fkls):
+    return create_ranged_target(fkls, pow(2, -14))
+
 def create_ranged_fp32(fkls):
     return create_ranged_target(fkls, 3.402823466E38)
+
+def create_ranged_min_fp32(fkls):
+    return create_ranged_target(fkls, pow(2, -149))
+
+def create_ranged_min_normal_fp32(fkls):
+    return create_ranged_target(fkls, pow(2, -126))
 
 def create_ranged_float(fkls, mainwid, fracwid):
     """create a floating-point number
