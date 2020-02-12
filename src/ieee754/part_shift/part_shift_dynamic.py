@@ -69,7 +69,8 @@ class PartitionedDynamicShift(Elaboratable):
         # actually calculate the shift-partials here
         for i, b in enumerate(b_intervals):
             start = 0
-            for j, a in enumerate(a_intervals):
+            for j in range(i, len(a_intervals)):
+                a = a_intervals[j]
                 end = keys[i]
                 result_width = matrix[i][j].width
                 bwidth = math.ceil(math.log2(result_width + 1))
