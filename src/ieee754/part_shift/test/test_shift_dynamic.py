@@ -3,7 +3,7 @@ from nmigen.back.pysim import Simulator, Delay, Settle
 from nmigen.test.utils import FHDLTestCase
 from ieee754.part_mul_add.partpoints import PartitionPoints
 
-from ieee754.part_shift_scalar.part_shift_dynamic import \
+from ieee754.part_shift.part_shift_dynamic import \
     PartitionedDynamicShift
 
 import unittest

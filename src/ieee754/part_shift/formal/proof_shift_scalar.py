@@ -78,7 +78,6 @@ class ShifterDriver(Elaboratable):
                 comb += Assert(out[0:8] == expected[0:8])
                 comb += Assert(out[8:16] == (data[8:16] << shifter) & 0xff)
                 comb += Assert(out[16:24] == (data[16:24] << shifter) & 0xff)
-        
         return m
 
 class PartitionedScalarShiftTestCase(FHDLTestCase):
