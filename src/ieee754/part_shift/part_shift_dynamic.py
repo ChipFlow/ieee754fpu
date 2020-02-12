@@ -71,7 +71,9 @@ class PartitionedDynamicShift(Elaboratable):
             start = 0
             for j, a in enumerate(a_intervals):
                 end = keys[i]
-                comb += matrix[i][j].eq(a << b)
+                result_width = matrix[i][j].width
+                bwidth = math.ceil(math.log2(result_width + 1))
+                comb += matrix[i][j].eq(a << b[:bwidth])
                 start = end
 
         # now create a switch statement which sums the relevant partial results
