@@ -32,8 +32,8 @@ class ShifterDriver(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
-        width = 24
-        mwidth = 3
+        width = 32
+        mwidth = 4
 
         # setup the inputs and outputs of the DUT as anyconst
         a = Signal(width)
@@ -62,28 +62,70 @@ class ShifterDriver(Elaboratable):
 
 
         with m.Switch(points.as_sig()):
-            with m.Case(0b00):
-                comb += Assume(b < 24)
-                comb += Assert(out == (a<<b[0:5]) & 0xffffff)
-            with m.Case(0b01):
+            with m.Case(0b000):
+                comb += Assume(b <= 32)
+                comb += Assert(out == (a<<b[0:6]) & 0xffffffff)
+            with m.Case(0b001):
                 comb += Assume(b_intervals[0] <= 8)
                 comb += Assert(out_intervals[0] ==
-                               (a_intervals[0]<<b_intervals[0]) & 0xff)
-                comb += Assume(b_intervals[1] <= 16)
-                comb += Assert(Cat(out_intervals[1:3]) ==
-                               (Cat(a_intervals[1:3])
-                                <<b_intervals[1]) & 0xffff)
-            with m.Case(0b10):
+                               (a_intervals[0] << b_intervals[0]) & 0xff)
+                comb += Assume(b_intervals[1] <= 24)
+                comb += Assert(Cat(out_intervals[1:4]) ==
+                               (Cat(a_intervals[1:4])
+                                << b_intervals[1]) & 0xffffff)
+            with m.Case(0b010):
                 comb += Assume(b_intervals[0] <= 16)
                 comb += Assert(Cat(out_intervals[0:2]) ==
                                (Cat(a_intervals[0:2])
-                                <<b_intervals[0]) & 0xffff)
+                                << b_intervals[0]) & 0xffff)
                 comb += Assume(b_intervals[2] <= 16)
+                comb += Assert(Cat(out_intervals[2:4]) ==
+                               (Cat(a_intervals[2:4])
+                                << b_intervals[2]) & 0xffff)
+            with m.Case(0b011):
+                comb += Assume(b_intervals[0] <= 8)
+                comb += Assert(out_intervals[0] ==
+                               (a_intervals[0] << b_intervals[0]) & 0xff)
+                comb += Assume(b_intervals[1] <= 8)
+                comb += Assert(out_intervals[1] ==
+                               (a_intervals[1] << b_intervals[1]) & 0xff)
+                comb += Assume(b_intervals[2] <= 16)
+                comb += Assert(Cat(out_intervals[2:4]) ==
+                               (Cat(a_intervals[2:4])
+                                << b_intervals[2]) & 0xffff)
+            with m.Case(0b100):
+                comb += Assume(b_intervals[0] <= 24)
+                comb += Assert(Cat(out_intervals[0:3]) ==
+                               (Cat(a_intervals[0:3])
+                                << b_intervals[0]) & 0xffffff)
+                comb += Assume(b_intervals[3] <= 8)
+                comb += Assert(out_intervals[3] ==
+                               (a_intervals[3] << b_intervals[3]) & 0xff)
+            with m.Case(0b101):
+                comb += Assume(b_intervals[0] <= 8)
+                comb += Assert(out_intervals[0] ==
+                               (a_intervals[0] << b_intervals[0]) & 0xff)
+                comb += Assume(b_intervals[1] <= 16)
+                comb += Assert(Cat(out_intervals[1:3]) ==
+                               (Cat(a_intervals[1:3])
+                                << b_intervals[1]) & 0xffff)
+                comb += Assume(b_intervals[3] <= 8)
+                comb += Assert(out_intervals[3] ==
+                               (a_intervals[3] << b_intervals[3]) & 0xff)
+            with m.Case(0b110):
+                comb += Assume(b_intervals[0] <= 16)
+                comb += Assert(Cat(out_intervals[0:2]) ==
+                               (Cat(a_intervals[0:2])
+                                << b_intervals[0]) & 0xffff)
+                comb += Assume(b_intervals[2] <= 8)
                 comb += Assert(out_intervals[2] ==
-                               (a_intervals[2]<<b_intervals[2]) & 0xff)
-            with m.Case(0b11):
+                               (a_intervals[2] << b_intervals[2]) & 0xff)
+                comb += Assume(b_intervals[3] <= 8)
+                comb += Assert(out_intervals[3] ==
+                               (a_intervals[3] << b_intervals[3]) & 0xff)
+            with m.Case(0b111):
                 for i, o in enumerate(out_intervals):
-                    comb += Assume(b_intervals[i] < 8)
+                    comb += Assume(b_intervals[i] <= 8)
                     comb += Assert(o ==
                                    (a_intervals[i] << b_intervals[i]) & 0xff)
 
