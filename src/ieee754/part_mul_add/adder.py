@@ -113,6 +113,7 @@ class PartitionedAdder(Elaboratable):
     to the next bit.  Then the final output *removes* the extra bits from
     the result.
 
+    In the case of no carry:
     partition: .... P... P... P... P... (32 bits)
     a        : .... .... .... .... .... (32 bits)
     b        : .... .... .... .... .... (32 bits)
@@ -121,17 +122,39 @@ class PartitionedAdder(Elaboratable):
     exp-o    : ....xN...xN...xN...xN... (32+4 bits - x to be discarded)
     o        : .... N... N... N... N... (32 bits - x ignored, N is carry-over)
 
+    However, with carry the behavior is a little different:
     partition:      p    p    p    p      (4 bits)
-    carry-in :           c    c    c    c (4 bits)
-    C = c & P:           C    C    C    c (4 bits)
-    I = P=>c :           I    I    I    I (4 bits)
+    carry-in :      c    c    c    c    c (5 bits)
+    C = c & P:      C    C    C    C    c (5 bits)
+    I = P=>c :      I    I    I    I    c (5 bits)
     a        :  AAAA AAAA AAAA AAAA AAAA  (32 bits)
     b        :  BBBB BBBB BBBB BBBB BBBB  (32 bits)
-    exp-a    : 0AAAApAAAACAAAACAAAACAAAAc (32+4 bits, P=1 if no partition)
-    exp-b    : 0BBBB0BBBBIBBBBIBBBBIBBBBI (32 bits plus 4 zeros)
-    exp-o    : o....oN...oN...oN...oN...x (32+4 bits - x to be discarded)
+    exp-a    : 0AAAACAAAACAAAACAAAACAAAAc (32+4+2 bits, P=1 if no partition)
+    exp-b    : 0BBBBIBBBBIBBBBIBBBBIBBBBc (32+2 bits plus 4 zeros)
+    exp-o    : o....oN...oN...oN...oN...x (32+4+2 bits - x to be discarded)
     o        :  .... N... N... N... N... (32 bits - x ignored, N is carry-over)
-    carry-out:      o    o    o    o      (4 bits)
+    carry-out: o    o    o    o    o      (5 bits)
+    
+    A couple of differences should be noted:
+     - The expanded a/b/o have 2 extra bits added to them. These bits
+       allow the carry-in for the least significant partition to be
+       injected, and the carry out for the most significant partition
+       to be extracted.
+     - The partition bits P and 0 in the first example have been
+       replaced with bits C and I. Bits C and I are set to 1 when
+       there is a partition and a carry-in at that position. This has
+       the effect of creating a carry at that position in the expanded
+       adder, while preventing carries from the previous partition
+       from propogating through to the next. These bits are also used
+       to extract the carry-out information for each partition, as
+       when there is a carry out in a partition, the next most
+       significant partition bit will be set to 1
+    
+    Additionally, the carry-out bits must be rearranged before being
+    output to move the most significant carry bit for each partition
+    into the least significant bit for that partition, as well as to
+    ignore the other carry bits in that partition. This is
+    accomplished by the MoveMSBDown module
 
     :attribute width: the bit width of the input and output. Read-only.
     :attribute a: the first input to the adder
