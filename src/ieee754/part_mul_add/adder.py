@@ -261,6 +261,11 @@ class PartitionedAdder(Elaboratable):
         # special hardware on FPGAs
         comb += expanded_o.eq(expanded_a + expanded_b)
 
+        # ok now we have the carry-out, however because it's the MSB it's
+        # in the wrong position in the output as far as putting it into
+        # a chain of adds (or other operations).  therefore we need to
+        # "ripple" carry-out down to the same position that carry-in is
+        # in [the LSB of each partition].
         comb += ripple.results_in.eq(carry_tmp)
         comb += ripple.gates.eq(self.part_pts.as_sig())
         comb += self.carry_out.eq(ripple.output)
