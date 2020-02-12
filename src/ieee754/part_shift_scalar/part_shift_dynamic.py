@@ -31,7 +31,8 @@ class PartitionedDynamicShift(Elaboratable):
         m = Module()
         comb = m.d.comb
         width = self.width
-        gates = self.partition_points.as_sig()
+        gates = Signal(self.partition_points.get_max_partition_count(width)-1)
+        comb += gates.eq(self.partition_points.as_sig())
 
         matrix = []
         keys = list(self.partition_points.keys()) + [self.width]
@@ -40,9 +41,10 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(len(keys)):
             row = []
             start = 0
-            for i in range(len(keys)):
-                end = keys[i]
-                row.append(Signal(width - start))
+            for j in range(len(keys)):
+                end = keys[j]
+                row.append(Signal(width - start,
+                           name="matrix[%d][%d]" % (i, j)))
             matrix.append(row)
 
         a_intervals = []
@@ -70,12 +72,18 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(1, len(out_intervals)):
             index = gates[:i]  # selects the 'i' least significant bits
                                # of gates
-            for index in range(1<<(i-1)):
+            element = Signal(width, name="element%d" % i)
+            for index in range(1<<i):
+                print(index)
                 with m.Switch(gates[:i]):
                     with m.Case(index):
-                        element = matrix[index][i]
+                        index = math.ceil(math.log2(index + 1))
+                        comb += element.eq(matrix[index][i])
             print(keys[i-1])
-            intermed = Mux(gates[i-1], element, element | intermed[:keys[i-1]])
+            temp = Signal(width, name="intermed%d" % i)
+            print(intermed[keys[0]:])
+            intermed = Mux(gates[i-1], element, element | intermed[keys[0]:])
+            comb += temp.eq(intermed)
             comb += out_intervals[i].eq(intermed)
 
 

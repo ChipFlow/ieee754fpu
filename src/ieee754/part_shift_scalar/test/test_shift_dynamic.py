@@ -46,10 +46,13 @@ class DynamicShiftTestCase(FHDLTestCase):
             yield a.eq(0x01010101)
             yield b.eq(0x04030201)
             for i in range(1<<(mwidth-1)):
-                yield gates.eq(0)
+                yield gates.eq(i)
                 yield Delay(1e-6)
                 yield Settle()
             yield gates.eq(1)
+            yield Delay(1e-6)
+            yield Settle()
+            yield gates.eq(0)
             yield Delay(1e-6)
             yield Settle()
 
