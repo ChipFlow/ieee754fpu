@@ -38,6 +38,12 @@ class PartitionedDynamicShift(Elaboratable):
         keys = list(self.partition_points.keys()) + [self.width]
         start = 0
 
+        # create a matrix of partial shift-results (similar to PartitionedMul
+        # matrices).  These however have to be of length suitable to contain
+        # the full shifted "contribution".  i.e. B from the LSB *could* contain
+        # a number great enough to shift the entirety of A LSB right up to
+        # the MSB of the output, however B from the *MSB* is *only* going
+        # to contribute to the *MSB* of the output.
         for i in range(len(keys)):
             row = []
             start = 0
@@ -60,12 +66,16 @@ class PartitionedDynamicShift(Elaboratable):
             intervals.append([start,end])
             start = end
 
+        # actually calculate the shift-partials here
         for i, b in enumerate(b_intervals):
             start = 0
             for j, a in enumerate(a_intervals):
                 end = keys[i]
                 comb += matrix[i][j].eq(a << b)
                 start = end
+
+        # now create a switch statement which sums the relevant partial results
+        # in each output-partition
 
         intermed = matrix[0][0]
         comb += out_intervals[0].eq(intermed)
