@@ -134,7 +134,7 @@ class PartitionedAdder(Elaboratable):
     exp-o    : o....oN...oN...oN...oN...x (32+4+2 bits - x to be discarded)
     o        :  .... N... N... N... N... (32 bits - x ignored, N is carry-over)
     carry-out: o    o    o    o    o      (5 bits)
-    
+
     A couple of differences should be noted:
      - The expanded a/b/o have 2 extra bits added to them. These bits
        allow the carry-in for the least significant partition to be
@@ -149,7 +149,7 @@ class PartitionedAdder(Elaboratable):
        to extract the carry-out information for each partition, as
        when there is a carry out in a partition, the next most
        significant partition bit will be set to 1
-    
+
     Additionally, the carry-out bits must be rearranged before being
     output to move the most significant carry bit for each partition
     into the least significant bit for that partition, as well as to
