@@ -2,11 +2,10 @@
 # See Notices.txt for copyright information
 
 """
-Copyright (C) 2020 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
 Copyright (C) 2020 Michael Nolan <mtnolan2640@gmail.com>
 
-dynamically-partitionable "comparison" class, directly equivalent
-to Signal.__eq__, __gt__ and __ge__, except SIMD-partitionable
+dynamically partitionable shifter. Only the operand to be shifted can
+be partitioned, the amount to shift by *must* be a scalar
 
 See:
 
@@ -52,7 +51,7 @@ class PartitionedScalarShift(Elaboratable):
             sp = Signal(width)
             comb += sp[start:].eq(self.data[start:end] << self.shifter)
             shiftparts.append(sp)
-            
+
             start = end  # for next time round loop
 
         for i, interval in enumerate(intervals):
