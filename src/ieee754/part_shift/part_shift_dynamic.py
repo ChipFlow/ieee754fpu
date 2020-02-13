@@ -79,10 +79,13 @@ class PartitionedDynamicShift(Elaboratable):
                 # XXX!
                 bw = math.ceil(math.log2(self.output.width + 1))
                 tshift = Signal(bw, name="ts%d_%d" % (i, j), reset_less=True)
-                with m.If(b[:bw] < 1<<rw)):
+                ow = math.ceil(math.log2(width-start))
+                maxshift = (1<<(ow))
+                print ("part", i, b, j, a, rw, bw, ow, maxshift)
+                with m.If(b[:bw] < maxshift):
                     comb += tshift.eq(b[:bw])
                 with m.Else():
-                    comb += tshift.eq(1<<rw)
+                    comb += tshift.eq(maxshift)
                 comb += matrix[i][j].eq(a << tshift)
                 start = end
 
