@@ -53,6 +53,7 @@ class PartitionedDynamicShift(Elaboratable):
                            name="matrix[%d][%d]" % (i, j)))
             matrix.append(row)
 
+        # break out both the input and output into partition-stratified blocks
         a_intervals = []
         b_intervals = []
         out_intervals = []
@@ -80,9 +81,12 @@ class PartitionedDynamicShift(Elaboratable):
         # now create a switch statement which sums the relevant partial results
         # in each output-partition
 
+        out = []
         intermed = matrix[0][0]
-        comb += out_intervals[0].eq(intermed)
+        s, e = intervals[0]
+        out.append(intermed[s:e])
         for i in range(1, len(out_intervals)):
+            s, e = intervals[i]
             index = gates[:i]  # selects the 'i' least significant bits
                                # of gates
             element = Signal(width, name="element%d" % i)
@@ -93,12 +97,13 @@ class PartitionedDynamicShift(Elaboratable):
                         index = math.ceil(math.log2(index + 1))
                         comb += element.eq(matrix[index][i])
             print(keys[i-1])
-            temp = Signal(width, name="intermed%d" % i)
+            temp = Signal(e-s+1, name="intermed%d" % i)
             print(intermed[keys[0]:])
             intermed = Mux(gates[i-1], element, element | intermed[keys[0]:])
             comb += temp.eq(intermed)
-            comb += out_intervals[i].eq(intermed)
+            out.append(intermed[:e-s])
 
+        comb += self.output.eq(Cat(*out))
 
         return m
 
