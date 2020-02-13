@@ -13,7 +13,7 @@ See:
 * http://libre-riscv.org/3d_gpu/architecture/dynamic_simd/shift/
 * http://bugs.libre-riscv.org/show_bug.cgi?id=173
 """
-from nmigen import Signal, Module, Elaboratable, Cat, Mux
+from nmigen import Signal, Module, Elaboratable, Cat, Mux, C
 from ieee754.part_mul_add.partpoints import PartitionPoints
 import math
 
@@ -51,6 +51,7 @@ class PartitionedDynamicShift(Elaboratable):
                 end = keys[j]
                 row.append(Signal(width - start,
                            name="matrix[%d][%d]" % (i, j)))
+                start = end
             matrix.append(row)
 
         # break out both the input and output into partition-stratified blocks
@@ -74,8 +75,15 @@ class PartitionedDynamicShift(Elaboratable):
                 a = a_intervals[j]
                 end = keys[i]
                 result_width = matrix[i][j].width
-                bwidth = math.ceil(math.log2(result_width + 1))
-                comb += matrix[i][j].eq(a << b[:bwidth])
+                rw = math.ceil(math.log2(result_width + 1))
+                # XXX!
+                bw = math.ceil(math.log2(self.output.width + 1))
+                tshift = Signal(bw, name="ts%d_%d" % (i, j), reset_less=True)
+                with m.If(b[:bw] < 1<<rw)):
+                    comb += tshift.eq(b[:bw])
+                with m.Else():
+                    comb += tshift.eq(1<<rw)
+                comb += matrix[i][j].eq(a << tshift)
                 start = end
 
         # now create a switch statement which sums the relevant partial results
