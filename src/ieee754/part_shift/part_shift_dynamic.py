@@ -110,7 +110,14 @@ class PartitionedDynamicShift(Elaboratable):
             print(keys[i-1])
             temp = Signal(e-s+1, name="intermed%d" % i)
             print(intermed[keys[0]:])
-            intermed = Mux(gates[i-1], element, element | intermed[keys[0]:])
+            # XXX bit of a mess here, but rather than select
+            # element or (element | intermed), select between 0 or intermed
+            # then unconditionally "|" element on top (once copied into
+            # a named Signal)
+            intermed = Mux(gates[i-1], 0, intermed[keys[0]:])
+            intermed2 = Signal(intermed.shape())
+            comb += intermed2.eq(intermed | element)
+            intermed = intermed2
             comb += temp.eq(intermed)
             out.append(temp[:e-s])
 
