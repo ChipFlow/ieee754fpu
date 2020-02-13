@@ -112,7 +112,7 @@ class PartitionedDynamicShift(Elaboratable):
             print(intermed[keys[0]:])
             intermed = Mux(gates[i-1], element, element | intermed[keys[0]:])
             comb += temp.eq(intermed)
-            out.append(intermed[:e-s])
+            out.append(temp[:e-s])
 
         comb += self.output.eq(Cat(*out))
 
