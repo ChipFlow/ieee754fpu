@@ -114,6 +114,10 @@ class PartitionedDynamicShift(Elaboratable):
             # element or (element | intermed), select between 0 or intermed
             # then unconditionally "|" element on top (once copied into
             # a named Signal)
+            # XXX TODO: hmmm rather than pass down the actual intermed
+            # here, why not accumulate a cascade of "do we need to include
+            # this partial result" things, *then* OR them together?
+            # this is where it sort-of becomes like the gt_combiner
             intermed = Mux(gates[i-1], 0, intermed[keys[0]:])
             intermed2 = Signal(intermed.shape())
             comb += intermed2.eq(intermed | element)
