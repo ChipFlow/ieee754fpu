@@ -100,7 +100,7 @@ class PartitionedDynamicShift(Elaboratable):
             s, e = intervals[i]
             index = gates[:i]  # selects the 'i' least significant bits
                                # of gates
-            element = Signal(width, name="element%d" % i)
+            element = Signal(matrix[0][i].width, name="element%d" % i)
             for index in range(1<<i):
                 print(index)
                 with m.Switch(gates[:i]):
@@ -108,7 +108,7 @@ class PartitionedDynamicShift(Elaboratable):
                         index = math.ceil(math.log2(index + 1))
                         comb += element.eq(matrix[index][i])
             print(keys[i-1])
-            temp = Signal(e-s+1, name="intermed%d" % i)
+            temp = Signal(element.width, name="intermed%d" % i)
             print(intermed[keys[0]:])
             # XXX bit of a mess here, but rather than select
             # element or (element | intermed), select between 0 or intermed
