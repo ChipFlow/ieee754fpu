@@ -19,7 +19,7 @@ def first_zero(x):
     for i in range(16):
         if x & (1<<i):
             return res
-    res += 1
+        res += 1
 
 def count_bits(x):
     res = 0
@@ -120,17 +120,20 @@ class TestPartitionPoints(unittest.TestCase):
                 # reduce range of b
                 bits = count_bits(mask)
                 fz = first_zero(mask)
-                print ("%x %x %x bits %d zero %d" % \
-                        (a, b, mask, bits, fz))
-                b = b & ((bits-1)<<fz)
+                newb = b & ((bits-1)<<fz)
+                print ("%x %x %x bits %d zero %d trunc %x" % \
+                        (a, b, mask, bits, fz, newb))
+                b = newb
                 # TODO: carry
                 carry_in = 0
                 lsb = mask & ~(mask-1) if carry_in else 0
-                sum = (a & mask) << (b & mask) + lsb
+                b = (b & mask)
+                b = b >>fz
+                sum = ((a & mask) << b)
                 result = mask & sum
                 carry = (sum & mask) != sum
                 carry = 0
-                print(a, b, sum, mask)
+                print("result", hex(a), hex(b), hex(sum), hex(mask), hex(result))
                 return result, carry
 
             def test_add_fn(carry_in, a, b, mask):
@@ -171,6 +174,7 @@ class TestPartitionPoints(unittest.TestCase):
                     y = 0
                     carry_result = 0
                     for i, mask in enumerate(mask_list):
+                        print ("i/mask", i, hex(mask))
                         res, c = test_fn(carry, a, b, mask)
                         y |= res
                         lsb = mask & ~(mask - 1)
@@ -185,7 +189,7 @@ class TestPartitionPoints(unittest.TestCase):
                     if hasattr(module, "%s_carry_out" % mod_attr):
                         c_outval = (yield getattr(module,
                                                   "%s_carry_out" % mod_attr))
-                        msg = f"{msg_prefix}: 0x{a:X} {modattr} 0x{b:X}" + \
+                        msg = f"{msg_prefix}: 0x{a:X} {mod_attr} 0x{b:X}" + \
                             f" => 0x{carry_result:X} != 0x{c_outval:X}"
                         self.assertEqual(carry_result, c_outval, msg)
 
