@@ -18,6 +18,7 @@ nmigen.Case, or other constructs: only Mux and other logic.
 
 from ieee754.part_mul_add.adder import PartitionedAdder
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
+from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_mul_add.partpoints import make_partition
 from operator import or_, xor, and_, not_
 
@@ -41,7 +42,7 @@ class PartitionedSignal:
         # create partition points
         self.partpoints = make_partition(mask, width)
         self.modnames = {}
-        for name in ['add', 'eq', 'gt', 'ge']:
+        for name in ['add', 'eq', 'gt', 'ge', 'ls']:
             self.modnames[name] = 0
 
     def set_module(self, m):
@@ -90,9 +91,22 @@ class PartitionedSignal:
     # TODO: detect if the 2nd operand is a Const, a Signal or a
     # PartitionedSignal.  if it's a Const or a Signal, a global shift
     # can occur.  if it's a PartitionedSignal, that's much more interesting.
+    def ls_op(self, op1, op2, carry):
+        op1 = getsig(op1)
+        op2 = getsig(op2)
+        shape = op1.shape()
+        pa = PartitionedDynamicShift(shape[0], self.partpoints)
+        setattr(self.m.submodules, self.get_modname('ls'), pa)
+        comb = self.m.d.comb
+        comb += pa.a.eq(op1)
+        comb += pa.b.eq(op2)
+        # XXX TODO: carry-in, carry-out
+        #comb += pa.carry_in.eq(carry)
+        return (pa.output, 0)
+
     def __lshift__(self, other):
-        raise NotImplementedError
-        return Operator("<<", [self, other])
+        result, _ = self.ls_op(self, other, carry=0)
+        return result
 
     def __rlshift__(self, other):
         raise NotImplementedError
