@@ -55,6 +55,25 @@ class PartitionedDynamicShift(Elaboratable):
             intervals.append([start,end])
             start = end
 
+        min_bits = math.ceil(math.log2(intervals[0][1] - intervals[0][0]))
+        max_bits = math.ceil(math.log2(width))
+
+        shifter_masks = []
+        for i in range(len(b_intervals)):
+            mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i)
+            bits = []
+            for j in range(i, gates.width):
+                if bits:
+                    bits.append(~gates[j] & bits[-1])
+                else:
+                    bits.append(~gates[j])
+            comb += mask.eq(Cat((1 << min_bits)-1, bits)
+                            & ((1 << max_bits)-1))
+            shifter_masks.append(mask)
+
+        print(shifter_masks)
+
+
         # Instead of generating the matrix described in the wiki, I
         # instead calculate the shift amounts for each partition, then
         # calculate the partial results of each partition << shift
@@ -73,12 +92,16 @@ class PartitionedDynamicShift(Elaboratable):
         # for o2 (namely, a2bx, a1bx, and a0b0). If I calculate the
         # partial results [a0b0, a1bx, a2bx, a3bx], I can use just
         # those partial results to calculate a0, a1, a2, and a3
+        shiftbits = math.ceil(math.log2(width))
+        element = b_intervals[0] & shifter_masks[0]
         partial_results = []
-        partial_results.append(a_intervals[0] << b_intervals[0])
-        element = b_intervals[0]
+        partial_results.append(a_intervals[0] << element)
         for i in range(1, len(out_intervals)):
             s, e = intervals[i]
-            element = Mux(gates[i-1], b_intervals[i], element)
+            masked = Signal(b_intervals[i].shape(), name="masked%d" % i)
+            comb += masked.eq(b_intervals[i] & shifter_masks[i])
+            element = Mux(gates[i-1], masked,
+                          element)
 
             # This calculates which partition of b to select the
             # shifter from. According to the table above, the
@@ -86,9 +109,8 @@ class PartitionedDynamicShift(Elaboratable):
             # the partition mask, this calculates that with a mux
             # chain
 
-
             # This computes the partial results table
-            shifter = Signal(8, name="shifter%d" % i)
+            shifter = Signal(shiftbits, name="shifter%d" % i)
             comb += shifter.eq(element)
             partial = Signal(width, name="partial%d" % i)
             comb += partial.eq(a_intervals[i] << shifter)
