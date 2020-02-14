@@ -14,6 +14,20 @@ import unittest
 import itertools
 import math
 
+def first_zero(x):
+    res = 0
+    for i in range(16):
+        if x & (1<<i):
+            return res
+    res += 1
+
+def count_bits(x):
+    res = 0
+    for i in range(16):
+        if x & (1<<i):
+            res += 1
+    return res
+
 
 def perms(k):
     return map(''.join, itertools.product('01', repeat=k))
@@ -103,12 +117,19 @@ class TestPartitionPoints(unittest.TestCase):
         def async_process():
 
             def test_ls_fn(carry_in, a, b, mask):
+                # reduce range of b
+                bits = count_bits(mask)
+                fz = first_zero(mask)
+                print ("%x %x %x bits %d zero %d" % \
+                        (a, b, mask, bits, fz))
+                b = b & ((bits-1)<<fz)
                 # TODO: carry
                 carry_in = 0
                 lsb = mask & ~(mask-1) if carry_in else 0
                 sum = (a & mask) << (b & mask) + lsb
                 result = mask & sum
                 carry = (sum & mask) != sum
+                carry = 0
                 print(a, b, sum, mask)
                 return result, carry
 
@@ -117,7 +138,6 @@ class TestPartitionPoints(unittest.TestCase):
                 sum = (a & mask) + (b & mask) + lsb
                 result = mask & sum
                 carry = (sum & mask) != sum
-                carry = 0
                 print(a, b, sum, mask)
                 return result, carry
 
@@ -159,21 +179,21 @@ class TestPartitionPoints(unittest.TestCase):
                     outval = (yield getattr(module, "%s_output" % mod_attr))
                     # TODO: get (and test) carry output as well
                     print(a, b, outval, carry)
-                    msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X} ({mod_attr})"
+                    msg = f"{msg_prefix}: 0x{a:X} {mod_attr} 0x{b:X}" + \
+                        f" => 0x{y:X} != 0x{outval:X}"
                     self.assertEqual(y, outval, msg)
                     if hasattr(module, "%s_carry_out" % mod_attr):
                         c_outval = (yield getattr(module,
                                                   "%s_carry_out" % mod_attr))
-                        msg = f"{msg_prefix}: 0x{a:X} + 0x{b:X}" + \
-                            f" => 0x{carry_result:X} != 0x{c_outval:X}" + \
-                            " ({mod_attr})"
+                        msg = f"{msg_prefix}: 0x{a:X} {modattr} 0x{b:X}" + \
+                            f" => 0x{carry_result:X} != 0x{c_outval:X}"
                         self.assertEqual(carry_result, c_outval, msg)
 
-            for (test_fn, mod_attr) in ((test_add_fn, "add"),
+            for (test_fn, mod_attr) in (
+                                        (test_ls_fn, "ls"),
+                                        (test_add_fn, "add"),
                                         (test_sub_fn, "sub"),
                                         (test_neg_fn, "neg"),
-                                        (test_ls_fn, "ls"),
                                         ):
                 yield part_mask.eq(0)
                 yield from test_op("16-bit", 1, test_fn, mod_attr, 0xFFFF)
