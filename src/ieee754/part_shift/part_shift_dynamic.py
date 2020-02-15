@@ -128,7 +128,7 @@ class PartitionedDynamicShift(Elaboratable):
             #with m.Else():
             #    comb += shifter.eq(element)
             comb += shifter.eq(element)
-            partial = Signal(width, name="partial%d" % i, reset_less=True)
+            partial = Signal(reswid, name="partial%d" % i, reset_less=True)
             comb += partial.eq(a_intervals[i] << shifter)
 
             partial_results.append(partial)
