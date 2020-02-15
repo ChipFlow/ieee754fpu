@@ -78,11 +78,11 @@ class PartialResult(Elaboratable):
         # trying to shift data by 64 bits if the result width
         # is only 8.
         shifter = Signal(shiftbits, reset_less=True)
-        with m.If(element > shiftbits):
-            comb += shifter.eq(shiftbits)
+        maxval = C(self.reswid, element.shape())
+        with m.If(element > maxval):
+            comb += shifter.eq(maxval)
         with m.Else():
             comb += shifter.eq(element)
-        comb += shifter.eq(element)
         comb += self.partial.eq(self.a_interval << shifter)
 
         return m
