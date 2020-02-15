@@ -95,11 +95,13 @@ class PartitionedDynamicShift(Elaboratable):
         # for o2 (namely, a2bx, a1bx, and a0b0). If I calculate the
         # partial results [a0b0, a1bx, a2bx, a3bx], I can use just
         # those partial results to calculate a0, a1, a2, and a3
-        shiftbits = math.ceil(math.log2(width))
         element = b_intervals[0] & shifter_masks[0]
         partial_results = []
         partial_results.append(a_intervals[0] << element)
         for i in range(1, len(keys)):
+            reswid = width - intervals[i][0]
+            shiftbits = math.ceil(math.log2(reswid+1))+1 # hmmm...
+            print ("partial", reswid, width, intervals[i], shiftbits)
             s, e = intervals[i]
             masked = Signal(b_intervals[i].shape(), name="masked%d" % i,
                           reset_less=True)
@@ -119,6 +121,10 @@ class PartitionedDynamicShift(Elaboratable):
             # This computes the partial results table
             shifter = Signal(shiftbits, name="shifter%d" % i,
                           reset_less=True)
+            #with m.If(element > shiftbits):
+            #    comb += shifter.eq(shiftbits)
+            #with m.Else():
+            #    comb += shifter.eq(element)
             comb += shifter.eq(element)
             partial = Signal(width, name="partial%d" % i, reset_less=True)
             comb += partial.eq(a_intervals[i] << shifter)
