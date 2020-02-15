@@ -42,7 +42,6 @@ class PartitionedDynamicShift(Elaboratable):
         # break out both the input and output into partition-stratified blocks
         a_intervals = []
         b_intervals = []
-        out_intervals = []
         intervals = []
         widths = []
         start = 0
@@ -51,7 +50,6 @@ class PartitionedDynamicShift(Elaboratable):
             widths.append(width - start)
             a_intervals.append(self.a[start:end])
             b_intervals.append(self.b[start:end])
-            out_intervals.append(self.output[start:end])
             intervals.append([start,end])
             start = end
 
@@ -96,7 +94,7 @@ class PartitionedDynamicShift(Elaboratable):
         element = b_intervals[0] & shifter_masks[0]
         partial_results = []
         partial_results.append(a_intervals[0] << element)
-        for i in range(1, len(out_intervals)):
+        for i in range(1, len(keys)):
             s, e = intervals[i]
             masked = Signal(b_intervals[i].shape(), name="masked%d" % i)
             comb += masked.eq(b_intervals[i] & shifter_masks[i])
@@ -124,7 +122,7 @@ class PartitionedDynamicShift(Elaboratable):
         s,e = intervals[0]
         result = partial_results[0]
         out.append(result[s:e])
-        for i in range(1, len(out_intervals)):
+        for i in range(1, len(keys)):
             start, end = (intervals[i][0], width)
             result = partial_results[i] | \
                 Mux(gates[i-1], 0, result[intervals[0][1]:])[:end-start]
