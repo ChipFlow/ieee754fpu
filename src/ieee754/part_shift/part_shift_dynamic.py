@@ -63,12 +63,14 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(len(b_intervals)):
             mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i,
                           reset_less=True)
-            bits = []
+            bits = Signal(gates.width-i+1, name="bits%d" % i, reset_less=True)
+            bl = []
             for j in range(i, gates.width):
-                if bits:
-                    bits.append(~gates[j] & bits[-1])
+                if bl:
+                    bl.append(~gates[j] & bits[j-i-1])
                 else:
-                    bits.append(~gates[j])
+                    bl.append(~gates[j])
+            comb += bits.eq(Cat(*bl))
             comb += mask.eq(Cat((1 << min_bits)-1, bits)
                             & ((1 << max_bits)-1))
             shifter_masks.append(mask)
@@ -103,6 +105,10 @@ class PartitionedDynamicShift(Elaboratable):
                           reset_less=True)
             comb += masked.eq(b_intervals[i] & shifter_masks[i])
             element = Mux(gates[i-1], masked, element)
+            elmux = Signal(b_intervals[i].shape(), name="elmux%d" % i,
+                          reset_less=True)
+            comb += elmux.eq(element)
+            element = elmux
 
             # This calculates which partition of b to select the
             # shifter from. According to the table above, the
