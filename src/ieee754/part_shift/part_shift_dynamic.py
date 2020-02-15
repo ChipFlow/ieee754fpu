@@ -63,14 +63,16 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(len(b_intervals)):
             mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i,
                           reset_less=True)
-            bits = Signal(gates.width-i+1, name="bits%d" % i, reset_less=True)
+            bits = Signal(pwid-i, name="bits%d" % i, reset_less=True)
             bl = []
-            for j in range(i, gates.width):
-                if bl:
-                    bl.append(~gates[j] & bits[j-i-1])
+            for idx, j in enumerate(range(i, pwid)):
+                if idx != 0:
+                    bl.append((~gates[j]) & bits[idx-1])
                 else:
                     bl.append(~gates[j])
-            comb += bits.eq(Cat(*bl))
+            # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
+            for j in range(bits.shape()[0]):
+                comb += bits[j].eq(bl[j])
             comb += mask.eq(Cat((1 << min_bits)-1, bits)
                             & ((1 << max_bits)-1))
             shifter_masks.append(mask)
