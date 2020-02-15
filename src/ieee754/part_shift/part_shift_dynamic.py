@@ -97,7 +97,9 @@ class PartitionedDynamicShift(Elaboratable):
         # those partial results to calculate a0, a1, a2, and a3
         element = b_intervals[0] & shifter_masks[0]
         partial_results = []
-        partial_results.append(a_intervals[0] << element)
+        partial = Signal(width, name="partial0", reset_less=True)
+        comb += partial.eq(a_intervals[0] << element)
+        partial_results.append(partial)
         for i in range(1, len(keys)):
             reswid = width - intervals[i][0]
             shiftbits = math.ceil(math.log2(reswid+1))+1 # hmmm...
