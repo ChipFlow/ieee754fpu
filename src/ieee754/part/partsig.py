@@ -19,10 +19,11 @@ nmigen.Case, or other constructs: only Mux and other logic.
 from ieee754.part_mul_add.adder import PartitionedAdder
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
 from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
+from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
 from ieee754.part_mul_add.partpoints import make_partition
 from operator import or_, xor, and_, not_
 
-from nmigen import (Signal)
+from nmigen import (Signal, Const)
 
 
 def getsig(op1):
@@ -93,13 +94,21 @@ class PartitionedSignal:
     # can occur.  if it's a PartitionedSignal, that's much more interesting.
     def ls_op(self, op1, op2, carry):
         op1 = getsig(op1)
-        op2 = getsig(op2)
-        shape = op1.shape()
-        pa = PartitionedDynamicShift(shape[0], self.partpoints)
+        if isinstance(op2, Const) or isinstance(op2, Signal):
+            shape = op1.shape()
+            pa = PartitionedScalarShift(shape[0], self.partpoints)
+        else:
+            op2 = getsig(op2)
+            shape = op1.shape()
+            pa = PartitionedDynamicShift(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('ls'), pa)
         comb = self.m.d.comb
-        comb += pa.a.eq(op1)
-        comb += pa.b.eq(op2)
+        if isinstance(op2, Const) or isinstance(op2, Signal):
+            comb += pa.a.eq(op1)
+            comb += pa.b.eq(op2)
+        else:
+            comb += pa.data.eq(op1)
+            comb += pa.shifter.eq(op2)
         # XXX TODO: carry-in, carry-out
         #comb += pa.carry_in.eq(carry)
         return (pa.output, 0)
