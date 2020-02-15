@@ -157,7 +157,8 @@ class PartitionedDynamicShift(Elaboratable):
         # for o2 (namely, a2bx, a1bx, and a0b0). If I calculate the
         # partial results [a0b0, a1bx, a2bx, a3bx], I can use just
         # those partial results to calculate a0, a1, a2, and a3
-        element = b_intervals[0] & shifter_masks[0]
+        element = Signal(b_intervals[0].shape(), reset_less=True)
+        comb += element.eq(b_intervals[0] & shifter_masks[0])
         partial_results = []
         partial = Signal(width, name="partial0", reset_less=True)
         comb += partial.eq(a_intervals[0] << element)
