@@ -17,6 +17,33 @@ from nmigen import Signal, Module, Elaboratable, Cat, Mux, C
 from ieee754.part_mul_add.partpoints import PartitionPoints
 import math
 
+class ShifterMask(Elaboratable):
+    def __init__(self, pwid, bwid, max_bits, min_bits):
+        self.max_bits = max_bits
+        self.min_bits = min_bits
+        self.pwid = pwid
+        self.mask = Signal(bwid, reset_less=True)
+        self.gates = Signal(pwid, reset_less=True)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+
+        bits = Signal(self.pwid, reset_less=True)
+        bl = []
+        for j in range(self.pwid):
+            if j != 0:
+                bl.append((~self.gates[j]) & bits[j-1])
+            else:
+                bl.append(~self.gates[j])
+        # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
+        for j in range(bits.shape()[0]):
+            comb += bits[j].eq(bl[j])
+        comb += self.mask.eq(Cat((1 << self.min_bits)-1, bits)
+                        & ((1 << self.max_bits)-1))
+
+        return m
+
 
 class PartitionedDynamicShift(Elaboratable):
     def __init__(self, width, partition_points):
@@ -61,21 +88,11 @@ class PartitionedDynamicShift(Elaboratable):
         shifter_masks = []
         for i in range(len(b_intervals)):
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
-            mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i,
-                          reset_less=True)
-            bits = Signal(pwid-i, name="bits%d" % i, reset_less=True)
-            bl = []
-            for idx, j in enumerate(range(i, pwid)):
-                if idx != 0:
-                    bl.append((~gates[j]) & bits[idx-1])
-                else:
-                    bl.append(~gates[j])
-            # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
-            for j in range(bits.shape()[0]):
-                comb += bits[j].eq(bl[j])
-            comb += mask.eq(Cat((1 << min_bits)-1, bits)
-                            & ((1 << max_bits)-1))
-            shifter_masks.append(mask)
+            sm = ShifterMask(pwid-i, b_intervals[i].shape()[0],
+                             max_bits, min_bits)
+            setattr(m.submodules, "sm%d" % i, sm)
+            comb += sm.gates.eq(gates[i:pwid])
+            shifter_masks.append(sm.mask)
 
         print(shifter_masks)
 
