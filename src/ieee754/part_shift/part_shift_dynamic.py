@@ -136,7 +136,8 @@ class PartitionedDynamicShift(Elaboratable):
         out = []
 
         # This calculates the outputs o0-o3 from the partial results
-        # table above.
+        # table above.  Note: only relevant bits of the partial result equal
+        # to the width of the output column are accumulated in a Mux-cascade.
         s,e = intervals[0]
         result = partial_results[0]
         out.append(result[s:e])
