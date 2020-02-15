@@ -55,6 +55,9 @@ class PartitionedDynamicShift(Elaboratable):
         min_bits = math.ceil(math.log2(intervals[0][1] - intervals[0][0]))
         max_bits = math.ceil(math.log2(width))
 
+        # shifts are normally done as (e.g. for 32 bit) result = a & (b&0b11111)
+        # truncating the b input.  however here of course the size of the
+        # partition varies dynamically.
         shifter_masks = []
         for i in range(len(b_intervals)):
             mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i)
