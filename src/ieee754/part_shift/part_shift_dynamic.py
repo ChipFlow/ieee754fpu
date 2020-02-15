@@ -23,15 +23,16 @@ class PartitionedDynamicShift(Elaboratable):
         self.width = width
         self.partition_points = PartitionPoints(partition_points)
 
-        self.a = Signal(width)
-        self.b = Signal(width)
-        self.output = Signal(width)
+        self.a = Signal(width, reset_less=True)
+        self.b = Signal(width, reset_less=True)
+        self.output = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
         width = self.width
-        gates = Signal(self.partition_points.get_max_partition_count(width)-1)
+        pwid = self.partition_points.get_max_partition_count(width)-1
+        gates = Signal(pwid, reset_less=True)
         comb += gates.eq(self.partition_points.as_sig())
 
         matrix = []
@@ -60,7 +61,8 @@ class PartitionedDynamicShift(Elaboratable):
         # partition varies dynamically.
         shifter_masks = []
         for i in range(len(b_intervals)):
-            mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i)
+            mask = Signal(b_intervals[i].shape(), name="shift_mask%d" % i,
+                          reset_less=True)
             bits = []
             for j in range(i, gates.width):
                 if bits:
@@ -97,7 +99,8 @@ class PartitionedDynamicShift(Elaboratable):
         partial_results.append(a_intervals[0] << element)
         for i in range(1, len(keys)):
             s, e = intervals[i]
-            masked = Signal(b_intervals[i].shape(), name="masked%d" % i)
+            masked = Signal(b_intervals[i].shape(), name="masked%d" % i,
+                          reset_less=True)
             comb += masked.eq(b_intervals[i] & shifter_masks[i])
             element = Mux(gates[i-1], masked, element)
 
@@ -108,9 +111,10 @@ class PartitionedDynamicShift(Elaboratable):
             # chain
 
             # This computes the partial results table
-            shifter = Signal(shiftbits, name="shifter%d" % i)
+            shifter = Signal(shiftbits, name="shifter%d" % i,
+                          reset_less=True)
             comb += shifter.eq(element)
-            partial = Signal(width, name="partial%d" % i)
+            partial = Signal(width, name="partial%d" % i, reset_less=True)
             comb += partial.eq(a_intervals[i] << shifter)
 
             partial_results.append(partial)
@@ -127,7 +131,7 @@ class PartitionedDynamicShift(Elaboratable):
             result = partial_results[i] | \
                 Mux(gates[i-1], 0, result[intervals[0][1]:])[:end-start]
             print("select: [%d:%d]" % (start, end))
-            res = Signal(width, name="res%d" % i)
+            res = Signal(width, name="res%d" % i, reset_less=True)
             comb += res.eq(result)
             s,e = intervals[0]
             out.append(res[s:e])
