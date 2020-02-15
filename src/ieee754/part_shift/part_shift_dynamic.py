@@ -38,7 +38,6 @@ class PartitionedDynamicShift(Elaboratable):
         keys = list(self.partition_points.keys()) + [self.width]
         start = 0
 
-
         # break out both the input and output into partition-stratified blocks
         a_intervals = []
         b_intervals = []
@@ -71,7 +70,6 @@ class PartitionedDynamicShift(Elaboratable):
 
         print(shifter_masks)
 
-
         # Instead of generating the matrix described in the wiki, I
         # instead calculate the shift amounts for each partition, then
         # calculate the partial results of each partition << shift
@@ -98,8 +96,7 @@ class PartitionedDynamicShift(Elaboratable):
             s, e = intervals[i]
             masked = Signal(b_intervals[i].shape(), name="masked%d" % i)
             comb += masked.eq(b_intervals[i] & shifter_masks[i])
-            element = Mux(gates[i-1], masked,
-                          element)
+            element = Mux(gates[i-1], masked, element)
 
             # This calculates which partition of b to select the
             # shifter from. According to the table above, the
