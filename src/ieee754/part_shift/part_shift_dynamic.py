@@ -120,13 +120,16 @@ class PartitionedDynamicShift(Elaboratable):
             # the partition mask, this calculates that with a mux
             # chain
 
-            # This computes the partial results table
+            # This computes the partial results table.  note that
+            # the shift amount is truncated because there's no point
+            # trying to shift data by 64 bits if the result width
+            # is only 8.
             shifter = Signal(shiftbits, name="shifter%d" % i,
                           reset_less=True)
-            #with m.If(element > shiftbits):
-            #    comb += shifter.eq(shiftbits)
-            #with m.Else():
-            #    comb += shifter.eq(element)
+            with m.If(element > shiftbits):
+                comb += shifter.eq(shiftbits)
+            with m.Else():
+                comb += shifter.eq(element)
             comb += shifter.eq(element)
             partial = Signal(reswid, name="partial%d" % i, reset_less=True)
             comb += partial.eq(a_intervals[i] << shifter)
