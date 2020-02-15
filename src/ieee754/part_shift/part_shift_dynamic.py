@@ -145,6 +145,7 @@ class PartitionedDynamicShift(Elaboratable):
             print("select: [%d:%d]" % (start, end))
             res = Signal(width, name="res%d" % i, reset_less=True)
             comb += res.eq(result)
+            result = res
             s,e = intervals[0]
             out.append(res[s:e])
 
