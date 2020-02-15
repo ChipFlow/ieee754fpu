@@ -143,11 +143,10 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(1, len(keys)):
             start, end = (intervals[i][0], width)
             reswid = width - start
-            result = partial_results[i] | \
-                Mux(gates[i-1], 0, result[intervals[0][1]:])[:end-start]
+            sel = Mux(gates[i-1], 0, result[intervals[0][1]:])[:end-start]
             print("select: [%d:%d]" % (start, end))
             res = Signal(reswid, name="res%d" % i, reset_less=True)
-            comb += res.eq(result)
+            comb += res.eq(partial_results[i] | sel)
             result = res
             s,e = intervals[0]
             out.append(res[s:e])
