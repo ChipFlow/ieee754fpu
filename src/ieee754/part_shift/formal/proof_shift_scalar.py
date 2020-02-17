@@ -69,28 +69,43 @@ class ShifterDriver(Elaboratable):
             with m.Case(0b01):
                 comb += Assert(out[0:8] ==
                                (data[0:8] << (shifter & 0x7)) & 0xFF)
-                comb += Assert(out[8:24] ==
-                               (data[8:24] << (shifter & 0xF)) & 0xffff)
+                # comb += Assert(out[8:16] ==
+                #                (data[8:16] << (shifter)) & 0xffff)
 
             # with m.Case(0b10):
-            #     comb += Assert(out[16:24] ==
-            #                    (data[16:24] << (shifter & 0x7)) & 0xff)
-            #     comb += Assert(out[0:16] ==
-            #                    (data[0:16] << (shifter & 0xf)) & 0xffff)
+                # comb += Assert(out[16:24] ==
+                #                (data[16:24] << (shifter & 0x7)) & 0xff)
+                comb += Assert(out[0:16] ==
+                               (data[0:16] << (shifter & 0xf)) & 0xffff)
 
-            # with m.Case(0b11):
-            #     comb += Assert(out[0:8] ==
-            #                    (data[0:8] << (shifter & 0x7)) & 0xFF)
-            #     comb += Assert(out[8:16] ==
-            #                    (data[8:16] << (shifter & 0x7)) & 0xff)
-            #     comb += Assert(out[16:24] ==
-            #                    (data[16:24] << (shifter & 0x7)) & 0xff)
+            with m.Case(0b11):
+                comb += Assert(out[0:8] ==
+                               (data[0:8] << (shifter & 0x7)) & 0xFF)
+                comb += Assert(out[8:16] ==
+                               (data[8:16] << (shifter & 0x7)) & 0xff)
+                comb += Assert(out[16:24] ==
+                               (data[16:24] << (shifter & 0x7)) & 0xff)
         return m
 
 class PartitionedScalarShiftTestCase(FHDLTestCase):
     def test_shift(self):
         module = ShifterDriver()
         self.assertFormal(module, mode="bmc", depth=4)
+    def test_ilang(self):
+        width = 32
+        mwidth = 4
+        gates = Signal(mwidth-1)
+        points = PartitionPoints()
+        step = int(width/mwidth)
+        for i in range(mwidth-1):
+            points[(i+1)*step] = gates[i]
+        print(points)
+        dut = PartitionedScalarShift(width, points)
+        vl = rtlil.convert(dut, ports=[gates, dut.data,
+                                       dut.shifter,
+                                       dut.output])
+        with open("scalar_shift.il", "w") as f:
+            f.write(vl)
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,9 +32,9 @@ class PartitionedScalarShift(Elaboratable):
         m = Module()
         comb = m.d.comb
         width = self.width
+        pwid = self.partition_points.get_max_partition_count(width)-1
         shiftbits = self.shiftbits
         shifted = Signal(self.data.width)
-        pwid = self.partition_points.get_max_partition_count(width)-1
         gates = self.partition_points.as_sig()
         comb += shifted.eq(self.data << self.shifter)
 
@@ -44,33 +44,37 @@ class PartitionedScalarShift(Elaboratable):
         intervals = []
         keys = list(self.partition_points.keys()) + [self.width]
         start = 0
-
-        shifter_masks = []
         for i in range(len(keys)):
             end = keys[i]
             parts.append(self.data[start:end])
             outputs.append(self.output[start:end])
             intervals.append((start,end))
-            start = end
+            start = end  # for next time round loop
 
         min_bits = math.ceil(math.log2(intervals[0][1] - intervals[0][0]))
-        for i in range(len(keys)):
+        shifter_masks = []
+        for i in range(len(intervals)):
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
-            sm = ShifterMask(pwid-i, shiftbits, max_bits, min_bits)
-            setattr(m.submodules, "sm%d" % i, sm)
-            comb += sm.gates.eq(gates[i:pwid])
-            shifter_masks.append(sm.mask)
+            if pwid-i != 0:
+                sm = ShifterMask(pwid-i, shiftbits,
+                                 max_bits, min_bits)
+                setattr(m.submodules, "sm%d" % i, sm)
+                comb += sm.gates.eq(gates[i:pwid])
+                mask = Signal(shiftbits, name="sm_mask%d" % i)
+                comb += mask.eq(sm.mask)
+                shifter_masks.append(mask)
+            else: # having a 0 width signal seems to give the proof issues
+                shifter_masks.append((1<<min_bits)-1)
+        print(m.submodules)
 
-        start = 0
-        for i in range(len(keys)):
-            end = keys[i]
-            sp = Signal(width)
-            _shifter = Signal(shiftbits, name="shifter%d" % i)
+        for i, interval in enumerate(intervals):
+            s,e = interval
+            sp = Signal(width, name="sp%d" % i)
+            _shifter = Signal(self.shifter.width, name="shifter%d" % i)
             comb += _shifter.eq(self.shifter & shifter_masks[i])
-            comb += sp[start:].eq(self.data[start:end] << _shifter)
+            comb += sp[s:].eq(self.data[s:e] << _shifter)
             shiftparts.append(sp)
 
-            start = end  # for next time round loop
 
         for i, interval in enumerate(intervals):
             start, end = interval
