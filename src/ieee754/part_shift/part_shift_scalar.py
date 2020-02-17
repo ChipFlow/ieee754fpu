@@ -65,7 +65,9 @@ class PartitionedScalarShift(Elaboratable):
         for i in range(len(keys)):
             end = keys[i]
             sp = Signal(width)
-            comb += sp[start:].eq(self.data[start:end] << self.shifter)
+            _shifter = Signal(shiftbits, name="shifter%d" % i)
+            comb += _shifter.eq(self.shifter & shifter_masks[i])
+            comb += sp[start:].eq(self.data[start:end] << _shifter)
             shiftparts.append(sp)
 
             start = end  # for next time round loop
