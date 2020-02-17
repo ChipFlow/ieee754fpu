@@ -921,7 +921,7 @@ class OverflowMod(Elaboratable, Overflow):
 
     def elaborate(self, platform):
         m = Module()
-        m.d.comb += self.roundz_out.eq(self.roundz)
+        m.d.comb += self.roundz_out.eq(self.roundz) # roundz is a property
         return m
 
 
