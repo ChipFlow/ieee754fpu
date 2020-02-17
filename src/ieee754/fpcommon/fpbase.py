@@ -878,6 +878,11 @@ class FPOpOut(NextControl):
 
 
 class Overflow:
+    FFLAGS_NV = Const(1<<4, 5) # invalid operation
+    FFLAGS_DZ = Const(1<<3, 5) # divide by zero
+    FFLAGS_OF = Const(1<<2, 5) # overflow
+    FFLAGS_UF = Const(1<<1, 5) # underflow
+    FFLAGS_NX = Const(1<<0, 5) # inexact
     def __init__(self, name=None):
         if name is None:
             name = ""
@@ -885,6 +890,7 @@ class Overflow:
         self.round_bit = Signal(reset_less=True, name=name+"round")  # tot[1]
         self.sticky = Signal(reset_less=True, name=name+"sticky")   # tot[0]
         self.m0 = Signal(reset_less=True, name=name+"m0")  # mantissa bit 0
+        self.fpflags = Signal(5, reset_less=True, name=name+"fflags")
 
         #self.roundz = Signal(reset_less=True)
 
@@ -893,12 +899,14 @@ class Overflow:
         yield self.round_bit
         yield self.sticky
         yield self.m0
+        yield self.fpflags
 
     def eq(self, inp):
         return [self.guard.eq(inp.guard),
                 self.round_bit.eq(inp.round_bit),
                 self.sticky.eq(inp.sticky),
-                self.m0.eq(inp.m0)]
+                self.m0.eq(inp.m0),
+                self.fpflags.eq(inp.fpflags)]
 
     @property
     def roundz(self):
