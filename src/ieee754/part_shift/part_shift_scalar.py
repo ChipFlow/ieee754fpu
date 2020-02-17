@@ -14,6 +14,7 @@ See:
 """
 from nmigen import Signal, Module, Elaboratable, Cat, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
+from ieee754.part_shift.part_shift_dynamic import ShifterMask
 import math
 
 
@@ -33,6 +34,7 @@ class PartitionedScalarShift(Elaboratable):
         width = self.width
         shiftbits = self.shiftbits
         shifted = Signal(self.data.width)
+        pwid = self.partition_points.get_max_partition_count(width)-1
         gates = self.partition_points.as_sig()
         comb += shifted.eq(self.data << self.shifter)
 
@@ -42,12 +44,26 @@ class PartitionedScalarShift(Elaboratable):
         intervals = []
         keys = list(self.partition_points.keys()) + [self.width]
         start = 0
+
+        shifter_masks = []
         for i in range(len(keys)):
             end = keys[i]
             parts.append(self.data[start:end])
             outputs.append(self.output[start:end])
             intervals.append((start,end))
+            start = end
 
+        min_bits = math.ceil(math.log2(intervals[0][1] - intervals[0][0]))
+        for i in range(len(keys)):
+            max_bits = math.ceil(math.log2(width-intervals[i][0]))
+            sm = ShifterMask(pwid-i, shiftbits, max_bits, min_bits)
+            setattr(m.submodules, "sm%d" % i, sm)
+            comb += sm.gates.eq(gates[i:pwid])
+            shifter_masks.append(sm.mask)
+
+        start = 0
+        for i in range(len(keys)):
+            end = keys[i]
             sp = Signal(width)
             comb += sp[start:].eq(self.data[start:end] << self.shifter)
             shiftparts.append(sp)
