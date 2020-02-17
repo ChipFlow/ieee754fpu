@@ -55,17 +55,24 @@ class PartitionedScalarShift(Elaboratable):
         shifter_masks = []
         for i in range(len(intervals)):
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
+            sm_mask = Signal(shiftbits, name="sm_mask%d" % i)
             if pwid-i != 0:
                 sm = ShifterMask(pwid-i, shiftbits,
                                  max_bits, min_bits)
-                setattr(m.submodules, "sm%d" % i, sm)
                 comb += sm.gates.eq(gates[i:pwid])
-                mask = Signal(shiftbits, name="sm_mask%d" % i)
-                comb += mask.eq(sm.mask)
-                shifter_masks.append(mask)
+                comb += sm_mask.eq(sm.mask)
+                setattr(m.submodules, "sm%d" % i, sm)
             else: # having a 0 width signal seems to give the proof issues
-                shifter_masks.append((1<<min_bits)-1)
-        print(m.submodules)
+                # this seems to fix it
+                comb += sm_mask.eq((1<<min_bits)-1)
+            if i != 0:
+                shifter_mask = Signal(shiftbits, name="shifter_mask%d" % i)
+                comb += shifter_mask.eq(Mux(gates[i-1],
+                                         sm_mask,
+                                         shifter_masks[i-1]))
+                shifter_masks.append(shifter_mask)
+            else:
+                shifter_masks.append(sm_mask)
 
         for i, interval in enumerate(intervals):
             s,e = interval

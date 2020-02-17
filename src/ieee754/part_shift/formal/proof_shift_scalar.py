@@ -62,19 +62,19 @@ class ShifterDriver(Elaboratable):
         expected = Signal(width)
 
         with m.Switch(points.as_sig()):
-            # with m.Case(0b00):
-            #     comb += Assert(
-            #         out[0:24] == (data[0:24] << (shifter & 0x1f)) & 0xffffff)
+            with m.Case(0b00):
+                comb += Assert(
+                    out[0:24] == (data[0:24] << (shifter & 0x1f)) & 0xffffff)
 
             with m.Case(0b01):
                 comb += Assert(out[0:8] ==
                                (data[0:8] << (shifter & 0x7)) & 0xFF)
-                # comb += Assert(out[8:16] ==
-                #                (data[8:16] << (shifter)) & 0xffff)
+                comb += Assert(out[8:24] ==
+                               (data[8:24] << (shifter & 0xf)) & 0xffff)
 
-            # with m.Case(0b10):
-                # comb += Assert(out[16:24] ==
-                #                (data[16:24] << (shifter & 0x7)) & 0xff)
+            with m.Case(0b10):
+                comb += Assert(out[16:24] ==
+                               (data[16:24] << (shifter & 0x7)) & 0xff)
                 comb += Assert(out[0:16] ==
                                (data[0:16] << (shifter & 0xf)) & 0xffff)
 
@@ -92,8 +92,8 @@ class PartitionedScalarShiftTestCase(FHDLTestCase):
         module = ShifterDriver()
         self.assertFormal(module, mode="bmc", depth=4)
     def test_ilang(self):
-        width = 32
-        mwidth = 4
+        width = 24
+        mwidth = 3
         gates = Signal(mwidth-1)
         points = PartitionPoints()
         step = int(width/mwidth)
