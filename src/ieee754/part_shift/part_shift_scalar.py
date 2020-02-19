@@ -23,10 +23,10 @@ class PartitionedScalarShift(Elaboratable):
         self.width = width
         self.partition_points = PartitionPoints(partition_points)
 
-        self.data = Signal(width)
+        self.data = Signal(width, reset_less=True)
         self.shiftbits = math.ceil(math.log2(width))
-        self.shifter = Signal(self.shiftbits)
-        self.output = Signal(width)
+        self.shifter = Signal(self.shiftbits, reset_less=True)
+        self.output = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
@@ -34,7 +34,7 @@ class PartitionedScalarShift(Elaboratable):
         width = self.width
         pwid = self.partition_points.get_max_partition_count(width)-1
         shiftbits = self.shiftbits
-        shifted = Signal(self.data.width)
+        shifted = Signal(self.data.width, reset_less=True)
         gates = self.partition_points.as_sig()
         comb += shifted.eq(self.data << self.shifter)
 
@@ -55,7 +55,7 @@ class PartitionedScalarShift(Elaboratable):
         shifter_masks = []
         for i in range(len(intervals)):
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
-            sm_mask = Signal(shiftbits, name="sm_mask%d" % i)
+            sm_mask = Signal(shiftbits, name="sm_mask%d" % i, reset_less=True)
             if pwid-i != 0:
                 sm = ShifterMask(pwid-i, shiftbits,
                                  max_bits, min_bits)
@@ -66,7 +66,8 @@ class PartitionedScalarShift(Elaboratable):
                 # this seems to fix it
                 comb += sm_mask.eq((1<<min_bits)-1)
             if i != 0:
-                shifter_mask = Signal(shiftbits, name="shifter_mask%d" % i)
+                shifter_mask = Signal(shiftbits, name="shifter_mask%d" % i,
+                                      reset_less=True)
                 comb += shifter_mask.eq(Mux(gates[i-1],
                                          sm_mask,
                                          shifter_masks[i-1]))
@@ -76,8 +77,9 @@ class PartitionedScalarShift(Elaboratable):
 
         for i, interval in enumerate(intervals):
             s,e = interval
-            sp = Signal(width, name="sp%d" % i)
-            _shifter = Signal(self.shifter.width, name="shifter%d" % i)
+            sp = Signal(width, name="sp%d" % i, reset_less=True)
+            _shifter = Signal(self.shifter.width, name="shifter%d" % i,
+                              reset_less=True)
             comb += _shifter.eq(self.shifter & shifter_masks[i])
             comb += sp[s:].eq(self.data[s:e] << _shifter)
             shiftparts.append(sp)
