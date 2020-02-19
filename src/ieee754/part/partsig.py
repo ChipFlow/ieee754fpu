@@ -95,20 +95,22 @@ class PartitionedSignal:
     def ls_op(self, op1, op2, carry):
         op1 = getsig(op1)
         if isinstance(op2, Const) or isinstance(op2, Signal):
+            scalar = True
             shape = op1.shape()
             pa = PartitionedScalarShift(shape[0], self.partpoints)
         else:
+            scalar = False
             op2 = getsig(op2)
             shape = op1.shape()
             pa = PartitionedDynamicShift(shape[0], self.partpoints)
         setattr(self.m.submodules, self.get_modname('ls'), pa)
         comb = self.m.d.comb
-        if isinstance(op2, Const) or isinstance(op2, Signal):
-            comb += pa.a.eq(op1)
-            comb += pa.b.eq(op2)
-        else:
+        if scalar:
             comb += pa.data.eq(op1)
             comb += pa.shifter.eq(op2)
+        else:
+            comb += pa.a.eq(op1)
+            comb += pa.b.eq(op2)
         # XXX TODO: carry-in, carry-out
         #comb += pa.carry_in.eq(carry)
         return (pa.output, 0)
