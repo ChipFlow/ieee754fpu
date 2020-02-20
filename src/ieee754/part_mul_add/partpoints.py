@@ -18,7 +18,7 @@ def make_partition(mask, width):
     mlen = mask.shape()[0]
     ppos = mlen
     midx = 0
-    while ppos < width:
+    while ppos < width-1: # -1, ignore last bit
         ppoints[ppos] = mask[midx]
         ppos += mlen
         midx += 1
