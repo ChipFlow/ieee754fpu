@@ -47,6 +47,66 @@ def create_simulator(module, traces, test_name):
                      traces=traces)
 
 
+# XXX this is for coriolis2 experimentation
+class TestAddMod2(Elaboratable):
+    def __init__(self, width, partpoints):
+        self.partpoints = partpoints
+        self.a = PartitionedSignal(partpoints, width)
+        self.b = PartitionedSignal(partpoints, width)
+        self.bsig = Signal(width)
+        self.add_output = Signal(width)
+        self.ls_output = Signal(width) # left shift
+        self.ls_scal_output = Signal(width) # left shift
+        self.sub_output = Signal(width)
+        self.eq_output = Signal(len(partpoints)+1)
+        self.gt_output = Signal(len(partpoints)+1)
+        self.ge_output = Signal(len(partpoints)+1)
+        self.ne_output = Signal(len(partpoints)+1)
+        self.lt_output = Signal(len(partpoints)+1)
+        self.le_output = Signal(len(partpoints)+1)
+        self.mux_sel = Signal(len(partpoints)+1)
+        self.mux_out = Signal(width)
+        self.carry_in = Signal(len(partpoints)+1)
+        self.add_carry_out = Signal(len(partpoints)+1)
+        self.sub_carry_out = Signal(len(partpoints)+1)
+        self.neg_output = Signal(width)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+        sync = m.d.sync
+        self.a.set_module(m)
+        self.b.set_module(m)
+        # compares
+        sync += self.lt_output.eq(self.a < self.b)
+        sync += self.ne_output.eq(self.a != self.b)
+        sync += self.le_output.eq(self.a <= self.b)
+        sync += self.gt_output.eq(self.a > self.b)
+        sync += self.eq_output.eq(self.a == self.b)
+        sync += self.ge_output.eq(self.a >= self.b)
+        # add
+        add_out, add_carry = self.a.add_op(self.a, self.b,
+                                           self.carry_in)
+        sync += self.add_output.eq(add_out)
+        sync += self.add_carry_out.eq(add_carry)
+        # sub
+        sub_out, sub_carry = self.a.sub_op(self.a, self.b,
+                                           self.carry_in)
+        sync += self.sub_output.eq(sub_out)
+        sync += self.sub_carry_out.eq(sub_carry)
+        # neg
+        sync += self.neg_output.eq(-self.a)
+        # left shift
+        sync += self.ls_output.eq(self.a << self.b)
+        ppts = self.partpoints
+        sync += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
+        # scalar left shift
+        comb += self.bsig.eq(self.b.sig)
+        sync += self.ls_scal_output.eq(self.a << self.bsig)
+
+        return m
+
+
 class TestAddMod(Elaboratable):
     def __init__(self, width, partpoints):
         self.partpoints = partpoints
@@ -73,6 +133,7 @@ class TestAddMod(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
+        sync = m.d.sync
         self.a.set_module(m)
         self.b.set_module(m)
         # compares

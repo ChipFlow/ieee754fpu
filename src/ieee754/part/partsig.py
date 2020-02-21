@@ -51,7 +51,7 @@ class PartitionedSignal:
 
     def get_modname(self, category):
         self.modnames[category] += 1
-        return "mod_%s_%d" % (category, self.modnames[category])
+        return "%s_%d" % (category, self.modnames[category])
 
     def eq(self, val):
         return self.sig.eq(getsig(val))
