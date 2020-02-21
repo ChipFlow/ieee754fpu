@@ -29,6 +29,11 @@ class ShifterMask(Elaboratable):
         m = Module()
         comb = m.d.comb
 
+        # zero-width mustn't try to do anything
+        if self.pwid == 0:
+            self.mask.eq((1<<min_bits)-1)
+            return m
+
         bits = Signal(self.pwid, reset_less=True)
         bl = []
         for j in range(self.pwid):
