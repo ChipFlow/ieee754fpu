@@ -117,7 +117,8 @@ class PartitionedSignal:
         return (pa.output, 0)
 
     def __lshift__(self, other):
-        result, _ = self.ls_op(self, other, carry=0)
+        z = Const(0, self.sig.shape())
+        result, _ = self.ls_op(self, other, carry=z) # TODO, carry
         return result
 
     def __rlshift__(self, other):
