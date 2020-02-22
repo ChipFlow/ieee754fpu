@@ -64,7 +64,7 @@ class PartitionedSignal:
     # unary ops that require partitioning
 
     def __neg__(self):
-        z = Const(0, self.sig.shape())
+        z = Const(0, len(self.partpoints)+1)
         result, _ = self.add_op(self, ~0, carry=z)  # TODO, subop
         return result
 
@@ -117,7 +117,7 @@ class PartitionedSignal:
         return (pa.output, 0)
 
     def __lshift__(self, other):
-        z = Const(0, self.sig.shape())
+        z = Const(0, len(self.partpoints)+1)
         result, _ = self.ls_op(self, other, carry=z) # TODO, carry
         return result
 
