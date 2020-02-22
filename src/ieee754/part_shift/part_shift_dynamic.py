@@ -23,15 +23,19 @@ class ShifterMask(Elaboratable):
         self.min_bits = min_bits
         self.pwid = pwid
         self.mask = Signal(bwid, reset_less=True)
-        self.gates = Signal(pwid, reset_less=True)
+        if pwid != 0:
+            self.gates = Signal(pwid, reset_less=True)
 
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
 
+        minm = (1<<self.min_bits)-1
+        maxm = (1<<self.max_bits)-1
+
         # zero-width mustn't try to do anything
         if self.pwid == 0:
-            self.mask.eq((1<<self.min_bits)-1)
+            comb += self.mask.eq(minm)
             return m
 
         bits = Signal(self.pwid, reset_less=True)
@@ -46,8 +50,7 @@ class ShifterMask(Elaboratable):
         # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
         for j in range(bits.shape()[0]):
             comb += bits[j].eq(bl[j])
-        comb += self.mask.eq(Cat((1 << self.min_bits)-1, bits)
-                        & ((1 << self.max_bits)-1))
+        comb += self.mask.eq(Cat(minm, bits) & maxm)
 
         return m
 
@@ -137,11 +140,13 @@ class PartitionedDynamicShift(Elaboratable):
         # partition varies dynamically.
         shifter_masks = []
         for i in range(len(b_intervals)):
+            bitwid = pwid-i
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
-            sm = ShifterMask(pwid-i, b_intervals[i].shape()[0],
+            sm = ShifterMask(bitwid, b_intervals[i].shape()[0],
                              max_bits, min_bits)
             setattr(m.submodules, "sm%d" % i, sm)
-            comb += sm.gates.eq(gates[i:pwid])
+            if bitwid != 0:
+                comb += sm.gates.eq(gates[i:pwid])
             shifter_masks.append(sm.mask)
 
         print(shifter_masks)
