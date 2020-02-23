@@ -140,10 +140,13 @@ class PartitionedDynamicShift(Elaboratable):
         # partition varies dynamically.
         shifter_masks = []
         for i in range(len(b_intervals)):
+            bwid = b_intervals[i].shape()[0]
             bitwid = pwid-i
+            if bitwid == 0:
+                shifter_masks.append(C((1<<min_bits)-1, bwid))
+                continue
             max_bits = math.ceil(math.log2(width-intervals[i][0]))
-            sm = ShifterMask(bitwid, b_intervals[i].shape()[0],
-                             max_bits, min_bits)
+            sm = ShifterMask(bitwid, bwid, max_bits, min_bits)
             setattr(m.submodules, "sm%d" % i, sm)
             if bitwid != 0:
                 comb += sm.gates.eq(gates[i:pwid])
