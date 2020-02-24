@@ -42,6 +42,7 @@ class ShifterMask(Elaboratable):
         bl = []
         for j in range(self.pwid):
             bit = Signal(self.pwid, name="bit%d" % j, reset_less=True)
+            comb += bit.eq(C(0, self.pwid))
             if j != 0:
                 comb += bit.eq((~self.gates[j]) & bl[j-1])
             else:
@@ -50,7 +51,7 @@ class ShifterMask(Elaboratable):
         # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
         for j in range(bits.shape()[0]):
             comb += bits[j].eq(bl[j])
-        comb += self.mask.eq(Cat(minm, bits) & maxm)
+        comb += self.mask.eq(Cat(minm, bits) & C(maxm, self.mask.shape()))
 
         return m
 
