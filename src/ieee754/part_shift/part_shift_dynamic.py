@@ -51,6 +51,7 @@ class ShifterMask(Elaboratable):
         # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
         for j in range(bits.shape()[0]):
             comb += bits[j].eq(bl[j])
+        comb += self.mask.eq(C(0, self.mask.shape()))
         comb += self.mask.eq(Cat(minm, bits) & C(maxm, self.mask.shape()))
 
         return m
