@@ -41,12 +41,14 @@ class ShifterDriver(Elaboratable):
         shifter = Signal(shifterwidth)
         points = PartitionPoints()
         gates = Signal(mwidth-1)
+        bitrev = Signal()
         step = int(width/mwidth)
         for i in range(mwidth-1):
             points[(i+1)*step] = gates[i]
         print(points)
 
         comb += [data.eq(AnyConst(width)),
+                 bitrev.eq(AnyConst(1)),
                  shifter.eq(AnyConst(shifterwidth)),
                  gates.eq(AnyConst(mwidth-1))]
 
@@ -57,34 +59,37 @@ class ShifterDriver(Elaboratable):
 
         comb += [dut.data.eq(data),
                  dut.shifter.eq(shifter),
+                 dut.bitrev.eq(bitrev),
                  out.eq(dut.output)]
 
         expected = Signal(width)
 
-        with m.Switch(points.as_sig()):
-            with m.Case(0b00):
-                comb += Assert(
-                    out[0:24] == (data[0:24] << (shifter & 0x1f)) & 0xffffff)
+        with m.If(bitrev == 0):
+            with m.Switch(points.as_sig()):
+                with m.Case(0b00):
+                    comb += Assert(
+                        out[0:24] == (data[0:24] << (shifter & 0x1f)) &
+                        0xffffff)
 
-            with m.Case(0b01):
-                comb += Assert(out[0:8] ==
-                               (data[0:8] << (shifter & 0x7)) & 0xFF)
-                comb += Assert(out[8:24] ==
-                               (data[8:24] << (shifter & 0xf)) & 0xffff)
+                with m.Case(0b01):
+                    comb += Assert(out[0:8] ==
+                                (data[0:8] << (shifter & 0x7)) & 0xFF)
+                    comb += Assert(out[8:24] ==
+                                (data[8:24] << (shifter & 0xf)) & 0xffff)
 
-            with m.Case(0b10):
-                comb += Assert(out[16:24] ==
-                               (data[16:24] << (shifter & 0x7)) & 0xff)
-                comb += Assert(out[0:16] ==
-                               (data[0:16] << (shifter & 0xf)) & 0xffff)
+                with m.Case(0b10):
+                    comb += Assert(out[16:24] ==
+                                (data[16:24] << (shifter & 0x7)) & 0xff)
+                    comb += Assert(out[0:16] ==
+                                (data[0:16] << (shifter & 0xf)) & 0xffff)
 
-            with m.Case(0b11):
-                comb += Assert(out[0:8] ==
-                               (data[0:8] << (shifter & 0x7)) & 0xFF)
-                comb += Assert(out[8:16] ==
-                               (data[8:16] << (shifter & 0x7)) & 0xff)
-                comb += Assert(out[16:24] ==
-                               (data[16:24] << (shifter & 0x7)) & 0xff)
+                with m.Case(0b11):
+                    comb += Assert(out[0:8] ==
+                                (data[0:8] << (shifter & 0x7)) & 0xFF)
+                    comb += Assert(out[8:16] ==
+                                (data[8:16] << (shifter & 0x7)) & 0xff)
+                    comb += Assert(out[16:24] ==
+                                (data[16:24] << (shifter & 0x7)) & 0xff)
         return m
 
 class PartitionedScalarShiftTestCase(FHDLTestCase):

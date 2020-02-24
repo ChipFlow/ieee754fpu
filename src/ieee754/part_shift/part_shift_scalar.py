@@ -15,6 +15,7 @@ See:
 from nmigen import Signal, Module, Elaboratable, Cat, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_shift.part_shift_dynamic import ShifterMask
+from ieee754.part_shift.bitrev import GatedBitReverse
 import math
 
 
@@ -27,6 +28,8 @@ class PartitionedScalarShift(Elaboratable):
         self.shiftbits = math.ceil(math.log2(width))
         self.shifter = Signal(self.shiftbits, reset_less=True)
         self.output = Signal(width, reset_less=True)
+        self.bitrev = Signal(reset_less=True) # Whether to bit-reverse the
+                                              # input and output
 
     def elaborate(self, platform):
         m = Module()
@@ -34,20 +37,26 @@ class PartitionedScalarShift(Elaboratable):
         width = self.width
         pwid = self.partition_points.get_max_partition_count(width)-1
         shiftbits = self.shiftbits
-        shifted = Signal(self.data.width, reset_less=True)
         gates = self.partition_points.as_sig()
-        comb += shifted.eq(self.data << self.shifter)
 
         parts = []
         outputs = []
         shiftparts = []
         intervals = []
         keys = list(self.partition_points.keys()) + [self.width]
+
+        m.submodules.in_br = in_br = GatedBitReverse(self.data.width)
+        comb += in_br.data.eq(self.data)
+        comb += in_br.reverse_en.eq(self.bitrev)
+
+        m.submodules.out_br = out_br = GatedBitReverse(self.data.width)
+        comb += out_br.reverse_en.eq(self.bitrev)
+        comb += self.output.eq(out_br.output)
         start = 0
         for i in range(len(keys)):
             end = keys[i]
-            parts.append(self.data[start:end])
-            outputs.append(self.output[start:end])
+            parts.append(in_br.output[start:end])
+            outputs.append(out_br.data[start:end])
             intervals.append((start,end))
             start = end  # for next time round loop
 
@@ -81,7 +90,7 @@ class PartitionedScalarShift(Elaboratable):
             _shifter = Signal(self.shifter.width, name="shifter%d" % i,
                               reset_less=True)
             comb += _shifter.eq(self.shifter & shifter_masks[i])
-            comb += sp[s:].eq(self.data[s:e] << _shifter)
+            comb += sp[s:].eq(in_br.output[s:e] << _shifter)
             shiftparts.append(sp)
 
 
