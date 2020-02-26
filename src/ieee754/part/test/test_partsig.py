@@ -57,8 +57,8 @@ class TestAddMod2(Elaboratable):
         self.add_output = Signal(width)
         self.ls_output = Signal(width) # left shift
         self.ls_scal_output = Signal(width) # left shift
-        self.rs_output = Signal(width) # left shift
-        self.rs_scal_output = Signal(width) # left shift
+        self.rs_output = Signal(width) # right shift
+        self.rs_scal_output = Signal(width) # right shift
         self.sub_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
         self.gt_output = Signal(len(partpoints)+1)
@@ -120,8 +120,8 @@ class TestAddMod(Elaboratable):
         self.add_output = Signal(width)
         self.ls_output = Signal(width) # left shift
         self.ls_scal_output = Signal(width) # left shift
-        self.rs_output = Signal(width) # left shift
-        self.rs_scal_output = Signal(width) # left shift
+        self.rs_output = Signal(width) # right shift
+        self.rs_scal_output = Signal(width) # right shift
         self.sub_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
         self.gt_output = Signal(len(partpoints)+1)
@@ -163,12 +163,15 @@ class TestAddMod(Elaboratable):
         comb += self.neg_output.eq(-self.a)
         # left shift
         comb += self.ls_output.eq(self.a << self.b)
+        # right shift
         comb += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
+        # mux
         comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
         # scalar left shift
         comb += self.bsig.eq(self.b.sig)
         comb += self.ls_scal_output.eq(self.a << self.bsig)
+        # scalar right shift
         comb += self.rs_scal_output.eq(self.a >> self.bsig)
 
         return m
