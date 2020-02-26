@@ -41,14 +41,14 @@ class ShifterDriver(Elaboratable):
         shifter = Signal(shifterwidth)
         points = PartitionPoints()
         gates = Signal(mwidth-1)
-        bitrev = Signal()
+        shift_right = Signal()
         step = int(width/mwidth)
         for i in range(mwidth-1):
             points[(i+1)*step] = gates[i]
         print(points)
 
         comb += [data.eq(AnyConst(width)),
-                 bitrev.eq(AnyConst(1)),
+                 shift_right.eq(AnyConst(1)),
                  shifter.eq(AnyConst(shifterwidth)),
                  gates.eq(AnyConst(mwidth-1))]
 
@@ -59,12 +59,12 @@ class ShifterDriver(Elaboratable):
 
         comb += [dut.data.eq(data),
                  dut.shifter.eq(shifter),
-                 dut.bitrev.eq(bitrev),
+                 dut.shift_right.eq(shift_right),
                  out.eq(dut.output)]
 
         expected = Signal(width)
 
-        with m.If(bitrev == 0):
+        with m.If(shift_right == 0):
             with m.Switch(points.as_sig()):
                 with m.Case(0b00):
                     comb += Assert(

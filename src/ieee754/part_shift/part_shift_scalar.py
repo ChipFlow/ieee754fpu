@@ -28,8 +28,7 @@ class PartitionedScalarShift(Elaboratable):
         self.shiftbits = math.ceil(math.log2(width))
         self.shifter = Signal(self.shiftbits, reset_less=True)
         self.output = Signal(width, reset_less=True)
-        self.bitrev = Signal(reset_less=True) # Whether to bit-reverse the
-                                              # input and output
+        self.shift_right = Signal(reset_less=True) # Whether to shift right
 
     def elaborate(self, platform):
         m = Module()
@@ -47,15 +46,15 @@ class PartitionedScalarShift(Elaboratable):
 
         m.submodules.in_br = in_br = GatedBitReverse(self.data.width)
         comb += in_br.data.eq(self.data)
-        comb += in_br.reverse_en.eq(self.bitrev)
+        comb += in_br.reverse_en.eq(self.shift_right)
 
         m.submodules.out_br = out_br = GatedBitReverse(self.data.width)
-        comb += out_br.reverse_en.eq(self.bitrev)
+        comb += out_br.reverse_en.eq(self.shift_right)
         comb += self.output.eq(out_br.output)
 
         m.submodules.gate_br = gate_br = GatedBitReverse(pwid)
         comb += gate_br.data.eq(gates)
-        comb += gate_br.reverse_en.eq(self.bitrev)
+        comb += gate_br.reverse_en.eq(self.shift_right)
         start = 0
         for i in range(len(keys)):
             end = keys[i]

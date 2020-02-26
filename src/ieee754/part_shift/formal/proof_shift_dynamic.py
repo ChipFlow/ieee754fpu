@@ -38,7 +38,7 @@ class ShifterDriver(Elaboratable):
         # setup the inputs and outputs of the DUT as anyconst
         a = Signal(width)
         b = Signal(width)
-        bitrev = Signal()
+        shift_right = Signal()
         out = Signal(width)
         points = PartitionPoints()
         gates = Signal(mwidth-1)
@@ -49,7 +49,7 @@ class ShifterDriver(Elaboratable):
 
         comb += [a.eq(AnyConst(width)),
                  b.eq(AnyConst(width)),
-                 bitrev.eq(AnyConst(1)),
+                 shift_right.eq(AnyConst(1)),
                  gates.eq(AnyConst(mwidth-1))]
 
         m.submodules.dut = dut = PartitionedDynamicShift(width, points)
@@ -60,11 +60,11 @@ class ShifterDriver(Elaboratable):
 
         comb += [dut.a.eq(a),
                  dut.b.eq(b),
-                 dut.bitrev.eq(bitrev),
+                 dut.shift_right.eq(shift_right),
                  out.eq(dut.output)]
 
 
-        with m.If(bitrev == 0):
+        with m.If(shift_right == 0):
             with m.Switch(points.as_sig()):
                 with m.Case(0b000):
                     comb += Assert(out == (a<<b[0:5]) & 0xffffffff)

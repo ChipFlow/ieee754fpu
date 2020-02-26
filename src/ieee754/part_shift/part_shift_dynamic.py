@@ -104,7 +104,7 @@ class PartitionedDynamicShift(Elaboratable):
 
         self.a = Signal(width, reset_less=True)
         self.b = Signal(width, reset_less=True)
-        self.bitrev = Signal(reset_less=True)
+        self.shift_right = Signal(reset_less=True)
         self.output = Signal(width, reset_less=True)
 
     def elaborate(self, platform):
@@ -121,15 +121,15 @@ class PartitionedDynamicShift(Elaboratable):
 
         m.submodules.a_br = a_br = GatedBitReverse(self.a.width)
         comb += a_br.data.eq(self.a)
-        comb += a_br.reverse_en.eq(self.bitrev)
+        comb += a_br.reverse_en.eq(self.shift_right)
 
         m.submodules.out_br = out_br = GatedBitReverse(self.output.width)
-        comb += out_br.reverse_en.eq(self.bitrev)
+        comb += out_br.reverse_en.eq(self.shift_right)
         comb += self.output.eq(out_br.output)
 
         m.submodules.gate_br = gate_br = GatedBitReverse(pwid)
         comb += gate_br.data.eq(gates)
-        comb += gate_br.reverse_en.eq(self.bitrev)
+        comb += gate_br.reverse_en.eq(self.shift_right)
 
 
         # break out both the input and output into partition-stratified blocks
@@ -205,7 +205,7 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(len(b_shl_amount)):
             shift_amount = Signal(masked_b[i].width, name="shift_amount%d" % i)
             comb += shift_amount.eq(
-                Mux(self.bitrev, b_shr_amount[i], b_shl_amount[i]))
+                Mux(self.shift_right, b_shr_amount[i], b_shl_amount[i]))
             shift_amounts.append(shift_amount)
 
         partial_results = []
