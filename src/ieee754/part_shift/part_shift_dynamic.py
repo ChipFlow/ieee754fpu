@@ -162,7 +162,7 @@ class PartitionedDynamicShift(Elaboratable):
             sm = ShifterMask(bitwid, bwid, max_bits, min_bits)
             setattr(m.submodules, "sm%d" % i, sm)
             if bitwid != 0:
-                comb += sm.gates.eq(gate_br.output[i:pwid])
+                comb += sm.gates.eq(gates[i:pwid])
             shifter_masks.append(sm.mask)
 
         print(shifter_masks)
@@ -192,15 +192,28 @@ class PartitionedDynamicShift(Elaboratable):
                           reset_less=True)
             comb += masked.eq(b_intervals[i] & shifter_masks[i])
             masked_b.append(masked)
-
+        b_shl_amount = []
         element = Signal(b_intervals[0].shape(), reset_less=True)
         comb += element.eq(masked_b[0])
+        b_shl_amount.append(element)
+        for i in range(1, len(keys)):
+            element = Mux(gates[i-1], masked_b[i], element)
+            b_shl_amount.append(element)
+        b_shr_amount = list(reversed(b_shl_amount))
+
+        shift_amounts = []
+        for i in range(len(b_shl_amount)):
+            shift_amount = Signal(masked_b[i].width, name="shift_amount%d" % i)
+            comb += shift_amount.eq(
+                Mux(self.bitrev, b_shr_amount[i], b_shl_amount[i]))
+            shift_amounts.append(shift_amount)
+
         partial_results = []
         partial = Signal(width, name="partial0", reset_less=True)
-        comb += partial.eq(a_intervals[0] << element)
+        comb += partial.eq(a_intervals[0] << shift_amounts[0])
+
         partial_results.append(partial)
         for i in range(1, len(keys)):
-            element = Mux(gate_br.output[i-1], masked_b[i], element)
             reswid = width - intervals[i][0]
             shiftbits = math.ceil(math.log2(reswid+1))+1 # hmmm...
             print ("partial", reswid, width, intervals[i], shiftbits)
@@ -208,7 +221,7 @@ class PartitionedDynamicShift(Elaboratable):
             pr = PartialResult(pwid, b_intervals[i].shape()[0], reswid)
             setattr(m.submodules, "pr%d" % i, pr)
             comb += pr.gate.eq(gate_br.output[i-1])
-            comb += pr.b.eq(element)
+            comb += pr.b.eq(shift_amounts[i])
             comb += pr.a_interval.eq(a_intervals[i])
             partial_results.append(pr.partial)
 
@@ -235,4 +248,3 @@ class PartitionedDynamicShift(Elaboratable):
         comb += out_br.data.eq(Cat(*out))
 
         return m
-
