@@ -206,11 +206,19 @@ class PartitionedDynamicShift(Elaboratable):
         for i in range(1, len(keys)):
             element = Mux(gates[i-1], masked_b[i], element)
             b_shl_amount.append(element) # FIXME: creates an O(N^2) cascade
+            # TODO: store result of Mux in a Signal of the correct width
+            # then append *that* into b_shl_amount
+
+        # because the right-shift input is reversed, we have to also
+        # reverse the *order* of the shift amounts (not the bits *in* the
+        # shift amounts)
         b_shr_amount = list(reversed(b_shl_amount))
 
         # select shift-amount (b) for partition based on op being left or right
         shift_amounts = []
         for i in range(len(b_shl_amount)):
+            # FIXME: all signals (with very few exceptions) have to be
+            # reset_less
             shift_amount = Signal(masked_b[i].width, name="shift_amount%d" % i)
             sel = Mux(self.shift_right, b_shr_amount[i], b_shl_amount[i])
             comb += shift_amount.eq(sel)
