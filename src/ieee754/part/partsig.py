@@ -93,7 +93,7 @@ class PartitionedSignal:
     # TODO: detect if the 2nd operand is a Const, a Signal or a
     # PartitionedSignal.  if it's a Const or a Signal, a global shift
     # can occur.  if it's a PartitionedSignal, that's much more interesting.
-    def ls_op(self, op1, op2, carry):
+    def ls_op(self, op1, op2, carry, shr_flag=0):
         op1 = getsig(op1)
         if isinstance(op2, Const) or isinstance(op2, Signal):
             scalar = True
@@ -109,9 +109,11 @@ class PartitionedSignal:
         if scalar:
             comb += pa.data.eq(op1)
             comb += pa.shifter.eq(op2)
+            comb += pa.shift_right.eq(shr_flag)
         else:
             comb += pa.a.eq(op1)
             comb += pa.b.eq(op2)
+            comb += pa.shift_right.eq(shr_flag)
         # XXX TODO: carry-in, carry-out
         #comb += pa.carry_in.eq(carry)
         return (pa.output, 0)
@@ -126,8 +128,9 @@ class PartitionedSignal:
         return Operator("<<", [other, self])
 
     def __rshift__(self, other):
-        raise NotImplementedError
-        return Operator(">>", [self, other])
+        z = Const(0, len(self.partpoints)+1)
+        result, _ = self.ls_op(self, other, carry=z, shr_flag=1) # TODO, carry
+        return result
 
     def __rrshift__(self, other):
         raise NotImplementedError

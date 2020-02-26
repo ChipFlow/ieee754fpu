@@ -57,6 +57,8 @@ class TestAddMod2(Elaboratable):
         self.add_output = Signal(width)
         self.ls_output = Signal(width) # left shift
         self.ls_scal_output = Signal(width) # left shift
+        self.rs_output = Signal(width) # left shift
+        self.rs_scal_output = Signal(width) # left shift
         self.sub_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
         self.gt_output = Signal(len(partpoints)+1)
@@ -98,11 +100,13 @@ class TestAddMod2(Elaboratable):
         sync += self.neg_output.eq(-self.a)
         # left shift
         sync += self.ls_output.eq(self.a << self.b)
+        sync += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
         sync += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
         # scalar left shift
         comb += self.bsig.eq(self.b.sig)
         sync += self.ls_scal_output.eq(self.a << self.bsig)
+        sync += self.rs_scal_output.eq(self.a >> self.bsig)
 
         return m
 
@@ -116,6 +120,8 @@ class TestAddMod(Elaboratable):
         self.add_output = Signal(width)
         self.ls_output = Signal(width) # left shift
         self.ls_scal_output = Signal(width) # left shift
+        self.rs_output = Signal(width) # left shift
+        self.rs_scal_output = Signal(width) # left shift
         self.sub_output = Signal(width)
         self.eq_output = Signal(len(partpoints)+1)
         self.gt_output = Signal(len(partpoints)+1)
@@ -157,11 +163,13 @@ class TestAddMod(Elaboratable):
         comb += self.neg_output.eq(-self.a)
         # left shift
         comb += self.ls_output.eq(self.a << self.b)
+        comb += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
         comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
         # scalar left shift
         comb += self.bsig.eq(self.b.sig)
         comb += self.ls_scal_output.eq(self.a << self.bsig)
+        comb += self.rs_scal_output.eq(self.a >> self.bsig)
 
         return m
 
@@ -199,6 +207,23 @@ class TestPartitionPoints(unittest.TestCase):
                 print("res", hex(a), hex(b), hex(sum), hex(mask), hex(result))
                 return result, carry
 
+            def test_rs_scal_fn(carry_in, a, b, mask):
+                # reduce range of b
+                bits = count_bits(mask)
+                newb = b & ((bits-1))
+                print ("%x %x %x bits %d trunc %x" % \
+                        (a, b, mask, bits, newb))
+                b = newb
+                # TODO: carry
+                carry_in = 0
+                lsb = mask & ~(mask-1) if carry_in else 0
+                sum = ((a & mask) >> b)
+                result = mask & sum
+                carry = (sum & mask) != sum
+                carry = 0
+                print("res", hex(a), hex(b), hex(sum), hex(mask), hex(result))
+                return result, carry
+
             def test_ls_fn(carry_in, a, b, mask):
                 # reduce range of b
                 bits = count_bits(mask)
@@ -213,6 +238,26 @@ class TestPartitionPoints(unittest.TestCase):
                 b = (b & mask)
                 b = b >>fz
                 sum = ((a & mask) << b)
+                result = mask & sum
+                carry = (sum & mask) != sum
+                carry = 0
+                print("res", hex(a), hex(b), hex(sum), hex(mask), hex(result))
+                return result, carry
+
+            def test_rs_fn(carry_in, a, b, mask):
+                # reduce range of b
+                bits = count_bits(mask)
+                fz = first_zero(mask)
+                newb = b & ((bits-1)<<fz)
+                print ("%x %x %x bits %d zero %d trunc %x" % \
+                        (a, b, mask, bits, fz, newb))
+                b = newb
+                # TODO: carry
+                carry_in = 0
+                lsb = mask & ~(mask-1) if carry_in else 0
+                b = (b & mask)
+                b = b >>fz
+                sum = ((a & mask) >> b)
                 result = mask & sum
                 carry = (sum & mask) != sum
                 carry = 0
@@ -279,6 +324,8 @@ class TestPartitionPoints(unittest.TestCase):
             for (test_fn, mod_attr) in (
                                         (test_ls_scal_fn, "ls_scal"),
                                         (test_ls_fn, "ls"),
+                                        (test_rs_scal_fn, "rs_scal"),
+                                        (test_rs_fn, "rs"),
                                         (test_add_fn, "add"),
                                         (test_sub_fn, "sub"),
                                         (test_neg_fn, "neg"),
