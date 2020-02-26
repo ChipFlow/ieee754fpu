@@ -52,6 +52,10 @@ class PartitionedScalarShift(Elaboratable):
         m.submodules.out_br = out_br = GatedBitReverse(self.data.width)
         comb += out_br.reverse_en.eq(self.bitrev)
         comb += self.output.eq(out_br.output)
+
+        m.submodules.gate_br = gate_br = GatedBitReverse(pwid)
+        comb += gate_br.data.eq(gates)
+        comb += gate_br.reverse_en.eq(self.bitrev)
         start = 0
         for i in range(len(keys)):
             end = keys[i]
@@ -68,7 +72,7 @@ class PartitionedScalarShift(Elaboratable):
             if pwid-i != 0:
                 sm = ShifterMask(pwid-i, shiftbits,
                                  max_bits, min_bits)
-                comb += sm.gates.eq(gates[i:pwid])
+                comb += sm.gates.eq(gate_br.output[i:pwid])
                 comb += sm_mask.eq(sm.mask)
                 setattr(m.submodules, "sm%d" % i, sm)
             else: # having a 0 width signal seems to give the proof issues
@@ -77,7 +81,7 @@ class PartitionedScalarShift(Elaboratable):
             if i != 0:
                 shifter_mask = Signal(shiftbits, name="shifter_mask%d" % i,
                                       reset_less=True)
-                comb += shifter_mask.eq(Mux(gates[i-1],
+                comb += shifter_mask.eq(Mux(gate_br.output[i-1],
                                          sm_mask,
                                          shifter_masks[i-1]))
                 shifter_masks.append(shifter_mask)
@@ -99,7 +103,7 @@ class PartitionedScalarShift(Elaboratable):
             if i == 0:
                 intermed = shiftparts[i]
             else:
-                intermed = shiftparts[i] | Mux(gates[i-1], 0, prev)
+                intermed = shiftparts[i] | Mux(gate_br.output[i-1], 0, prev)
             comb += outputs[i].eq(intermed[start:end])
             prev = intermed
 
