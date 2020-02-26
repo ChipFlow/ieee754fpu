@@ -38,6 +38,7 @@ class ShifterDriver(Elaboratable):
         # setup the inputs and outputs of the DUT as anyconst
         a = Signal(width)
         b = Signal(width)
+        bitrev = Signal()
         out = Signal(width)
         points = PartitionPoints()
         gates = Signal(mwidth-1)
@@ -48,6 +49,7 @@ class ShifterDriver(Elaboratable):
 
         comb += [a.eq(AnyConst(width)),
                  b.eq(AnyConst(width)),
+                 bitrev.eq(AnyConst(1)),
                  gates.eq(AnyConst(mwidth-1))]
 
         m.submodules.dut = dut = PartitionedDynamicShift(width, points)
@@ -58,60 +60,71 @@ class ShifterDriver(Elaboratable):
 
         comb += [dut.a.eq(a),
                  dut.b.eq(b),
+                 dut.bitrev.eq(bitrev),
                  out.eq(dut.output)]
 
 
-        with m.Switch(points.as_sig()):
-            with m.Case(0b000):
-                comb += Assert(out == (a<<b[0:5]) & 0xffffffff)
-            with m.Case(0b001):
-                comb += Assert(out_intervals[0] ==
-                               (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
-                comb += Assert(Cat(out_intervals[1:4]) ==
-                               (Cat(a_intervals[1:4])
-                                << b_intervals[1][0:5]) & 0xffffff)
-            with m.Case(0b010):
-                comb += Assert(Cat(out_intervals[0:2]) ==
-                               (Cat(a_intervals[0:2])
-                                << (b_intervals[0] & 0xf)) & 0xffff)
-                comb += Assert(Cat(out_intervals[2:4]) ==
-                               (Cat(a_intervals[2:4])
-                                << (b_intervals[2] & 0xf)) & 0xffff)
-            with m.Case(0b011):
-                comb += Assert(out_intervals[0] ==
-                               (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
-                comb += Assert(out_intervals[1] ==
-                               (a_intervals[1] << b_intervals[1][0:3]) & 0xff)
-                comb += Assert(Cat(out_intervals[2:4]) ==
-                               (Cat(a_intervals[2:4])
-                                << b_intervals[2][0:4]) & 0xffff)
-            with m.Case(0b100):
-                comb += Assert(Cat(out_intervals[0:3]) ==
-                               (Cat(a_intervals[0:3])
-                                << b_intervals[0][0:5]) & 0xffffff)
-                comb += Assert(out_intervals[3] ==
-                               (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
-            with m.Case(0b101):
-                comb += Assert(out_intervals[0] ==
-                               (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
-                comb += Assert(Cat(out_intervals[1:3]) ==
-                               (Cat(a_intervals[1:3])
-                                << b_intervals[1][0:4]) & 0xffff)
-                comb += Assert(out_intervals[3] ==
-                               (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
-            with m.Case(0b110):
-                comb += Assert(Cat(out_intervals[0:2]) ==
-                               (Cat(a_intervals[0:2])
-                                << b_intervals[0][0:4]) & 0xffff)
-                comb += Assert(out_intervals[2] ==
-                               (a_intervals[2] << b_intervals[2][0:3]) & 0xff)
-                comb += Assert(out_intervals[3] ==
-                               (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
-            with m.Case(0b111):
-                for i, o in enumerate(out_intervals):
-                    comb += Assert(o ==
-                                   (a_intervals[i] << b_intervals[i][0:3])
-                                   & 0xff)
+        with m.If(bitrev == 0):
+            with m.Switch(points.as_sig()):
+                with m.Case(0b000):
+                    comb += Assert(out == (a<<b[0:5]) & 0xffffffff)
+                with m.Case(0b001):
+                    comb += Assert(out_intervals[0] ==
+                                (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
+                    comb += Assert(Cat(out_intervals[1:4]) ==
+                                (Cat(a_intervals[1:4])
+                                    << b_intervals[1][0:5]) & 0xffffff)
+                with m.Case(0b010):
+                    comb += Assert(Cat(out_intervals[0:2]) ==
+                                (Cat(a_intervals[0:2])
+                                    << (b_intervals[0] & 0xf)) & 0xffff)
+                    comb += Assert(Cat(out_intervals[2:4]) ==
+                                (Cat(a_intervals[2:4])
+                                    << (b_intervals[2] & 0xf)) & 0xffff)
+                with m.Case(0b011):
+                    comb += Assert(out_intervals[0] ==
+                                (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
+                    comb += Assert(out_intervals[1] ==
+                                (a_intervals[1] << b_intervals[1][0:3]) & 0xff)
+                    comb += Assert(Cat(out_intervals[2:4]) ==
+                                (Cat(a_intervals[2:4])
+                                    << b_intervals[2][0:4]) & 0xffff)
+                with m.Case(0b100):
+                    comb += Assert(Cat(out_intervals[0:3]) ==
+                                (Cat(a_intervals[0:3])
+                                    << b_intervals[0][0:5]) & 0xffffff)
+                    comb += Assert(out_intervals[3] ==
+                                (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
+                with m.Case(0b101):
+                    comb += Assert(out_intervals[0] ==
+                                (a_intervals[0] << b_intervals[0][0:3]) & 0xff)
+                    comb += Assert(Cat(out_intervals[1:3]) ==
+                                (Cat(a_intervals[1:3])
+                                    << b_intervals[1][0:4]) & 0xffff)
+                    comb += Assert(out_intervals[3] ==
+                                (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
+                with m.Case(0b110):
+                    comb += Assert(Cat(out_intervals[0:2]) ==
+                                (Cat(a_intervals[0:2])
+                                    << b_intervals[0][0:4]) & 0xffff)
+                    comb += Assert(out_intervals[2] ==
+                                (a_intervals[2] << b_intervals[2][0:3]) & 0xff)
+                    comb += Assert(out_intervals[3] ==
+                                (a_intervals[3] << b_intervals[3][0:3]) & 0xff)
+                with m.Case(0b111):
+                    for i, o in enumerate(out_intervals):
+                        comb += Assert(o ==
+                                    (a_intervals[i] << b_intervals[i][0:3])
+                                    & 0xff)
+        with m.Else():
+            with m.Switch(points.as_sig()):
+                with m.Case(0b000):
+                    comb += Assert(out == (a>>b[0:5]) & 0xffffffff)
+                with m.Case(0b111):
+                    for i, o in enumerate(out_intervals):
+                        comb += Assert(o ==
+                                    (a_intervals[i] >> b_intervals[i][0:3])
+                                    & 0xff)
 
         return m
 
