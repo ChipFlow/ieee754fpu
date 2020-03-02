@@ -565,8 +565,9 @@ class MultiShiftRMerge(Elaboratable):
         m_mask = Signal(self.width, reset_less=True)
         smask = Signal(self.width, reset_less=True)
         stickybit = Signal(reset_less=True)
-        maxslen = Signal(self.smax, reset_less=True)
-        maxsleni = Signal(self.smax, reset_less=True)
+        # XXX GRR frickin nuisance https://github.com/nmigen/nmigen/issues/302
+        maxslen = Signal(self.smax[0], reset_less=True)
+        maxsleni = Signal(self.smax[0], reset_less=True)
 
         sm = MultiShift(self.width-1)
         m0s = Const(0, self.width-1)
