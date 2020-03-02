@@ -46,6 +46,8 @@ class FPMSBHigh(Elaboratable):
         # took a "reverse" argument.
 
         clz = Signal((len(self.e_out), True), reset_less=True)
+        # GRRR utterly irritating https://github.com/nmigen/nmigen/issues/302
+        uclz = Signal(len(self.e_out), reset_less=True)
         temp = Signal(mwid, reset_less=True)
         if self.loprop:
             temp_r = Signal(mwid, reset_less=True)
@@ -65,7 +67,8 @@ class FPMSBHigh(Elaboratable):
         m.d.comb += [
             pe.i.eq(self.m_in[::-1]),     # inverted
             clz.eq(limclz),          # count zeros from MSB down
-            temp.eq((self.m_in << clz)),  # shift mantissa UP
+            uclz.eq(limclz),         # *sigh*...
+            temp.eq((self.m_in << uclz)),  # shift mantissa UP
             self.e_out.eq(self.e_in - clz), # DECREASE exponent
         ]
         if self.loprop:
