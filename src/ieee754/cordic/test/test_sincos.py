@@ -38,7 +38,7 @@ class SinCosTestCase(FHDLTestCase):
             yield
             yield start.eq(0)
             yield
-            for i in range(10):
+            for i in range(fracbits + 5):
                 rdy = yield ready
                 if rdy == 1:
                     result = yield sin
@@ -56,16 +56,20 @@ class SinCosTestCase(FHDLTestCase):
             sim.run()
 
     def run_test_assert(self, z, fracbits=8):
-        (sin, cos) = run_cordic(z, fracbits=8, log=False)
-        self.run_test(zin=z, fracbits=8,
+        (sin, cos) = run_cordic(z, fracbits=fracbits, log=False)
+        self.run_test(zin=z, fracbits=fracbits,
                       expected_sin=sin, expected_cos=cos)
     def test_0(self):
         self.run_test_assert(0)
+
+    def test_neg(self):
+        self.run_test_assert(-6)
+    
     def test_rand(self):
-        fracbits = 8
+        fracbits = 16
         M = (1 << fracbits)
         ZMAX = int(round(M * math.pi/2))
-        for i in range(100):
+        for i in range(500):
             z = random.randrange(-ZMAX, ZMAX-1)
             self.run_test_assert(z, fracbits=fracbits)
             

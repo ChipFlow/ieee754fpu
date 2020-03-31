@@ -41,8 +41,8 @@ class CORDIC(Elaboratable):
         self.ZMAX = ZMAX = int(round(self.M * math.pi/2))
 
         # sin/cos output in 0.ffffff format
-        self.cos = Signal(range(-M, M-1), reset=0)
-        self.sin = Signal(range(-M, M-1), reset=0)
+        self.cos = Signal(range(-M, M+1), reset=0)
+        self.sin = Signal(range(-M, M+1), reset=0)
         # angle input
         self.z0 = Signal(range(-ZMAX, ZMAX), reset_less=True)
 
@@ -104,6 +104,7 @@ class CORDIC(Elaboratable):
             with m.If(i == self.iterations - 1):
                 sync += state.eq(CordicState.WAITING)
                 sync += self.ready.eq(1)
+                sync += anglerom.addr.eq(0)
             with m.Else():
                 sync += i.eq(i+1)
                 sync += anglerom.addr.eq(i+2)
