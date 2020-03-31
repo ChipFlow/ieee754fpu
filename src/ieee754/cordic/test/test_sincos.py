@@ -8,6 +8,7 @@ import unittest
 import math
 import random
 
+
 class SinCosTestCase(FHDLTestCase):
     def run_test(self, zin=0, fracbits=8, expected_sin=0, expected_cos=0):
 
@@ -59,12 +60,13 @@ class SinCosTestCase(FHDLTestCase):
         (sin, cos) = run_cordic(z, fracbits=fracbits, log=False)
         self.run_test(zin=z, fracbits=fracbits,
                       expected_sin=sin, expected_cos=cos)
+
     def test_0(self):
         self.run_test_assert(0)
 
     def test_neg(self):
         self.run_test_assert(-6)
-    
+
     def test_rand(self):
         fracbits = 16
         M = (1 << fracbits)
@@ -72,8 +74,7 @@ class SinCosTestCase(FHDLTestCase):
         for i in range(500):
             z = random.randrange(-ZMAX, ZMAX-1)
             self.run_test_assert(z, fracbits=fracbits)
-            
-        
+
 
 if __name__ == "__main__":
     unittest.main()
