@@ -1,4 +1,4 @@
-from nmigen import Module, Elaboratable, Signal, Memory
+from nmigen import Module, Elaboratable, Signal, Memory, signed
 from nmigen.cli import rtlil
 import math
 from enum import Enum, unique
@@ -41,15 +41,15 @@ class CORDIC(Elaboratable):
         self.ZMAX = ZMAX = int(round(self.M * math.pi/2))
 
         # sin/cos output in 0.ffffff format
-        self.cos = Signal(range(-M, M-1))
-        self.sin = Signal(range(-M, M-1))
+        self.cos = Signal(range(-M, M-1), reset=0)
+        self.sin = Signal(range(-M, M-1), reset=0)
         # angle input
         self.z0 = Signal(range(-ZMAX, ZMAX), reset_less=True)
 
         # cordic start flag
         self.start = Signal(reset_less=True)
         # cordic done/ready for input
-        self.ready = Signal()
+        self.ready = Signal(reset=True)
 
         self.width = self.z0.width
         self.iterations = self.width - 1
@@ -73,13 +73,16 @@ class CORDIC(Elaboratable):
         dy = Signal(self.sin.shape())
         dz = Signal(self.z0.shape())
         i = Signal(range(self.iterations))
-        
-        state = Signal(CordicState)
+        state = Signal(CordicState, reset=CordicState.WAITING)
 
         m.submodules.anglerom = anglerom = \
             CordicROM(self.fracbits, self.iterations)
-        comb += anglerom.addr.eq(i)
 
+        comb += dx.eq(y >> i)
+        comb += dy.eq(x >> i)
+        comb += dz.eq(anglerom.data)
+        comb += self.cos.eq(x)
+        comb += self.sin.eq(y)
         with m.If(state == CordicState.WAITING):
             with m.If(self.start):
                 sync += x.eq(X0)
@@ -88,17 +91,22 @@ class CORDIC(Elaboratable):
                 sync += i.eq(0)
                 sync += self.ready.eq(0)
                 sync += state.eq(CordicState.RUNNING)
+                sync += anglerom.addr.eq(1)
         with m.If(state == CordicState.RUNNING):
-            sync += dx.eq(x >> i)
-            sync += dx.eq(y >> i)
-            sync += dz.eq(anglerom.data)
+            with m.If(z >= 0):
+                sync += x.eq(x - dx)
+                sync += y.eq(y + dy)
+                sync += z.eq(z - dz)
+            with m.Else():
+                sync += x.eq(x + dx)
+                sync += y.eq(y - dy)
+                sync += z.eq(z + dz)
             with m.If(i == self.iterations - 1):
-                sync += self.cos.eq(x)
-                sync += self.sin.eq(y)
                 sync += state.eq(CordicState.WAITING)
                 sync += self.ready.eq(1)
             with m.Else():
                 sync += i.eq(i+1)
+                sync += anglerom.addr.eq(i+2)
         return m
 
     def ports(self):
