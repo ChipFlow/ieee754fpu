@@ -8,10 +8,10 @@ class CordicInitialStage(PipeModBase):
         super().__init__(pspec, "cordicinit")
 
     def ispec(self):
-        return CordicInitialData(self.pspec, False)
+        return CordicInitialData(self.pspec)
 
     def ospec(self):
-        return CordicData(self.pspec, False)
+        return CordicData(self.pspec)
 
     def elaborate(self, platform):
         m = Module()
@@ -35,10 +35,10 @@ class CordicStage(PipeModBase):
         self.stagenum = stagenum
 
     def ispec(self):
-        return CordicData(self.pspec, False)
+        return CordicData(self.pspec)
 
     def ospec(self):
-        return CordicData(self.pspec, False)
+        return CordicData(self.pspec)
 
     def elaborate(self, platform):
         m = Module()

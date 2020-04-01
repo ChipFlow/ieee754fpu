@@ -1,4 +1,5 @@
 from nmigen import Signal, Const
+from nmutil.dynamicpipe import DynamicPipe, SimpleHandshakeRedir
 import math
 
 class CordicInitialData:
@@ -11,7 +12,7 @@ class CordicInitialData:
         yield from self.z
 
     def eq(self, i):
-        return [self.z.eq(i.z)]
+        return [self.z0.eq(i.z0)]
 
 class CordicData:
 
@@ -40,3 +41,6 @@ class CordicPipeSpec:
         self.ZMAX = int(round(self.M * math.pi/2))
         zm = Const(-self.ZMAX)
         self.iterations = zm.width - 1
+
+        self.pipekls = SimpleHandshakeRedir
+        self.stage = None
