@@ -1,7 +1,32 @@
 from nmigen import Module, Signal, Cat, Mux
 from nmutil.pipemodbase import PipeModBase
-from ieee754.cordic.pipe_data import CordicData
+from ieee754.cordic.pipe_data import CordicData, CordicInitialData
 import math
+
+class CordicInitialStage(PipeModBase):
+    def __init__(self, pspec):
+        super().__init__(pspec, "cordicinit")
+
+    def ispec(self):
+        return CordicInitialData(self.pspec, False)
+
+    def ospec(self):
+        return CordicData(self.pspec, False)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+
+        An = 1.0
+        for i in range(self.pspec.iterations):
+            An *= math.sqrt(1 + 2**(-2*i))
+        X0 = int(round(self.pspec.M*1/An))
+
+        comb += self.o.x.eq(X0)
+        comb += self.o.y.eq(0)
+        comb += self.o.z.eq(self.i.z0)
+        
+
 
 
 class CordicStage(PipeModBase):
