@@ -1,0 +1,29 @@
+from nmigen import Signal
+import math
+
+
+class CordicData:
+
+    def __init__(self, pspec):
+
+        M = pspec.M
+        ZMAX = pspec.ZMAX
+        self.x = Signal(range(-M, M+1), name="x")   # operand a
+        self.y = Signal(range(-M, M+1), name="y")   # operand b
+        self.z = Signal(range(-ZMAX, ZMAX), name="z")     # denormed result
+
+    def __iter__(self):
+        yield from self.x
+        yield from self.y
+        yield from self.z
+
+    def eq(self, i):
+        ret = [self.z.eq(i.z), self.x.eq(i.x), self.y.eq(i.y)]
+        return ret
+
+
+class CordicPipeSpec:
+    def __init__(self, fracbits):
+        self.fracbits = fracbits
+        self.M = (1 << fracbits)
+        self.ZMAX = int(round(self.M * math.pi/2))

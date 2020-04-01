@@ -1,3 +1,7 @@
+# This is an unpipelined version of an sin/cos cordic, which will
+# later be used to verify the operation of a pipelined version
+
+# see http://bugs.libre-riscv.org/show_bug.cgi?id=208
 from nmigen import Module, Elaboratable, Signal, Memory, signed
 from nmigen.cli import rtlil
 import math
