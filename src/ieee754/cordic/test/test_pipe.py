@@ -1,5 +1,5 @@
 from nmigen import Module, Signal
-from nmigen.back.pysim import Simulator, Delay, Passive
+from nmigen.back.pysim import Simulator, Passive
 from nmigen.test.utils import FHDLTestCase
 
 from ieee754.cordic.sin_cos_pipeline import CordicBasePipe
@@ -57,13 +57,11 @@ class SinCosTestCase(FHDLTestCase):
                     except StopIteration:
                         break
 
-
         sim.add_sync_process(writer_process)
         sim.add_sync_process(reader_process)
         with sim.write_vcd("pipeline.vcd", "pipeline.gtkw", traces=[
                 z, x, y]):
             sim.run()
-
 
     def test_rand(self):
         fracbits = 16
@@ -77,7 +75,6 @@ class SinCosTestCase(FHDLTestCase):
             inputs.append(z)
             outputs.append((sin, cos))
         self.run_test(iter(inputs), iter(outputs), fracbits=fracbits)
-
 
 
 if __name__ == "__main__":

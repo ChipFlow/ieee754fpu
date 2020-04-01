@@ -1,7 +1,8 @@
-from nmigen import Module, Signal, Cat, Mux
+from nmigen import Module, Signal
 from nmutil.pipemodbase import PipeModBase
 from ieee754.cordic.pipe_data import CordicData, CordicInitialData
 import math
+
 
 class CordicInitialStage(PipeModBase):
     def __init__(self, pspec):
@@ -26,7 +27,6 @@ class CordicInitialStage(PipeModBase):
         comb += self.o.y.eq(0)
         comb += self.o.z.eq(self.i.z0)
         return m
-
 
 
 class CordicStage(PipeModBase):

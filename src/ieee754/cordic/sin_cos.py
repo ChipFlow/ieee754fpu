@@ -2,7 +2,7 @@
 # later be used to verify the operation of a pipelined version
 
 # see http://bugs.libre-riscv.org/show_bug.cgi?id=208
-from nmigen import Module, Elaboratable, Signal, Memory, signed
+from nmigen import Module, Elaboratable, Signal, Memory
 from nmigen.cli import rtlil
 import math
 from enum import Enum, unique
@@ -63,7 +63,6 @@ class CORDIC(Elaboratable):
         comb = m.d.comb
         sync = m.d.sync
 
-
         # Calculate initial amplitude?
         An = 1.0
         for i in range(self.iterations):
@@ -118,9 +117,9 @@ class CORDIC(Elaboratable):
         return [self.cos, self.sin, self.z0,
                 self.ready, self.start]
 
+
 if __name__ == '__main__':
     dut = CORDIC(8)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("cordic.il", "w") as f:
         f.write(vl)
-

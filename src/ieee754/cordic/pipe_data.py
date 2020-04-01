@@ -1,6 +1,7 @@
 from nmigen import Signal, Const
-from nmutil.dynamicpipe import DynamicPipe, SimpleHandshakeRedir
+from nmutil.dynamicpipe import SimpleHandshakeRedir
 import math
+
 
 class CordicInitialData:
 
@@ -13,6 +14,7 @@ class CordicInitialData:
 
     def eq(self, i):
         return [self.z0.eq(i.z0)]
+
 
 class CordicData:
 
