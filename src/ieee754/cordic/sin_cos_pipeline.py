@@ -17,16 +17,28 @@ class CordicPipeChain(PipeModBaseChain):
 class CordicBasePipe(ControlBase):
     def __init__(self, pspec):
         ControlBase.__init__(self)
+        self.pspec = pspec
         self.cordicstages = []
+        initstage = CordicInitialStage(pspec)
+        stages = []
         for i in range(pspec.iterations):
-            if i == 0:
-                stages = [CordicInitialStage(pspec), CordicStage(pspec, i)]
-            else:
-                stages = [CordicStage(pspec, i)]
-            stage = CordicPipeChain(pspec, stages)
-            self.cordicstages.append(stage)
+            stages.append(CordicStage(pspec, i))
+        chunks = self.chunkify(initstage, stages)
+        print(len(chunks))
+        for chunk in chunks:
+            chain = CordicPipeChain(pspec, chunk)
+            self.cordicstages.append(chain)
 
         self._eqs = self.connect(self.cordicstages)
+
+    def chunkify(self, initstage, stages):
+        chunks = []
+
+        for i in range(0, len(stages), self.pspec.rounds_per_stage):
+            chunks.append(stages[i:i + self.pspec.rounds_per_stage])
+        chunks[0].insert(0, initstage)
+
+        return chunks
 
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)

@@ -37,8 +37,10 @@ class CordicData:
 
 
 class CordicPipeSpec:
-    def __init__(self, fracbits):
+    def __init__(self, fracbits, rounds_per_stage):
         self.fracbits = fracbits
+        # Number of cordic operations per pipeline stage
+        self.rounds_per_stage = rounds_per_stage
         self.M = (1 << fracbits)
         self.ZMAX = int(round(self.M * math.pi/2))
         zm = Const(-self.ZMAX)

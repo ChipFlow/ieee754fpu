@@ -13,7 +13,7 @@ import random
 class SinCosTestCase(FHDLTestCase):
     def run_test(self, inputs, outputs, fracbits=8):
         m = Module()
-        pspec = CordicPipeSpec(fracbits=fracbits)
+        pspec = CordicPipeSpec(fracbits=fracbits, rounds_per_stage=4)
         m.submodules.dut = dut = CordicBasePipe(pspec)
 
         z = Signal(dut.p.data_i.z0.shape())
