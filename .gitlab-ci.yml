@@ -25,6 +25,7 @@ build:
     script:
         - python3 -m venv .env
         - . .env/bin/activate
+        - pip install nose
 
         - IEEE754FPU_PATH="$(pwd)"
         - git clone --depth 1 --recursive https://github.com/billzorn/sfpy.git sfpy
@@ -62,5 +63,4 @@ build:
         - popd
 
         - python setup.py develop
-
-        - python setup.py test
+        - nosetests -v --processes=-1
