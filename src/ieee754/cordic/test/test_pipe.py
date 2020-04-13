@@ -1,6 +1,7 @@
 from nmigen import Module, Signal
 from nmigen.back.pysim import Simulator, Passive
 from nmigen.test.utils import FHDLTestCase
+from nmigen.cli import rtlil
 
 from ieee754.cordic.sin_cos_pipeline import CordicBasePipe
 from ieee754.cordic.pipe_data import CordicPipeSpec
@@ -15,6 +16,13 @@ class SinCosTestCase(FHDLTestCase):
         m = Module()
         pspec = CordicPipeSpec(fracbits=fracbits, rounds_per_stage=4)
         m.submodules.dut = dut = CordicBasePipe(pspec)
+
+        for port in dut.ports():
+            print ("port", port)
+
+        vl = rtlil.convert(dut, ports=dut.ports())
+        with open("test_cordic_pipe_sin_cos.il", "w") as f:
+            f.write(vl)
 
         z = Signal(dut.p.data_i.z0.shape())
         z_valid = Signal()

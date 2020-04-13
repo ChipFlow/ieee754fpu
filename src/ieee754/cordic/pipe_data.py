@@ -10,7 +10,7 @@ class CordicInitialData:
         self.z0 = Signal(range(-ZMAX, ZMAX), name="z")     # denormed result
 
     def __iter__(self):
-        yield from self.z
+        yield self.z0
 
     def eq(self, i):
         return [self.z0.eq(i.z0)]
@@ -27,9 +27,9 @@ class CordicData:
         self.z = Signal(range(-ZMAX, ZMAX), name="z")     # denormed result
 
     def __iter__(self):
-        yield from self.x
-        yield from self.y
-        yield from self.z
+        yield self.x
+        yield self.y
+        yield self.z
 
     def eq(self, i):
         ret = [self.z.eq(i.z), self.x.eq(i.x), self.y.eq(i.y)]
