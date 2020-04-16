@@ -61,7 +61,7 @@ class CORDIC(Elaboratable):
         self.ready = Signal(reset=True)
 
         self.width = self.z0.width
-        self.iterations = self.width - 1
+        self.iterations = self.fracbits - 1
 
     def elaborate(self, platform):
         m = Module()

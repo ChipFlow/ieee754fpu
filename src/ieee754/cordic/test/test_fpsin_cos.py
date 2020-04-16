@@ -42,7 +42,7 @@ class SinCosTestCase(FHDLTestCase):
             yield
             yield start.eq(0)
             yield
-            for i in range(fracbits * 3):
+            for i in range(dut.fracbits+1):
                 rdy = yield ready
                 zo = yield dut.z_out
                 if rdy and not asserted:
@@ -55,6 +55,11 @@ class SinCosTestCase(FHDLTestCase):
                     real_sin = self.get_frac(real_sin, dut.sin.width - 2)
                     diff = abs(real_sin - expected_sin)
                     print(f"{real_sin} {expected_sin} {diff}")
+                    self.assertTrue(diff < 0.001)
+                    real_cos = yield dut.cos
+                    real_cos = self.get_frac(real_cos, dut.cos.width - 2)
+                    diff = abs(real_cos - expected_cos)
+                    print(f"{real_cos} {expected_cos} {diff}")
                     self.assertTrue(diff < 0.001)
                     
                 yield
