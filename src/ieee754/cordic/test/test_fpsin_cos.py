@@ -5,7 +5,7 @@ from nmigen.test.utils import FHDLTestCase
 from ieee754.cordic.fpsin_cos import CORDIC
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 from python_sin_cos import run_cordic
-from sfpy import Float16, Float32
+from sfpy import Float32, Float32
 import unittest
 import math
 import random
@@ -16,7 +16,7 @@ class SinCosTestCase(FHDLTestCase):
 
         m = Module()
 
-        m.submodules.dut = dut = CORDIC(16)
+        m.submodules.dut = dut = CORDIC(32)
         z = Signal(dut.z0.width)
         start = Signal()
 
@@ -61,7 +61,7 @@ class SinCosTestCase(FHDLTestCase):
                     diff = abs(real_cos - expected_cos)
                     print(f"{real_cos} {expected_cos} {diff}")
                     self.assertTrue(diff < 0.001)
-                    
+
                 yield
 
         sim.add_sync_process(process)
@@ -70,26 +70,26 @@ class SinCosTestCase(FHDLTestCase):
             sim.run()
 
     def run_test_assert(self, z, fracbits=8):
-        zpi = z * Float16(math.pi/2)
+        zpi = z * Float32(math.pi/2)
         e_sin = math.sin(zpi)
         e_cos = math.cos(zpi)
         self.run_test(zin=z, fracbits=fracbits, expected_sin=e_sin,
                       expected_cos=e_cos)
 
     def test_1(self):
-        x = Float16(1.0)
+        x = Float32(1.0)
         print(x)
         self.run_test_assert(x)
 
     def test_pi_4(self):
-        x = Float16(1/3)
+        x = Float32(1/3)
         print(x)
         self.run_test_assert(x)
 
     def test_rand(self):
         for i in range(500):
             z = random.uniform(-1, 1)
-            f = Float16(z)
+            f = Float32(z)
             self.run_test_assert(f)
 
     def get_frac(self, value, bits):
