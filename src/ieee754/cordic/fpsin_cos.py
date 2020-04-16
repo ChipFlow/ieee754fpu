@@ -25,7 +25,7 @@ class CordicROM(Elaboratable):
         self.addr = Signal(range(iterations))
         self.data = Signal(range(-M, M-1))
 
-        angles = [int(round(M*math.atan(2**(-i))))
+        angles = [int(round(M*math.atan(2**(-i))/(math.pi/2)))
                   for i in range(self.iterations)]
 
         self.mem = Memory(width=self.data.width,
@@ -121,7 +121,6 @@ class CORDIC(Elaboratable):
             sync += i.eq(0)
             sync += state.eq(CordicState.RUNNING)
             sync += anglerom.addr.eq(1)
-            sync += self.ready.eq(1)  # debug
         with m.If(state == CordicState.RUNNING):
             with m.If(z >= 0):
                 sync += x.eq(x - dx)

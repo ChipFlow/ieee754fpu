@@ -50,6 +50,13 @@ class SinCosTestCase(FHDLTestCase):
                     print(f"{zo:x} {frac}")
                     self.assertEqual(str(frac), zin.__str__())
                     asserted = True
+
+                    real_sin = yield dut.sin
+                    real_sin = self.get_frac(real_sin, dut.sin.width - 2)
+                    diff = abs(real_sin - expected_sin)
+                    print(f"{real_sin} {expected_sin} {diff}")
+                    self.assertTrue(diff < 0.001)
+                    
                 yield
 
         sim.add_sync_process(process)
@@ -58,15 +65,21 @@ class SinCosTestCase(FHDLTestCase):
             sim.run()
 
     def run_test_assert(self, z, fracbits=8):
-        self.run_test(zin=z, fracbits=fracbits)
+        zpi = z * Float16(math.pi/2)
+        e_sin = math.sin(zpi)
+        e_cos = math.cos(zpi)
+        self.run_test(zin=z, fracbits=fracbits, expected_sin=e_sin,
+                      expected_cos=e_cos)
 
     def test_1(self):
-        x = Float16(.31212)
+        x = Float16(1.0)
         print(x)
         self.run_test_assert(x)
 
-    # def test_neg(self):
-    #     self.run_test_assert(-6)
+    def test_pi_4(self):
+        x = Float16(1/3)
+        print(x)
+        self.run_test_assert(x)
 
     def test_rand(self):
         for i in range(500):
