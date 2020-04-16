@@ -2,7 +2,7 @@
 # later be used to verify the operation of a pipelined version
 
 # see http://bugs.libre-riscv.org/show_bug.cgi?id=208
-from nmigen import Module, Elaboratable, Signal, Memory
+from nmigen import Module, Elaboratable, Signal, Memory, Cat, Repl, Mux
 from nmigen.cli import rtlil
 import math
 from enum import Enum, unique
@@ -44,10 +44,11 @@ class CORDIC(Elaboratable):
     def __init__(self, width):
 
         self.z0 = Signal(width, name="z0")
-        self.z_record = FPNumBaseRecord(self.z0.width, m_extra=True)
+        self.z_record = FPNumBaseRecord(self.z0.width, False, name="z_record")
         self.fracbits = 2 * self.z_record.m_width
         self.M = M = (1 << self.fracbits)
         self.ZMAX = int(round(self.M * math.pi/2))
+        self.z_out = Signal(range(-self.ZMAX, self.ZMAX-1))
 
         # sin/cos output in 0.ffffff format
         self.cos = Signal(range(-M, M+1), reset=0)
@@ -98,15 +99,29 @@ class CORDIC(Elaboratable):
         comb += self.sin.eq(y)
         with m.If(state == CordicState.WAITING):
             with m.If(self.start):
+                z_intermed = Signal(z_fixed.shape())
+                shifter = Signal(z_in.e.width)
+                comb += shifter.eq(-z_in.e)
+                # This converts z_in.m to a large fixed point
+                # integer. Right now, I'm ignoring denormals but they
+                # will be added back in when I convert this to the
+                # pipelined implementation (and I can use FPAddDenormMod)
+                comb += z_intermed.eq(Cat(Repl(0, self.fracbits - z_in.rmw),
+                                          z_in.m[:-1], 1))
+                sync += z_fixed.eq(z_intermed >> shifter)
                 sync += state.eq(CordicState.INIT)
-                sync += z_fixed.eq(z_in.m << (self.fracbits - z_in.rmw))
+                sync += self.ready.eq(0)
         with m.If(state == CordicState.INIT):
+            z_temp = Signal(z.shape(), reset_less=True)
+            comb += z_temp.eq(Mux(z_in.s, ~z_fixed + 1, z_fixed))
+            sync += z.eq(z_temp)
+            sync += self.z_out.eq(z_temp)
             sync += x.eq(X0)
             sync += y.eq(0)
-            sync += z.eq(z_fixed)
             sync += i.eq(0)
             sync += state.eq(CordicState.RUNNING)
             sync += anglerom.addr.eq(1)
+            sync += self.ready.eq(1)  # debug
         with m.If(state == CordicState.RUNNING):
             with m.If(z >= 0):
                 sync += x.eq(x - dx)
