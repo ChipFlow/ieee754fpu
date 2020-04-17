@@ -7,6 +7,8 @@ from nmigen.cli import rtlil
 import math
 from enum import Enum, unique
 from ieee754.fpcommon.fpbase import FPNumBaseRecord, FPNumDecode
+import bigfloat as bf
+from bigfloat import BigFloat
 
 
 @unique
@@ -25,8 +27,13 @@ class CordicROM(Elaboratable):
         self.addr = Signal(range(iterations))
         self.data = Signal(range(-M, M-1))
 
-        angles = [int(round(M*math.atan(2**(-i))/(math.pi/2)))
-                  for i in range(self.iterations)]
+        angles = []
+        with bf.quadruple_precision:
+            for i in range(self.iterations):
+                x = bf.atan(BigFloat(2) ** BigFloat(-i))
+                x = x/(bf.const_pi()/2)
+                x = x * M
+                angles.append(int(round(x)))
 
         self.mem = Memory(width=self.data.width,
                           depth=self.iterations,
