@@ -11,7 +11,6 @@ version = '0.0.1'
 install_requires = [
     'nmutil',
 #    'sfpy',  # XXX temporarily disabled
-    'gmpy2'
 ]
 
 test_requires = [
