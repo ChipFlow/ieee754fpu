@@ -2,7 +2,8 @@
 # later be used to verify the operation of a pipelined version
 
 # see http://bugs.libre-riscv.org/show_bug.cgi?id=208
-from nmigen import Module, Elaboratable, Signal, Memory, Cat, Repl, Mux
+from nmigen import (Module, Elaboratable, Signal, Memory,
+                    Cat, Repl, Mux, signed)
 from nmigen.cli import rtlil
 import math
 from enum import Enum, unique
@@ -25,7 +26,7 @@ class CordicROM(Elaboratable):
 
         M = 1 << fracbits
         self.addr = Signal(range(iterations))
-        self.data = Signal(range(-M, M-1))
+        self.data = Signal(signed(fracbits + 2))
 
         angles = []
         with bf.quadruple_precision:
@@ -55,11 +56,12 @@ class CORDIC(Elaboratable):
         self.fracbits = 2 * self.z_record.m_width
         self.M = M = (1 << self.fracbits)
         self.ZMAX = int(round(self.M * math.pi/2))
-        self.z_out = Signal(range(-self.ZMAX, self.ZMAX-1))
+
+        self.z_out = Signal(signed(self.fracbits + 2))
 
         # sin/cos output in 0.ffffff format
-        self.cos = Signal(range(-M, M+1), reset=0)
-        self.sin = Signal(range(-M, M+1), reset=0)
+        self.cos = Signal(signed(self.fracbits + 2), reset=0)
+        self.sin = Signal(signed(self.fracbits + 2), reset=0)
         # angle input
 
         # cordic start flag
@@ -78,7 +80,7 @@ class CORDIC(Elaboratable):
         m.submodules.z_in = z_in = FPNumDecode(None, self.z_record)
         comb += z_in.v.eq(self.z0)
 
-        z_fixed = Signal(range(-self.ZMAX, self.ZMAX-1),
+        z_fixed = Signal(signed(self.fracbits + 2),
                          reset_less=True)
 
         # Calculate initial amplitude?
