@@ -8,6 +8,10 @@ import math
 from enum import Enum, unique
 from ieee754.fpcommon.fpbase import FPNumBaseRecord, FPNumDecode
 
+import gmpy2
+from gmpy2 import mpfr
+
+
 
 @unique
 class CordicState(Enum):
@@ -25,8 +29,14 @@ class CordicROM(Elaboratable):
         self.addr = Signal(range(iterations))
         self.data = Signal(range(-M, M-1))
 
-        angles = [int(round(M*math.atan(2**(-i))/(math.pi/2)))
-                  for i in range(self.iterations)]
+        angles = []
+        gmpy2.get_context().precision = 150
+        for i in range(self.iterations):
+            x = mpfr(2) ** -i
+            x = gmpy2.atan(x)
+            x = x/(gmpy2.const_pi()/mpfr(2))
+            x = x * mpfr(M)
+            angles.append(int(round(x)))
 
         self.mem = Memory(width=self.data.width,
                           depth=self.iterations,
