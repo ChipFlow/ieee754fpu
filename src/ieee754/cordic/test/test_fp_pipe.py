@@ -47,7 +47,7 @@ class SinCosTestCase(FHDLTestCase):
 
         sim.add_sync_process(writer_process)
         with sim.write_vcd("fp_pipeline.vcd", "fp_pipeline.gtkw", traces=[
-                z, dut.n.data_o.z0]):
+                z]):
             sim.run()
 
     def test_rand(self):

@@ -4,6 +4,8 @@ from nmutil.pipemodbase import PipeModBaseChain
 from ieee754.fpcommon.denorm import FPAddDeNormMod
 from ieee754.cordic.fp_pipe_init_stages import (FPCordicInitStage,
                                                 FPCordicConvertFixed)
+from ieee754.cordic.sin_cos_pipe_stage import (CordicStage,
+                                               CordicInitialStage)
 
 
 class CordicPipeChain(PipeModBaseChain):
@@ -25,7 +27,18 @@ class FPCordicBasePipe(ControlBase):
                                        FPAddDeNormMod(self.pspec, False),
                                        FPCordicConvertFixed(self.pspec)])
 
-        self._eqs = self.connect([self.denorm])
+        self.cordicstages = []
+
+        initstage = CordicInitialStage(pspec)
+        stages = []
+        for i in range(pspec.iterations):
+            stages.append(CordicStage(pspec, i))
+        chunks = self.chunkify(initstage, stages)
+        for chunk in chunks:
+            chain = CordicPipeChain(pspec, chunk)
+            self.cordicstages.append(chain)
+
+        self._eqs = self.connect([self.denorm] + self.cordicstages)
 
     def chunkify(self, initstage, stages):
         chunks = []
@@ -39,5 +52,8 @@ class FPCordicBasePipe(ControlBase):
     def elaborate(self, platform):
         m = ControlBase.elaborate(self, platform)
         m.submodules.denorm = self.denorm
+        for i, stage in enumerate(self.cordicstages):
+            setattr(m.submodules, "cordic%d" % i,
+                    stage)
         m.d.comb += self._eqs
         return m
