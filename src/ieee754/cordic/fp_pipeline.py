@@ -2,7 +2,8 @@ from nmutil.singlepipe import ControlBase
 from nmutil.pipemodbase import PipeModBaseChain
 
 from ieee754.fpcommon.denorm import FPAddDeNormMod
-from ieee754.cordic.fp_pipe_init_stages import (FPCordicInitStage)
+from ieee754.cordic.fp_pipe_init_stages import (FPCordicInitStage,
+                                                FPCordicConvertFixed)
 
 
 class CordicPipeChain(PipeModBaseChain):
@@ -21,7 +22,8 @@ class FPCordicBasePipe(ControlBase):
 
         self.denorm = CordicPipeChain(pspec,
                                       [FPCordicInitStage(self.pspec),
-                                       FPAddDeNormMod(self.pspec, False)])
+                                       FPAddDeNormMod(self.pspec, False),
+                                       FPCordicConvertFixed(self.pspec)])
 
         self._eqs = self.connect([self.denorm])
 

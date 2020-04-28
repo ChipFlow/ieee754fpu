@@ -47,7 +47,7 @@ class SinCosTestCase(FHDLTestCase):
 
         sim.add_sync_process(writer_process)
         with sim.write_vcd("fp_pipeline.vcd", "fp_pipeline.gtkw", traces=[
-                z]):
+                z, dut.n.data_o.z0]):
             sim.run()
 
     def test_rand(self):
@@ -55,8 +55,11 @@ class SinCosTestCase(FHDLTestCase):
         M = (1 << fracbits)
         ZMAX = int(round(M * math.pi/2))
         inputs = []
-        for i in range(10):
-            inputs.append(Float32(1.0*i))
+        for i in range(-5, 10, 1):
+            if i < 0:
+                inputs.append(Float32(-2.0**(-abs(i))))
+            else:
+                inputs.append(Float32(2.0**(-abs(i))))
         self.run_test(iter(inputs))
 
 
