@@ -2,6 +2,8 @@ from nmigen import Module, Signal
 from nmutil.pipemodbase import PipeModBase
 from ieee754.cordic.pipe_data import CordicData, CordicInitialData
 import math
+import bigfloat as bf
+from bigfloat import BigFloat
 
 
 class CordicInitialStage(PipeModBase):
@@ -47,8 +49,11 @@ class CordicStage(PipeModBase):
         dx = Signal(self.i.x.shape())
         dy = Signal(self.i.y.shape())
         dz = Signal(self.i.z.shape())
-        angle = int(round(self.pspec.M *
-                          math.atan(2**(-self.stagenum))))
+        with bf.quadruple_precision:
+            x = bf.atan(BigFloat(2) ** BigFloat(-self.stagenum))
+            x = x/(bf.const_pi()/2)
+            x = x * self.pspec.M
+            angle = int(round(x))
 
         comb += dx.eq(self.i.y >> self.stagenum)
         comb += dy.eq(self.i.x >> self.stagenum)
