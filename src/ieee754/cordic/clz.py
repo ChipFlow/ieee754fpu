@@ -10,21 +10,25 @@ class CLZ(Elaboratable):
 
     def generate_pairs(self, m):
         comb = m.d.comb
-        assert self.width % 2 == 0  # TODO handle odd widths
         pairs = []
         for i in range(0, self.width, 2):
-            pair = Signal(2, name="pair%d" % i)
-            comb += pair.eq(self.sig_in[i:i+2])
+            if i+1 >= self.width:
+                pair = Signal(1, name="cnt_1_%d" % (i/2))
+                comb += pair.eq(~self.sig_in[i])
+                pairs.append((pair, 1))
+            else:
+                pair = Signal(2, name="pair%d" % i)
+                comb += pair.eq(self.sig_in[i:i+2])
 
-            pair_cnt = Signal(2, name="cnt_1_%d" % (i/2))
-            with m.Switch(pair):
-                with m.Case(0):
-                    comb += pair_cnt.eq(2)
-                with m.Case(1):
-                    comb += pair_cnt.eq(1)
-                with m.Default():
-                    comb += pair_cnt.eq(0)
-            pairs.append((pair_cnt, 2))  # append pair, max_value
+                pair_cnt = Signal(2, name="cnt_1_%d" % (i/2))
+                with m.Switch(pair):
+                    with m.Case(0):
+                        comb += pair_cnt.eq(2)
+                    with m.Case(1):
+                        comb += pair_cnt.eq(1)
+                    with m.Default():
+                        comb += pair_cnt.eq(0)
+                pairs.append((pair_cnt, 2))  # append pair, max_value
         return pairs
 
     def combine_pairs(self, m, iteration, pairs):
