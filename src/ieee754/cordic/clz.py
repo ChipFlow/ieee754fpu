@@ -39,7 +39,6 @@ class CLZ(Elaboratable):
             if i+1 >= length:
                 right, mv = pairs[i]
                 width = right.width
-                print(f"single({i}) - cnt_{iteration}_{i}")
                 new_pair = Signal(width, name="cnt_%d_%d" % (iteration, i))
                 comb += new_pair.eq(Cat(right, 0))
                 ret.append((new_pair, mv))
@@ -47,8 +46,6 @@ class CLZ(Elaboratable):
                 left, lv = pairs[i+1]
                 right, rv = pairs[i]
                 width = right.width + 1
-                print(left)
-                print(f"pair({left}, {right}) - cnt_{iteration}_{i}")
                 new_pair = Signal(width, name="cnt_%d_%d" %
                                   (iteration, i))
                 if rv == lv:
@@ -77,7 +74,6 @@ class CLZ(Elaboratable):
         i = 2
         while len(pairs) > 1:
             pairs = self.combine_pairs(m, i, pairs)
-            print(pairs)
             i += 1
 
         comb += self.lz.eq(pairs[0][0])
