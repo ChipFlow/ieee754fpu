@@ -10,13 +10,17 @@ import unittest
 import math
 import random
 
+float_class_for_bits = {64: Float64,
+                        32: Float32,
+                        16: Float16}
+
 
 class SinCosTestCase(FHDLTestCase):
-    def run_test(self, zin=0, fracbits=8, expected_sin=0, expected_cos=0):
+    def run_test(self, zin=0, bits=64, expected_sin=0, expected_cos=0):
 
         m = Module()
 
-        m.submodules.dut = dut = CORDIC(64)
+        m.submodules.dut = dut = CORDIC(32)
         z = Signal(dut.z0.width)
         start = Signal()
 
@@ -69,11 +73,12 @@ class SinCosTestCase(FHDLTestCase):
                  cos, sin, ready, start]):
             sim.run()
 
-    def run_test_assert(self, z, fracbits=8):
-        zpi = z * Float64(math.pi/2)
+    def run_test_assert(self, z, bits=64):
+        kls = float_class_for_bits[bits]
+        zpi = z * kls(math.pi/2)
         e_sin = math.sin(zpi)
         e_cos = math.cos(zpi)
-        self.run_test(zin=z, fracbits=fracbits, expected_sin=e_sin,
+        self.run_test(zin=z, expected_sin=e_sin,
                       expected_cos=e_cos)
 
     def test_1(self):
@@ -81,8 +86,8 @@ class SinCosTestCase(FHDLTestCase):
         self.run_test_assert(x)
 
     def test_pi_4(self):
-        x = Float64(1/3)
-        self.run_test_assert(x)
+        x = Float32(1/2)
+        self.run_test_assert(x, bits=32)
 
     def test_rand(self):
         for i in range(10000):

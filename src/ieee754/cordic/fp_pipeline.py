@@ -6,6 +6,7 @@ from ieee754.cordic.fp_pipe_init_stages import (FPCordicInitStage,
                                                 FPCordicConvertFixed)
 from ieee754.cordic.sin_cos_pipe_stage import (CordicStage,
                                                CordicInitialStage)
+from ieee754.cordic.renormalize import CordicRenormalize
 
 
 class CordicPipeChain(PipeModBaseChain):
@@ -30,10 +31,12 @@ class FPCordicBasePipe(ControlBase):
         self.cordicstages = []
 
         initstage = CordicInitialStage(pspec)
+        finalstage = CordicRenormalize(pspec)
         stages = []
         for i in range(pspec.iterations):
             stages.append(CordicStage(pspec, i))
         chunks = self.chunkify(initstage, stages)
+        chunks[-1].append(finalstage)
         for chunk in chunks:
             chain = CordicPipeChain(pspec, chunk)
             self.cordicstages.append(chain)

@@ -1,5 +1,7 @@
 from nmigen import Signal, Const
 from nmutil.dynamicpipe import SimpleHandshakeRedir
+from ieee754.fpcommon.fpbase import Overflow, FPNumBaseRecord
+from ieee754.fpcommon.getop import FPPipeContext
 import math
 
 
@@ -14,6 +16,25 @@ class CordicInitialData:
 
     def eq(self, i):
         return [self.z0.eq(i.z0)]
+
+
+class CordicOutputData:
+
+    def __init__(self, pspec, e_extra=False):
+        width = pspec.width
+        self.x = FPNumBaseRecord(width, False, e_extra, name="x")
+        self.y = FPNumBaseRecord(width, False, e_extra, name="y")
+        self.ctx = FPPipeContext(pspec)
+        self.muxid = self.ctx.muxid
+
+    def __iter__(self):
+        yield from self.x
+        yield from self.y
+        yield from self.ctx
+
+    def eq(self, i):
+        return [self.x.eq(i.x), self.y.eq(i.y),
+                self.ctx.eq(i.ctx)]
 
 
 class CordicData:

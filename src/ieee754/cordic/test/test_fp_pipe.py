@@ -44,6 +44,8 @@ class SinCosTestCase(FHDLTestCase):
                 yield z_valid.eq(1)
                 yield ready.eq(1)
                 yield
+            for i in range(40):
+                yield
 
         sim.add_sync_process(writer_process)
         with sim.write_vcd("fp_pipeline.vcd", "fp_pipeline.gtkw", traces=[
@@ -60,6 +62,11 @@ class SinCosTestCase(FHDLTestCase):
                 inputs.append(Float32(-2.0**(-abs(i))))
             else:
                 inputs.append(Float32(2.0**(-abs(i))))
+        self.run_test(iter(inputs))
+
+    def test_pi_2(self):
+        inputs = [Float32(0.5), Float32(1/3), Float32(2/3),
+                  Float32(-.5), Float32(0.001)]
         self.run_test(iter(inputs))
 
 
