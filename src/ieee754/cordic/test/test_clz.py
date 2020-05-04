@@ -37,6 +37,10 @@ class CLZTestCase(FHDLTestCase):
         inputs = [0, 15, 10, 127]
         self.run_test(iter(inputs), width=8)
 
+    def test_non_power_2(self):
+        inputs = [0, 128, 512]
+        self.run_test(iter(inputs), width=10)
+
 
 if __name__ == "__main__":
     unittest.main()

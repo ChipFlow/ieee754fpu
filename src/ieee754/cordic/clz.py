@@ -24,31 +24,45 @@ class CLZ(Elaboratable):
                     comb += pair_cnt.eq(1)
                 with m.Default():
                     comb += pair_cnt.eq(0)
-            pairs.append(pair_cnt)
+            pairs.append((pair_cnt, 2))  # append pair, max_value
         return pairs
 
     def combine_pairs(self, m, iteration, pairs):
         comb = m.d.comb
         length = len(pairs)
-        assert length % 2 == 0  # TODO handle non powers of 2
         ret = []
         for i in range(0, length, 2):
-            left = pairs[i+1]
-            right = pairs[i]
-            width = left.width + 1
-            print(left)
-            print(f"pair({i}, {i+1}) - cnt_{iteration}_{i}")
-            new_pair = Signal(left.width + 1, name="cnt_%d_%d" %
-                              (iteration, i))
-            with m.If(left[-1] == 1):
-                with m.If(right[-1] == 1):
-                    comb += new_pair.eq(Cat(Repl(0, width-1), 1))
-                with m.Else():
-                    comb += new_pair.eq(Cat(right[0:-1], 0b01))
-            with m.Else():
-                comb += new_pair.eq(Cat(left, 0))
+            if i+1 >= length:
+                right, mv = pairs[i]
+                width = right.width
+                print(f"single({i}) - cnt_{iteration}_{i}")
+                new_pair = Signal(width, name="cnt_%d_%d" % (iteration, i))
+                comb += new_pair.eq(Cat(right, 0))
+                ret.append((new_pair, mv))
+            else:
+                left, lv = pairs[i+1]
+                right, rv = pairs[i]
+                width = right.width + 1
+                print(left)
+                print(f"pair({left}, {right}) - cnt_{iteration}_{i}")
+                new_pair = Signal(width, name="cnt_%d_%d" %
+                                  (iteration, i))
+                if rv == lv:
+                    with m.If(left[-1] == 1):
+                        with m.If(right[-1] == 1):
+                            comb += new_pair.eq(Cat(Repl(0, width-1), 1))
+                        with m.Else():
+                            comb += new_pair.eq(Cat(right[0:-1], 0b01))
+                    with m.Else():
+                        comb += new_pair.eq(Cat(left, 0))
+                else:
+                    with m.If(left == lv):
+                        comb += new_pair.eq(right + left)
+                    with m.Else():
+                        comb += new_pair.eq(left)
+                        
 
-            ret.append(new_pair)
+                ret.append((new_pair, lv+rv))
         return ret
 
     def elaborate(self, platform):
@@ -59,9 +73,10 @@ class CLZ(Elaboratable):
         i = 2
         while len(pairs) > 1:
             pairs = self.combine_pairs(m, i, pairs)
+            print(pairs)
             i += 1
 
-        comb += self.lz.eq(pairs[0])
+        comb += self.lz.eq(pairs[0][0])
 
         return m
 

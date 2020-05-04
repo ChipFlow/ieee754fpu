@@ -17,7 +17,7 @@ class Driver(Elaboratable):
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
-        width = 32
+        width = 10
 
         m.submodules.dut = dut = CLZ(width)
         sig_in = Signal.like(dut.sig_in)
