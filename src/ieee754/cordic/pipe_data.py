@@ -22,8 +22,8 @@ class CordicOutputData:
 
     def __init__(self, pspec, e_extra=False):
         width = pspec.width
-        self.x = FPNumBaseRecord(width, False, e_extra, name="x")
-        self.y = FPNumBaseRecord(width, False, e_extra, name="y")
+        self.x = Signal(width)
+        self.y = Signal(width)
         self.ctx = FPPipeContext(pspec)
         self.muxid = self.ctx.muxid
 
