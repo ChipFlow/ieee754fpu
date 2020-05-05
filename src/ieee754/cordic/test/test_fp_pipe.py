@@ -17,10 +17,10 @@ class SinCosTestCase(FHDLTestCase):
         pspec = FPCordicPipeSpec(width=32, rounds_per_stage=4, num_rows=1)
         m.submodules.dut = dut = FPCordicBasePipe(pspec)
 
-
-        # vl = rtlil.convert(dut, ports=dut.ports())
-        # with open("test_cordic_pipe_sin_cos.il", "w") as f:
-        #     f.write(vl)
+        # write out module (useful for seeing what's going on)
+        vl = rtlil.convert(dut, ports=dut.ports())
+        with open("test_cordic_pipe_sin_cos.il", "w") as f:
+            f.write(vl)
 
         z = Signal(dut.p.data_i.a.shape())
         z_valid = Signal()
