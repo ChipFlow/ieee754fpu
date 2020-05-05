@@ -1,7 +1,7 @@
 from nmigen import Module, Signal, Mux, Elaboratable, unsigned
 from nmutil.pipemodbase import PipeModBase
+from nmutil.clz import CLZ
 from ieee754.cordic.pipe_data import CordicData, CordicOutputData
-from ieee754.cordic.clz import CLZ
 from ieee754.fpcommon.fpbase import FPNumBaseRecord
 
 
