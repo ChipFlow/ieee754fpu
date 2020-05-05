@@ -61,7 +61,7 @@ class CLZ(Elaboratable):
                         comb += new_pair.eq(right + left)
                     with m.Else():
                         comb += new_pair.eq(left)
-                        
+
 
                 ret.append((new_pair, lv+rv))
         return ret
@@ -80,4 +80,4 @@ class CLZ(Elaboratable):
 
         return m
 
-        
+
