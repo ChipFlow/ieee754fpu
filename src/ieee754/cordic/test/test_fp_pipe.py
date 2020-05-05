@@ -20,9 +20,9 @@ class SinCosTestCase(FHDLTestCase):
         # write out module (useful for seeing what's going on)
         # XXX WHOOPS can't do this at the moment, need to track down
         # an issue in the ports
-        # vl = rtlil.convert(dut, ports=dut.ports())
-        # with open("test_cordic_pipe_sin_cos.il", "w") as f:
-        #     f.write(vl)
+        vl = rtlil.convert(dut, ports=dut.ports())
+        with open("test_cordic_pipe_sin_cos.il", "w") as f:
+            f.write(vl)
 
         z = Signal(dut.p.data_i.a.shape())
         z_valid = Signal()

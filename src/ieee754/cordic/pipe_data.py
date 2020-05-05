@@ -28,8 +28,8 @@ class CordicOutputData:
         self.muxid = self.ctx.muxid
 
     def __iter__(self):
-        yield from self.x
-        yield from self.y
+        yield self.x
+        yield self.y
         yield from self.ctx
 
     def eq(self, i):
