@@ -44,7 +44,12 @@ class SinCosTestCase(FHDLTestCase):
             for i in range(40):
                 yield
         def reader_process():
+            counter = 200
             while True:
+                counter -= 1
+                if counter == 0: # some indication of progress
+                    print (".", sep="", end="", flush=True)
+                    counter = 200
                 yield
                 vld = yield dut.n.valid_o
                 if vld:
@@ -62,6 +67,8 @@ class SinCosTestCase(FHDLTestCase):
                                         Float32(2e-7), msg=msg)
                     except StopIteration:
                         break
+
+            print() # newline after end of progress-indicator
 
         sim.add_sync_process(writer_process)
         sim.add_sync_process(reader_process)
