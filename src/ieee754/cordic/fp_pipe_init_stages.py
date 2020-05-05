@@ -65,5 +65,5 @@ class FPCordicConvertFixed(PipeModBase):
                                  ~z_shifted + 1,
                                  z_shifted))
 
+        comb += self.o.ctx.eq(self.i.ctx)
         return m
-

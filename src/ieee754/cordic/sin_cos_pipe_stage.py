@@ -28,6 +28,8 @@ class CordicInitialStage(PipeModBase):
         comb += self.o.x.eq(X0)
         comb += self.o.y.eq(0)
         comb += self.o.z.eq(self.i.z0)
+
+        comb += self.o.ctx.eq(self.i.ctx)
         return m
 
 
@@ -68,4 +70,6 @@ class CordicStage(PipeModBase):
             comb += self.o.y.eq(self.i.y - dy)
             comb += self.o.z.eq(self.i.z + dz)
 
+
+        comb += self.o.ctx.eq(self.i.ctx)
         return m

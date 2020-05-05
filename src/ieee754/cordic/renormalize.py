@@ -38,7 +38,7 @@ class Norm(Elaboratable):
         comb += numrec.m.eq(normalized[-(numrec.m_width+1):-1])
         comb += numrec.s.eq(sign)
         comb += numrec.e.eq(-count+1)
-        
+
         comb += self.sig_out.eq(numrec.create2(numrec.s, numrec.e, numrec.m))
         return m
 
@@ -67,4 +67,5 @@ class CordicRenormalize(PipeModBase):
         comb += self.o.x.eq(normx.sig_out)
         comb += self.o.y.eq(normy.sig_out)
 
+        comb += self.o.ctx.eq(self.i.ctx)
         return m

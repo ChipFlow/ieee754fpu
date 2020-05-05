@@ -10,12 +10,15 @@ class CordicInitialData:
     def __init__(self, pspec):
         ZMAX = pspec.ZMAX
         self.z0 = Signal(range(-ZMAX, ZMAX), name="z")     # denormed result
+        self.ctx = FPPipeContext(pspec)
+        self.muxid = self.ctx.muxid
 
     def __iter__(self):
         yield self.z0
+        yield from self.ctx
 
     def eq(self, i):
-        return [self.z0.eq(i.z0)]
+        return [self.z0.eq(i.z0), self.ctx.eq(i.ctx)]
 
 
 class CordicOutputData:
@@ -46,14 +49,18 @@ class CordicData:
         self.x = Signal(range(-M, M+1), name="x")   # operand a
         self.y = Signal(range(-M, M+1), name="y")   # operand b
         self.z = Signal(range(-ZMAX, ZMAX), name="z")     # denormed result
+        self.ctx = FPPipeContext(pspec)
+        self.muxid = self.ctx.muxid
 
     def __iter__(self):
         yield self.x
         yield self.y
         yield self.z
+        yield from self.ctx
 
     def eq(self, i):
-        ret = [self.z.eq(i.z), self.x.eq(i.x), self.y.eq(i.y)]
+        ret = [self.z.eq(i.z), self.x.eq(i.x), self.y.eq(i.y),
+               self.ctx.eq(i.ctx)]
         return ret
 
 
