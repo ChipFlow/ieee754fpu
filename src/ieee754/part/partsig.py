@@ -20,7 +20,7 @@ from ieee754.part_mul_add.adder import PartitionedAdder
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
 from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
-from ieee754.part_mul_add.partpoints import make_partition
+from ieee754.part_mul_add.partpoints import make_partition, PartitionPoints
 from operator import or_, xor, and_, not_
 
 from nmigen import (Signal, Const)
@@ -41,7 +41,10 @@ class PartitionedSignal:
         self.sig = Signal(*args, **kwargs)
         width = self.sig.shape()[0]  # get signal width
         # create partition points
-        self.partpoints = make_partition(mask, width)
+        if isinstance(mask, PartitionPoints):
+            self.partpoints = mask
+        else:
+            self.partpoints = make_partition(mask, width)
         self.modnames = {}
         for name in ['add', 'eq', 'gt', 'ge', 'ls']:
             self.modnames[name] = 0
