@@ -74,7 +74,10 @@ class FPPipeContext:
         yield self.op
 
     def ports(self):
-        return list(self)
+        if hasattr(self.op, "ports"):
+            return [self.muxid] + self.op.ports()
+        else:
+            return list(self)
 
 
 class FPGet2OpMod(PrevControl):
