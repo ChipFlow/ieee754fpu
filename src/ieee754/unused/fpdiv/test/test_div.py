@@ -6,7 +6,7 @@ from operator import truediv
 from nmigen import Module, Signal
 from nmigen.compat.sim import run_simulation
 
-from ieee754.fpdiv.nmigen_div_experiment import FPDIV
+from ieee754.unused.fpdiv.nmigen_div_experiment import FPDIV
 
 from ieee754.fpcommon.test.unit_test_single import (get_mantissa,
                                 get_exponent, get_sign, is_nan,
@@ -15,7 +15,7 @@ from ieee754.fpcommon.test.unit_test_single import (get_mantissa,
                                 run_edge_cases, run_corner_cases)
 
 
-def testbench(dut):
+def tstbench(dut):
     yield from check_case(dut, 0x80000000, 0x00000000, 0xffc00000)
     yield from check_case(dut, 0x00000000, 0x80000000, 0xffc00000)
     yield from check_case(dut, 0x0002b017, 0xff3807ab, 0x80000000)
@@ -44,5 +44,5 @@ def testbench(dut):
 
 if __name__ == '__main__':
     dut = FPDIV(width=32)
-    run_simulation(dut, testbench(dut), vcd_name="test_div.vcd")
+    run_simulation(dut, tstbench(dut), vcd_name="test_div.vcd")
 
