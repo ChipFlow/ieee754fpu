@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
-from .core import (DivPipeCoreConfig, DivPipeCoreSetupStage,
-                   DivPipeCoreCalculateStage, DivPipeCoreFinalStage,
-                   DivPipeCoreOperation, DivPipeCoreInputData,
-                   DivPipeCoreInterstageData, DivPipeCoreOutputData)
-from .algorithm import (FixedUDivRemSqrtRSqrt, Fixed, Operation, div_rem,
+from ieee754.div_rem_sqrt_rsqrt.core import (DivPipeCoreConfig,
+                    DivPipeCoreSetupStage,
+                    DivPipeCoreCalculateStage, DivPipeCoreFinalStage,
+                    DivPipeCoreOperation, DivPipeCoreInputData,
+                    DivPipeCoreInterstageData, DivPipeCoreOutputData)
+from ieee754.div_rem_sqrt_rsqrt.algorithm import (FixedUDivRemSqrtRSqrt,
+                        Fixed, Operation, div_rem,
                         fixed_sqrt, fixed_rsqrt)
 import unittest
 from nmigen import Module, Elaboratable, Signal
