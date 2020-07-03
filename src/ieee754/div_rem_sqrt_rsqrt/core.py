@@ -419,7 +419,12 @@ class DivPipeCoreCalculateStage(Elaboratable):
             # make the trial comparison against the [invariant] lhs.
             # trial_compare_rhs is always decreasing as trial_bits increases
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
-            comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
+            if trial_bits == radix-1:
+                # do not do last comparison: no point.  if all others
+                # fail we pick this one anyway.
+                comb += pass_flag.eq(0)
+            else:
+                comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
             pfl.append(pass_flag)
 
         # Cat all the pass flags list together (easier to handle, below)
@@ -448,7 +453,9 @@ class DivPipeCoreCalculateStage(Elaboratable):
         tcrh = trial_compare_rhs_values
         bw = self.core_config.bit_width
         for i in range(radix):
-            crhs.append(Repl(next_bits == i, bw*3) & tcrh[i])
+            nbe = Signal(reset_less=True)
+            comb += nbe.eq(next_bits == i)
+            crhs.append(Repl(nbe, bw*3) & tcrh[i])
         comb += self.o.compare_rhs.eq(treereduce(crhs, operator.or_,
                                       lambda x:x))
 
