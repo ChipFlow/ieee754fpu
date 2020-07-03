@@ -18,9 +18,11 @@ Formulas solved are:
 The remainder is the left-hand-side of the comparison minus the
 right-hand-side of the comparison in the above formulas.
 """
-from nmigen import (Elaboratable, Module, Signal, Const, Mux, Cat, Array)
+from nmigen import (Elaboratable, Module, Signal, Const, Mux, Cat, Repl)
 from nmigen.lib.coding import PriorityEncoder
+from nmutil.util import treereduce
 import enum
+import operator
 
 
 class DivPipeCoreOperation(enum.Enum):
@@ -440,9 +442,15 @@ class DivPipeCoreCalculateStage(Elaboratable):
         with m.Else():
             comb += next_bits.eq(radix-1)
 
-        # get the highest passing rhs trial (indexed by next_bits)
-        ta = Array(trial_compare_rhs_values)
-        comb += self.o.compare_rhs.eq(ta[next_bits])
+        # get the highest passing rhs trial. use treereduce because
+        # Array on such massively long numbers is insanely gate-hungry
+        crhs = []
+        tcrh = trial_compare_rhs_values
+        bw = self.core_config.bit_width
+        for i in range(radix):
+            crhs.append(Repl(next_bits == i, bw*3) & tcrh[i])
+        comb += self.o.compare_rhs.eq(treereduce(crhs, operator.or_,
+                                      lambda x:x))
 
         # create outputs for next phase
         qr = self.i.quotient_root | (next_bits << current_shift)
