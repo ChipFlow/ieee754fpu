@@ -23,34 +23,6 @@ from nmigen.lib.coding import PriorityEncoder
 import enum
 
 
-class DivPipeCoreConfig:
-    """ Configuration for core of the div/rem/sqrt/rsqrt pipeline.
-
-    :attribute bit_width: base bit-width.
-    :attribute fract_width: base fract-width. Specifies location of base-2
-        radix point.
-    :attribute log2_radix: number of bits of ``quotient_root`` that should be
-        computed per pipeline stage.
-    """
-
-    def __init__(self, bit_width, fract_width, log2_radix):
-        """ Create a ``DivPipeCoreConfig`` instance. """
-        self.bit_width = bit_width
-        self.fract_width = fract_width
-        self.log2_radix = log2_radix
-        print(f"{self}: n_stages={self.n_stages}")
-
-    def __repr__(self):
-        """ Get repr. """
-        return f"DivPipeCoreConfig({self.bit_width}, " \
-            + f"{self.fract_width}, {self.log2_radix})"
-
-    @property
-    def n_stages(self):
-        """ Get the number of ``DivPipeCoreCalculateStage`` needed. """
-        return (self.bit_width + self.log2_radix - 1) // self.log2_radix
-
-
 class DivPipeCoreOperation(enum.Enum):
     """ Operation for ``DivPipeCore``.
 
@@ -77,6 +49,37 @@ class DivPipeCoreOperation(enum.Enum):
 
 
 DP = DivPipeCoreOperation
+
+
+class DivPipeCoreConfig:
+    """ Configuration for core of the div/rem/sqrt/rsqrt pipeline.
+
+    :attribute bit_width: base bit-width.
+    :attribute fract_width: base fract-width. Specifies location of base-2
+        radix point.
+    :attribute log2_radix: number of bits of ``quotient_root`` that should be
+        computed per pipeline stage.
+    """
+
+    def __init__(self, bit_width, fract_width, log2_radix, supported=None):
+        """ Create a ``DivPipeCoreConfig`` instance. """
+        self.bit_width = bit_width
+        self.fract_width = fract_width
+        self.log2_radix = log2_radix
+        if supported is None:
+            supported = [DP.SqrtRem, DP.UDivRem, DP.RSqrtRem]
+        self.supported = supported
+        print(f"{self}: n_stages={self.n_stages}")
+
+    def __repr__(self):
+        """ Get repr. """
+        return f"DivPipeCoreConfig({self.bit_width}, " \
+            + f"{self.fract_width}, {self.log2_radix})"
+
+    @property
+    def n_stages(self):
+        """ Get the number of ``DivPipeCoreCalculateStage`` needed. """
+        return (self.bit_width + self.log2_radix - 1) // self.log2_radix
 
 
 class DivPipeCoreInputData:
@@ -275,22 +278,18 @@ class Trial(Elaboratable):
         m = Module()
         comb = m.d.comb
 
+        cc = self.core_config
         dr = self.divisor_radicand
-        qr = self.quotient_root
-        rr = self.root_times_radicand
 
         trial_bits_sig = Const(self.trial_bits, self.log2_radix)
         trial_bits_sqrd_sig = Const(self.trial_bits * self.trial_bits,
                                     self.log2_radix * 2)
 
         tblen = self.core_config.bit_width+self.log2_radix
-        tblen2 = self.core_config.bit_width+self.log2_radix*2
-        dr_times_trial_bits_sqrd = Signal(tblen2, reset_less=True)
-        comb += dr_times_trial_bits_sqrd.eq(dr * trial_bits_sqrd_sig)
 
-        with m.Switch(self.operation):
-            # UDivRem
-            with m.Case(int(DP.UDivRem)):
+        # UDivRem
+        if DP.UDivRem in cc.supported:
+            with m.If(self.operation == int(DP.UDivRem)):
                 dr_times_trial_bits = Signal(tblen, reset_less=True)
                 comb += dr_times_trial_bits.eq(dr * trial_bits_sig)
                 div_rhs = self.compare_rhs
@@ -302,8 +301,10 @@ class Trial(Elaboratable):
 
                 comb += self.trial_compare_rhs.eq(div_rhs)
 
-            # SqrtRem
-            with m.Case(int(DP.SqrtRem)):
+        # SqrtRem
+        if DP.SqrtRem in cc.supported:
+            with m.If(self.operation == int(DP.SqrtRem)):
+                qr = self.quotient_root
                 qr_times_trial_bits = Signal((tblen+1)*2, reset_less=True)
                 comb += qr_times_trial_bits.eq(qr * trial_bits_sig)
                 sqrt_rhs = self.compare_rhs
@@ -319,8 +320,13 @@ class Trial(Elaboratable):
 
                 comb += self.trial_compare_rhs.eq(sqrt_rhs)
 
-            # RSqrtRem
-            with m.Case(int(DP.RSqrtRem)):
+        # RSqrtRem
+        if DP.RSqrtRem in cc.supported:
+            with m.If(self.operation == int(DP.RSqrtRem)):
+                rr = self.root_times_radicand
+                tblen2 = self.core_config.bit_width+self.log2_radix*2
+                dr_times_trial_bits_sqrd = Signal(tblen2, reset_less=True)
+                comb += dr_times_trial_bits_sqrd.eq(dr * trial_bits_sqrd_sig)
                 rr_times_trial_bits = Signal((tblen+1)*3, reset_less=True)
                 comb += rr_times_trial_bits.eq(rr * trial_bits_sig)
                 rsqrt_rhs = self.compare_rhs
