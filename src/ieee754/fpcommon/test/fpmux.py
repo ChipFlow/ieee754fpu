@@ -13,7 +13,7 @@ from nmigen.cli import verilog, rtlil
 
 class MuxInOut:
     def __init__(self, dut, width, fpkls, fpop, vals, single_op, opcode,
-                       cancel=False):
+                       cancel=False, feedback_width=None):
         self.cancel = cancel # allow (test) cancellation
         self.dut = dut
         self.fpkls = fpkls
@@ -25,10 +25,16 @@ class MuxInOut:
         self.sent = {}
         self.tlen = len(vals) // dut.num_rows
         self.width = width
-        for muxid in range(dut.num_rows):
-            self.di[muxid] = {}
-            self.do[muxid] = {}
-            self.sent[muxid] = []
+        if feedback_width is None:
+            feedback_width = dut.num_rows
+        self.feedback_width = feedback_width
+        self.out_offs = dut.num_rows - feedback_width
+        for muxid in range(feedback_width):
+            muxid_in = muxid
+            muxid_out = self.out_offs + muxid
+            self.di[muxid_in] = {}
+            self.do[muxid_out] = {}
+            self.sent[muxid_in] = []
 
             for i in range(self.tlen):
                 if self.single_op:
@@ -38,16 +44,16 @@ class MuxInOut:
                         assert len(op1) == 1
                         op1 = op1[0]
                     res = self.fpop(self.fpkls(op1))
-                    self.di[muxid][i] = (op1, )
+                    self.di[muxid_in][i] = (op1, )
                 else:
                     (op1, op2, ) = vals.pop(0)
                     #print ("test", hex(op1), hex(op2))
                     res = self.fpop(self.fpkls(op1), self.fpkls(op2))
-                    self.di[muxid][i] = (op1, op2)
+                    self.di[muxid_in][i] = (op1, op2)
                 if hasattr(res, "bits"):
-                    self.do[muxid][i] = res.bits
+                    self.do[muxid_out][i] = res.bits
                 else:
-                    self.do[muxid][i] = res # for FP to INT
+                    self.do[muxid_out][i] = res # for FP to INT
 
     def send(self, muxid):
         rs = self.dut.p[muxid]
@@ -116,6 +122,7 @@ class MuxInOut:
         #    send = randint(0, send_range) != 0
 
     def rcv(self, muxid):
+        muxid = muxid + self.out_offs
         rs = self.dut.p[muxid]
         while True:
 
