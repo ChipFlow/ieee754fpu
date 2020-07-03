@@ -377,6 +377,7 @@ class DivPipeCoreCalculateStage(Elaboratable):
         """ Elaborate into ``Module``. """
         m = Module()
         comb = m.d.comb
+        cc = self.core_config
 
         # copy invariant inputs to outputs (for next stage)
         comb += self.o.divisor_radicand.eq(self.i.divisor_radicand)
@@ -445,10 +446,11 @@ class DivPipeCoreCalculateStage(Elaboratable):
 
         # create outputs for next phase
         qr = self.i.quotient_root | (next_bits << current_shift)
-        rr = self.i.root_times_radicand + ((self.i.divisor_radicand * next_bits)
-                                                     << current_shift)
         comb += self.o.quotient_root.eq(qr)
-        comb += self.o.root_times_radicand.eq(rr)
+        if DP.RSqrtRem in cc.supported:
+            rr = self.i.root_times_radicand + ((self.i.divisor_radicand *
+                                               next_bits) << current_shift)
+            comb += self.o.root_times_radicand.eq(rr)
 
         return m
 
