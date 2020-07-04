@@ -150,12 +150,16 @@ class DivPipeCoreInterstageData:
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
         bw = core_config.bit_width
+        if core_config.supported == [DP.UDivRem]:
+            self.compare_len = bw * 2
+        else:
+            self.compare_len = bw * 3
         self.divisor_radicand = Signal(bw, reset_less=reset_less)
         self.operation = DP.create_signal(reset_less=reset_less)
         self.quotient_root = Signal(bw, reset_less=reset_less)
         self.root_times_radicand = Signal(bw * 2, reset_less=reset_less)
-        self.compare_lhs = Signal(bw * 3, reset_less=reset_less)
-        self.compare_rhs = Signal(bw * 3, reset_less=reset_less)
+        self.compare_lhs = Signal(self.compare_len, reset_less=reset_less)
+        self.compare_rhs = Signal(self.compare_len, reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -268,11 +272,15 @@ class Trial(Elaboratable):
         self.current_shift = current_shift
         self.log2_radix = log2_radix
         bw = core_config.bit_width
+        if core_config.supported == [DP.UDivRem]:
+            self.compare_len = bw * 2
+        else:
+            self.compare_len = bw * 3
         self.divisor_radicand = Signal(bw, reset_less=True)
         self.quotient_root = Signal(bw, reset_less=True)
         self.root_times_radicand = Signal(bw * 2, reset_less=True)
         self.compare_rhs = Signal(bw * 3, reset_less=True)
-        self.trial_compare_rhs = Signal(bw * 3, reset_less=True)
+        self.trial_compare_rhs = Signal(self.compare_len, reset_less=True)
         self.operation = DP.create_signal(reset_less=True)
 
     def elaborate(self, platform):
