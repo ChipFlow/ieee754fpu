@@ -413,16 +413,15 @@ class DivPipeCoreCalculateStage(Elaboratable):
             comb += t.compare_rhs.eq(self.i.compare_rhs)
             comb += t.operation.eq(self.i.operation)
 
-            # get the trial output
+            # get the trial output (needed even in pass_flags[0] case)
             trial_compare_rhs_values.append(t.trial_compare_rhs)
 
             # make the trial comparison against the [invariant] lhs.
             # trial_compare_rhs is always decreasing as trial_bits increases
             pass_flag = Signal(name=f"pass_flag_{trial_bits}", reset_less=True)
-            if trial_bits == radix-1:
-                # do not do last comparison: no point.  if all others
-                # fail we pick this one anyway.
-                comb += pass_flag.eq(0)
+            if trial_bits == 0:
+                # do not do first comparison: no point.
+                comb += pass_flag.eq(1)
             else:
                 comb += pass_flag.eq(self.i.compare_lhs >= t.trial_compare_rhs)
             pfl.append(pass_flag)
