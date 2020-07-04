@@ -231,17 +231,21 @@ class TestDivPipeCore(unittest.TestCase):
             with open(f"{base_name}.il", "w") as f:
                 f.write(vl)
         dut = DivPipeCoreTestPipeline(core_config, sync)
-        with Simulator(dut,
-                       vcd_file=open(f"{base_name}.vcd", "w"),
-                       gtkw_file=open(f"{base_name}.gtkw", "w"),
-                       traces=[*dut.traces()]) as sim:
+        sim = Simulator(dut)
+        with sim.write_vcd(vcd_file=open(f"{base_name}.vcd", "w"),
+                           gtkw_file=open(f"{base_name}.gtkw", "w"),
+                           traces=[*dut.traces()]):
             def generate_process():
                 for test_case in test_cases:
-                    yield Tick()
+                    if sync:
+                        yield Tick()
                     yield dut.i.dividend.eq(test_case.dividend)
                     yield dut.i.divisor_radicand.eq(test_case.divisor_radicand)
                     yield dut.i.operation.eq(int(test_case.core_op))
-                    yield Delay(0.9e-6)
+                    if sync:
+                        yield Delay(0.9e-6)
+                    else:
+                        yield
 
             def check_process():
                 # sync with generator
@@ -253,8 +257,11 @@ class TestDivPipeCore(unittest.TestCase):
 
                 # now synched with generator
                 for test_case in test_cases:
-                    yield Tick()
-                    yield Delay(0.9e-6)
+                    if sync:
+                        yield Tick()
+                        yield Delay(0.9e-6)
+                    else:
+                        yield
                     quotient_root = (yield dut.o.quotient_root)
                     remainder = (yield dut.o.remainder)
                     with self.subTest(test_case=str(test_case)):
@@ -263,7 +270,8 @@ class TestDivPipeCore(unittest.TestCase):
                                          str(test_case))
                         self.assertEqual(remainder, test_case.remainder,
                                          str(test_case))
-            sim.add_clock(2e-6)
+            if sync:
+                sim.add_clock(2e-6)
             sim.add_sync_process(generate_process)
             sim.add_sync_process(check_process)
             sim.run()
