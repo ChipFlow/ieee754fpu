@@ -31,7 +31,7 @@ class MuxInOut:
         self.out_offs = dut.num_rows - feedback_width
         for muxid in range(feedback_width):
             muxid_in = muxid
-            muxid_out = self.out_offs + muxid
+            muxid_out = muxid
             self.di[muxid_in] = {}
             self.do[muxid_out] = {}
             self.sent[muxid_in] = []
@@ -122,7 +122,6 @@ class MuxInOut:
         #    send = randint(0, send_range) != 0
 
     def rcv(self, muxid):
-        muxid = muxid + self.out_offs
         rs = self.dut.p[muxid]
         while True:
 
@@ -308,7 +307,7 @@ def pipe_cornercases_repeat(dut, name, mod, fmod, width, fn, cc, fpfn, count,
 
 
 def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
-          vals=None, opcode=None, cancel=False):
+          vals=None, opcode=None, cancel=False, feedback_width=None):
     if not os.path.exists("sim_out"):
         os.makedirs("sim_out")
     vl = rtlil.convert(dut, ports=dut.ports())
@@ -320,7 +319,10 @@ def runfp(dut, width, name, fpkls, fpop, single_op=False, n_vals=10,
 
     test = MuxInOut(dut, width, fpkls, fpop, vals, single_op, opcode=opcode)
     fns = []
-    for i in range(dut.num_rows):
+    n_rows = dut.num_rows
+    if feedback_width is not None:
+        n_rows = feedback_width
+    for i in range(n_rows):
         fns.append(test.rcv(i))
         fns.append(test.send(i))
     run_simulation(dut, {"sync": fns}, vcd_name="sim_out/%s.vcd" % name)
