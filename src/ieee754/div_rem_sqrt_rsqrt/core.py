@@ -197,8 +197,12 @@ class DivPipeCoreOutputData:
         """ Create a ``DivPipeCoreOutputData`` instance. """
         self.core_config = core_config
         bw = core_config.bit_width
+        if core_config.supported == [DP.UDivRem]:
+            self.compare_len = bw * 2
+        else:
+            self.compare_len = bw * 3
         self.quotient_root = Signal(bw, reset_less=reset_less)
-        self.remainder = Signal(bw * 3, reset_less=reset_less)
+        self.remainder = Signal(self.compare_len, reset_less=reset_less)
 
     def __iter__(self):
         """ Get member signals. """
@@ -279,7 +283,7 @@ class Trial(Elaboratable):
         self.divisor_radicand = Signal(bw, reset_less=True)
         self.quotient_root = Signal(bw, reset_less=True)
         self.root_times_radicand = Signal(bw * 2, reset_less=True)
-        self.compare_rhs = Signal(bw * 3, reset_less=True)
+        self.compare_rhs = Signal(self.compare_len, reset_less=True)
         self.trial_compare_rhs = Signal(self.compare_len, reset_less=True)
         self.operation = DP.create_signal(reset_less=True)
 
@@ -360,6 +364,11 @@ class DivPipeCoreCalculateStage(Elaboratable):
         """ Create a ``DivPipeCoreSetupStage`` instance. """
         assert stage_index in range(core_config.n_stages)
         self.core_config = core_config
+        bw = core_config.bit_width
+        if core_config.supported == [DP.UDivRem]:
+            self.compare_len = bw * 2
+        else:
+            self.compare_len = bw * 3
         self.stage_index = stage_index
         self.i = self.ispec()
         self.o = self.ospec()
@@ -458,11 +467,10 @@ class DivPipeCoreCalculateStage(Elaboratable):
         # Array on such massively long numbers is insanely gate-hungry
         crhs = []
         tcrh = trial_compare_rhs_values
-        bw = self.core_config.bit_width
         for i in range(radix):
             nbe = Signal(reset_less=True)
             comb += nbe.eq(next_bits == i)
-            crhs.append(Repl(nbe, bw*3) & tcrh[i])
+            crhs.append(Repl(nbe, self.compare_len) & tcrh[i])
         comb += self.o.compare_rhs.eq(treereduce(crhs, operator.or_,
                                       lambda x:x))
 
