@@ -214,7 +214,7 @@ def test0():
     dut = MaskCancellablePipe(maskwid)
     data = data_chain0(maskwid)
     test = TestMask(dut, resultfn_0, maskwid, data=data)
-    run_simulation(dut, [test.send, test.rcv],
+    run_simulation(dut, [test.send(), test.rcv()],
                         vcd_name="test_maskchain0.vcd")
 
 
@@ -229,7 +229,7 @@ def test8():
     #    f.write(vl)
     data=data_2op()
     test = Test5(dut, resultfn_8, data=data)
-    run_simulation(dut, [test.send, test.rcv],
+    run_simulation(dut, [test.send(), test.rcv()],
                    vcd_name="test_mul_pipe_8_16_32_64.vcd")
 
 
