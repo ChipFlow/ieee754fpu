@@ -52,13 +52,13 @@ class MulPipe_8_16_32_64(ControlBase):
     """Signed/Unsigned 8/16/32/64-bit partitioned integer multiplier pipeline
     """
 
-    def __init__(self):
+    def __init__(self, id_wid=0, op_wid=0):
         """ register_levels: specifies the points in the cascade at which
             flip-flops are to be inserted.
         """
 
-        self.id_wid = 0 # num_bits(num_rows)
-        self.op_wid = 0
+        self.id_wid = id_wid # num_bits(num_rows)
+        self.op_wid = op_wid
         self.pspec = PipelineSpec(64, self.id_wid, self.op_wid, n_ops=3)
         self.pspec.n_parts = 8
 
