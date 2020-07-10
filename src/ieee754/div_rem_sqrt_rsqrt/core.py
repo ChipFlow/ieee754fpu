@@ -224,6 +224,10 @@ class DivPipeCoreSetupStage(Elaboratable):
         self.core_config = core_config
         self.i = self.ispec()
         self.o = self.ospec()
+        if core_config.supported == [DP.UDivRem]:
+            self.compare_len = bw * 2
+        else:
+            self.compare_len = bw * 3
 
     def ispec(self):
         """ Get the input spec for this pipeline stage."""
@@ -251,7 +255,7 @@ class DivPipeCoreSetupStage(Elaboratable):
         comb += self.o.quotient_root.eq(0)
         comb += self.o.root_times_radicand.eq(0)
 
-        lhs = Signal(self.core_config.bit_width * 3, reset_less=True)
+        lhs = Signal(self.compare_len, reset_less=True)
         fw = self.core_config.fract_width
 
         with m.Switch(self.i.operation):
