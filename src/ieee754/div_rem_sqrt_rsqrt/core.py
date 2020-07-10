@@ -224,6 +224,7 @@ class DivPipeCoreSetupStage(Elaboratable):
         self.core_config = core_config
         self.i = self.ispec()
         self.o = self.ospec()
+        bw = core_config.bit_width
         if core_config.supported == [DP.UDivRem]:
             self.compare_len = bw * 2
         else:
