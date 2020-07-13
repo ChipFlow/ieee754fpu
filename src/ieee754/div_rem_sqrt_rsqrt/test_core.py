@@ -162,6 +162,8 @@ def get_test_cases(core_config,
         assert isinstance(radicands, list)
 
     for alg_op in reversed(Operation):  # put UDivRem at end
+        if get_core_op(alg_op) not in core_config.supported:
+            continue
         if alg_op is Operation.UDivRem:
             for dividend in dividends:
                 for divisor in divisors:
@@ -225,6 +227,18 @@ class TestDivPipeCore(unittest.TestCase):
         base_name += f"_radix_{1 << core_config.log2_radix}"
         if not sync:
             base_name += "_comb"
+        if core_config.supported != frozenset(DivPipeCoreOperation):
+            name_map = {
+                DivPipeCoreOperation.UDivRem: "div",
+                DivPipeCoreOperation.SqrtRem: "sqrt",
+                DivPipeCoreOperation.RSqrtRem: "rsqrt",
+            }
+            # loop using iter(DivPipeCoreOperation) to maintain order
+            for op in DivPipeCoreOperation:
+                if op in core_config.supported:
+                    base_name += f"_{name_map[op]}"
+            base_name+="_only"
+
         with self.subTest(part="synthesize"):
             dut = DivPipeCoreTestPipeline(core_config, sync)
             vl = rtlil.convert(dut, ports=[*dut.i, *dut.o])
@@ -245,15 +259,17 @@ class TestDivPipeCore(unittest.TestCase):
                     if sync:
                         yield Delay(0.9e-6)
                     else:
-                        yield
+                        yield Delay(1e-6)
 
             def check_process():
                 # sync with generator
                 if sync:
-                    yield
+                    yield Tick()
                     for _ in range(core_config.n_stages):
-                        yield
-                    yield
+                        yield Tick()
+                    yield Tick()
+                else:
+                    yield Delay(0.5e-6)
 
                 # now synched with generator
                 for test_case in test_cases:
@@ -261,7 +277,7 @@ class TestDivPipeCore(unittest.TestCase):
                         yield Tick()
                         yield Delay(0.9e-6)
                     else:
-                        yield
+                        yield Delay(1e-6)
                     quotient_root = (yield dut.o.quotient_root)
                     remainder = (yield dut.o.remainder)
                     with self.subTest(test_case=str(test_case)):
@@ -272,8 +288,8 @@ class TestDivPipeCore(unittest.TestCase):
                                          str(test_case))
             if sync:
                 sim.add_clock(2e-6)
-            sim.add_sync_process(generate_process)
-            sim.add_sync_process(check_process)
+            sim.add_process(generate_process)
+            sim.add_process(check_process)
             sim.run()
 
     def test_bit_width_2_fract_width_1_radix_2_comb(self):
@@ -297,6 +313,32 @@ class TestDivPipeCore(unittest.TestCase):
         self.handle_config(DivPipeCoreConfig(bit_width=8,
                                              fract_width=4,
                                              log2_radix=1))
+
+    def test_bit_width_8_fract_width_4_radix_4_comb(self):
+        self.handle_config(DivPipeCoreConfig(bit_width=8,
+                                             fract_width=4,
+                                             log2_radix=2),
+                           sync=False)
+
+    def test_bit_width_8_fract_width_4_radix_4(self):
+        self.handle_config(DivPipeCoreConfig(bit_width=8,
+                                             fract_width=4,
+                                             log2_radix=2))
+
+    def test_bit_width_8_fract_width_4_radix_4_div_only(self):
+        supported = (DivPipeCoreOperation.UDivRem,)
+        self.handle_config(DivPipeCoreConfig(bit_width=8,
+                                             fract_width=4,
+                                             log2_radix=2,
+                                             supported=supported))
+
+    def test_bit_width_8_fract_width_4_radix_4_comb_div_only(self):
+        supported = (DivPipeCoreOperation.UDivRem,)
+        self.handle_config(DivPipeCoreConfig(bit_width=8,
+                                             fract_width=4,
+                                             log2_radix=2,
+                                             supported=supported),
+                           sync=False)
 
     @unittest.skip("really slow")
     def test_bit_width_32_fract_width_24_radix_8_comb(self):
