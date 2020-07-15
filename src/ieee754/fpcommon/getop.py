@@ -9,6 +9,7 @@ from math import log
 
 from ieee754.fpcommon.fpbase import FPOpIn, FPBase, FPNumBase
 from nmutil.singlepipe import PrevControl
+from nmutil.concurrentunit import PipeContext as FPPipeContext
 
 from nmutil import nmoperator
 
@@ -44,40 +45,6 @@ class FPNumBase2Ops:
 
     def ports(self):
         return [self.a, self.b, self.muxid]
-
-
-class FPPipeContext:
-
-    def __init__(self, pspec):
-        """ creates a pipeline context.  currently: operator (op) and muxid
-
-            opkls (within pspec) - the class to create that will be the
-                                   "operator". instance must have an "eq"
-                                   function.
-        """
-        self.id_wid = pspec.id_wid
-        self.op_wid = pspec.op_wid
-        self.muxid = Signal(self.id_wid, reset_less=True)   # RS multiplex ID
-        opkls = pspec.opkls
-        if opkls is None:
-            self.op = Signal(self.op_wid, reset_less=True)
-        else:
-            self.op = opkls(pspec)
-
-    def eq(self, i):
-        ret = [self.muxid.eq(i.muxid)]
-        ret.append(self.op.eq(i.op))
-        return ret
-
-    def __iter__(self):
-        yield self.muxid
-        yield self.op
-
-    def ports(self):
-        if hasattr(self.op, "ports"):
-            return [self.muxid] + self.op.ports()
-        else:
-            return list(self)
 
 
 class FPGet2OpMod(PrevControl):
