@@ -16,6 +16,7 @@ from nmigen.hdl.ir import Fragment
 from nmigen.back import rtlil
 from nmigen.back.pysim import Simulator, Delay, Tick
 from itertools import chain
+import inspect
 
 
 def show_fixed(bits, fract_width, bit_width):
@@ -214,6 +215,30 @@ class DivPipeCoreTestPipeline(Elaboratable):
         yield from self.o
 
 
+def trace_process(process, prefix="trace:", silent=False):
+    def generator():
+        if inspect.isgeneratorfunction(process):
+            proc = process()
+        else:
+            proc = process
+        response = None
+        while True:
+            try:
+                command = proc.send(response)
+                if not silent:
+                    print(prefix, command)
+            except StopIteration:
+                return
+            except Exception as e:
+                if not silent:
+                    print(prefix, "raised:", e)
+                raise e
+            response = (yield command)
+            if not silent:
+                print(prefix, "->", response)
+    return generator
+
+
 class TestDivPipeCore(unittest.TestCase):
     def handle_config(self,
                       core_config,
@@ -288,8 +313,9 @@ class TestDivPipeCore(unittest.TestCase):
                                          str(test_case))
             if sync:
                 sim.add_clock(2e-6)
-            sim.add_process(generate_process)
-            sim.add_process(check_process)
+            silent = False
+            sim.add_process(trace_process(generate_process, "generate:", silent=silent))
+            sim.add_process(trace_process(check_process, "check:", silent=silent))
             sim.run()
 
     def test_bit_width_2_fract_width_1_radix_2_comb(self):
