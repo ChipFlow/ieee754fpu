@@ -275,6 +275,8 @@ class TestDivPipeCore(unittest.TestCase):
                            gtkw_file=open(f"{base_name}.gtkw", "w"),
                            traces=[*dut.traces()]):
             def generate_process():
+                if not sync:
+                    yield Delay(1e-6)
                 for test_case in test_cases:
                     if sync:
                         yield Tick()
@@ -313,7 +315,7 @@ class TestDivPipeCore(unittest.TestCase):
                                          str(test_case))
             if sync:
                 sim.add_clock(2e-6)
-            silent = False
+            silent = True
             sim.add_process(trace_process(generate_process, "generate:", silent=silent))
             sim.add_process(trace_process(check_process, "check:", silent=silent))
             sim.run()
