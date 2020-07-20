@@ -153,7 +153,8 @@ class DivPipeCoreInterstageData:
         """ Create a ``DivPipeCoreInterstageData`` instance. """
         self.core_config = core_config
         bw = core_config.bit_width
-        if core_config.supported == {DP.UDivRem}:
+        # TODO(programmerjake): re-enable once bit_width reduction is fixed
+        if False and core_config.supported == {DP.UDivRem}:
             self.compare_len = bw * 2
         else:
             self.compare_len = bw * 3
@@ -200,7 +201,8 @@ class DivPipeCoreOutputData:
         """ Create a ``DivPipeCoreOutputData`` instance. """
         self.core_config = core_config
         bw = core_config.bit_width
-        if core_config.supported == {DP.UDivRem}:
+        # TODO(programmerjake): re-enable once bit_width reduction is fixed
+        if False and core_config.supported == {DP.UDivRem}:
             self.compare_len = bw * 2
         else:
             self.compare_len = bw * 3
@@ -228,7 +230,8 @@ class DivPipeCoreSetupStage(Elaboratable):
         self.i = self.ispec()
         self.o = self.ospec()
         bw = core_config.bit_width
-        if core_config.supported == {DP.UDivRem}:
+        # TODO(programmerjake): re-enable once bit_width reduction is fixed
+        if False and core_config.supported == {DP.UDivRem}:
             self.compare_len = bw * 2
         else:
             self.compare_len = bw * 3
@@ -284,7 +287,8 @@ class Trial(Elaboratable):
         self.current_shift = current_shift
         self.log2_radix = log2_radix
         bw = core_config.bit_width
-        if core_config.supported == {DP.UDivRem}:
+        # TODO(programmerjake): re-enable once bit_width reduction is fixed
+        if False and core_config.supported == {DP.UDivRem}:
             self.compare_len = bw * 2
         else:
             self.compare_len = bw * 3
@@ -373,7 +377,8 @@ class DivPipeCoreCalculateStage(Elaboratable):
         assert stage_index in range(core_config.n_stages)
         self.core_config = core_config
         bw = core_config.bit_width
-        if core_config.supported == {DP.UDivRem}:
+        # TODO(programmerjake): re-enable once bit_width reduction is fixed
+        if False and core_config.supported == {DP.UDivRem}:
             self.compare_len = bw * 2
         else:
             self.compare_len = bw * 3
