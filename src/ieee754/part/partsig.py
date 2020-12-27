@@ -252,6 +252,7 @@ class PartitionedSignal:
 
     def __lt__(self, other):
         width = self.sig.shape()[0]
+        # swap operands, use gt to do lt
         return self._compare(width, other, self, "gt", PartitionedEqGtGe.GT)
 
     def __ge__(self, other):
@@ -260,6 +261,7 @@ class PartitionedSignal:
 
     def __le__(self, other):
         width = self.sig.shape()[0]
+        # swap operands, use ge to do le
         return self._compare(width, other, self, "ge", PartitionedEqGtGe.GE)
 
     # useful operators
