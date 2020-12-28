@@ -274,8 +274,8 @@ class PartitionedSignal:
         Value, out
             ``1`` if any bits are set, ``0`` otherwise.
         """
-        raise NotImplementedError
-        return Operator("b", [self])
+        return self.any() # have to see how this goes
+        #return Operator("b", [self])
 
     def any(self):
         """Check if any bits are ``1``.
@@ -285,7 +285,6 @@ class PartitionedSignal:
         Value, out
             ``1`` if any bits are set, ``0`` otherwise.
         """
-        raise NotImplementedError
         return Operator("r|", [self])
 
     def all(self):
@@ -296,8 +295,7 @@ class PartitionedSignal:
         Value, out
             ``1`` if all bits are set, ``0`` otherwise.
         """
-        raise NotImplementedError
-        return Operator("r&", [self])
+        return self == Const(-1) # leverage the __eq__ operator here
 
     def xor(self):
         """Compute pairwise exclusive-or of every bit.
