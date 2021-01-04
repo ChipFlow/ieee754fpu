@@ -75,8 +75,12 @@ class PartitionedPattern(Elaboratable):
             start = positions[i]
             end = positions[i+1]
             # Propagate from the previous byte, adding one to it
-            comb += self.output[start:end].eq(
-                self.output[last_start:last_end] + 1)
+            with m.If(~gates[i]):
+                comb += self.output[start:end].eq(
+                    self.output[last_start:last_end] + 1)
+            with m.Else():
+                # Unless it's a partition boundary, if so start again
+                comb += self.output[start:end].eq(1)
             last_start = start
             last_end = end
         return m
@@ -93,10 +97,8 @@ class Driver(Elaboratable):
     def elaborate(_):
         m = Module()
         comb = m.d.comb
-        sync = m.d.sync
         width = 64
         mwidth = 8
-        out = Signal(width)
         # Setup partition points and gates
         points = PartitionPoints()
         gates = Signal(mwidth-1)
@@ -106,8 +108,20 @@ class Driver(Elaboratable):
         # Instantiate the partitioned pattern producer
         m.submodules.dut = dut = PartitionedPattern(width, points)
         # Directly check some cases
-        comb += Assert(dut.output == 0x0807060504030201)
-        comb += Cover(1)
+        with m.If(gates == 0):
+            comb += Assert(dut.output == 0x0807060504030201)
+        with m.If(gates == 0b1100101):
+            comb += Assert(dut.output == 0x0101030201020101)
+        with m.If(gates == 0b0001000):
+            comb += Assert(dut.output == 0x0403020104030201)
+        with m.If(gates == 0b0100001):
+            comb += Assert(dut.output == 0x0201050403020101)
+        with m.If(gates == 0b1000001):
+            comb += Assert(dut.output == 0x0106050403020101)
+        with m.If(gates == 0b0000001):
+            comb += Assert(dut.output == 0x0706050403020101)
+        # Make it interesting, by having three partitions
+        comb += Cover(sum(gates) == 3)
         return m
 
 
