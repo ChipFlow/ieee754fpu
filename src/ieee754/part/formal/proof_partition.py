@@ -74,15 +74,38 @@ class PartitionedPattern(Elaboratable):
         for i in range(1, self.mwidth):
             start = positions[i]
             end = positions[i+1]
-            # Propagate from the previous byte, adding one to it
+            # Propagate from the previous byte, adding one to it.
             with m.If(~gates[i]):
                 comb += self.output[start:end].eq(
                     self.output[last_start:last_end] + 1)
             with m.Else():
-                # Unless it's a partition boundary, if so start again
+                # ... unless it's a partition boundary. If so, start again.
                 comb += self.output[start:end].eq(1)
             last_start = start
             last_end = end
+        # Mirror the nibbles on the last byte
+        last_start = positions[-2]
+        last_end = positions[-1]
+        last_middle = (last_start+last_end)//2
+        comb += self.output[last_middle:last_end].eq(
+            self.output[last_start:last_middle])
+        for i in range(self.mwidth, 0, -1):
+            start = positions[i-1]
+            end = positions[i]
+            middle = (start + end) // 2
+            # Propagate from the previous byte.
+            with m.If(~gates[i]):
+                comb += self.output[middle:end].eq(
+                    self.output[last_middle:last_end])
+            with m.Else():
+                # ... unless it's a partition boundary.
+                # If so, mirror the nibbles again.
+                comb += self.output[middle:end].eq(
+                    self.output[start:middle])
+            last_start = start
+            last_middle = middle
+            last_end = end
+
         return m
 
 
@@ -109,17 +132,17 @@ class Driver(Elaboratable):
         m.submodules.dut = dut = PartitionedPattern(width, points)
         # Directly check some cases
         with m.If(gates == 0):
-            comb += Assert(dut.output == 0x0807060504030201)
+            comb += Assert(dut.output == 0x_88_87_86_85_84_83_82_81)
         with m.If(gates == 0b1100101):
-            comb += Assert(dut.output == 0x0101030201020101)
+            comb += Assert(dut.output == 0x_11_11_33_32_31_22_21_11)
         with m.If(gates == 0b0001000):
-            comb += Assert(dut.output == 0x0403020104030201)
+            comb += Assert(dut.output == 0x_44_43_42_41_44_43_42_41)
         with m.If(gates == 0b0100001):
-            comb += Assert(dut.output == 0x0201050403020101)
+            comb += Assert(dut.output == 0x_22_21_55_54_53_52_51_11)
         with m.If(gates == 0b1000001):
-            comb += Assert(dut.output == 0x0106050403020101)
+            comb += Assert(dut.output == 0x_11_66_65_64_63_62_61_11)
         with m.If(gates == 0b0000001):
-            comb += Assert(dut.output == 0x0706050403020101)
+            comb += Assert(dut.output == 0x_77_76_75_74_73_72_71_11)
         # Make it interesting, by having three partitions
         comb += Cover(sum(gates) == 3)
         return m
@@ -127,7 +150,7 @@ class Driver(Elaboratable):
 
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
-        traces = ['output[63:0]']
+        traces = ['output[63:0]', 'gates[6:0]']
         write_gtkw(
             'test_formal_cover.gtkw',
             os.path.dirname(__file__) +
