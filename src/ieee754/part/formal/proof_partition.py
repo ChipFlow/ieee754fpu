@@ -69,20 +69,22 @@ class PartitionedPattern(Elaboratable):
         # Begin counting at one
         last_start = positions[0]
         last_end = positions[1]
-        comb += self.output[last_start:last_end].eq(1)
+        last_middle = (last_start+last_end)//2
+        comb += self.output[last_start:last_middle].eq(1)
         # Build an incrementing cascade
         for i in range(1, self.mwidth):
             start = positions[i]
             end = positions[i+1]
+            middle = (start + end) // 2
             # Propagate from the previous byte, adding one to it.
             with m.If(~gates[i]):
-                comb += self.output[start:end].eq(
-                    self.output[last_start:last_end] + 1)
+                comb += self.output[start:middle].eq(
+                    self.output[last_start:last_middle] + 1)
             with m.Else():
                 # ... unless it's a partition boundary. If so, start again.
-                comb += self.output[start:end].eq(1)
+                comb += self.output[start:middle].eq(1)
             last_start = start
-            last_end = end
+            last_middle = middle
         # Mirror the nibbles on the last byte
         last_start = positions[-2]
         last_end = positions[-1]
@@ -102,7 +104,6 @@ class PartitionedPattern(Elaboratable):
                 # If so, mirror the nibbles again.
                 comb += self.output[middle:end].eq(
                     self.output[start:middle])
-            last_start = start
             last_middle = middle
             last_end = end
 
