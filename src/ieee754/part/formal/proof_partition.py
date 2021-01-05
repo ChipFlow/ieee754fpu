@@ -34,6 +34,7 @@ import unittest
 
 from nmigen import Elaboratable, Signal, Module, Const
 from nmigen.asserts import Assert, Cover
+from nmigen.hdl.ast import Assume
 
 from nmutil.formaltest import FHDLTestCase
 from nmutil.gtkw import write_gtkw
@@ -144,29 +145,68 @@ class Driver(Elaboratable):
             comb += Assert(dut.output == 0x_11_66_65_64_63_62_61_11)
         with m.If(gates == 0b0000001):
             comb += Assert(dut.output == 0x_77_76_75_74_73_72_71_11)
-        # Make it interesting, by having three partitions
+        # Make it interesting, by having four partitions.
         comb += Cover(sum(gates) == 3)
+        # Choose a partition offset and width at random.
+        p_offset = Signal(range(mwidth))
+        p_width = Signal(range(mwidth+1))
+        p_finish = Signal(range(mwidth+1))
+        comb += p_finish.eq(p_offset + p_width)
+        # Partition must not be empty, and fit within the signal.
+        comb += Assume(p_width != 0)
+        comb += Assume(p_offset + p_width <= mwidth)
+
+        # Build the corresponding partition
+        # Use Assume to constraint the pattern to conform to the given offset
+        # and width. For each gate bit it is:
+        # 1) one, if on the partition boundary
+        # 2) zero, if it's inside the partition
+        # 3) don't care, otherwise
+        p_gates = Signal(mwidth+1)
+        for i in range(mwidth+1):
+            with m.If(i == p_offset):
+                # Partitions begin with 1
+                comb += Assume(p_gates[i] == 1)
+            with m.If((i > p_offset) & (i < p_finish)):
+                # The interior are all zeros
+                comb += Assume(p_gates[i] == 0)
+            with m.If(i == p_finish):
+                # End with 1 again
+                comb += Assume(p_gates[i] == 1)
+        # Check some possible partitions generating a given pattern
+        with m.If(p_gates == 0b0100110):
+            comb += Assert(((p_offset == 1) & (p_width == 1)) |
+                           ((p_offset == 2) & (p_width == 3)))
+        # Remove guard bits at each end and assign to the DUT gates
+        comb += gates.eq(p_gates[1:])
         return m
 
 
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
-        traces = ['output[63:0]', 'gates[6:0]']
+        traces = [
+            ('dut', {'submodule': 'dut'}, [
+                'output[63:0]',
+                ('gates[6:0]', {'base': 'bin'})]),
+            ('p_offset[2:0]', {'base': 'dec'}),
+            ('p_width[3:0]', {'base': 'dec'}),
+            ('p_finish[3:0]', {'base': 'dec'}),
+            ('p_gates[8:0]', {'base': 'bin'})]
         write_gtkw(
-            'test_formal_cover.gtkw',
+            'proof_partition_cover.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_formal/engine_0/trace0.vcd',
             traces,
-            module='top.dut',
-            zoom="formal"
+            module='top',
+            zoom=-3
         )
         write_gtkw(
-            'test_formal_bmc.gtkw',
+            'proof_partition_bmc.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_formal/engine_0/trace.vcd',
             traces,
-            module='top.dut',
-            zoom="formal"
+            module='top',
+            zoom=-3
         )
         module = Driver()
         self.assertFormal(module, mode="bmc", depth=1)
