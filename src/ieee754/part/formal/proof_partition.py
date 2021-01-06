@@ -145,8 +145,6 @@ class Driver(Elaboratable):
             comb += Assert(dut.output == 0x_11_66_65_64_63_62_61_11)
         with m.If(gates == 0b0000001):
             comb += Assert(dut.output == 0x_77_76_75_74_73_72_71_11)
-        # Make it interesting, by having four partitions.
-        comb += Cover(sum(gates) == 3)
         # Choose a partition offset and width at random.
         p_offset = Signal(range(mwidth))
         p_width = Signal(range(mwidth+1))
@@ -179,6 +177,24 @@ class Driver(Elaboratable):
                            ((p_offset == 2) & (p_width == 3)))
         # Remove guard bits at each end and assign to the DUT gates
         comb += gates.eq(p_gates[1:])
+        # Generate shifted down outputs:
+        p_output = Signal(width)
+        positions = [0] + list(points.keys()) + [width]
+        for i in range(mwidth):
+            with m.If(p_offset == i):
+                comb += p_output.eq(dut.output[positions[i]:])
+        # Some checks on the shifted down output, irrespective of offset:
+        with m.If(p_width == 2):
+            comb += Assert(p_output[:16] == 0x_22_21)
+        with m.If(p_width == 4):
+            comb += Assert(p_output[:32] == 0x_44_43_42_41)
+        # test zero shift
+        with m.If(p_offset == 0):
+            comb += Assert(p_output == dut.output)
+        # Output an example.
+        # Make it interesting, by having four partitions.
+        # Make the selected partition not start at the very beginning.
+        comb += Cover((sum(gates) == 3) & (p_offset != 0))
         return m
 
 
@@ -191,7 +207,8 @@ class PartitionTestCase(FHDLTestCase):
             ('p_offset[2:0]', {'base': 'dec'}),
             ('p_width[3:0]', {'base': 'dec'}),
             ('p_finish[3:0]', {'base': 'dec'}),
-            ('p_gates[8:0]', {'base': 'bin'})]
+            ('p_gates[8:0]', {'base': 'bin'}),
+            'p_output[63:0]']
         write_gtkw(
             'proof_partition_cover.gtkw',
             os.path.dirname(__file__) +
