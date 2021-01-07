@@ -194,21 +194,35 @@ class Driver(Elaboratable):
         # Output an example.
         # Make it interesting, by having four partitions.
         # Make the selected partition not start at the very beginning.
-        comb += Cover((sum(gates) == 3) & (p_offset != 0))
+        comb += Cover((sum(gates) == 3) & (p_offset != 0) & (p_width == 3))
+        # Generate and check expected values for all possible partition sizes.
+        # Here, we assume partition sizes are multiple of the smaller size.
+        for w in range(1, mwidth+1):
+            with m.If(p_width == w):
+                # calculate the expected output, for the given bit width
+                bit_width = w * step
+                expected = Signal(bit_width, name=f"expected_{w}")
+                for b in range(w):
+                    # lower nibble is the position
+                    comb += expected[b*8:b*8+4].eq(b+1)
+                    # upper nibble is the partition width
+                    comb += expected[b*8+4:b*8+8].eq(w)
+                # truncate the output, compare and assert
+                comb += Assert(p_output[:bit_width] == expected)
         return m
 
 
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
         traces = [
-            ('dut', {'submodule': 'dut'}, [
-                'output[63:0]',
-                ('gates[6:0]', {'base': 'bin'})]),
             ('p_offset[2:0]', {'base': 'dec'}),
             ('p_width[3:0]', {'base': 'dec'}),
             ('p_finish[3:0]', {'base': 'dec'}),
             ('p_gates[8:0]', {'base': 'bin'}),
-            'p_output[63:0]']
+            ('dut', {'submodule': 'dut'}, [
+                ('gates[6:0]', {'base': 'bin'}),
+                'output[63:0]']),
+            'p_output[63:0]', 'expected_3[21:0]']
         write_gtkw(
             'proof_partition_cover.gtkw',
             os.path.dirname(__file__) +
