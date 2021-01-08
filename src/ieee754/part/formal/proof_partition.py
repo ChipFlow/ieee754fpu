@@ -212,6 +212,94 @@ class Driver(Elaboratable):
         return m
 
 
+class GateGenerator(Elaboratable):
+    """Produces partition gates at random
+
+    `p_offset`, `p_width` and `p_finish` describe the selected partition
+    """
+    def __init__(self, mwidth):
+        self.mwidth = mwidth
+        """Number of partitions"""
+        self.gates = Signal(mwidth-1)
+        """Generated partition gates"""
+        self.p_offset = Signal(range(mwidth))
+        """Generated partition start point"""
+        self.p_width = Signal(range(mwidth+1))
+        """Generated partition width"""
+        self.p_finish = Signal(range(mwidth+1))
+        """Generated partition end point"""
+
+    def elaborate(self, _):
+        m = Module()
+        comb = m.d.comb
+        mwidth = self.mwidth
+        gates = self.gates
+        p_offset = self.p_offset
+        p_width = self.p_width
+        p_finish = self.p_finish
+        comb += p_finish.eq(p_offset + p_width)
+        # Partition must not be empty, and fit within the signal.
+        comb += Assume(p_width != 0)
+        comb += Assume(p_offset + p_width <= mwidth)
+
+        # Build the corresponding partition
+        # Use Assume to constraint the pattern to conform to the given offset
+        # and width. For each gate bit it is:
+        # 1) one, if on the partition boundary
+        # 2) zero, if it's inside the partition
+        # 3) don't care, otherwise
+        p_gates = Signal(mwidth+1)
+        for i in range(mwidth+1):
+            with m.If(i == p_offset):
+                # Partitions begin with 1
+                comb += Assume(p_gates[i] == 1)
+            with m.If((i > p_offset) & (i < p_finish)):
+                # The interior are all zeros
+                comb += Assume(p_gates[i] == 0)
+            with m.If(i == p_finish):
+                # End with 1 again
+                comb += Assume(p_gates[i] == 1)
+        # Remove guard bits at each end, before assigning to the output gates
+        comb += gates.eq(p_gates[1:])
+        return m
+
+
+class GeneratorDriver(Elaboratable):
+    def __init__(self):
+        # inputs and outputs
+        pass
+
+    @staticmethod
+    def elaborate(_):
+        m = Module()
+        comb = m.d.comb
+        width = 64
+        mwidth = 8
+        # Setup partition points and gates
+        points = PartitionPoints()
+        gates = Signal(mwidth-1)
+        step = int(width/mwidth)
+        for i in range(mwidth-1):
+            points[(i+1)*step] = gates[i]
+        # Instantiate the partitioned pattern producer and the DUT
+        m.submodules.dut = dut = PartitionedPattern(width, points)
+        m.submodules.gen = gen = GateGenerator(mwidth)
+        comb += gates.eq(gen.gates)
+        # Generate shifted down outputs
+        p_offset = gen.p_offset
+        p_width = gen.p_width
+        p_output = Signal(width)
+        for i in range(mwidth):
+            with m.If(p_offset == i):
+                comb += p_output.eq(dut.output[i*step:])
+        # Output an example.
+        # Make it interesting, by having four partitions.
+        # Make the selected partition not start at the very beginning.
+        comb += Cover((sum(gates) == 3) & (p_offset != 0) & (p_width == 3) &
+                      (p_output != 0))
+        return m
+
+
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
         traces = [
@@ -240,6 +328,36 @@ class PartitionTestCase(FHDLTestCase):
             zoom=-3
         )
         module = Driver()
+        self.assertFormal(module, mode="bmc", depth=1)
+        self.assertFormal(module, mode="cover", depth=1)
+
+    def test_generator(self):
+        traces = [
+            ('p_offset[2:0]', {'base': 'dec'}),
+            ('p_width[3:0]', {'base': 'dec'}),
+            ('p_finish[3:0]', {'base': 'dec'}),
+            ('p_gates[8:0]', {'base': 'bin'}),
+            ('dut', {'submodule': 'dut'}, [
+                ('gates[6:0]', {'base': 'bin'}),
+                'output[63:0]']),
+            'p_output[63:0]']
+        write_gtkw(
+            'proof_partition_generator_cover.gtkw',
+            os.path.dirname(__file__) +
+            '/proof_partition_generator/engine_0/trace0.vcd',
+            traces,
+            module='top',
+            zoom=-3
+        )
+        write_gtkw(
+            'proof_partition_generator_bmc.gtkw',
+            os.path.dirname(__file__) +
+            '/proof_partition_generator/engine_0/trace.vcd',
+            traces,
+            module='top',
+            zoom=-3
+        )
+        module = GeneratorDriver()
         self.assertFormal(module, mode="bmc", depth=1)
         self.assertFormal(module, mode="cover", depth=1)
 
