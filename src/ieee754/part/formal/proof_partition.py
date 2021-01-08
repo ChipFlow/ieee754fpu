@@ -292,11 +292,23 @@ class GeneratorDriver(Elaboratable):
         for i in range(mwidth):
             with m.If(p_offset == i):
                 comb += p_output.eq(dut.output[i*step:])
+        # Generate and check expected values for all possible partition sizes.
+        for w in range(1, mwidth+1):
+            with m.If(p_width == w):
+                # calculate the expected output, for the given bit width
+                bit_width = w * step
+                expected = Signal(bit_width, name=f"expected_{w}")
+                for b in range(w):
+                    # lower nibble is the position
+                    comb += expected[b*8:b*8+4].eq(b+1)
+                    # upper nibble is the partition width
+                    comb += expected[b*8+4:b*8+8].eq(w)
+                # truncate the output, compare and assert
+                comb += Assert(p_output[:bit_width] == expected)
         # Output an example.
         # Make it interesting, by having four partitions.
         # Make the selected partition not start at the very beginning.
-        comb += Cover((sum(gates) == 3) & (p_offset != 0) & (p_width == 3) &
-                      (p_output != 0))
+        comb += Cover((sum(gates) == 3) & (p_offset != 0) & (p_width == 3))
         return m
 
 
@@ -340,7 +352,7 @@ class PartitionTestCase(FHDLTestCase):
             ('dut', {'submodule': 'dut'}, [
                 ('gates[6:0]', {'base': 'bin'}),
                 'output[63:0]']),
-            'p_output[63:0]']
+            'p_output[63:0]', 'expected_3[21:0]']
         write_gtkw(
             'proof_partition_generator_cover.gtkw',
             os.path.dirname(__file__) +
