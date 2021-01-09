@@ -33,7 +33,7 @@ class Driver(Elaboratable):
         # instantiate the DUT
         m.submodules.dut = dut = PartitionedEqGtGe(width, points)
         # post-process the output to ripple the LSB
-        # TODO: remove this once PartitionedEq is conformant
+        # TODO: remove this once PartitionedEqGtGe is conformant
         m.submodules.ripple = ripple = RippleLSB(mwidth)
         comb += ripple.results_in.eq(dut.output)
         comb += ripple.gates.eq(gates)
@@ -48,7 +48,7 @@ class Driver(Elaboratable):
         p_b = Signal(width)
         for pos in range(mwidth):
             with m.If(p_offset == pos):
-                # TODO: change to dut.output once PartitionedEq is conformant
+                # TODO: change to dut.output once PartitionedEqGtGe is conformant
                 comb += p_output.eq(ripple.output[pos:])
                 comb += p_a.eq(dut.a[pos * step:])
                 comb += p_b.eq(dut.b[pos * step:])
