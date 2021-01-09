@@ -32,7 +32,6 @@ class Driver(Elaboratable):
             points[(i+1)*step] = gates[i]
         # instantiate the DUT
         m.submodules.dut = dut = PartitionedEqGtGe(width, points)
-        comb += dut.opcode.eq(PartitionedEqGtGe.EQ)
         # post-process the output to ripple the LSB
         # TODO: remove this once PartitionedEq is conformant
         m.submodules.ripple = ripple = RippleLSB(mwidth)
@@ -61,9 +60,18 @@ class Driver(Elaboratable):
                 input_bit_width = w * step
                 output_bit_width = w
                 expected = Signal(output_bit_width, name=f"expected_{w}")
-                comb += expected[0].eq(
-                    p_a[:input_bit_width] == p_b[:input_bit_width])
-                comb += expected[1:].eq(Repl(expected[0], output_bit_width-1))
+                a = Signal(input_bit_width, name=f"a_{w}")
+                b = Signal(input_bit_width, name=f"b_{w}")
+                lsb = Signal(name=f"lsb_{w}")
+                comb += a.eq(p_a[:input_bit_width])
+                comb += b.eq(p_b[:input_bit_width])
+                with m.If(dut.opcode == PartitionedEqGtGe.EQ):
+                    comb += lsb.eq(a == b)
+                with m.Elif(dut.opcode == PartitionedEqGtGe.GT):
+                    comb += lsb.eq(a > b)
+                with m.Elif(dut.opcode == PartitionedEqGtGe.GE):
+                    comb += lsb.eq(a >= b)
+                comb += expected.eq(Repl(lsb, output_bit_width))
                 # truncate the output, compare and assert
                 comb += Assert(p_output[:output_bit_width] == expected)
         # output an example
