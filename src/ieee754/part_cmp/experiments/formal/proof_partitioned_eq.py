@@ -1,11 +1,12 @@
 import os
 import unittest
 
-from nmigen import Elaboratable, Signal, Module
+from nmigen import Elaboratable, Signal, Module, Repl
 from nmigen.asserts import Assert, Cover
 
 from nmutil.formaltest import FHDLTestCase
 from nmutil.gtkw import write_gtkw
+from nmutil.ripple import RippleLSB
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part.formal.proof_partition import GateGenerator
@@ -31,6 +32,11 @@ class Driver(Elaboratable):
             points[(i+1)*step] = gates[i]
         # instantiate the DUT
         m.submodules.dut = dut = PartitionedEq(width, points)
+        # post-process the output to ripple the LSB
+        # TODO: remove this once PartitionedEq is conformant
+        m.submodules.ripple = ripple = RippleLSB(mwidth)
+        comb += ripple.results_in.eq(dut.output)
+        comb += ripple.gates.eq(gates)
         # instantiate the partitioned gate generator and connect the gates
         m.submodules.gen = gen = GateGenerator(mwidth)
         comb += gates.eq(gen.gates)
@@ -42,9 +48,8 @@ class Driver(Elaboratable):
         p_b = Signal(width)
         for pos in range(mwidth):
             with m.If(p_offset == pos):
-                # TODO: post-process the output to fill the partition with
-                # the LSB
-                comb += p_output.eq(dut.output[pos:])
+                # TODO: change to dut.output once PartitionedEq is conformant
+                comb += p_output.eq(ripple.output[pos:])
                 comb += p_a.eq(dut.a[pos * step:])
                 comb += p_b.eq(dut.b[pos * step:])
         # generate and check expected values for all possible partition sizes
@@ -55,10 +60,9 @@ class Driver(Elaboratable):
                 input_bit_width = w * step
                 output_bit_width = w
                 expected = Signal(output_bit_width, name=f"expected_{w}")
-                # TODO: the expected result is all zeros or all ones
-                comb += expected.eq(0)
                 comb += expected[0].eq(
                     p_a[:input_bit_width] == p_b[:input_bit_width])
+                comb += expected[1:].eq(Repl(expected[0], output_bit_width-1))
                 # truncate the output, compare and assert
                 comb += Assert(p_output[:output_bit_width] == expected)
         # output an example
@@ -78,8 +82,10 @@ class PartitionedEqTestCase(FHDLTestCase):
                 ('gates[6:0]', {'base': 'bin'}),
                 'a[63:0]', 'b[63:0]',
                 ('output[7:0]', {'base': 'bin'})]),
+            ('ripple', {'submodule': 'ripple'}, [
+                ('output[7:0]', {'base': 'bin'})]),
             ('p_output[7:0]', {'base': 'bin'}),
-            'expected_3']
+            ('expected_3[2:0]', {'base': 'bin'})]
         write_gtkw(
             'proof_partitioned_eq_cover.gtkw',
             os.path.dirname(__file__) +
