@@ -491,6 +491,26 @@ class PartitionTestCase(FHDLTestCase):
         self.assertFormal(module, mode="bmc", depth=1)
         self.assertFormal(module, mode="cover", depth=1)
 
+    def test_partsig_ne(self):
+        module = ComparisonOpDriver(operator.ne, 64, 8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_gt(self):
+        module = ComparisonOpDriver(operator.gt, 64, 8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_ge(self):
+        module = ComparisonOpDriver(operator.ge, 64, 8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_lt(self):
+        module = ComparisonOpDriver(operator.lt, 64, 8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_le(self):
+        module = ComparisonOpDriver(operator.le, 64, 8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
 
 if __name__ == '__main__':
     unittest.main()
