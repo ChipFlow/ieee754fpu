@@ -354,8 +354,18 @@ class ComparisonOpDriver(Elaboratable):
         comb += gates.eq(gen.gates)
         p_offset = gen.p_offset
         p_width = gen.p_width
+        # generate shifted down inputs and outputs
+        p_output = Signal(mwidth)
+        p_a = Signal(width)
+        p_b = Signal(width)
+        for pos in range(mwidth):
+            with m.If(p_offset == pos):
+                comb += p_output.eq(output[pos:])
+                comb += p_a.eq(a.sig[pos * step:])
+                comb += p_b.eq(b.sig[pos * step:])
         # output a test case
-        comb += Cover((p_offset != 0) & (p_width == 3) & (sum(output) > 1))
+        comb += Cover((p_offset != 0) & (p_width == 3) & (sum(output) > 1) &
+                      (p_a != 0) & (p_b != 0) & (p_output != 0))
         return m
 
 
@@ -440,7 +450,9 @@ class PartitionTestCase(FHDLTestCase):
             ('eq_1', {'submodule': 'eq_1'}, [
                 ('gates[6:0]', 'bin'),
                 'a[63:0]', 'b[63:0]',
-                ('output[7:0]', 'bin')])]
+                ('output[7:0]', 'bin')]),
+            'p_a[63:0]', 'p_b[63:0]',
+            ('p_output[7:0]', 'bin')]
         write_gtkw(
             'proof_partsig_eq_cover.gtkw',
             os.path.dirname(__file__) +
