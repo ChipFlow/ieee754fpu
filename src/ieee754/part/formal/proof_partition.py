@@ -31,6 +31,7 @@ In other words, we have patterns as follows (assuming 32-bit words)::
 
 import os
 import unittest
+import operator
 
 from nmigen import Elaboratable, Signal, Module, Const
 from nmigen.asserts import Assert, Cover
@@ -40,6 +41,7 @@ from nmutil.formaltest import FHDLTestCase
 from nmutil.gtkw import write_gtkw
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
+from ieee754.part.partsig import PartitionedSignal
 
 
 class PartitionedPattern(Elaboratable):
@@ -312,6 +314,47 @@ class GeneratorDriver(Elaboratable):
         return m
 
 
+def make_partitions(step, mwidth):
+    gates = Signal(mwidth - 1)
+    points = PartitionPoints()
+    for i in range(mwidth-1):
+        points[(i + 1) * step] = gates[i]
+    return points, gates
+
+
+class ComparisonOpDriver(Elaboratable):
+    """Checks comparison operations on partitioned signals"""
+    def __init__(self, op, width, mwidth):
+        self.op = op
+        """Operation to perform. Must accept two integer-like inputs and give
+        a predicate-like output (1-bit partitions in case of
+        PartitionedSignal types)"""
+        self.width = width
+        """Partition full width"""
+        self.mwidth = mwidth
+        """Maximum number of equally sized partitions"""
+
+    def elaborate(self, _):
+        m = Module()
+        comb = m.d.comb
+        width = self.width
+        mwidth = self.mwidth
+        # setup partition points and gates
+        step = int(width/mwidth)
+        points, gates = make_partitions(step, mwidth)
+        # setup inputs and outputs
+        a = PartitionedSignal(points, width)
+        b = PartitionedSignal(points, width)
+        output = Signal(mwidth)
+        a.set_module(m)
+        b.set_module(m)
+        # perform the operation on the partitioned signals
+        comb += output.eq(self.op(a, b))
+        # output a test case
+        comb += Cover(output != 0)
+        return m
+
+
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
         traces = [
@@ -370,6 +413,32 @@ class PartitionTestCase(FHDLTestCase):
             zoom=-3
         )
         module = GeneratorDriver()
+        self.assertFormal(module, mode="bmc", depth=1)
+        self.assertFormal(module, mode="cover", depth=1)
+
+    def test_partsig_eq(self):
+        traces = [
+            ('eq_1', {'submodule': 'eq_1'}, [
+                ('gates[6:0]', {'base': 'bin'}),
+                'a[63:0]', 'b[63:0]',
+                ('output[7:0]', {'base': 'bin'})])]
+        write_gtkw(
+            'proof_partsig_eq_cover.gtkw',
+            os.path.dirname(__file__) +
+            '/proof_partition_partsig_eq/engine_0/trace0.vcd',
+            traces,
+            module='top',
+            zoom=-3
+        )
+        write_gtkw(
+            'proof_partsig_eq_bmc.gtkw',
+            os.path.dirname(__file__) +
+            '/proof_partition_partsig_eq/engine_0/trace.vcd',
+            traces,
+            module='top',
+            zoom=-3
+        )
+        module = ComparisonOpDriver(operator.eq, 64, 8)
         self.assertFormal(module, mode="bmc", depth=1)
         self.assertFormal(module, mode="cover", depth=1)
 
