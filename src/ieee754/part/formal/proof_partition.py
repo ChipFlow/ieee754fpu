@@ -349,8 +349,13 @@ class ComparisonOpDriver(Elaboratable):
         b.set_module(m)
         # perform the operation on the partitioned signals
         comb += output.eq(self.op(a, b))
+        # instantiate the partitioned gate generator and connect the gates
+        m.submodules.gen = gen = GateGenerator(mwidth)
+        comb += gates.eq(gen.gates)
+        p_offset = gen.p_offset
+        p_width = gen.p_width
         # output a test case
-        comb += Cover(output != 0)
+        comb += Cover((p_offset != 0) & (p_width == 3) & (sum(output) > 1))
         return m
 
 
@@ -417,6 +422,9 @@ class PartitionTestCase(FHDLTestCase):
 
     def test_partsig_eq(self):
         traces = [
+            ('p_offset[2:0]', {'base': 'dec'}),
+            ('p_width[3:0]', {'base': 'dec'}),
+            ('p_gates[8:0]', {'base': 'bin'}),
             ('eq_1', {'submodule': 'eq_1'}, [
                 ('gates[6:0]', {'base': 'bin'}),
                 'a[63:0]', 'b[63:0]',
