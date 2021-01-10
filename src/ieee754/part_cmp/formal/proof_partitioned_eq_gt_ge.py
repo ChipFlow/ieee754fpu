@@ -8,8 +8,7 @@ from nmutil.formaltest import FHDLTestCase
 from nmutil.gtkw import write_gtkw
 from nmutil.ripple import RippleLSB
 
-from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part.formal.proof_partition import GateGenerator
+from ieee754.part.formal.proof_partition import GateGenerator, make_partitions
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
 
 
@@ -25,11 +24,8 @@ class Driver(Elaboratable):
         width = 64
         mwidth = 8
         # Setup partition points and gates
-        points = PartitionPoints()
-        gates = Signal(mwidth-1)
         step = int(width/mwidth)
-        for i in range(mwidth-1):
-            points[(i+1)*step] = gates[i]
+        points, gates = make_partitions(step, mwidth)
         # instantiate the DUT
         m.submodules.dut = dut = PartitionedEqGtGe(width, points)
         # post-process the output to ripple the LSB

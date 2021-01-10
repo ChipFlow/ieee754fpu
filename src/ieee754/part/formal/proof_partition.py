@@ -113,6 +113,19 @@ class PartitionedPattern(Elaboratable):
         return m
 
 
+def make_partitions(step, mwidth):
+    """Make equally spaced partition points
+
+    :param step: smallest partition width
+    :param mwidth: maximum number of partitions
+    :returns: partition points, and corresponding gates"""
+    gates = Signal(mwidth - 1)
+    points = PartitionPoints()
+    for i in range(mwidth-1):
+        points[(i + 1) * step] = gates[i]
+    return points, gates
+
+
 # This defines a module to drive the device under test and assert
 # properties about its outputs
 class Driver(Elaboratable):
@@ -127,11 +140,8 @@ class Driver(Elaboratable):
         width = 64
         mwidth = 8
         # Setup partition points and gates
-        points = PartitionPoints()
-        gates = Signal(mwidth-1)
         step = int(width/mwidth)
-        for i in range(mwidth-1):
-            points[(i+1)*step] = gates[i]
+        points, gates = make_partitions(step, mwidth)
         # Instantiate the partitioned pattern producer
         m.submodules.dut = dut = PartitionedPattern(width, points)
         # Directly check some cases
@@ -278,11 +288,8 @@ class GeneratorDriver(Elaboratable):
         width = 64
         mwidth = 8
         # Setup partition points and gates
-        points = PartitionPoints()
-        gates = Signal(mwidth-1)
         step = int(width/mwidth)
-        for i in range(mwidth-1):
-            points[(i+1)*step] = gates[i]
+        points, gates = make_partitions(step, mwidth)
         # Instantiate the partitioned pattern producer and the DUT
         m.submodules.dut = dut = PartitionedPattern(width, points)
         m.submodules.gen = gen = GateGenerator(mwidth)
@@ -312,14 +319,6 @@ class GeneratorDriver(Elaboratable):
         # Make the selected partition not start at the very beginning.
         comb += Cover((sum(gates) == 3) & (p_offset != 0) & (p_width == 3))
         return m
-
-
-def make_partitions(step, mwidth):
-    gates = Signal(mwidth - 1)
-    points = PartitionPoints()
-    for i in range(mwidth-1):
-        points[(i + 1) * step] = gates[i]
-    return points, gates
 
 
 class ComparisonOpDriver(Elaboratable):
