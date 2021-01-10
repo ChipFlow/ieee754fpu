@@ -33,7 +33,7 @@ import os
 import unittest
 import operator
 
-from nmigen import Elaboratable, Signal, Module, Const
+from nmigen import Elaboratable, Signal, Module, Const, Repl
 from nmigen.asserts import Assert, Cover
 from nmigen.hdl.ast import Assume
 
@@ -363,6 +363,23 @@ class ComparisonOpDriver(Elaboratable):
                 comb += p_output.eq(output[pos:])
                 comb += p_a.eq(a.sig[pos * step:])
                 comb += p_b.eq(b.sig[pos * step:])
+        # generate and check expected values for all possible partition sizes
+        for w in range(1, mwidth+1):
+            with m.If(p_width == w):
+                # calculate the expected output, for the given bit width,
+                # truncating the inputs to the partition size
+                input_bit_width = w * step
+                output_bit_width = w
+                expected = Signal(output_bit_width, name=f"expected_{w}")
+                a = Signal(input_bit_width, name=f"a_{w}")
+                b = Signal(input_bit_width, name=f"b_{w}")
+                lsb = Signal(name=f"lsb_{w}")
+                comb += a.eq(p_a[:input_bit_width])
+                comb += b.eq(p_b[:input_bit_width])
+                comb += lsb.eq(self.op(a, b))
+                comb += expected.eq(Repl(lsb, output_bit_width))
+                # truncate the output, compare and assert
+                comb += Assert(p_output[:output_bit_width] == expected)
         # output a test case
         comb += Cover((p_offset != 0) & (p_width == 3) & (sum(output) > 1) &
                       (p_a != 0) & (p_b != 0) & (p_output != 0))
@@ -417,7 +434,8 @@ class PartitionTestCase(FHDLTestCase):
             ('dut', {'submodule': 'dut'}, [
                 ('gates[6:0]', 'bin'),
                 'output[63:0]']),
-            'p_output[63:0]', 'expected_3[21:0]']
+            'p_output[63:0]', 'expected_3[21:0]',
+            'a_3[23:0]', 'b_3[32:0]', 'expected_3[2:0]']
         write_gtkw(
             'proof_partition_generator_cover.gtkw',
             os.path.dirname(__file__) +
