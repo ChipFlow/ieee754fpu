@@ -70,23 +70,27 @@ class Driver(Elaboratable):
 class PartitionedEqTestCase(FHDLTestCase):
 
     def test_formal(self):
+        style = {
+            'dec': {'base': 'dec'},
+            'bin': {'base': 'bin'}
+        }
         traces = [
-            ('p_offset[2:0]', {'base': 'dec'}),
-            ('p_width[3:0]', {'base': 'dec'}),
-            ('p_gates[8:0]', {'base': 'bin'}),
+            ('p_offset[2:0]', 'dec'),
+            ('p_width[3:0]', 'dec'),
+            ('p_gates[8:0]', 'bin'),
             ('dut', {'submodule': 'dut'}, [
-                ('gates[6:0]', {'base': 'bin'}),
+                ('gates[6:0]', 'bin'),
                 'a[63:0]', 'b[63:0]',
-                ('output[7:0]', {'base': 'bin'})]),
+                ('output[7:0]', 'bin')]),
             ('ripple', {'submodule': 'ripple'}, [
-                ('output[7:0]', {'base': 'bin'})]),
-            ('p_output[7:0]', {'base': 'bin'}),
-            ('expected_3[2:0]', {'base': 'bin'})]
+                ('output[7:0]', 'bin')]),
+            ('p_output[7:0]', 'bin'),
+            ('expected_3[2:0]', 'bin')]
         write_gtkw(
             'proof_partitioned_eq_cover.gtkw',
             os.path.dirname(__file__) +
             '/proof_partitioned_eq_formal/engine_0/trace0.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -94,7 +98,7 @@ class PartitionedEqTestCase(FHDLTestCase):
             'proof_partitioned_eq_bmc.gtkw',
             os.path.dirname(__file__) +
             '/proof_partitioned_eq_formal/engine_0/trace.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )

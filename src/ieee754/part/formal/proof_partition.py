@@ -361,20 +361,24 @@ class ComparisonOpDriver(Elaboratable):
 
 class PartitionTestCase(FHDLTestCase):
     def test_formal(self):
+        style = {
+            'dec': {'base': 'dec'},
+            'bin': {'base': 'bin'}
+        }
         traces = [
-            ('p_offset[2:0]', {'base': 'dec'}),
-            ('p_width[3:0]', {'base': 'dec'}),
-            ('p_finish[3:0]', {'base': 'dec'}),
-            ('p_gates[8:0]', {'base': 'bin'}),
+            ('p_offset[2:0]', 'dec'),
+            ('p_width[3:0]', 'dec'),
+            ('p_finish[3:0]', 'dec'),
+            ('p_gates[8:0]', 'bin'),
             ('dut', {'submodule': 'dut'}, [
-                ('gates[6:0]', {'base': 'bin'}),
+                ('gates[6:0]', 'bin'),
                 'output[63:0]']),
             'p_output[63:0]', 'expected_3[21:0]']
         write_gtkw(
             'proof_partition_cover.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_formal/engine_0/trace0.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -382,7 +386,7 @@ class PartitionTestCase(FHDLTestCase):
             'proof_partition_bmc.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_formal/engine_0/trace.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -391,20 +395,24 @@ class PartitionTestCase(FHDLTestCase):
         self.assertFormal(module, mode="cover", depth=1)
 
     def test_generator(self):
+        style = {
+            'dec': {'base': 'dec'},
+            'bin': {'base': 'bin'}
+        }
         traces = [
-            ('p_offset[2:0]', {'base': 'dec'}),
-            ('p_width[3:0]', {'base': 'dec'}),
-            ('p_finish[3:0]', {'base': 'dec'}),
-            ('p_gates[8:0]', {'base': 'bin'}),
+            ('p_offset[2:0]', 'dec'),
+            ('p_width[3:0]', 'dec'),
+            ('p_finish[3:0]', 'dec'),
+            ('p_gates[8:0]', 'bin'),
             ('dut', {'submodule': 'dut'}, [
-                ('gates[6:0]', {'base': 'bin'}),
+                ('gates[6:0]', 'bin'),
                 'output[63:0]']),
             'p_output[63:0]', 'expected_3[21:0]']
         write_gtkw(
             'proof_partition_generator_cover.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_generator/engine_0/trace0.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -412,7 +420,7 @@ class PartitionTestCase(FHDLTestCase):
             'proof_partition_generator_bmc.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_generator/engine_0/trace.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -421,19 +429,23 @@ class PartitionTestCase(FHDLTestCase):
         self.assertFormal(module, mode="cover", depth=1)
 
     def test_partsig_eq(self):
+        style = {
+            'dec': {'base': 'dec'},
+            'bin': {'base': 'bin'}
+        }
         traces = [
-            ('p_offset[2:0]', {'base': 'dec'}),
-            ('p_width[3:0]', {'base': 'dec'}),
-            ('p_gates[8:0]', {'base': 'bin'}),
+            ('p_offset[2:0]', 'dec'),
+            ('p_width[3:0]', 'dec'),
+            ('p_gates[8:0]', 'bin'),
             ('eq_1', {'submodule': 'eq_1'}, [
-                ('gates[6:0]', {'base': 'bin'}),
+                ('gates[6:0]', 'bin'),
                 'a[63:0]', 'b[63:0]',
-                ('output[7:0]', {'base': 'bin'})])]
+                ('output[7:0]', 'bin')])]
         write_gtkw(
             'proof_partsig_eq_cover.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_partsig_eq/engine_0/trace0.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
@@ -441,7 +453,7 @@ class PartitionTestCase(FHDLTestCase):
             'proof_partsig_eq_bmc.gtkw',
             os.path.dirname(__file__) +
             '/proof_partition_partsig_eq/engine_0/trace.vcd',
-            traces,
+            traces, style,
             module='top',
             zoom=-3
         )
