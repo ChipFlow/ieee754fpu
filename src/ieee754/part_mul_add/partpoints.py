@@ -15,7 +15,7 @@ def make_partition(mask, width):
             {8: mask[0], 16: mask[1], 24: mask[2], .... 56: mask[6]}
     """
     ppoints = {}
-    mlen = mask.shape()[0]
+    mlen = len(mask)
     ppos = mlen
     midx = 0
     while ppos < width and midx < mlen: # -1, ignore last bit

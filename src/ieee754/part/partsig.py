@@ -39,7 +39,7 @@ def applyop(op1, op2, op):
 class PartitionedSignal:
     def __init__(self, mask, *args, **kwargs):
         self.sig = Signal(*args, **kwargs)
-        width = self.sig.shape()[0]  # get signal width
+        width = len(self.sig)  # get signal width
         # create partition points
         if isinstance(mask, PartitionPoints):
             self.partpoints = mask
@@ -100,13 +100,11 @@ class PartitionedSignal:
         op1 = getsig(op1)
         if isinstance(op2, Const) or isinstance(op2, Signal):
             scalar = True
-            shape = op1.shape()
-            pa = PartitionedScalarShift(shape[0], self.partpoints)
+            pa = PartitionedScalarShift(len(op1), self.partpoints)
         else:
             scalar = False
             op2 = getsig(op2)
-            shape = op1.shape()
-            pa = PartitionedDynamicShift(shape[0], self.partpoints)
+            pa = PartitionedDynamicShift(len(op1), self.partpoints)
         setattr(self.m.submodules, self.get_modname('ls'), pa)
         comb = self.m.d.comb
         if scalar:
@@ -142,8 +140,7 @@ class PartitionedSignal:
     def add_op(self, op1, op2, carry):
         op1 = getsig(op1)
         op2 = getsig(op2)
-        shape = op1.shape()
-        pa = PartitionedAdder(shape[0], self.partpoints)
+        pa = PartitionedAdder(len(op1), self.partpoints)
         setattr(self.m.submodules, self.get_modname('add'), pa)
         comb = self.m.d.comb
         comb += pa.a.eq(op1)
@@ -154,8 +151,7 @@ class PartitionedSignal:
     def sub_op(self, op1, op2, carry=~0):
         op1 = getsig(op1)
         op2 = getsig(op2)
-        shape = op1.shape()
-        pa = PartitionedAdder(shape[0], self.partpoints)
+        pa = PartitionedAdder(len(op1), self.partpoints)
         setattr(self.m.submodules, self.get_modname('add'), pa)
         comb = self.m.d.comb
         comb += pa.a.eq(op1)
@@ -236,31 +232,31 @@ class PartitionedSignal:
         return pa.output
 
     def __eq__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         return self._compare(width, self, other, "eq", PartitionedEqGtGe.EQ)
 
     def __ne__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         eq = self._compare(width, self, other, "eq", PartitionedEqGtGe.EQ)
         ne = Signal(eq.width)
         self.m.d.comb += ne.eq(~eq)
         return ne
 
     def __gt__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         return self._compare(width, self, other, "gt", PartitionedEqGtGe.GT)
 
     def __lt__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         # swap operands, use gt to do lt
         return self._compare(width, other, self, "gt", PartitionedEqGtGe.GT)
 
     def __ge__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         return self._compare(width, self, other, "ge", PartitionedEqGtGe.GE)
 
     def __le__(self, other):
-        width = self.sig.shape()[0]
+        width = len(self.sig)
         # swap operands, use ge to do le
         return self._compare(width, other, self, "ge", PartitionedEqGtGe.GE)
 

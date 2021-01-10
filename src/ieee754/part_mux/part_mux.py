@@ -21,7 +21,7 @@ modcount = 0 # global for now
 def PMux(m, mask, sel, a, b):
     global modcount
     modcount += 1
-    width = a.sig.shape()[0] # get width
+    width = len(a.sig)  # get width
     part_pts = make_partition(mask, width) # create partition points
     pm = PartitionedMux(width, part_pts)
     m.d.comb += pm.a.eq(a.sig)

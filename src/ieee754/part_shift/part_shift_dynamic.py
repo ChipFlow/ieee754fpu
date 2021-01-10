@@ -53,7 +53,7 @@ class ShifterMask(Elaboratable):
             bl.append(bit)
 
         # XXX ARGH, really annoying: simulation bug, can't use Cat(*bl).
-        for j in range(bits.shape()[0]):
+        for j in range(len(bits)):
             comb += bits[j].eq(bl[j])
         comb += self.mask.eq(C(0, self.mask.shape()))
         comb += self.mask.eq(Cat(minm, bits) & C(maxm, self.mask.shape()))
@@ -160,7 +160,7 @@ class PartitionedDynamicShift(Elaboratable):
         # the size of the partition varies dynamically.
         shifter_masks = []
         for i in range(len(b_intervals)):
-            bwid = b_intervals[i].shape()[0]
+            bwid = len(b_intervals[i])
             bitwid = pwid-i
             if bitwid == 0:
                 shifter_masks.append(C((1<<min_bits)-1, bwid))
@@ -237,7 +237,7 @@ class PartitionedDynamicShift(Elaboratable):
             shiftbits = math.ceil(math.log2(reswid+1))+1 # hmmm...
             print ("partial", reswid, width, intervals[i], shiftbits)
             s, e = intervals[i]
-            pr = PartialResult(pwid, b_intervals[i].shape()[0], reswid)
+            pr = PartialResult(pwid, len(b_intervals[i]), reswid)
             setattr(m.submodules, "pr%d" % i, pr)
             comb += pr.gate.eq(gate_br.output[i-1])
             comb += pr.b.eq(shift_amounts[i])
