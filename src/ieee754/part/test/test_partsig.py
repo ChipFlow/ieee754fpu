@@ -41,10 +41,7 @@ def create_ilang(dut, traces, test_name):
 
 def create_simulator(module, traces, test_name):
     create_ilang(module, traces, test_name)
-    return Simulator(module,
-                     vcd_file=open(test_name + ".vcd", "w"),
-                     gtkw_file=open(test_name + ".gtkw", "w"),
-                     traces=traces)
+    return Simulator(module)
 
 
 # XXX this is for coriolis2 experimentation
@@ -183,13 +180,13 @@ class TestPartitionPoints(unittest.TestCase):
         part_mask = Signal(4)  # divide into 4-bits
         module = TestAddMod(width, part_mask)
 
-        sim = create_simulator(module,
-                               [part_mask,
-                                module.a.sig,
-                                module.b.sig,
-                                module.add_output,
-                                module.eq_output],
-                               "part_sig_add")
+        test_name = "part_sig_add"
+        traces = [part_mask,
+                  module.a.sig,
+                  module.b.sig,
+                  module.add_output,
+                  module.eq_output]
+        sim = create_simulator(module, traces, test_name)
 
         def async_process():
 
@@ -470,7 +467,11 @@ class TestPartitionPoints(unittest.TestCase):
             yield from test_muxop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
 
         sim.add_process(async_process)
-        sim.run()
+        with sim.write_vcd(
+                vcd_file=open(test_name + ".vcd", "w"),
+                gtkw_file=open(test_name + ".gtkw", "w"),
+                traces=traces):
+            sim.run()
 
 
 if __name__ == '__main__':
