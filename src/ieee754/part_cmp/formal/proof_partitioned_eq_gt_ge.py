@@ -6,7 +6,6 @@ from nmigen.asserts import Assert, Cover
 
 from nmutil.formaltest import FHDLTestCase
 from nmutil.gtkw import write_gtkw
-from nmutil.ripple import RippleLSB
 
 from ieee754.part.formal.proof_partition import GateGenerator, make_partitions
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
@@ -28,11 +27,6 @@ class Driver(Elaboratable):
         points, gates = make_partitions(step, mwidth)
         # instantiate the DUT
         m.submodules.dut = dut = PartitionedEqGtGe(width, points)
-        # post-process the output to ripple the LSB
-        # TODO: remove this once PartitionedEqGtGe is conformant
-        m.submodules.ripple = ripple = RippleLSB(mwidth)
-        comb += ripple.results_in.eq(dut.output)
-        comb += ripple.gates.eq(gates)
         # instantiate the partitioned gate generator and connect the gates
         m.submodules.gen = gen = GateGenerator(mwidth)
         comb += gates.eq(gen.gates)
@@ -44,8 +38,7 @@ class Driver(Elaboratable):
         p_b = Signal(width)
         for pos in range(mwidth):
             with m.If(p_offset == pos):
-                # TODO: change to dut.output once PartitionedEqGtGe is conformant
-                comb += p_output.eq(ripple.output[pos:])
+                comb += p_output.eq(dut.output[pos:])
                 comb += p_a.eq(dut.a[pos * step:])
                 comb += p_b.eq(dut.b[pos * step:])
         # generate and check expected values for all possible partition sizes
