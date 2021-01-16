@@ -18,6 +18,7 @@ nmigen.Case, or other constructs: only Mux and other logic.
 
 from ieee754.part_mul_add.adder import PartitionedAdder
 from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
+from ieee754.part_bits.xor import PartitionedXOR
 from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
 from ieee754.part_mul_add.partpoints import make_partition, PartitionPoints
@@ -303,9 +304,10 @@ class PartitionedSignal:
             ``1`` if an odd number of bits are set, ``0`` if an
                   even number of bits are set.
         """
-        # XXXX TODO: return partition-mask-sized set of bits
-        raise NotImplementedError
-        return Operator("r^", [self])
+        pa = PartitionedXOR(width, self.partpoints)
+        setattr(self.m.submodules, self.get_modname("xor"), pa)
+        self.m.d.comb += pa.a.eq(self)
+        return pa.output
 
     def implies(premise, conclusion):
         """Implication.
