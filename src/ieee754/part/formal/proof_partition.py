@@ -555,6 +555,14 @@ class PartitionTestCase(FHDLTestCase):
         self.assertFormal(module, mode="bmc", depth=1)
         self.assertFormal(module, mode="cover", depth=1)
 
+    def test_partsig_any(self):
+
+        def op_any(obj):
+            return obj.any()
+
+        module = ComparisonOpDriver(op_any, nops=1)
+        self.assertFormal(module, mode="bmc", depth=1)
+
 
 if __name__ == '__main__':
     unittest.main()
