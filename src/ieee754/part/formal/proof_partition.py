@@ -563,6 +563,14 @@ class PartitionTestCase(FHDLTestCase):
         module = ComparisonOpDriver(op_any, nops=1)
         self.assertFormal(module, mode="bmc", depth=1)
 
+    def test_partsig_xor(self):
+
+        def op_xor(obj):
+            return obj.xor()
+
+        module = ComparisonOpDriver(op_xor, nops=1)
+        self.assertFormal(module, mode="bmc", depth=1)
+
 
 if __name__ == '__main__':
     unittest.main()

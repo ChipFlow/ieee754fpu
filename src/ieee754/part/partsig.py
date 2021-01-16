@@ -47,7 +47,7 @@ class PartitionedSignal:
         else:
             self.partpoints = make_partition(mask, width)
         self.modnames = {}
-        for name in ['add', 'eq', 'gt', 'ge', 'ls']:
+        for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor']:
             self.modnames[name] = 0
 
     def set_module(self, m):
@@ -304,9 +304,10 @@ class PartitionedSignal:
             ``1`` if an odd number of bits are set, ``0`` if an
                   even number of bits are set.
         """
+        width = len(self.sig)
         pa = PartitionedXOR(width, self.partpoints)
         setattr(self.m.submodules, self.get_modname("xor"), pa)
-        self.m.d.comb += pa.a.eq(self)
+        self.m.d.comb += pa.a.eq(self.sig)
         return pa.output
 
     def implies(premise, conclusion):
