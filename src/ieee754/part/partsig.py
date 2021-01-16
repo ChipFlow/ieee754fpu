@@ -281,6 +281,7 @@ class PartitionedSignal:
         Value, out
             ``1`` if any bits are set, ``0`` otherwise.
         """
+        return self != Const(0) # leverage the __ne__ operator here
         return Operator("r|", [self])
 
     def all(self):
