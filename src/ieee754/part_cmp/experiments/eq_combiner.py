@@ -1,5 +1,6 @@
 from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
+import operator
 
 
 class Twomux(Elaboratable):
@@ -26,9 +27,10 @@ class Twomux(Elaboratable):
 #input/two output multiplexors and or gates to select whether each
 #signal is or isn't combined with its neighbors.
 
-class EQCombiner(Elaboratable):
+class Combiner(Elaboratable):
 
-    def __init__(self, width):
+    def __init__(self, op, width):
+        self.op = op
         self.width = width
         self.neqs = Signal(width, reset_less=True)
         self.gates = Signal(width-1, reset_less=True)
@@ -47,7 +49,7 @@ class EQCombiner(Elaboratable):
             comb += mux.inb.eq(0)
             comb += mux.sel.eq(~self.gates[i-1])
             comb += self.outputs[i].eq(mux.outa ^ self.gates[i-1])
-            previnput = mux.outb | self.neqs[i-1]
+            previnput = self.op(mux.outb, self.neqs[i-1])
         
         comb += self.outputs[0].eq(~previnput)
 
@@ -55,3 +57,14 @@ class EQCombiner(Elaboratable):
 
     def ports(self):
         return [self.neqs, self.gates, self.outputs]
+
+
+class EQCombiner(Combiner):
+    def __init__(self, width):
+        Combiner.__init__(self, operator.or_, width)
+
+
+class XORCombiner(Combiner):
+    def __init__(self, width):
+        Combiner.__init__(self, operator.xor, width)
+
