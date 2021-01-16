@@ -568,7 +568,8 @@ class PartitionTestCase(FHDLTestCase):
         def op_xor(obj):
             return obj.xor()
 
-        module = ComparisonOpDriver(op_xor, nops=1)
+        # 8-bit partitions take a long time, for some reason
+        module = ComparisonOpDriver(op_xor, nops=1, width=32, mwidth=4)
         self.assertFormal(module, mode="bmc", depth=1)
 
 

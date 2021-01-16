@@ -15,6 +15,7 @@ See:
 
 from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
 from nmigen.cli import main
+from nmutil.ripple import RippleLSB
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_cmp.experiments.eq_combiner import XORCombiner
@@ -52,6 +53,10 @@ class PartitionedXOR(Elaboratable):
         # put the partial results through the combiner
         comb += xorc.gates.eq(self.partition_points.as_sig())
         comb += xorc.neqs.eq(xors)
-        comb += self.output.eq(xorc.outputs)
+
+        m.submodules.ripple = ripple = RippleLSB(self.mwidth)
+        comb += ripple.results_in.eq(xorc.outputs)
+        comb += ripple.gates.eq(self.partition_points.as_sig())
+        comb += self.output.eq(~ripple.output)
 
         return m
