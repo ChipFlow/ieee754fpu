@@ -280,7 +280,10 @@ class TestPartitionPoints(unittest.TestCase):
                 return result, carry
 
             def test_neg_fn(carry_in, a, b, mask):
-                return test_add_fn(0, a, ~0, mask)
+                lsb = mask & ~(mask - 1)  # has only LSB of mask set
+                pos = lsb.bit_length() - 1  # find bit position
+                a = (a & mask) >> pos  # shift it to the beginning
+                return ((-a) << pos) & mask, 0  # negate and shift it back
 
             def test_op(msg_prefix, carry, test_fn, mod_attr, *mask_list):
                 rand_data = []

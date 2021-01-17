@@ -68,8 +68,8 @@ class PartitionedSignal:
     # unary ops that require partitioning
 
     def __neg__(self):
-        z = Const(0, len(self.partpoints)+1)
-        result, _ = self.add_op(self, ~0, carry=z)  # TODO, subop
+        z = Const(0, len(self.sig))
+        result, _ = self.sub_op(z, self)
         return result
 
     # binary ops that don't require partitioning

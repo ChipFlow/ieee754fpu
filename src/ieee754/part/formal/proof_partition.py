@@ -626,6 +626,36 @@ class PartitionTestCase(FHDLTestCase):
         module = OpDriver(operator.sub, part_out=False)
         self.assertFormal(module, mode="bmc", depth=1)
 
+    def test_partsig_neg(self):
+        style = {
+            'dec': {'base': 'dec'},
+            'bin': {'base': 'bin'}
+        }
+        traces = [
+            ('p_offset[2:0]', 'dec'),
+            ('p_width[3:0]', 'dec'),
+            ('p_gates[8:0]', 'bin'),
+            'i_1[63:0]',
+            ('add_1', {'submodule': 'add_1'}, [
+                ('gates[6:0]', 'bin'),
+                'a[63:0]', 'b[63:0]',
+                'output[63:0]']),
+            'p_1[63:0]',
+            'p_output[63:0]',
+            't3_1[23:0]',
+            'expected_3[23:0]']
+        write_gtkw(
+            'proof_partsig_neg_bmc.gtkw',
+            os.path.dirname(__file__) +
+            '/proof_partition_partsig_neg/engine_0/trace.vcd',
+            traces, style,
+            module='top',
+            zoom=-3
+        )
+
+        module = OpDriver(operator.neg, nops=1, part_out=False)
+        self.assertFormal(module, mode="bmc", depth=1)
+
 
 if __name__ == '__main__':
     unittest.main()
