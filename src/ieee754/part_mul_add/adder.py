@@ -268,6 +268,6 @@ class PartitionedAdder(Elaboratable):
         # in [the LSB of each partition].
         comb += ripple.results_in.eq(carry_tmp)
         comb += ripple.gates.eq(self.part_pts.as_sig())
-        m.d.sync += self.carry_out.eq(ripple.output)
+        comb += self.carry_out.eq(ripple.output)
 
         return m
