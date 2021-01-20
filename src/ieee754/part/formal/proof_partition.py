@@ -656,6 +656,31 @@ class PartitionTestCase(FHDLTestCase):
         module = OpDriver(operator.neg, nops=1, part_out=False)
         self.assertFormal(module, mode="bmc", depth=1)
 
+    def test_partsig_and(self):
+        module = OpDriver(operator.and_, part_out=False)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_or(self):
+        module = OpDriver(operator.or_, part_out=False)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_logical_xor(self):
+        module = OpDriver(operator.xor, part_out=False)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_not(self):
+        module = OpDriver(operator.inv, nops=1, part_out=False)
+        self.assertFormal(module, mode="bmc", depth=1)
+
+    def test_partsig_implies(self):
+
+        def op_implies(a, b):
+            return a.implies(b)
+
+        # 8 x 8-bit partitions take a long time, for some reason
+        module = OpDriver(op_implies, part_out=False, width=32, mwidth=8)
+        self.assertFormal(module, mode="bmc", depth=1)
+
 
 if __name__ == '__main__':
     unittest.main()
