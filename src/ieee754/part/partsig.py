@@ -320,4 +320,4 @@ class PartitionedSignal:
             ``1`` otherwise.
         """
         # amazingly, this should actually work.
-        return ~premise | conclusion
+        return conclusion | ~premise
