@@ -60,6 +60,14 @@ class PartitionedSignal:
     def eq(self, val):
         return self.sig.eq(getsig(val))
 
+    @staticmethod
+    def like(other, *args, **kwargs):
+        """Builds a new PartitionedSignal with the same PartitionPoints and
+        Signal properties as the other"""
+        result = PartitionedSignal(other.partpoints)
+        result.sig = Signal.like(other.sig, *args, **kwargs)
+        return result
+
     # unary ops that do not require partitioning
 
     def __invert__(self):
