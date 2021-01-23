@@ -34,7 +34,12 @@ def getsig(op1):
 
 
 def applyop(op1, op2, op):
-    return op(getsig(op1), getsig(op2))
+    if isinstance(op1, PartitionedSignal):
+        result = PartitionedSignal.like(op1)
+    else:
+        result = PartitionedSignal.like(op2)
+    result.m.d.comb += result.sig.eq(op(getsig(op1), getsig(op2)))
+    return result
 
 
 class PartitionedSignal:
