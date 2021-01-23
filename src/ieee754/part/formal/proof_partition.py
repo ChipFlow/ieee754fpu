@@ -361,8 +361,9 @@ class OpDriver(Elaboratable):
         result = self.op(*operands)
         if isinstance(result, PartitionedSignal):
             comb += output.eq(result.sig)
-        # TODO: remove when all operations return PartitionedSignal
         else:
+            # handle operations that return plain Signals
+            # TODO: revise if/when PartitionedBool is implemented
             comb += output.eq(result)
         # instantiate the partitioned gate generator and connect the gates
         m.submodules.gen = gen = GateGenerator(mwidth)
