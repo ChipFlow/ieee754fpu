@@ -66,6 +66,7 @@ class PartitionedSignal:
         Signal properties as the other"""
         result = PartitionedSignal(other.partpoints)
         result.sig = Signal.like(other.sig, *args, **kwargs)
+        result.m = other.m
         return result
 
     # unary ops that do not require partitioning
