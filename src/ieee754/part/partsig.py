@@ -71,7 +71,9 @@ class PartitionedSignal:
     # unary ops that do not require partitioning
 
     def __invert__(self):
-        return ~self.sig
+        result = PartitionedSignal.like(self)
+        self.m.d.comb += result.sig.eq(~self.sig)
+        return result
 
     # unary ops that require partitioning
 

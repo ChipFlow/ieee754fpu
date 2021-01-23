@@ -358,7 +358,12 @@ class OpDriver(Elaboratable):
             out_step = step
         output = Signal(out_width)
         # perform the operation on the partitioned signals
-        comb += output.eq(self.op(*operands))
+        result = self.op(*operands)
+        if isinstance(result, PartitionedSignal):
+            comb += output.eq(result.sig)
+        # TODO: remove when all operations return PartitionedSignal
+        else:
+            comb += output.eq(result)
         # instantiate the partitioned gate generator and connect the gates
         m.submodules.gen = gen = GateGenerator(mwidth)
         comb += gates.eq(gen.gates)
