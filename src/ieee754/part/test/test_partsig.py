@@ -149,15 +149,15 @@ class TestAddMod(Elaboratable):
         # add
         add_out, add_carry = self.a.add_op(self.a, self.b,
                                            self.carry_in)
-        comb += self.add_output.eq(add_out)
+        comb += self.add_output.eq(add_out.sig)
         comb += self.add_carry_out.eq(add_carry)
         # sub
         sub_out, sub_carry = self.a.sub_op(self.a, self.b,
                                            self.carry_in)
-        comb += self.sub_output.eq(sub_out)
+        comb += self.sub_output.eq(sub_out.sig)
         comb += self.sub_carry_out.eq(sub_carry)
         # neg
-        comb += self.neg_output.eq(-self.a)
+        comb += self.neg_output.eq((-self.a).sig)
         # left shift
         comb += self.ls_output.eq(self.a << self.b)
         # right shift

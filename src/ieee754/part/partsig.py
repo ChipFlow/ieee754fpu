@@ -163,7 +163,9 @@ class PartitionedSignal:
         comb += pa.a.eq(op1)
         comb += pa.b.eq(op2)
         comb += pa.carry_in.eq(carry)
-        return (pa.output, pa.carry_out)
+        result = PartitionedSignal.like(self)
+        comb += result.sig.eq(pa.output)
+        return result, pa.carry_out
 
     def sub_op(self, op1, op2, carry=~0):
         op1 = getsig(op1)
@@ -174,7 +176,9 @@ class PartitionedSignal:
         comb += pa.a.eq(op1)
         comb += pa.b.eq(~op2)
         comb += pa.carry_in.eq(carry)
-        return (pa.output, pa.carry_out)
+        result = PartitionedSignal.like(self)
+        comb += result.sig.eq(pa.output)
+        return result, pa.carry_out
 
     def __add__(self, other):
         result, _ = self.add_op(self, other, carry=0)
