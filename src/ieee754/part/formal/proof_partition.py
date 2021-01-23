@@ -587,9 +587,10 @@ class PartitionTestCase(FHDLTestCase):
         def op_xor(obj):
             return obj.xor()
 
-        # 8-bit partitions take a long time, for some reason
-        module = OpDriver(op_xor, nops=1, width=32, mwidth=4)
-        self.assertFormal(module, mode="bmc", depth=1)
+        module = OpDriver(op_xor, nops=1)
+        # yices2 is slow on this test for some reason
+        # use z3 instead
+        self.assertFormal(module, mode="bmc", depth=1, solver="z3")
 
     def test_partsig_add(self):
         style = {
@@ -677,9 +678,10 @@ class PartitionTestCase(FHDLTestCase):
         def op_implies(a, b):
             return a.implies(b)
 
-        # 8 x 8-bit partitions take a long time, for some reason
-        module = OpDriver(op_implies, part_out=False, width=32, mwidth=8)
-        self.assertFormal(module, mode="bmc", depth=1)
+        module = OpDriver(op_implies, part_out=False)
+        # yices2 is slow on this test for some reason
+        # use z3 instead
+        self.assertFormal(module, mode="bmc", depth=1, solver="z3")
 
 
 if __name__ == '__main__':
