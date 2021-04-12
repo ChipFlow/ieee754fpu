@@ -21,17 +21,17 @@ test_requires = [
 setup(
     name='libresoc-ieee754fpu',
     version=version,
-    description="A nmigen IEEE754 Floating-Point library",
+    description="A nmigen (HDL) IEEE754 Floating-Point library",
     long_description=README + '\n\n' + NEWS,
     classifiers=[
         "Topic :: Software Development :: Libraries",
-        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)"
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
         "Programming Language :: Python :: 3",
     ],
     keywords='nmigen ieee754',
     author='Luke Kenneth Casson Leighton',
-    author_email='lkcl@libre-riscv.org',
-    url='http://git.libre-riscv.org/?p=ieee754fpu',
+    author_email='lkcl@libre-soc.org',
+    url='http://git.libre-soc.org/?p=ieee754fpu.git',
     license='GPLv3+',
     packages=find_packages('src'),
     package_dir = {'': 'src'},
