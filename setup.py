@@ -9,7 +9,7 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 version = '0.0.1'
 
 install_requires = [
-    'nmutil',
+    'libresoc-nmutil',
 #    'sfpy',  # XXX temporarily disabled
     'bigfloat'
 ]
@@ -19,13 +19,13 @@ test_requires = [
 ]
 
 setup(
-    name='ieee754fpu',
+    name='libresoc-ieee754fpu',
     version=version,
     description="A nmigen IEEE754 Floating-Point library",
     long_description=README + '\n\n' + NEWS,
     classifiers=[
         "Topic :: Software Development :: Libraries",
-        "License :: OSI Approved :: LGPLv3+",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)"
         "Programming Language :: Python :: 3",
     ],
     keywords='nmigen ieee754',

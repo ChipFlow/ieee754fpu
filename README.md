@@ -4,9 +4,13 @@ This project implements a pipelined IEEE754 floating-point ALU that
 supports FP16, FP32 and FP64.  It is a general-purpose unit that
 may be used in any project (not limited to one specific processor).
 
+Developed under a Grant from NLnet (http://nlnet.nl), more information
+may be found at http://libre-soc.org
+
 # Requirements
 
 * nmigen
+* libresoc-nmutil
 * yosys (latest git repository, required by nmigen)
 * sfpy (running unit tests).  provides python bindings to berkeley softfloat-3
 
@@ -22,8 +26,6 @@ submodule:
 
     cd /path/to/sfpy/berkeley-softfloat-3
     git apply /path/to/ieee754fpu/berkeley-softfloat.patch
-
-
 
 The following modifications are required to the sfpy SoftPosit Makefile:
 
