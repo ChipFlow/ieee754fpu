@@ -176,7 +176,7 @@ texinfo_documents = [
 lsocbase = 'https://docs.libre-soc.org/'
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"python": ('https://docs.python.org/3', None),
-                       "nmigen": ('https://nmigen.info/nmigen', 'latest'),
+                       "nmigen": ('https://nmigen.info/nmigen/latest', None),
                        "openpower": (lsocbase+'openpower-isa', None),
                        "soc": (lsocbase+'soc', None),
 }
