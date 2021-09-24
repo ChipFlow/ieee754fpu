@@ -4,6 +4,7 @@
 
 from nmigen import Signal, Value, Cat, C
 
+
 def make_partition(mask, width):
     """ from a mask and a bitwidth, create partition points.
         note that the assumption is that the mask indicates the
@@ -21,6 +22,28 @@ def make_partition(mask, width):
     while ppos < width and midx < mlen: # -1, ignore last bit
         ppoints[ppos] = mask[midx]
         ppos += mlen
+        midx += 1
+    return ppoints
+
+
+def make_partition2(mask, width):
+    """ from a mask and a bitwidth, create partition points.
+        note that the assumption is that the mask indicates the
+        breakpoints in regular intervals, and that the last bit (MSB)
+        of the mask is therefore *ignored*.
+        mask len = 4, width == 16 will return:
+            {4: mask[0], 8: mask[1], 12: mask[2]}
+        mask len = 8, width == 64 will return:
+            {8: mask[0], 16: mask[1], 24: mask[2], .... 56: mask[6]}
+    """
+    mlen = len(mask)
+    jumpsize = width // mlen # amount to jump by (size of each partition)
+    ppoints = {}
+    ppos = jumpsize
+    midx = 0
+    while ppos < width and midx < mlen: # -1, ignore last bit
+        ppoints[ppos] = mask[midx]
+        ppos += jumpsize
         midx += 1
     return ppoints
 
