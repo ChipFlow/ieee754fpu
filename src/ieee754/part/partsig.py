@@ -25,6 +25,7 @@ from ieee754.part_mul_add.partpoints import make_partition, PartitionPoints
 from operator import or_, xor, and_, not_
 
 from nmigen import (Signal, Const)
+from nmigen.hdl.ast import UserValue
 
 
 def getsig(op1):
@@ -42,8 +43,9 @@ def applyop(op1, op2, op):
     return result
 
 
-class PartitionedSignal:
-    def __init__(self, mask, *args, **kwargs):
+class PartitionedSignal(UserValue):
+    def __init__(self, mask, *args, src_loc_at=0, **kwargs):
+        super().__init__(src_loc_at=src_loc_at)
         self.sig = Signal(*args, **kwargs)
         width = len(self.sig)  # get signal width
         # create partition points
@@ -54,6 +56,9 @@ class PartitionedSignal:
         self.modnames = {}
         for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor']:
             self.modnames[name] = 0
+
+    def lower(self):
+        return self.sig
 
     def set_module(self, m):
         self.m = m
