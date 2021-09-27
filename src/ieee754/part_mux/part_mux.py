@@ -17,6 +17,7 @@ from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_mul_add.partpoints import make_partition
 
+
 modcount = 0 # global for now
 def PMux(m, mask, sel, a, b):
     global modcount
@@ -29,6 +30,7 @@ def PMux(m, mask, sel, a, b):
     m.d.comb += pm.sel.eq(sel)
     setattr(m.submodules, "pmux%d" % modcount, pm)
     return pm.output
+
 
 class PartitionedMux(Elaboratable):
     """PartitionedMux: Partitioned "Mux"
