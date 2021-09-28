@@ -41,10 +41,15 @@ def make_partition2(mask, width):
     ppoints = {}
     ppos = jumpsize
     midx = 0
+    if isinstance(mask, dict): # convert dict/partpoints to sequential list
+        mask = list(mask.values())
+    print ("make_partition2", width, mask, mlen, jumpsize)
     while ppos < width and midx < mlen: # -1, ignore last bit
+        print ("    make_partition2", ppos, width, midx, mlen)
         ppoints[ppos] = mask[midx]
         ppos += jumpsize
         midx += 1
+    print ("    make_partition2", mask, width, ppoints)
     return ppoints
 
 

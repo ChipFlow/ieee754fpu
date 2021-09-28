@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
-from nmigen import Signal, Module, Elaboratable
+from nmigen import Signal, Module, Elaboratable, Mux
 from nmigen.back.pysim import Simulator, Delay
 from nmigen.cli import rtlil
 
@@ -63,8 +63,10 @@ class TestAddMod2(Elaboratable):
         self.ne_output = Signal(len(partpoints)+1)
         self.lt_output = Signal(len(partpoints)+1)
         self.le_output = Signal(len(partpoints)+1)
-        self.mux_sel = Signal(len(partpoints)+1)
+        self.mux_sel2 = Signal(len(partpoints)+1)
+        self.mux_sel2 = PartitionedSignal(partpoints, len(partpoints))
         self.mux_out = Signal(width)
+        self.mux2_out = Signal(width)
         self.carry_in = Signal(len(partpoints)+1)
         self.add_carry_out = Signal(len(partpoints)+1)
         self.sub_carry_out = Signal(len(partpoints)+1)
@@ -76,6 +78,7 @@ class TestAddMod2(Elaboratable):
         sync = m.d.sync
         self.a.set_module(m)
         self.b.set_module(m)
+        self.mux_sel2.set_module(m)
         # compares
         sync += self.lt_output.eq(self.a < self.b)
         sync += self.ne_output.eq(self.a != self.b)
@@ -100,10 +103,36 @@ class TestAddMod2(Elaboratable):
         sync += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
         sync += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
+        sync += self.mux_out2.eq(Mux(self.mux_sel2, self.a, self.b))
         # scalar left shift
         comb += self.bsig.eq(self.b.sig)
         sync += self.ls_scal_output.eq(self.a << self.bsig)
         sync += self.rs_scal_output.eq(self.a >> self.bsig)
+
+        return m
+
+
+class TestMuxMod(Elaboratable):
+    def __init__(self, width, partpoints):
+        self.partpoints = partpoints
+        self.a = PartitionedSignal(partpoints, width)
+        self.b = PartitionedSignal(partpoints, width)
+        self.mux_sel = Signal(len(partpoints)+1)
+        self.mux_sel2 = PartitionedSignal(partpoints, len(partpoints)+1)
+        self.mux_out = Signal(width)
+        self.mux_out2 = Signal(width)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+        sync = m.d.sync
+        self.a.set_module(m)
+        self.b.set_module(m)
+        self.mux_sel2.set_module(m)
+        ppts = self.partpoints
+
+        comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
+        comb += self.mux_out2.eq(Mux(self.mux_sel2, self.a, self.b))
 
         return m
 
@@ -126,8 +155,6 @@ class TestAddMod(Elaboratable):
         self.ne_output = Signal(len(partpoints)+1)
         self.lt_output = Signal(len(partpoints)+1)
         self.le_output = Signal(len(partpoints)+1)
-        self.mux_sel = Signal(len(partpoints)+1)
-        self.mux_out = Signal(width)
         self.carry_in = Signal(len(partpoints)+1)
         self.add_carry_out = Signal(len(partpoints)+1)
         self.sub_carry_out = Signal(len(partpoints)+1)
@@ -163,8 +190,6 @@ class TestAddMod(Elaboratable):
         # right shift
         comb += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
-        # mux
-        comb += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
         # scalar left shift
         comb += self.bsig.eq(self.b.sig)
         comb += self.ls_scal_output.eq(self.a << self.bsig)
@@ -174,7 +199,87 @@ class TestAddMod(Elaboratable):
         return m
 
 
-class TestPartitionPoints(unittest.TestCase):
+class TestMux(unittest.TestCase):
+    def test(self):
+        width = 16
+        part_mask = Signal(4)  # divide into 4-bits
+        module = TestMuxMod(width, part_mask)
+
+        test_name = "part_sig_mux"
+        traces = [part_mask,
+                  module.a.sig,
+                  module.b.sig,
+                  module.mux_out,
+                  module.mux_out2]
+        sim = create_simulator(module, traces, test_name)
+
+        def async_process():
+
+            def test_muxop(msg_prefix, *maskbit_list):
+                for a, b in [(0x0000, 0x0000),
+                             (0x1234, 0x1234),
+                             (0xABCD, 0xABCD),
+                             (0xFFFF, 0x0000),
+                             (0x0000, 0x0000),
+                             (0xFFFF, 0xFFFF),
+                             (0x0000, 0xFFFF)]:
+                    # convert to mask_list
+                    mask_list = []
+                    for mb in maskbit_list:
+                        v = 0
+                        for i in range(4):
+                            if mb & (1 << i):
+                                v |= 0xf << (i*4)
+                        mask_list.append(v)
+
+                    # TODO: sel needs to go through permutations of mask_list
+                    for p in perms(len(mask_list)):
+
+                        sel = 0
+                        selmask = 0
+                        for i, v in enumerate(p):
+                            if v == '1':
+                                sel |= maskbit_list[i]
+                                selmask |= mask_list[i]
+
+                        yield module.a.eq(a)
+                        yield module.b.eq(b)
+                        yield module.mux_sel.eq(sel)
+                        yield module.mux_sel2.sig.eq(sel)
+                        yield Delay(0.1e-6)
+                        y = 0
+                        # do the partitioned tests
+                        for i, mask in enumerate(mask_list):
+                            if (selmask & mask):
+                                y |= (a & mask)
+                            else:
+                                y |= (b & mask)
+                        # check the result
+                        outval = (yield module.mux_out)
+                        outval2 = (yield module.mux_out2)
+                        msg = f"{msg_prefix}: mux " + \
+                            f"0x{sel:X} ? 0x{a:X} : 0x{b:X}" + \
+                            f" => 0x{y:X} != 0x{outval:X}, masklist %s"
+                        # print ((msg % str(maskbit_list)).format(locals()))
+                        self.assertEqual(y, outval, msg % str(maskbit_list))
+                        self.assertEqual(y, outval2, msg % str(maskbit_list))
+
+            yield part_mask.eq(0)
+            yield from test_muxop("16-bit", 0b1111)
+            yield part_mask.eq(0b10)
+            yield from test_muxop("8-bit", 0b1100, 0b0011)
+            yield part_mask.eq(0b1111)
+            yield from test_muxop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
+
+        sim.add_process(async_process)
+        with sim.write_vcd(
+                vcd_file=open(test_name + ".vcd", "w"),
+                gtkw_file=open(test_name + ".gtkw", "w"),
+                traces=traces):
+            sim.run()
+
+
+class TestPartitionedSignal(unittest.TestCase):
     def test(self):
         width = 16
         part_mask = Signal(4)  # divide into 4-bits
@@ -415,59 +520,6 @@ class TestPartitionPoints(unittest.TestCase):
                 yield part_mask.eq(0b1111)
                 yield from test_binop("4-bit", test_fn, mod_attr,
                                       0b1000, 0b0100, 0b0010, 0b0001)
-
-            def test_muxop(msg_prefix, *maskbit_list):
-                for a, b in [(0x0000, 0x0000),
-                             (0x1234, 0x1234),
-                             (0xABCD, 0xABCD),
-                             (0xFFFF, 0x0000),
-                             (0x0000, 0x0000),
-                             (0xFFFF, 0xFFFF),
-                             (0x0000, 0xFFFF)]:
-                    # convert to mask_list
-                    mask_list = []
-                    for mb in maskbit_list:
-                        v = 0
-                        for i in range(4):
-                            if mb & (1 << i):
-                                v |= 0xf << (i*4)
-                        mask_list.append(v)
-
-                    # TODO: sel needs to go through permutations of mask_list
-                    for p in perms(len(mask_list)):
-
-                        sel = 0
-                        selmask = 0
-                        for i, v in enumerate(p):
-                            if v == '1':
-                                sel |= maskbit_list[i]
-                                selmask |= mask_list[i]
-
-                        yield module.a.eq(a)
-                        yield module.b.eq(b)
-                        yield module.mux_sel.eq(sel)
-                        yield Delay(0.1e-6)
-                        y = 0
-                        # do the partitioned tests
-                        for i, mask in enumerate(mask_list):
-                            if (selmask & mask):
-                                y |= (a & mask)
-                            else:
-                                y |= (b & mask)
-                        # check the result
-                        outval = (yield module.mux_out)
-                        msg = f"{msg_prefix}: mux " + \
-                            f"0x{sel:X} ? 0x{a:X} : 0x{b:X}" + \
-                            f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                        # print ((msg % str(maskbit_list)).format(locals()))
-                        self.assertEqual(y, outval, msg % str(maskbit_list))
-
-            yield part_mask.eq(0)
-            yield from test_muxop("16-bit", 0b1111)
-            yield part_mask.eq(0b10)
-            yield from test_muxop("8-bit", 0b1100, 0b0011)
-            yield part_mask.eq(0b1111)
-            yield from test_muxop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
 
         sim.add_process(async_process)
         with sim.write_vcd(

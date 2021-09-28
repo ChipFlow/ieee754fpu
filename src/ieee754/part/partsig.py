@@ -21,7 +21,7 @@ from ieee754.part_cmp.eq_gt_ge import PartitionedEqGtGe
 from ieee754.part_bits.xor import PartitionedXOR
 from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
-from ieee754.part_mul_add.partpoints import make_partition, PartitionPoints
+from ieee754.part_mul_add.partpoints import make_partition2, PartitionPoints
 from ieee754.part_mux.part_mux import PMux
 from operator import or_, xor, and_, not_
 
@@ -43,6 +43,13 @@ def applyop(op1, op2, op):
     result.m.d.comb += result.sig.eq(op(getsig(op1), getsig(op2)))
     return result
 
+global modnames
+modnames = {}
+# for sub-modules to be created on-demand. Mux is done slightly
+# differently (has its own global)
+for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor']:
+    modnames[name] = 0
+
 
 class PartitionedSignal(UserValue):
     def __init__(self, mask, *args, src_loc_at=0, **kwargs):
@@ -53,12 +60,7 @@ class PartitionedSignal(UserValue):
         if isinstance(mask, PartitionPoints):
             self.partpoints = mask
         else:
-            self.partpoints = make_partition(mask, width)
-        self.modnames = {}
-        # for sub-modules to be created on-demand. Mux is done slightly
-        # differently
-        for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor']:
-            self.modnames[name] = 0
+            self.partpoints = make_partition2(mask, width)
 
     def lower(self):
         return self.sig
@@ -67,8 +69,8 @@ class PartitionedSignal(UserValue):
         self.m = m
 
     def get_modname(self, category):
-        self.modnames[category] += 1
-        return "%s_%d" % (category, self.modnames[category])
+        modnames[category] += 1
+        return "%s_%d" % (category, modnames[category])
 
     def eq(self, val):
         return self.sig.eq(getsig(val))
@@ -85,6 +87,7 @@ class PartitionedSignal(UserValue):
     # nmigen-redirected constructs (Mux, Cat, Switch, Assign)
 
     def __Mux__(self, val1, val2):
+        # print ("partsig mux", self, val1, val2)
         assert len(val1) == len(val2), \
             "PartitionedSignal width sources must be the same " \
             "val1 == %d, val2 == %d" % (len(val1), len(val2))

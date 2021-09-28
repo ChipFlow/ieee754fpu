@@ -15,7 +15,7 @@ See:
 
 from nmigen import Signal, Module, Elaboratable, Mux
 from ieee754.part_mul_add.partpoints import PartitionPoints
-from ieee754.part_mul_add.partpoints import make_partition
+from ieee754.part_mul_add.partpoints import make_partition2
 
 
 modcount = 0 # global for now
@@ -23,7 +23,7 @@ def PMux(m, mask, sel, a, b):
     global modcount
     modcount += 1
     width = len(a.sig)  # get width
-    part_pts = make_partition(mask, width) # create partition points
+    part_pts = make_partition2(mask, width) # create partition points
     pm = PartitionedMux(width, part_pts)
     m.d.comb += pm.a.eq(a.sig)
     m.d.comb += pm.b.eq(b.sig)
