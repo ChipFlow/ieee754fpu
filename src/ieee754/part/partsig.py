@@ -23,6 +23,7 @@ from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
 from ieee754.part_mul_add.partpoints import make_partition2, PartitionPoints
 from ieee754.part_mux.part_mux import PMux
+from ieee754.part_cat.cat import PartitionedCat
 from operator import or_, xor, and_, not_
 
 from nmigen import (Signal, Const)
@@ -47,7 +48,7 @@ global modnames
 modnames = {}
 # for sub-modules to be created on-demand. Mux is done slightly
 # differently (has its own global)
-for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor']:
+for name in ['add', 'eq', 'gt', 'ge', 'ls', 'xor', 'cat']:
     modnames[name] = 0
 
 
@@ -92,6 +93,15 @@ class PartitionedSignal(UserValue):
             "PartitionedSignal width sources must be the same " \
             "val1 == %d, val2 == %d" % (len(val1), len(val2))
         return PMux(self.m, self.partpoints, self, val1, val2)
+
+    def __Cat__(self, *args, src_loc_at=0):
+        args = [self] + list(args)
+        for sig in args:
+            assert isinstance(sig, PartitionedSignal), \
+                "All PartitionedSignal.__Cat__ arguments must be " \
+                "a PartitionedSignal. %s is not." % repr(sig)
+        pc = PartitionedCat(args, self.partpoints)
+        setattr(self.m.submodules, self.get_modname('cat'), pc)
 
     # unary ops that do not require partitioning
 
