@@ -95,14 +95,14 @@ class PartitionedCat(Elaboratable):
         print ("keys", keys, "values", self.partition_points.values())
         with m.Switch(self.mask[:-1]):
             # for each partition possibility, create a Cat sequence
-            for pbit in range(1<<len(keys)-1):
+            for pbit in range(1<<len(keys)):
                 # set up some indices pointing to where things have got
                 # then when called below in the inner nested loop they give
                 # the relevant sequential chunk
                 output = []
                 y = [0] * len(self.catlist)
                 # get a list of the length of each partition run
-                runlengths = get_runlengths(pbit, len(keys)-1)
+                runlengths = get_runlengths(pbit, len(keys))
                 print ("pbit", bin(pbit), "runs", runlengths)
                 for i in runlengths: # for each partition
                     for yidx in range(len(y)):
@@ -122,10 +122,9 @@ class PartitionedCat(Elaboratable):
 
 
 if __name__ == "__main__":
-    from ieee754.part_mul_add.partpoints import make_partition
     m = Module()
     mask = Signal(4)
-    a = PartitionedSignal(mask, 16)
+    a = PartitionedSignal(mask, 32)
     b = PartitionedSignal(mask, 16)
     catlist = [a, b]
     m.submodules.cat = cat = PartitionedCat(catlist, mask)
@@ -135,23 +134,29 @@ if __name__ == "__main__":
 
     def process():
         yield mask.eq(0b000)
-        yield a.eq(0x01234567)
-        yield b.eq(0xfdbc)
+        yield a.sig.eq(0x01234567)
+        yield b.sig.eq(0xfdbc)
         yield Settle()
         out = yield cat.output.sig
-        print("out", bin(out), hex(out))
-        yield mask.eq(0b111)
-        yield a.eq(0x01234567)
-        yield b.eq(0xfdbc)
+        print("out 000", bin(out), hex(out))
+        yield mask.eq(0b010)
+        yield a.sig.eq(0x01234567)
+        yield b.sig.eq(0xfdbc)
         yield Settle()
         out = yield cat.output.sig
-        print("out", bin(out), hex(out))
+        print("out 010", bin(out), hex(out))
         yield mask.eq(0b110)
-        yield a.eq(0x01234567)
-        yield b.eq(0xfdbc)
+        yield a.sig.eq(0x01234567)
+        yield b.sig.eq(0xfdbc)
         yield Settle()
         out = yield cat.output.sig
-        print("out", bin(out), hex(out))
+        print("out 110", bin(out), hex(out))
+        yield mask.eq(0b111)
+        yield a.sig.eq(0x01234567)
+        yield b.sig.eq(0xfdbc)
+        yield Settle()
+        out = yield cat.output.sig
+        print("out 111", bin(out), hex(out))
 
     sim.add_process(process)
     with sim.write_vcd("partition_cat.vcd", "partition_cat.gtkw",
