@@ -38,6 +38,14 @@ from ieee754.part.partsig import PartitionedSignal
 from ieee754.part.test.test_partsig import create_simulator
 
 
+modcount = 0 # global for now
+def PCat(m, arglist, mask):
+    global modcount
+    modcount += 1
+    pc = PartitionedCat(arglist, mask)
+    setattr(m.submodules, "pcat%d" % modcount, pc)
+    return pc.output
+
 
 def get_runlengths(pbit, size):
     res = []
