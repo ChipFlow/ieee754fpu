@@ -23,6 +23,7 @@ from ieee754.part_shift.part_shift_dynamic import PartitionedDynamicShift
 from ieee754.part_shift.part_shift_scalar import PartitionedScalarShift
 from ieee754.part_mul_add.partpoints import make_partition2, PartitionPoints
 from ieee754.part_mux.part_mux import PMux
+from ieee754.part_ass.passign import PAssign
 from ieee754.part_cat.pcat import PCat
 from operator import or_, xor, and_, not_
 
@@ -98,6 +99,10 @@ class PartitionedSignal(UserValue):
             "PartitionedSignal width sources must be the same " \
             "val1 == %d, val2 == %d" % (len(val1), len(val2))
         return PMux(self.m, self.partpoints, self, val1, val2)
+
+    def __Assign__(self, val):
+        # print ("partsig ass", self, val)
+        return PAssign(self.m, self.shape(), val, self.partpoints)
 
     def __Cat__(self, *args, src_loc_at=0):
         args = [self] + list(args)

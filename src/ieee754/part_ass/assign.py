@@ -22,15 +22,6 @@ from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part.partsig import PartitionedSignal
 
 
-modcount = 0 # global for now
-def PAssign(m, arglist, mask):
-    global modcount
-    modcount += 1
-    pc = PartitionedAssign(arglist, mask)
-    setattr(m.submodules, "pass%d" % modcount, pc)
-    return pc.output
-
-
 def get_runlengths(pbit, size):
     res = []
     count = 1
