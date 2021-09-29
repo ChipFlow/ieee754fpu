@@ -222,7 +222,7 @@ class TestAddMod(Elaboratable):
 class TestMux(unittest.TestCase):
     def test(self):
         width = 16
-        part_mask = Signal(4)  # divide into 4-bits
+        part_mask = Signal(3)  # divide into 4-bits
         module = TestMuxMod(width, part_mask)
 
         test_name = "part_sig_mux"
@@ -407,7 +407,7 @@ class TestCat(unittest.TestCase):
 class TestPartitionedSignal(unittest.TestCase):
     def test(self):
         width = 16
-        part_mask = Signal(4)  # divide into 4-bits
+        part_mask = Signal(3)  # divide into 4-bits
         module = TestAddMod(width, part_mask)
 
         test_name = "part_sig_add"

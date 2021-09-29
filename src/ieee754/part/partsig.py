@@ -80,7 +80,7 @@ class PartitionedSignal(UserValue):
     def like(other, *args, **kwargs):
         """Builds a new PartitionedSignal with the same PartitionPoints and
         Signal properties as the other"""
-        result = PartitionedSignal(other.partpoints)
+        result = PartitionedSignal(PartitionPoints(other.partpoints))
         result.sig = Signal.like(other.sig, *args, **kwargs)
         result.m = other.m
         return result
