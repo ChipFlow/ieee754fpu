@@ -67,16 +67,21 @@ class PartitionedAssign(Elaboratable):
 
     def get_chunk(self, y, numparts):
         x = self.assign
-        keys = [0] + list(x.partpoints.keys()) + [len(x.sig)]
+        if not isinstance(x, PartitionedSignal):
+            # assume Scalar. totally different rules
+            end = numparts * (len(x) // self.mwidth)
+            return x[:end]
+        # PartitionedSignal: start at partition point
+        keys = [0] + list(x.partpoints.keys()) + [len(x)]
         # get current index and increment it (for next Assign chunk)
         upto = y[0]
         y[0] += numparts
-        print ("getting", upto, numparts, keys, len(x.sig))
+        print ("getting", upto, numparts, keys, len(x))
         # get the partition point as far as we are up to
         start = keys[upto]
         end = keys[upto+numparts]
-        print ("start end", start, end, len(x.sig))
-        return x.sig[start:end]
+        print ("start end", start, end, len(x))
+        return x[start:end]
 
     def elaborate(self, platform):
         m = Module()
@@ -114,7 +119,9 @@ class PartitionedAssign(Elaboratable):
         return m
 
     def ports(self):
-        return [self.assign.sig, self.output.sig]
+        if isinstance(self.assign, PartitionedSignal):
+            return [self.assign.sig, self.output.sig]
+        return [self.assign, self.output.sig]
 
 
 if __name__ == "__main__":
@@ -123,6 +130,7 @@ if __name__ == "__main__":
     mask = Signal(3)
     a = PartitionedSignal(mask, 32)
     m.submodules.ass = ass = PartitionedAssign(signed(48), a, mask)
+    omask = (1<<len(ass.output))-1
 
     traces = ass.ports()
     sim = create_simulator(m, traces, "partass")
@@ -132,19 +140,53 @@ if __name__ == "__main__":
         yield a.sig.eq(0xa12345c7)
         yield Settle()
         out = yield ass.output.sig
-        print("out 000", bin(out), hex(out&0xfffffffffffffffffffffffff))
+        print("out 000", bin(out&omask), hex(out&omask))
         yield mask.eq(0b010)
         yield Settle()
         out = yield ass.output.sig
-        print("out 010", bin(out), hex(out&0xfffffffffffffffffffffffff))
+        print("out 010", bin(out&omask), hex(out&omask))
         yield mask.eq(0b110)
         yield Settle()
         out = yield ass.output.sig
-        print("out 110", bin(out), hex(out&0xfffffffffffffffffffffffff))
+        print("out 110", bin(out&omask), hex(out&omask))
         yield mask.eq(0b111)
         yield Settle()
         out = yield ass.output.sig
-        print("out 111", bin(out), hex(out&0xfffffffffffffffffffffffff))
+        print("out 111", bin(out&omask), hex(out&omask))
+
+    sim.add_process(process)
+    with sim.write_vcd("partition_ass.vcd", "partition_ass.gtkw",
+                        traces=traces):
+        sim.run()
+
+    # Scalar
+    m = Module()
+    mask = Signal(3)
+    a = Signal(32)
+    m.submodules.ass = ass = PartitionedAssign(signed(48), a, mask)
+    omask = (1<<len(ass.output))-1
+
+    traces = ass.ports()
+    sim = create_simulator(m, traces, "partass")
+
+    def process():
+        yield mask.eq(0b000)
+        yield a.eq(0xa12345c7)
+        yield Settle()
+        out = yield ass.output.sig
+        print("out 000", bin(out&omask), hex(out&omask))
+        yield mask.eq(0b010)
+        yield Settle()
+        out = yield ass.output.sig
+        print("out 010", bin(out&omask), hex(out&omask))
+        yield mask.eq(0b110)
+        yield Settle()
+        out = yield ass.output.sig
+        print("out 110", bin(out&omask), hex(out&omask))
+        yield mask.eq(0b111)
+        yield Settle()
+        out = yield ass.output.sig
+        print("out 111", bin(out&omask), hex(out&omask))
 
     sim.add_process(process)
     with sim.write_vcd("partition_ass.vcd", "partition_ass.gtkw",
