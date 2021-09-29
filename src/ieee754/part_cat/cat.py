@@ -73,6 +73,8 @@ class PartitionedCat(Elaboratable):
         """
         # work out the length (total of all PartitionedSignals)
         self.catlist = catlist
+        if isinstance(mask, dict):
+            mask = list(mask.values())
         self.mask = mask
         width = 0
         for p in catlist:
@@ -101,7 +103,8 @@ class PartitionedCat(Elaboratable):
 
         keys = list(self.partition_points.keys())
         print ("keys", keys, "values", self.partition_points.values())
-        with m.Switch(self.mask[:-1]):
+        print ("mask", self.mask)
+        with m.Switch(Cat(self.mask)):
             # for each partition possibility, create a Cat sequence
             for pbit in range(1<<len(keys)):
                 # set up some indices pointing to where things have got
@@ -131,7 +134,7 @@ class PartitionedCat(Elaboratable):
 
 if __name__ == "__main__":
     m = Module()
-    mask = Signal(4)
+    mask = Signal(3)
     a = PartitionedSignal(mask, 32)
     b = PartitionedSignal(mask, 16)
     catlist = [a, b]
