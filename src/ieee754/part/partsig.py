@@ -85,6 +85,9 @@ class PartitionedSignal(UserValue):
         result.m = other.m
         return result
 
+    def __len__(self):
+        return len(self.sig)
+
     # nmigen-redirected constructs (Mux, Cat, Switch, Assign)
 
     def __Mux__(self, val1, val2):
