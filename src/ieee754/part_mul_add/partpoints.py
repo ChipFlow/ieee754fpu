@@ -37,14 +37,15 @@ def make_partition2(mask, width):
         mask len = 7, width == 64 will return:
             {8: mask[0], 16: mask[1], 24: mask[2], .... 56: mask[6]}
     """
+    if isinstance(mask, dict): # convert dict/partpoints to sequential list
+        mask = list(mask.values())
     mlen = len(mask) + 1     # ONE MORE partitions than break-points
     jumpsize = width // mlen # amount to jump by (size of each partition)
     ppoints = {}
     ppos = jumpsize
+    print ("make_partition2", width, mask, len(mask), mlen, jumpsize)
+    assert jumpsize > 0,  "incorrect width // mlen (%d // %d)" % (width, mlen)
     midx = 0
-    if isinstance(mask, dict): # convert dict/partpoints to sequential list
-        mask = list(mask.values())
-    print ("make_partition2", width, mask, mlen, jumpsize)
     while ppos < width and midx < mlen: # -1, ignore last bit
         print ("    make_partition2", ppos, width, midx, mlen)
         ppoints[ppos] = mask[midx]
