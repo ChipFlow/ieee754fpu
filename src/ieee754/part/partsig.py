@@ -64,8 +64,6 @@ class PartitionedSignal(UserValue):
         else:
             self.partpoints = make_partition2(mask, width)
 
-    def lower(self):
-        return self.sig
 
     def set_module(self, m):
         self.m = m
@@ -73,9 +71,6 @@ class PartitionedSignal(UserValue):
     def get_modname(self, category):
         modnames[category] += 1
         return "%s_%d" % (category, modnames[category])
-
-    def eq(self, val):
-        return self.sig.eq(getsig(val))
 
     @staticmethod
     def like(other, *args, **kwargs):
@@ -90,6 +85,11 @@ class PartitionedSignal(UserValue):
         return len(self.sig)
     def shape(self):
         return self.sig.shape()
+    def lower(self):
+        return self.sig
+    # now using __Assign__
+    #def eq(self, val):
+    #    return self.sig.eq(getsig(val))
 
     # nmigen-redirected constructs (Mux, Cat, Switch, Assign)
 
@@ -100,7 +100,7 @@ class PartitionedSignal(UserValue):
             "val1 == %d, val2 == %d" % (len(val1), len(val2))
         return PMux(self.m, self.partpoints, self, val1, val2)
 
-    def __Assign__(self, val):
+    def __Assign__(self, val, *, src_loc_at=0):
         # print ("partsig ass", self, val)
         return PAssign(self.m, self.shape(), val, self.partpoints)
 

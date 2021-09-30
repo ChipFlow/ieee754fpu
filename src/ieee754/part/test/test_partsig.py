@@ -106,7 +106,7 @@ class TestAddMod2(Elaboratable):
         sync += self.mux_out.eq(PMux(m, ppts, self.mux_sel, self.a, self.b))
         sync += self.mux_out2.eq(Mux(self.mux_sel2, self.a, self.b))
         # scalar left shift
-        comb += self.bsig.eq(self.b.sig)
+        comb += self.bsig.eq(self.b.lower())
         sync += self.ls_scal_output.eq(self.a << self.bsig)
         sync += self.rs_scal_output.eq(self.a >> self.bsig)
 
@@ -212,7 +212,7 @@ class TestAddMod(Elaboratable):
         comb += self.rs_output.eq(self.a >> self.b)
         ppts = self.partpoints
         # scalar left shift
-        comb += self.bsig.eq(self.b.sig)
+        comb += self.bsig.eq(self.b.lower())
         comb += self.ls_scal_output.eq(self.a << self.bsig)
         # scalar right shift
         comb += self.rs_scal_output.eq(self.a >> self.bsig)
@@ -263,10 +263,10 @@ class TestMux(unittest.TestCase):
                                 sel |= maskbit_list[i]
                                 selmask |= mask_list[i]
 
-                        yield module.a.eq(a)
-                        yield module.b.eq(b)
+                        yield module.a.lower().eq(a)
+                        yield module.b.lower().eq(b)
                         yield module.mux_sel.eq(sel)
-                        yield module.mux_sel2.sig.eq(sel)
+                        yield module.mux_sel2.lower().eq(sel)
                         yield Delay(0.1e-6)
                         y = 0
                         # do the partitioned tests
@@ -348,8 +348,8 @@ class TestCat(unittest.TestCase):
                     print ("apart bpart", hex(a), hex(b),
                             list(map(hex, apart)), list(map(hex, bpart)))
 
-                    yield module.a.eq(a)
-                    yield module.b.eq(b)
+                    yield module.a.lower().eq(a)
+                    yield module.b.lower().eq(b)
                     yield Delay(0.1e-6)
 
                     y = 0
@@ -528,8 +528,8 @@ class TestPartitionedSignal(unittest.TestCase):
                              (0x0000, 0x0000),
                              (0xFFFF, 0xFFFF),
                              (0x0000, 0xFFFF)] + rand_data:
-                    yield module.a.eq(a)
-                    yield module.b.eq(b)
+                    yield module.a.lower().eq(a)
+                    yield module.b.lower().eq(b)
                     carry_sig = 0xf if carry else 0
                     yield module.carry_in.eq(carry_sig)
                     yield Delay(0.1e-6)
@@ -612,8 +612,8 @@ class TestPartitionedSignal(unittest.TestCase):
                              (0xABCD, 0xABCE),
                              (0x8000, 0x0000),
                              (0xBEEF, 0xFEED)]:
-                    yield module.a.eq(a)
-                    yield module.b.eq(b)
+                    yield module.a.lower().eq(a)
+                    yield module.b.lower().eq(b)
                     yield Delay(0.1e-6)
                     # convert to mask_list
                     mask_list = []
