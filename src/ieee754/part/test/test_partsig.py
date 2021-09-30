@@ -340,7 +340,7 @@ class TestCat(unittest.TestCase):
 
         def async_process():
 
-            def test_catop(msg_prefix, *maskbit_list):
+            def test_catop(msg_prefix):
                 # define lengths of a/b test input
                 alen, blen = 16, 32
                 # pairs of test values a, b
@@ -400,16 +400,15 @@ class TestCat(unittest.TestCase):
                     outval = (yield module.cat_out)
                     msg = f"{msg_prefix}: cat " + \
                         f"0x{mval:X} 0x{a:X} : 0x{b:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                    # print ((msg % str(maskbit_list)).format(locals()))
-                    self.assertEqual(y, outval, msg % str(maskbit_list))
+                        f" => 0x{y:X} != 0x{outval:X}"
+                    self.assertEqual(y, outval, msg)
 
             yield part_mask.eq(0)
-            yield from test_catop("16-bit", 0b1111)
+            yield from test_catop("16-bit")
             yield part_mask.eq(0b10)
-            yield from test_catop("8-bit", 0b1100, 0b0011)
+            yield from test_catop("8-bit")
             yield part_mask.eq(0b1111)
-            yield from test_catop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
+            yield from test_catop("4-bit")
 
         sim.add_process(async_process)
         with sim.write_vcd(
@@ -527,17 +526,14 @@ class TestAssign(unittest.TestCase):
                         f" => expected 0x{y:X} != actual 0x{outval:X}"
                     self.assertEqual(y, outval, msg)
 
-            yield part_mask.eq(0)
-            yield Settle()
-            yield from test_assop("16-bit")
-
-            yield part_mask.eq(0b10)
-            yield Settle()
-            yield from test_assop("8-bit")
-
-            yield part_mask.eq(0b1111)
-            yield Settle()
-            yield from test_assop("4-bit")
+            # run the actual tests, here - 16/8/4 bit partitions
+            for (mask, name) in ((0, "16-bit"),
+                                  (0b10, "8-bit"),
+                                  (0b111, "4-bit")):
+                with self.subTest(name + " " + test_name):
+                    yield part_mask.eq(mask)
+                    yield Settle()
+                    yield from test_assop(name)
 
         sim.add_process(async_process)
         with sim.write_vcd(
