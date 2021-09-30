@@ -438,10 +438,22 @@ class TestAssign(unittest.TestCase):
                           0x0010,
                           0x0100,
                           0x1000,
+                          0x000c,
+                          0x00c0,
+                          0x0c00,
+                          0xc000,
                              0xDCBA,
                              0xABCD,
                              0xFFFF,
                         ]:
+                    # work out the runlengths for this mask.
+                    # 0b011 returns [1,1,2] (for a mask of length 3)
+                    mval = yield part_mask
+                    runlengths = get_runlengths(mval, 3)
+
+                    print ("test a", hex(a), "mask", bin(mval), "widths",
+                            in_width, out_width, out_signed)
+
                     # convert to mask_list
                     mask_list = []
                     for mb in maskbit_list:
@@ -451,20 +463,15 @@ class TestAssign(unittest.TestCase):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
 
-                    # work out the runlengths for this mask.
-                    # 0b011 returns [1,1,2] (for a mask of length 3)
-                    mval = yield part_mask
-                    runlengths = get_runlengths(mval, 3)
-
                     # convert a to runlengths sub-sections
                     apart = []
                     ajump = alen // 4
                     ai = 0
                     for i in runlengths:
                         subpart = (a >> (ajump*ai) & ((1<<(ajump*i))-1))
-                        msb = a >> (ajump*i-1) # will contain the sign
+                        msb = (subpart >> ((ajump*i)-1)) # will contain the sign
                         apart.append((subpart, msb))
-                        print ("apart", hex(a), hex(subpart), msb)
+                        print ("apart", ajump*i, hex(a), hex(subpart), msb)
                         ai += i
 
                     yield module.a.lower().eq(a)
@@ -472,20 +479,34 @@ class TestAssign(unittest.TestCase):
 
                     y = 0
                     j = 0
+                    ojump = out_width // 4
                     for ai, i in enumerate(runlengths):
-                        # a first
+                        # get "a" partition value
                         av, amsb = apart[ai]
+                        # do sign-extension if needed
+                        signext = 0
+                        if out_signed and ojump > ajump:
+                            if amsb:
+                                signext = (-1 << ajump*i) & ((1<<(ojump*i))-1)
+                                av |= signext
+                        # truncate if needed
+                        if ojump < ajump:
+                                av &= ((1<<(ojump*i))-1)
                         print ("runlength", i,
                                "ai", ai,
                                "apart", hex(av), amsb,
+                               "signext", hex(signext),
                                "j", j)
                         y |= av << j
                         print ("    y", hex(y))
-                        j += ajump*i
+                        j += ojump*i
                         ai += 1
+
+                    y &= (1<<out_width)-1
 
                     # check the result
                     outval = (yield module.ass_out.lower())
+                    outval &= (1<<out_width)-1
                     msg = f"{msg_prefix}: assign " + \
                         f"0x{mval:X} 0x{a:X}" + \
                         f" => 0x{y:X} != 0x{outval:X}, masklist %s"
@@ -507,7 +528,9 @@ class TestAssign(unittest.TestCase):
             sim.run()
 
     def test(self):
-        self.run_tst(16, 16, False)
+        for out_width in [16, 24, 8]:
+            for sign in [True, False]:
+                self.run_tst(16, out_width, sign)
 
 
 class TestPartitionedSignal(unittest.TestCase):
