@@ -3,7 +3,7 @@
 # See Notices.txt for copyright information
 
 from nmigen import Signal, Module, Elaboratable, Mux, Cat, Shape
-from nmigen.back.pysim import Simulator, Delay
+from nmigen.back.pysim import Simulator, Delay, Settle
 from nmigen.cli import rtlil
 
 from ieee754.part.partsig import PartitionedSignal
@@ -159,15 +159,20 @@ class TestCatMod(Elaboratable):
 
 
 class TestAssMod(Elaboratable):
-    def __init__(self, width, out_shape, partpoints):
+    def __init__(self, width, out_shape, partpoints, scalar):
         self.partpoints = partpoints
-        self.a = PartitionedSignal(partpoints, width)
+        self.scalar = scalar
+        if scalar:
+            self.a = Signal(width)
+        else:
+            self.a = PartitionedSignal(partpoints, width)
         self.ass_out = PartitionedSignal(partpoints, out_shape)
 
     def elaborate(self, platform):
         m = Module()
         comb = m.d.comb
-        self.a.set_module(m)
+        if not self.scalar:
+            self.a.set_module(m)
         self.ass_out.set_module(m)
 
         comb += self.ass_out.eq(self.a)
@@ -415,14 +420,19 @@ class TestCat(unittest.TestCase):
 
 
 class TestAssign(unittest.TestCase):
-    def run_tst(self, in_width, out_width, out_signed):
+    def run_tst(self, in_width, out_width, out_signed, scalar):
         part_mask = Signal(3)  # divide into 4-bits
-        module = TestAssMod(in_width, Shape(out_width, out_signed), part_mask)
+        module = TestAssMod(in_width,
+                            Shape(out_width, out_signed),
+                            part_mask, scalar)
 
         test_name = "part_sig_ass"
         traces = [part_mask,
-                  module.a.lower(),
                   module.ass_out.lower()]
+        if module.scalar:
+            traces.append(module.a)
+        else:
+            traces.append(module.a.lower())
         sim = create_simulator(module, traces, test_name)
 
         # annoying recursive import issue
@@ -430,9 +440,12 @@ class TestAssign(unittest.TestCase):
 
         def async_process():
 
-            def test_assop(msg_prefix, *maskbit_list):
+            def test_assop(msg_prefix):
                 # define lengths of a test input
                 alen = in_width
+                randomvals = []
+                for i in range(10):
+                    randomvals.append(randint(0, 65535))
                 # test values a
                 for a in [0x0001,
                           0x0010,
@@ -442,26 +455,21 @@ class TestAssign(unittest.TestCase):
                           0x00c0,
                           0x0c00,
                           0xc000,
+                             0x1234,
                              0xDCBA,
                              0xABCD,
+                             0x0000,
                              0xFFFF,
-                        ]:
+                        ] + randomvals:
                     # work out the runlengths for this mask.
                     # 0b011 returns [1,1,2] (for a mask of length 3)
                     mval = yield part_mask
                     runlengths = get_runlengths(mval, 3)
 
                     print ("test a", hex(a), "mask", bin(mval), "widths",
-                            in_width, out_width, out_signed)
-
-                    # convert to mask_list
-                    mask_list = []
-                    for mb in maskbit_list:
-                        v = 0
-                        for i in range(4):
-                            if mb & (1 << i):
-                                v |= 0xf << (i*4)
-                        mask_list.append(v)
+                            in_width, out_width,
+                            "signed", out_signed,
+                            "scalar", scalar)
 
                     # convert a to runlengths sub-sections
                     apart = []
@@ -472,9 +480,13 @@ class TestAssign(unittest.TestCase):
                         msb = (subpart >> ((ajump*i)-1)) # will contain the sign
                         apart.append((subpart, msb))
                         print ("apart", ajump*i, hex(a), hex(subpart), msb)
-                        ai += i
+                        if not scalar:
+                            ai += i
 
-                    yield module.a.lower().eq(a)
+                    if scalar:
+                        yield module.a.eq(a)
+                    else:
+                        yield module.a.lower().eq(a)
                     yield Delay(0.1e-6)
 
                     y = 0
@@ -508,17 +520,21 @@ class TestAssign(unittest.TestCase):
                     outval = (yield module.ass_out.lower())
                     outval &= (1<<out_width)-1
                     msg = f"{msg_prefix}: assign " + \
-                        f"0x{mval:X} 0x{a:X}" + \
-                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
-                    # print ((msg % str(maskbit_list)).format(locals()))
-                    self.assertEqual(y, outval, msg % str(maskbit_list))
+                        f"mask 0x{mval:X} input 0x{a:X}" + \
+                        f" => expected 0x{y:X} != actual 0x{outval:X}"
+                    self.assertEqual(y, outval, msg)
 
             yield part_mask.eq(0)
-            yield from test_assop("16-bit", 0b1111)
+            yield Settle()
+            yield from test_assop("16-bit")
+
             yield part_mask.eq(0b10)
-            yield from test_assop("8-bit", 0b1100, 0b0011)
+            yield Settle()
+            yield from test_assop("8-bit")
+
             yield part_mask.eq(0b1111)
-            yield from test_assop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
+            yield Settle()
+            yield from test_assop("4-bit")
 
         sim.add_process(async_process)
         with sim.write_vcd(
@@ -530,7 +546,8 @@ class TestAssign(unittest.TestCase):
     def test(self):
         for out_width in [16, 24, 8]:
             for sign in [True, False]:
-                self.run_tst(16, out_width, sign)
+                for scalar in [True, False]:
+                    self.run_tst(16, out_width, sign, scalar)
 
 
 class TestPartitionedSignal(unittest.TestCase):
