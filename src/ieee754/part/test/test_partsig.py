@@ -306,7 +306,7 @@ class TestCat(unittest.TestCase):
         part_mask = Signal(3)  # divide into 4-bits
         module = TestCatMod(width, part_mask)
 
-        test_name = "part_sig_mux"
+        test_name = "part_sig_cat"
         traces = [part_mask,
                   module.a.sig,
                   module.b.sig,
@@ -329,14 +329,6 @@ class TestCat(unittest.TestCase):
                              (0x0000, 0x0000),
                              (0x1F1F, 0xF1F1F1F1),
                              (0x0000, 0xFFFFFFFF)]:
-                    # convert to mask_list
-                    mask_list = []
-                    for mb in maskbit_list:
-                        v = 0
-                        for i in range(4):
-                            if mb & (1 << i):
-                                v |= 0xf << (i*4)
-                        mask_list.append(v)
 
                     # convert a and b to partitions
                     apart, bpart = [], []
