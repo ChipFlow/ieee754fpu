@@ -14,6 +14,7 @@ import unittest
 import itertools
 import math
 
+
 def first_zero(x):
     res = 0
     for i in range(16):
@@ -554,6 +555,11 @@ class TestPartitionedSignal(unittest.TestCase):
                             f" => 0x{carry_result:X} != 0x{c_outval:X}"
                         self.assertEqual(carry_result, c_outval, msg)
 
+            # run through series of operations with corresponding
+            # "helper" routines to reproduce the result (test_fn).  the same
+            # a/b input is passed to *all* outputs, where the name of the
+            # output attribute (mod_attr) will contain the result to be
+            # compared against the expected output from test_fn
             for (test_fn, mod_attr) in (
                                         (test_ls_scal_fn, "ls_scal"),
                                         (test_ls_fn, "ls"),
