@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # See Notices.txt for copyright information
 
-from nmigen import Signal, Module, Elaboratable, Mux, Cat
+from nmigen import Signal, Module, Elaboratable, Mux, Cat, Shape
 from nmigen.back.pysim import Simulator, Delay
 from nmigen.cli import rtlil
 
@@ -415,10 +415,9 @@ class TestCat(unittest.TestCase):
 
 
 class TestAssign(unittest.TestCase):
-    def test(self):
-        width = 16
+    def run_tst(self, in_width, out_width, out_signed):
         part_mask = Signal(3)  # divide into 4-bits
-        module = TestAssMod(width, width, part_mask)
+        module = TestAssMod(in_width, Shape(out_width, out_signed), part_mask)
 
         test_name = "part_sig_ass"
         traces = [part_mask,
@@ -433,7 +432,7 @@ class TestAssign(unittest.TestCase):
 
             def test_assop(msg_prefix, *maskbit_list):
                 # define lengths of a test input
-                alen = 16
+                alen = in_width
                 # test values a
                 for a in [0x0001,
                           0x0010,
@@ -452,36 +451,38 @@ class TestAssign(unittest.TestCase):
                                 v |= 0xf << (i*4)
                         mask_list.append(v)
 
-                    # convert a to partitions
+                    # work out the runlengths for this mask.
+                    # 0b011 returns [1,1,2] (for a mask of length 3)
+                    mval = yield part_mask
+                    runlengths = get_runlengths(mval, 3)
+
+                    # convert a to runlengths sub-sections
                     apart = []
                     ajump = alen // 4
-                    for i in range(4):
-                        apart.append((a >> (ajump*i) & ((1<<ajump)-1)))
-
-                    print ("apart", hex(a),
-                            list(map(hex, apart)))
+                    ai = 0
+                    for i in runlengths:
+                        subpart = (a >> (ajump*ai) & ((1<<(ajump*i))-1))
+                        msb = a >> (ajump*i-1) # will contain the sign
+                        apart.append((subpart, msb))
+                        print ("apart", hex(a), hex(subpart), msb)
+                        ai += i
 
                     yield module.a.lower().eq(a)
                     yield Delay(0.1e-6)
 
                     y = 0
-                    # work out the runlengths for this mask.
-                    # 0b011 returns [1,1,2] (for a mask of length 3)
-                    mval = yield part_mask
-                    runlengths = get_runlengths(mval, 3)
                     j = 0
-                    ai = 0
-                    for i in runlengths:
+                    for ai, i in enumerate(runlengths):
                         # a first
-                        for _ in range(i):
-                            print ("runlength", i,
-                                   "ai", ai,
-                                   "apart", hex(apart[ai]),
-                                   "j", j)
-                            y |= apart[ai] << j
-                            print ("    y", hex(y))
-                            j += ajump
-                            ai += 1
+                        av, amsb = apart[ai]
+                        print ("runlength", i,
+                               "ai", ai,
+                               "apart", hex(av), amsb,
+                               "j", j)
+                        y |= av << j
+                        print ("    y", hex(y))
+                        j += ajump*i
+                        ai += 1
 
                     # check the result
                     outval = (yield module.ass_out.lower())
@@ -504,6 +505,9 @@ class TestAssign(unittest.TestCase):
                 gtkw_file=open(test_name + ".gtkw", "w"),
                 traces=traces):
             sim.run()
+
+    def test(self):
+        self.run_tst(16, 16, False)
 
 
 class TestPartitionedSignal(unittest.TestCase):
