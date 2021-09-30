@@ -426,7 +426,10 @@ class TestAssign(unittest.TestCase):
                             Shape(out_width, out_signed),
                             part_mask, scalar)
 
-        test_name = "part_sig_ass"
+        test_name = "part_sig_ass_%d_%d_%s_%s" % (in_width, out_width,
+                     "signed" if out_signed else "unsigned",
+                     "scalar" if scalar else "partitioned")
+
         traces = [part_mask,
                   module.ass_out.lower()]
         if module.scalar:
