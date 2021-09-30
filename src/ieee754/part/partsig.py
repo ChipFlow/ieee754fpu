@@ -102,7 +102,7 @@ class PartitionedSignal(UserValue):
 
     def __Assign__(self, val, *, src_loc_at=0):
         # print ("partsig ass", self, val)
-        return PAssign(self.m, self.shape(), val, self.partpoints)
+        return PAssign(self.m, self, val, self.partpoints)
 
     def __Cat__(self, *args, src_loc_at=0):
         args = [self] + list(args)

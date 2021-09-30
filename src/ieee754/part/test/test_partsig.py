@@ -158,6 +158,23 @@ class TestCatMod(Elaboratable):
         return m
 
 
+class TestAssMod(Elaboratable):
+    def __init__(self, width, out_shape, partpoints):
+        self.partpoints = partpoints
+        self.a = PartitionedSignal(partpoints, width)
+        self.ass_out = PartitionedSignal(partpoints, out_shape)
+
+    def elaborate(self, platform):
+        m = Module()
+        comb = m.d.comb
+        self.a.set_module(m)
+        self.ass_out.set_module(m)
+
+        comb += self.ass_out.eq(self.a)
+
+        return m
+
+
 class TestAddMod(Elaboratable):
     def __init__(self, width, partpoints):
         self.partpoints = partpoints
@@ -388,6 +405,98 @@ class TestCat(unittest.TestCase):
             yield from test_catop("8-bit", 0b1100, 0b0011)
             yield part_mask.eq(0b1111)
             yield from test_catop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
+
+        sim.add_process(async_process)
+        with sim.write_vcd(
+                vcd_file=open(test_name + ".vcd", "w"),
+                gtkw_file=open(test_name + ".gtkw", "w"),
+                traces=traces):
+            sim.run()
+
+
+class TestAssign(unittest.TestCase):
+    def test(self):
+        width = 16
+        part_mask = Signal(3)  # divide into 4-bits
+        module = TestAssMod(width, width, part_mask)
+
+        test_name = "part_sig_ass"
+        traces = [part_mask,
+                  module.a.lower(),
+                  module.ass_out.lower()]
+        sim = create_simulator(module, traces, test_name)
+
+        # annoying recursive import issue
+        from ieee754.part_cat.cat import get_runlengths
+
+        def async_process():
+
+            def test_assop(msg_prefix, *maskbit_list):
+                # define lengths of a test input
+                alen = 16
+                # test values a
+                for a in [0x0001,
+                          0x0010,
+                          0x0100,
+                          0x1000,
+                             0xDCBA,
+                             0xABCD,
+                             0xFFFF,
+                        ]:
+                    # convert to mask_list
+                    mask_list = []
+                    for mb in maskbit_list:
+                        v = 0
+                        for i in range(4):
+                            if mb & (1 << i):
+                                v |= 0xf << (i*4)
+                        mask_list.append(v)
+
+                    # convert a to partitions
+                    apart = []
+                    ajump = alen // 4
+                    for i in range(4):
+                        apart.append((a >> (ajump*i) & ((1<<ajump)-1)))
+
+                    print ("apart", hex(a),
+                            list(map(hex, apart)))
+
+                    yield module.a.lower().eq(a)
+                    yield Delay(0.1e-6)
+
+                    y = 0
+                    # work out the runlengths for this mask.
+                    # 0b011 returns [1,1,2] (for a mask of length 3)
+                    mval = yield part_mask
+                    runlengths = get_runlengths(mval, 3)
+                    j = 0
+                    ai = 0
+                    for i in runlengths:
+                        # a first
+                        for _ in range(i):
+                            print ("runlength", i,
+                                   "ai", ai,
+                                   "apart", hex(apart[ai]),
+                                   "j", j)
+                            y |= apart[ai] << j
+                            print ("    y", hex(y))
+                            j += ajump
+                            ai += 1
+
+                    # check the result
+                    outval = (yield module.ass_out.lower())
+                    msg = f"{msg_prefix}: assign " + \
+                        f"0x{mval:X} 0x{a:X}" + \
+                        f" => 0x{y:X} != 0x{outval:X}, masklist %s"
+                    # print ((msg % str(maskbit_list)).format(locals()))
+                    self.assertEqual(y, outval, msg % str(maskbit_list))
+
+            yield part_mask.eq(0)
+            yield from test_assop("16-bit", 0b1111)
+            yield part_mask.eq(0b10)
+            yield from test_assop("8-bit", 0b1100, 0b0011)
+            yield part_mask.eq(0b1111)
+            yield from test_assop("4-bit", 0b1000, 0b0100, 0b0010, 0b0001)
 
         sim.add_process(async_process)
         with sim.write_vcd(

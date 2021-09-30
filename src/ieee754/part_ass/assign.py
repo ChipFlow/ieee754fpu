@@ -111,8 +111,8 @@ class PartitionedAssign(Elaboratable):
 
     def ports(self):
         if isinstance(self.assign, PartitionedSignal):
-            return [self.assign.sig, self.output.sig]
-        return [self.assign, self.output.sig]
+            return [self.assign.lower(), self.output.lower()]
+        return [self.assign, self.output.lower()]
 
 
 if __name__ == "__main__":
