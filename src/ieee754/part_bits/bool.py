@@ -20,50 +20,15 @@ from nmutil.ripple import RippleLSB
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
 from ieee754.part_cmp.experiments.eq_combiner import EQCombiner
+from ieee754.part_bits.base import PartitionedBase
 
 
-class PartitionedBool(Elaboratable):
+class PartitionedBool(PartitionedBase):
 
     def __init__(self, width, partition_points):
         """Create a ``PartitionedBool`` operator
         """
-        self.width = width
-        self.a = Signal(width, reset_less=True)
-        self.partition_points = PartitionPoints(partition_points)
-        self.mwidth = len(self.partition_points)+1
-        self.output = Signal(self.mwidth, reset_less=True)
-        if not self.partition_points.fits_in_width(width):
-            raise ValueError("partition_points doesn't fit in width")
-
-    def elaborate(self, platform):
-        m = Module()
-        comb = m.d.comb
-        m.submodules.boolc = boolc = EQCombiner(self.mwidth)
-
-        # make a series of "bool", splitting a and b into partition chunks
-        bools = Signal(self.mwidth, reset_less=True)
-        booll = []
-        keys = list(self.partition_points.keys()) + [self.width]
-        start = 0
-        for i in range(len(keys)):
-            end = keys[i]
-            booll.append(self.a[start:end].bool())
-            start = end # for next time round loop
-        comb += bools.eq(Cat(*booll))
-
-        # put the partial results through the combiner
-        comb += boolc.gates.eq(self.partition_points.as_sig())
-        comb += boolc.neqs.eq(bools)
-
-        m.submodules.ripple = ripple = RippleLSB(self.mwidth)
-        comb += ripple.results_in.eq(boolc.outputs)
-        comb += ripple.gates.eq(self.partition_points.as_sig())
-        comb += self.output.eq(~ripple.output)
-
-        return m
-
-    def ports(self):
-        return [self.a, self.output]
+        super().__init__(width, partition_points, EQCombiner, "bool")
 
 
 if __name__ == "__main__":
