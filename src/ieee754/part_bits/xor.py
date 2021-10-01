@@ -13,8 +13,9 @@ See:
 * http://bugs.libre-riscv.org/show_bug.cgi?id=176
 """
 
-from nmigen import Signal, Module, Elaboratable, Cat, C, Mux, Repl
-from nmigen.cli import main
+from nmigen import Signal, Module, Elaboratable, Cat, C
+from nmigen.back.pysim import Simulator, Settle
+from nmigen.cli import rtlil
 from nmutil.ripple import RippleLSB
 
 from ieee754.part_mul_add.partpoints import PartitionPoints
@@ -60,3 +61,43 @@ class PartitionedXOR(Elaboratable):
         comb += self.output.eq(~ripple.output)
 
         return m
+
+    def ports(self):
+        return [self.a, self.output]
+
+
+if __name__ == "__main__":
+
+    from ieee754.part_mul_add.partpoints import make_partition
+    m = Module()
+    mask = Signal(4)
+    m.submodules.xor = xor = PartitionedXOR(16, make_partition(mask, 16))
+
+    vl = rtlil.convert(xor, ports=xor.ports())
+    with open("part_xor.il", "w") as f:
+        f.write(vl)
+
+    sim = Simulator(m)
+
+    def process():
+        yield mask.eq(0b010)
+        yield xor.a.eq(0x8c14)
+        yield Settle()
+        out = yield xor.output
+        m = yield mask
+        print("out", bin(out), "mask", bin(m))
+        yield mask.eq(0b111)
+        yield Settle()
+        out = yield xor.output
+        m = yield mask
+        print("out", bin(out), "mask", bin(m))
+        yield mask.eq(0b010)
+        yield Settle()
+        out = yield xor.output
+        m = yield mask
+        print("out", bin(out), "mask", bin(m))
+
+    sim.add_process(process)
+    with sim.write_vcd("part_xor.vcd", "part_xor.gtkw", traces=xor.ports()):
+        sim.run()
+
