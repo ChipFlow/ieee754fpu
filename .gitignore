@@ -9,3 +9,5 @@ __pycache__
 .eggs
 *.egg-info
 *.gtkw
+/formal_test_temp
+/sim_test_out
