@@ -149,14 +149,13 @@ class CORDIC(Elaboratable):
         return m
 
     def ports(self):
-        lst = [self.cos, self.sin,
-               self.ready, self.start]
-        lst.extend(self.z0)
-        return lst
+        return [self.cos, self.sin,
+               self.ready, self.start,
+               self.z0]
 
 
 if __name__ == '__main__':
-    dut = CORDIC(8)
+    dut = CORDIC(16)
     vl = rtlil.convert(dut, ports=dut.ports())
     with open("cordic.il", "w") as f:
         f.write(vl)
